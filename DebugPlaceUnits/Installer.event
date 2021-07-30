@@ -3,7 +3,16 @@
 
 #include "DebugPlaceUnits.lyn.event"
 
+
+
 //#define INSTALL_CHAPTER_MENU_TOGGLE_COMMAND
+// If uncommented, this will take over your 
+// chapter menu to add a new entry! 
+
+
+
+
+
 
 PUSH 
 // This part hooks PlayerPhase_InitUnitMovementSelect at 801CC1C 
