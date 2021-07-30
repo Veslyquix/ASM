@@ -3,6 +3,8 @@
 
 #include "DebugPlaceUnits.lyn.event"
 
+//#define INSTALL_CHAPTER_MENU_TOGGLE_COMMAND
+
 PUSH 
 // This part hooks PlayerPhase_InitUnitMovementSelect at 801CC1C 
 // If global flag 0xAA is ON, it will not display movement/attack range when
@@ -29,3 +31,37 @@ WORD 0xFFFF3C21 // SET_CURSOR_SB
 EVBIT_T 7 // FEBuilder didn't recognize NoFade either 
 ENDA 
 
+#ifdef INSTALL_CHAPTER_MENU_TOGGLE_COMMAND 
+
+	PUSH 
+	ORG 0x59D21C  // Chapter Menu
+	POIN ChapterMenu
+
+	POP 
+
+
+	#ifndef setText 
+		#define setText(textID, offset) "PUSH; ORG (TextTable+4*textID); POIN (offset | 0x80000000); POP" 
+	#endif 
+	setText(0x9B7, PlaceUnitsText) // These are from the tutorial, I think?
+	setText(0x9B8, PlaceUnitsHelpText)
+
+	ALIGN 4
+	PlaceUnitsText:
+	String(" Toy Box")
+	BYTE 0
+
+
+
+	ALIGN 4
+	PlaceUnitsHelpText:
+	String("Freely place units.")
+	BYTE 0
+
+	ALIGN 4
+	ChapterMenu:
+	#include "ChapterMenu.event"
+
+
+
+#endif 

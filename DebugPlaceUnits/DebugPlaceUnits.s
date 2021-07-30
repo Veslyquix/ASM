@@ -217,6 +217,24 @@ pop {r4-r7}
 pop {r1}
 bx r1
 
+.equ UnsetEventId, 0x8083d94
+.align 4 
+	.global ToggleFlagAA
+	.type   ToggleFlagAA, function
+ToggleFlagAA:
+	push {lr} 
 
+mov r0, #0xAA 
+blh CheckEventId
+cmp r0, #0 
+beq TurnFlagOn
+mov r0, #0xAA 
+blh UnsetEventId
+b Term 
+TurnFlagOn:
+mov r0, #0xAA 
+blh SetEventId
 
-
+Term:
+pop {r1}
+bx r1
