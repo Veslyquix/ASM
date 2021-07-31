@@ -238,3 +238,18 @@ blh SetEventId
 Term:
 pop {r1}
 bx r1
+
+
+.align 4 
+	.global DisplayIfFlagAB
+	.type   DisplayIfFlagAB, function
+DisplayIfFlagAB:
+push {lr} 
+mov r0, #0xAB 
+blh CheckEventId
+cmp r0, #1 
+beq Skip 
+mov r0, #3 @ False 
+Skip:
+pop {r1}
+bx r1

@@ -9,7 +9,13 @@
 // If uncommented, this will take over your 
 // chapter menu to add a new entry! 
 
-
+#define TOY_BOX_USABLE_ONLY_IF_FLAG_AB_IS_ON 
+// This makes the Chapter Menu command "Toy Box"
+// that toggles whether to freely place units or not 
+// only show up if flag 0xAB is ON 
+// If you comment this out, the menu command will 
+// always appear (assuming you installed the menu command
+// in the first place) 
 
 
 
@@ -55,16 +61,20 @@ ENDA
 	setText(0x9B7, PlaceUnitsText) // These are from the tutorial, I think?
 	setText(0x9B8, PlaceUnitsHelpText)
 
+
+	// When inserting this via febuilder it will display the quotation marks 
+	// I don't know how to fix this here, sorry 
 	ALIGN 4
 	PlaceUnitsText:
-	String(" Toy Box")
+	String(" Toy Box") // [0x20] would be used as a space prefix for menus, but doesn't seem to work  
 	BYTE 0
+
 
 
 
 	ALIGN 4
 	PlaceUnitsHelpText:
-	String("Freely place units.")
+	String(Freely place units.)
 	BYTE 0
 
 	ALIGN 4
