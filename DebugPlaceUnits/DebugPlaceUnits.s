@@ -223,7 +223,6 @@ bx r1
 	.type   ToggleFlagAA, function
 ToggleFlagAA:
 	push {lr} 
-
 mov r0, #0xAA 
 blh CheckEventId
 cmp r0, #0 
@@ -234,8 +233,11 @@ b Term
 TurnFlagOn:
 mov r0, #0xAA 
 blh SetEventId
+@blh 0x80311a8 @ReloadGameCoreGraphics
 
 Term:
+mov   r0, #0x17 @ This removes a graphical glitch and I have no idea why 
+				@ Copied what Huichelaar did in Suspendx2 
 pop {r1}
 bx r1
 
