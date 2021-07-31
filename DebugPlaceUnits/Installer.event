@@ -71,10 +71,11 @@ ENDA
 
 
 
-
+	// Colorz core requires quotation marks for the String() function 
+	// while nintenlord's core will display the quotation marks ingame 
 	ALIGN 4
 	PlaceUnitsHelpText:
-	String(Freely place units.)
+	String("Freely place units.")
 	BYTE 0
 
 	ALIGN 4
