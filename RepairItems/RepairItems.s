@@ -17,10 +17,18 @@
 RepairItems:
 
 push {r4-r7, lr} 
-@ Given s1 as memory slot, return cost to repair all items 
+@ Given amount of gold to charge the player in 
+@ memory slot 1, take away that much gold if they have it 
+@ and repair weapons 
+@ returns 0 in r0 / slot C if they didn't have 
+@ the gold or items to repair 
 
+
+@ I just use the current unit. 
+@ Could use this instead, though, to take 
+@ slot 3 as unit id to repair items for
 @ldr r3, =MemorySlot
-@ldr r0, [r3, #4*0x01] @Unit
+@ldr r0, [r3, #4*0x03] @Unit
 @blh  GetUnitByEventParameter    
 
 ldr r3, =0x3004E50 @ Current unit pointer 
@@ -36,11 +44,18 @@ mov r4, r0 @ Unit ram struct
 ldr r3, =0x202BCF0
 ldr r2, [r3, #8] @ gChapterData -> Gold 
 ldr r0, =0x30004B8 @ MemorySlot
-ldr r1, [r0, #4*0x01] @ r1 as gold to charge 
-@mov r11, r11 
-
+mov r1, #0x00
+str r1, [r0, #4*0x0C] @ Store false to rC
+ldr r1, [r0, #4*0x01] @ r1 as gold to charge
+ 
+@ commented out in case someone has an item 
+@ that costs 0 per use but still has durability 
+@ and is not unbreakable/unsellable 
+@ this would be odd, but whatever 
 @cmp r1, #0 
 @beq Broke @ Costs nothing, so don't repair anything 
+
+
 cmp r2, r1
 blt Broke @ Not enough gold, so don't repair items 
 sub r2, r1 @ New gold amount 
@@ -82,12 +97,15 @@ ldrb r0, [r7, #0x06] @ Item id
 
 blh  0x08016540           @MakeItemShort RET=ITEMPACK 
 strh r0, [r4, r5] 
+
+ldr r3, =0x30004B8 @ MemorySlot 
+mov r0, #1 @ We definitely repaired stuff 
+str r0, [r3, #4*0x0C] @ Store true to rC
+
 b TryRepairItem
 
 ExitLoop:
-ldr r3, =0x30004B8 @ MemorySlot 
-mov r0, #1 @ We probably repaired stuff 
-str r0, [r3, #4*0x0C] @ Store true to rC 
+ 
 b Term 
 
 
