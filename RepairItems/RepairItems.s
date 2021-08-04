@@ -21,7 +21,7 @@ push {r4-r7, lr}
 @ memory slot 1, take away that much gold if they have it 
 @ and repair weapons 
 @ returns 0 in r0 / slot C if they didn't have 
-@ the gold or items to repair 
+@ the gold to repair their valid weapons
 
 
 @ I just use the current unit. 
@@ -105,7 +105,10 @@ str r0, [r3, #4*0x0C] @ Store true to rC
 b TryRepairItem
 
 ExitLoop:
- 
+ldr r3, =0x30004B8 @ MemorySlot 
+@ did we repair stuff ?
+ldr r0, [r3, #4*0x0C] @ load true/false from rC
+
 b Term 
 
 
