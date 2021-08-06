@@ -1,0 +1,32 @@
+#include "Extensions/Hack Installation.txt"
+
+PUSH 
+ORG $2AE54
+jumpToHack(NegateDefHack)
+POP 
+
+ALIGN 4 
+NegateDefHack:
+#include "NegateDefHack.lyn.event"
+//POIN NegateDefAmountTable
+
+#define FF16 "0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF 0xFF"
+ALIGN 4 
+NegateDefAmountTable:
+BYTE FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16 FF16
+WORD 0 
+//ORG CurrentOffset+256 
+#undef FF16 
+
+#define NegateDefEntry(ItemID, PercentDefToIgnore) "PUSH; ORG NegateDefAmountTable + (ItemID); BYTE PercentDefToIgnore; POP" 
+
+// Commented out examples 
+/*
+NegateDefEntry(SilverSword, 20) // Negates 20% of def, so it's as if they only have 80% of their def 
+NegateDefEntry(0x09, 55) // Rapier negates 55% def 
+NegateDefEntry(Luna, 91)
+NegateDefEntry(WretchedAir, 40)
+NegateDefEntry(Dragonstone, 75)
+*/
+
+ 
