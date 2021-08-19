@@ -1,14 +1,22 @@
 #include "ExpandAI_Internals.event"
+#include "WaitAI.event" 
 // Expands AI1 and AI2 lists to 255 entries 
 // Add new ones here 
 
 // AI 1 list 
 // Vanilla entries take up 0 - 20 
 NewAI1Entry(21, TestAI1)
+NewAI2Entry(22, MakeAIWaitLabel) 
+
+#define WaitAI [22,3] // Wait. Do nothing else. 
+
 
 // AI 2 list
 // Vanilla entries take up 0 - 18
 NewAI2Entry(19, TestAI2)
+NewAI2Entry(20, MakeAIWaitLabel) 
+
+#define ActOrWaitAI [0,20] // If nobody in range, wait 
 
 
 // New entries 
@@ -24,3 +32,5 @@ TestAI2:
 MoveTowardsOpponents
 Goto(0) //Exit / terminator ? 
 WORD 0 //not needed? lol 
+
+
