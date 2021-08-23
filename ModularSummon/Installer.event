@@ -6,6 +6,10 @@
 #endif 
 
 
+// Add this to your Unit Menu: root\EngineHacks\Necessary\UnitMenu
+// // Modular Summon 
+  // MenuCommand(0x693,0x6DD,NormalText,ModularSummonUsability,ModularSummonEffect)
+
 ALIGN 12 
 ModularSummonTable:
 // Unit ID, Class ID, ReqLevel, ReqFlag; POIN UnitGroup 
