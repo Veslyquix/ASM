@@ -30,6 +30,8 @@ ModularSummonEffect:
 mov r7, r8  
 push {r7} @ Save r8 to restore at the end 
 mov r8, r0 @ Parent proc 
+mov r6, r9 
+push {r6} 
 
 ldr r3, =CurrentUnit 
 ldr r3, [r3] @ unit struct ram pointer 
@@ -46,11 +48,11 @@ mov r7, r3
 
 
 ldr r4, =ModularSummonTable
-sub r4, #8 
+sub r4, #12 
 @ find matching entry or terminate 
 TableLoopStart:
-add r4, #8
-ldr r2, [r4, #4] @ If unit group is empty, then terminate 
+add r4, #12
+ldr r2, [r4, #8] @ If unit group is empty, then terminate 
 cmp r2, #0 
 beq GotoEnd
 
@@ -69,7 +71,7 @@ ldrb r0, [r4, #1] @ class
 cmp r0, #0 
 beq ValidClassException
 ldr r1, [r7, #4] @ class 
-ldrb r1, [r7, #4] @ class id 
+ldrb r1, [r1, #4] @ class id 
 cmp r0, r1 
 bne TableLoopStart
 
@@ -89,21 +91,23 @@ cmp r0, #0
 beq ValidFlagException
 blh CheckEventId
 mov r1, r0 
-ldrb r0, [r4, r3] 
+ldrb r0, [r4, #3] 
 cmp r0, r1 
 bne TableLoopStart
 ValidFlagException:
 
 @ We have found a valid case to summon 
-
+mov r9, r4 @ Save table so we know user input 
 
 @ 202E4DC	Terrain map (tile id)
 @ We need to make our current tile terrain that cannot be crossed 
 @ We restore it at the end 
 ldr r3, =CurrentUnit
 ldr r3, [r3] 
+
 ldrb r0, [r3, #0x10] @ X coord 
 ldrb r1, [r3, #0x11] @ Y coord 
+
 ldr		r2,=TerrainMap	@Load the location in the table of tables of the map you want
 ldr		r2,[r2]			@Offset of map's table of row pointers
 lsl		r1,#0x2			@multiply y coordinate by 4
@@ -122,14 +126,15 @@ strb r0, [r2]
 
 
 
+
 @ Load each unit loop 
-ldr r5, [r4, #4] @ Poin to unit group 
+ldr r5, [r4, #8] @ Poin to unit group 
 sub r5, #20 @ 20 bytes per unit group 
 LoadEachSummonLoop:
 add r5, #20 @ Next specific unit to load 
 ldr r0, [r5] 
 cmp r0, #0 
-beq GotoRestoreTerrain @ We went through all units, so restore terrain and end 
+beq GotoRestoreTerrain @ We went through all units, so end 
 
 
 ldrb r0, [r5] @ unit id 
@@ -139,26 +144,34 @@ ldrb r2, [r2, #4]
 cmp r0, r2 
 beq LoadEachSummonLoop @ You cannot summon yourself, as this breaks the terrain. 
 
+mov r7, #0 @ Do not autolevel unit unless they were cleared 
 blh GetUnitByEventParameter
 cmp r0, #0 
 beq LoadUnitTime @ Unit is cleared, so summon 
 ldr r1, [r0, #0x0C] @ State 
+
+mov r3, #0x08 @ Undeployed 
+and r3, r1 @ If unit is deployed already, ignore them 
+cmp r3, #0 
+bne LoadEachSummonLoop 
+
 mov r2, #0x04 @ Dead 
 and r2, r1 
+
+
 cmp r2, #0 
 beq LoadEachSummonLoop @ Unit is alive, so try next one 
 @ unit to summon is dead but needs to be cleared 
-@mov r2, #0x04 
-@neg r2, r2 @ 
-@and r1, r2 
-@str r1, [r0, #0x0C] @ Remove 'dead' bitflag from the unit 
 
+@ remove dead/undeployed bitflag 
+mov r2, #0x0C
+mvn r2, r2 
+and r1, r2 
+str r1, [r0, #0x0C] @ Remove 'dead', 'undeployed' bitflag from the unit 
 
-
-
-
+@ or just clear the unit 
 blh 0x080177f4 @ ClearUnit
-
+mov r7, #1 
 LoadUnitTime:
 
 mov r0, r5 
@@ -166,8 +179,7 @@ blh LoadUnit
 mov r6, r0 @ Newly loaded unit 
 b PlaceSummonedUnit 
 
-
-GotoRestoreTerrain:
+GotoRestoreTerrain: 
 b RestoreTerrain 
 
 GotoEnd: 
@@ -181,16 +193,180 @@ b End
 @blh 0x803BDE1, r7 @ FindUnitClosestValidPosition
 @ break 
 
-
+.equ IncreaseUnitStatsByLevelCount, 0x8017FC4
+.equ EnsureNoUnitStatCapOverflow, 0x80181c8
 
 @place most recently loaded unit to valid coord 
 PlaceSummonedUnit:
+
+cmp r7, #1 
+bne DoNotMatchSummonsLevel @ Unit wasn't cleared, so don't autolevel lol 
+mov r3, r9 @ should we match summon's level to the summoner? 
+ldrb r0, [r3, #5] @ bool yes/no 
+cmp r0, #1 
+bne DoNotMatchSummonsLevel 
+ldr r2, =CurrentUnit 
+ldr r2, [r2]
+ldrb r0, [r2, #8] @ Summoner's level 
+ldrb r1, [r6, #8] @ Summon's level 
+cmp r1, r0 
+bge DoNotMatchSummonsLevel 
+strb r0, [r6, #8] @ Summon as same lvl as summoner 
+
+sub r2, r0, r1 @ Number of levels to increase by 
+ldr r1, [r6, #4]
+ldrb r1, [r1, #4] @ class id of summon 
+mov r0, r6 @ Summon unit pointer 
+blh IncreaseUnitStatsByLevelCount @ // str/mag split compatible
+mov r0, r6
+blh EnsureNoUnitStatCapOverflow
+ldrb r0, [r6, #0x12] 
+strb r0, [r6, #0x13] @ Set to max hp 
+
+
+
+
+DoNotMatchSummonsLevel: 
+
+
+
+
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+ldrh r0, [r3, #0x10] 
+push {r0} @ Save current units coords to the stack. Restore after restoring terrain 
+
+
+
 
 
 
 @ To find the closest / best position, we're going to mimic the parameters and use this vanilla function 
 @ void UnitGetDeathDropLocation(struct Unit* unit, int* xOut, int* yOut)
 @ Newly loaded unit in r6 
+
+
+@ check if using relative coords 
+mov r3, r9 
+ldrb r0, [r3, #4] 
+cmp r0, #1 
+bne NotUsingRelativeCoords
+@ check that current unit can reach destination 
+@ if so, put the current unit to those coords 
+mov r1, #4  
+ldrh r0, [r5, #4] 
+mov r1, #0xF 
+lsl r1, #8 
+add r1, #0xFF 
+@ r1 is 0xFFF. Top 4 bits used for stuff like Monster, Drop Item, etc. 
+and r0, r1 
+@ r0 is now coords only, 6 bits each  
+@ 3F is X, 0x40 - 0xFFF is y 
+mov r1, #0x3F
+mvn r1, r1 
+and r1, r0  
+lsr r1, #6 @ YY 
+
+mov r2, #0x3F
+and r0, r2 @ XX 
+
+@ r0 = XX, r1 = YY 
+
+mov r2, #10 
+sub r0, r0, r2 @ XX - 10 
+sub r1, r1, r2 @ YY - 10
+
+
+ldr r3, =CurrentUnit 
+ldr r3, [r3] @ Current unit ram struct pointer 
+ldrb r2, [r3, #0x10] @ X 
+add r0, r2 
+
+@ Check that we wouldn't be summoning outside the border of the map 
+cmp r0, #0 
+bge NoCapXXLeft
+mov r0, #0 @ 
+NoCapXXLeft: 
+cmp r0, #63 
+blt NoCapXXRight
+mov r0, #63 
+NoCapXXRight:
+
+
+ldrb r2, [r3, #0x11] @ Y 
+add r1, r2 
+cmp r1, #0 
+bge NoCapYYUp
+mov r1, #0 @ 
+NoCapYYUp: 
+cmp r1, #63 
+blt NoCapYYDown
+mov r1, #63 
+NoCapYYDown:
+
+@ pretend we're 1 tile below where we want to spawn stuff 
+add r1, #1 
+bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX 
+cmp r0, #1 
+bne DontAddOneToYCoord 
+mov r0, r2 
+bl CanWeTraverseTerrain 
+cmp r0, #1 
+bne DontAddOneToYCoord 
+add r1, #1 @ 1 below the tile we want 
+
+DontAddOneToYCoord:
+mov r0, r2 @ XX 
+sub r1, #1 
+@ if this is false, then we cannot reach the destination, so we'll not use relative coords 
+@ however, we'll write to adjacent tiles in the UnitMap so that summons avoid being adjacent 
+@ (just for cool factor, I guess) 
+
+bl CanWeTraverseTerrain
+@ returns T/F r0, yy r1, xx r2 
+cmp r0, #0x1 
+bne NotUsingRelativeCoords
+UseRelativeCoords: 
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+mov r0, r2 
+@ r1 is already y 
+strb r0, [r3, #0x10] 
+strb r1, [r3, #0x11] 
+
+
+
+
+NotUsingRelativeCoords:
+@ 202E4DC	Terrain map (tile id)
+@ We need to make our current tile terrain that cannot be crossed 
+@ We restore it at the end 
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+
+ldrb r0, [r3, #0x10] @ X coord 
+ldrb r1, [r3, #0x11] @ Y coord 
+
+ldr		r2,=TerrainMap	@Load the location in the table of tables of the map you want
+ldr		r2,[r2]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r2,r1			@so that we can get the correct row pointer
+ldr		r2,[r2]			@Now we're at the beginning of the row data
+add		r2,r0			@add x coordinate
+ldrb	r0,[r2]			@load datum at those coordinates
+
+ldrb r1, [r3, #0x1B] @ Current unit's rescued Deployment byte 
+lsl r0, #8 
+add r0, r1 
+push {r0} @ Save what the terrain & deployment byte should be at current unit's tile eg. ----TRDB (Terrain, Deployment Byte)
+mov r0, #0x00 @ -- tile
+strb r0, [r2] 
+
+
+
+
+
+
 ldr r2, =CurrentUnit 
 ldr r2, [r2] @ Current unit ram struct pointer 
 @ldrb r3, [r6, #0x0B] @ Deployment byte
@@ -202,27 +378,16 @@ mov r4, r0 @ Store whoever is being rescued lol
 ldrb r0, [r2, #0x0B] @ Deployment byte 
 strb r0, [r6, #0x1B] @ 
 
-
-
-
 ldrh r0, [r2, #0x10] 
 strh r0, [r6, #0x10] @ So units have matching coords 
 
 @ need to manually update so hidden units aren't removed @blh  0x0801a1f4   @RefreshFogAndUnitMaps @RefreshEntityMaps 
-ldrb r0, [r6, #0x10] 
-ldrb r1, [r6, #0x11] 
+ldrb r0, [r2, #0x10] 
+ldrb r1, [r2, #0x11] 
+ldrb r2, [r2, #0x0B] @ Acting unit's deployment byte 
+bl WriteDeploymentByteToGivenCoordsUnitMap
 
 
-ldr		r2,=0x202E4D8 @ UnitMap 	@Load the location in the table of tables of the map you want
-ldr		r2,[r2]			@Offset of map's table of row pointers
-lsl		r1,#0x2			@multiply y coordinate by 4
-add		r2,r1			@so that we can get the correct row pointer
-ldr		r2,[r2]			@Now we're at the beginning of the row data
-add		r2,r0			@add x coordinate
-ldrb	r0,[r2]			@load datum at those coordinates
-
-ldrb r0, [r6, #0x0B] @ Deployment byte to store 
-strb r0, [r2] 
 
 
 ldr r0, =0x859da95 @ Procs SMSJumpAnimation 
@@ -264,19 +429,13 @@ strb r2, [r6, #0x11] @ Y
 @ need to manually update so hidden units aren't removed @blh  0x0801a1f4   @RefreshFogAndUnitMaps @RefreshEntityMaps 
 @blh  0x0801a1f4   @RefreshFogAndUnitMaps
 
-ldrb r0, [r6, #0x10] 
-ldrb r1, [r6, #0x11] 
+ldrb r0, [r6, #0x10] @ XX 
+ldrb r1, [r6, #0x11] @ YY 
+ldrb r2, [r6, #0x0B] @ Deployment byte 
 
-ldr		r2,=0x202E4D8 @ UnitMap 	@Load the location in the table of tables of the map you want
-ldr		r2,[r2]			@Offset of map's table of row pointers
-lsl		r1,#0x2			@multiply y coordinate by 4
-add		r2,r1			@so that we can get the correct row pointer
-ldr		r2,[r2]			@Now we're at the beginning of the row data
-add		r2,r0			@add x coordinate
-ldrb	r0,[r2]			@load datum at those coordinates
+bl WriteDeploymentByteToGivenCoordsUnitMap
 
-ldrb r0, [r6, #0x0B] @ Deployment byte to store 
-strb r0, [r2] 
+
 
 @@ it works!!!! 
 
@@ -314,13 +473,6 @@ blh EventEngine
 
 strb r4, [r6, #0x1B] @ rescued Deployment byte 
 
-
-
-b LoadEachSummonLoop 
-	
-	
-RestoreTerrain:
-
 @ 202E4DC	Terrain map (tile id)
 @ We restore the terrain now 
 ldr r3, =CurrentUnit
@@ -342,9 +494,37 @@ lsl r0, #24
 lsr r0, #24 
 strb r0, [r3, #0x1B] @ Rescuer/ee restored 
 
-@ldr r0, =GlowingCrossEvent
-@mov r1, #1 
-@blh EventEngine 
+@ Restore current unit's coords here, too 
+pop {r0}
+strh r0, [r3, #0x10] 
+
+
+
+b LoadEachSummonLoop 
+	
+	
+RestoreTerrain:
+@ 202E4DC	Terrain map (tile id)
+@ We restore the terrain now 
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+ldrb r0, [r3, #0x10] @ X coord 
+ldrb r1, [r3, #0x11] @ Y coord 
+ldr		r2,=TerrainMap	@Load the location in the table of tables of the map you want
+ldr		r2,[r2]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r2,r1			@so that we can get the correct row pointer
+ldr		r2,[r2]			@Now we're at the beginning of the row data
+add		r2,r0			@add x coordinate
+ldrb	r0,[r2]			@load datum at those coordinates
+pop {r0}
+
+lsr r1, r0, #8
+strb r1, [r2] @ Terrain restored 
+lsl r0, #24 
+lsr r0, #24 
+strb r0, [r3, #0x1B] @ Rescuer/ee restored 
+
 
 End:
 
@@ -360,26 +540,16 @@ mov r0, #0x17	@makes the unit wait?? makes the menu disappear after command is s
  
 @ SET_ABS_FUNC AiSetDecision, 0x8039C21
 @ void AiSetDecision(int xPos, int yPos, int actionId, int targetId, int itemSlot, int xPos2, int yPos2);
-@ 		SetAiActionParameters(
-@ 			xMovement, yMovement,
-@			AI_DECISION_DANCE,
-@			targetIndex, 0, 0, 0); 
-
-@ SetAiActionParameters(XX, YY, 1, 0, 0, 0, 0) 
-
-
-@ XX cur pos 
-@@ YY cur pos 
-@ decision = 0x01	Wait 
-@ target = 0 no target 
-@ item = 0 
-@ xPos2, yPos2 = 0 
+@ SetAiActionParameters(XX, YY, 5, 0, 0, 0, 0) 
 
 
 
 
 Break:
 mov r0, #1
+
+	pop {r6}
+	mov r9, r6 
 
 	pop {r7}
 	mov r8, r7 @ Restore r8 
@@ -397,20 +567,93 @@ CurrentUnitFateData:
 	.long 0x203A958
 	.thumb 
 	
-@ I thought maybe I could queue asmc and events this way, but it didn't work either 
-@.global RunMakeAIWaitEvent
-@.type RunMakeAIWaitEvent, %function 	
-@RunMakeAIWaitEvent:
-@push {lr} 
-@ldr r0, =MakeAIWaitEvent @1 and 2 seem to wait, 0,3,4,8,0xFF does not 
-@mov r1, #0x02
-@blh EventEngine 
-@@ldr r0, =DoNothingEvent 
-@@mov r1, #1 
-@@blh EventEngine 
-@mov r0, #1 
-@pop {r1}
-@bx r1  
+.type IsTileFreeFromUnits, %function 
+IsTileFreeFromUnits:
+push {lr}
+@ Given r0 = x, r1 = y 
+mov r2, r0 
+lsl r2, #8 
+add r2, r1 
+
+ldr		r3,=0x202E4D8	@Unit map 	@Load the location in the table of tables of the map you want
+ldr		r3,[r3]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r3,r1			@so that we can get the correct row pointer
+ldr		r3,[r3]			@Now we're at the beginning of the row data
+add		r3,r0			@add x coordinate
+ldrb	r0,[r3]			@load datum at those coordinates
+cmp r0, #0 
+bne TileIsNotFree
+mov r0, #1 
+b EndTileFreeFromUnits 
+
+TileIsNotFree: 
+mov r0, #0 @ Tile is not free 
+EndTileFreeFromUnits: 
+lsl r1, r2, #24 
+lsr r1, #24 
+lsr r2, #8 
+@ return r0 true/false, r1 yy, r2 xx 
+
+pop {r3} 
+bx r3 
+
+
+.type CanWeTraverseTerrain, %function 
+CanWeTraverseTerrain:
+push {lr}
+@ Given r0 = x, r1 = y 
+mov r2, r0 
+lsl r2, #8 
+add r2, r1 
+
+ldr		r3,=0x202E4E0	@Movement map 	@Load the location in the table of tables of the map you want
+ldr		r3,[r3]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r3,r1			@so that we can get the correct row pointer
+ldr		r3,[r3]			@Now we're at the beginning of the row data
+add		r3,r0			@add x coordinate
+ldrb	r0,[r3]			@load datum at those coordinates
+
+cmp r0, #0xFF 
+beq TileIsNotPassable 
+mov r0, #1 
+b EndTraverseTerrainCheck
+
+TileIsNotPassable: 
+mov r0, #0 @ Tile is not free 
+EndTraverseTerrainCheck: 
+lsl r1, r2, #24 
+lsr r1, #24 
+lsr r2, #8 
+@ return r0 true/false, r1 yy, r2 xx 
+pop {r3} 
+bx r3 
+
+
+
+
+@.global WriteDeploymentByteToGivenCoordsUnitMap
+.type WriteDeploymentByteToGivenCoordsUnitMap, %function 	
+WriteDeploymentByteToGivenCoordsUnitMap:
+push {lr} 
+@ Given r0 = X coord, r1 = Y coord, and r2 = deployment byte, 
+@ store deployment byte to the unit map at those coords 
+
+ldr		r3,=0x202E4D8 @ UnitMap 	@Load the location in the table of tables of the map you want
+ldr		r3,[r3]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r3,r1			@so that we can get the correct row pointer
+ldr		r3,[r3]			@Now we're at the beginning of the row data
+add		r3,r0			@add x coordinate
+@ldrb	r0,[r3]			@load datum at those coordinates
+strb 	r2, [r3] @ Store deployment byte to Unit Map given coords 
+pop {r0}
+bx r0 
+
+
+
+
 
 
 @ Queue starts at 030004F0 
@@ -450,10 +693,10 @@ ldr r3, =MemorySlot
 ldr r5, [r3, #4*0x01] @ Unit pointer 
 ldr r0, [r5, #0x0C] @ New unit's state 
 
-mov r1, #0 
-sub r1, #2 
-
+mov r1, #1 
+mvn r1, r1 
 and r0, r1 @ remove 0x1 - Hidden 
+
 str r0, [r5, #0x0C] 
 
 ldr r3, =0x203A958 @ ActionStruct 
@@ -714,17 +957,18 @@ push {r4-r7, lr}
 mov r7, r8 
 push {r7}
 mov r1, #0
+@mov r11, r11 
 mov r8, r1 @ how many we can summon 
 ldr r3, =CurrentUnit 
 ldr r3, [r3] @ unit struct ram pointer 
 mov r7, r3 
 
 ldr r4, =ModularSummonTable
-sub r4, #8 
+sub r4, #12
 @ find matching entry or terminate 
 TableLoopStart2:
-add r4, #8
-ldr r2, [r4, #4] @ If unit group is empty, then terminate 
+add r4, #12
+ldr r2, [r4, #8] @ If unit group is empty, then terminate 
 cmp r2, #0 
 beq Usability_False @ DetermineUsability @ ? 
 
@@ -743,7 +987,7 @@ ldrb r0, [r4, #1] @ class
 cmp r0, #0 
 beq ValidClassException2
 ldr r1, [r7, #4] @ class 
-ldrb r1, [r7, #4] @ class id 
+ldrb r1, [r1, #4] @ class id 
 cmp r0, r1 
 bne TableLoopStart2
 
@@ -763,13 +1007,13 @@ cmp r0, #0
 beq ValidFlagException2
 blh CheckEventId
 mov r1, r0 
-ldrb r0, [r4, r3] 
+ldrb r0, [r4, #3] 
 cmp r0, r1 
 bne TableLoopStart2
 
 ValidFlagException2:
 @ check if unit exists now 
-ldr r5, [r4, #4] 
+ldr r5, [r4, #8] 
 @ loop 
 sub r5, #20 
 CheckIfAnySummonedUnitDoesNotExistLoop:  
