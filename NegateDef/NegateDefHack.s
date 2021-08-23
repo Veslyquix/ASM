@@ -43,11 +43,21 @@ add r0, r3 @ always ceiling up, so negating 51% of 2 def will negate all 2 def
 			@ but negating 1-50% of 2 def will negate 1 def 
 mov r1, #100 @ always divide by 100 
 @mov r11, r11  @ break point test 
+mov r2, #0x5A
+ldrh r3, [r4, r2] @ Battle attack 
+@mov r11, r11 
+
 swi 6 @ Div function 
 @ subtract their def by this number 
 mov r3, #0x5C 
 ldrh r2, [r6, r3] @ def to negate part of  
+cmp r2, r0 
+bge NoCapNeeded
+mov r2, #0 
+b StoreBackIn
+NoCapNeeded: 
 sub r2, r0 
+StoreBackIn:
 strh r2, [r6, r3] @ ignored some 
 b End 
 
