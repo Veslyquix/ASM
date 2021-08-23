@@ -36,12 +36,12 @@ push {r6}
 ldr r3, =CurrentUnit 
 ldr r3, [r3] @ unit struct ram pointer 
 cmp r3, #0 
-beq GotoBreak
+beq GotoEnd
 ldr r2, [r3] 
 cmp r2, #0 
 bne SetupStuff 
-GotoBreak:
-b Break  @ No unit so break 
+
+
 
 SetupStuff:
 mov r7, r3 
@@ -148,30 +148,36 @@ mov r7, #0 @ Do not autolevel unit unless they were cleared
 blh GetUnitByEventParameter
 cmp r0, #0 
 beq LoadUnitTime @ Unit is cleared, so summon 
-ldr r1, [r0, #0x0C] @ State 
 
-mov r3, #0x08 @ Undeployed 
-and r3, r1 @ If unit is deployed already, ignore them 
-cmp r3, #0 
-bne LoadEachSummonLoop 
+	ldr r1, [r0, #0x0C] @ State 
 
-mov r2, #0x04 @ Dead 
-and r2, r1 
+	mov r3, #0x08 @ Undeployed 
+	and r3, r1 @ If unit is deployed already, ignore them 
+	cmp r3, #0 
+	bne LoadEachSummonLoop 
 
+	mov r2, #0x04 @ Dead 
+	and r2, r1 
+	cmp r2, #0 
+	beq LoadEachSummonLoop @ Unit is alive, so try next one 
+	@ unit to summon is dead but needs to be cleared 
 
-cmp r2, #0 
-beq LoadEachSummonLoop @ Unit is alive, so try next one 
-@ unit to summon is dead but needs to be cleared 
-
-@ remove dead/undeployed bitflag 
-mov r2, #0x0C
-mvn r2, r2 
-and r1, r2 
-str r1, [r0, #0x0C] @ Remove 'dead', 'undeployed' bitflag from the unit 
-
-@ or just clear the unit 
-blh 0x080177f4 @ ClearUnit
-mov r7, #1 
+	@ they are undeployed but alive 
+	@ remove dead/undeployed bitflag 
+	mov r2, #0x0C
+	mvn r2, r2 
+	and r1, r2 
+	str r1, [r0, #0x0C] @ Remove 'dead', 'undeployed' bitflag from the unit 
+	mov r3, r9 
+	ldrb r1, [r3, #6] @ Reset Stats? T/F 
+	cmp r1, #1 
+	bne LoadUnitTime 
+	@ We reset their stats by clearing the unit 
+	
+	@ or just clear the unit 
+	@ r0 is unit def to load  
+	blh 0x080177f4 @ ClearUnit
+	mov r7, #1 
 LoadUnitTime:
 
 mov r0, r5 
@@ -191,7 +197,7 @@ b End
 // therefore, it shouldn't be used here I don't think 
 @ 0803bde0 FindUnitClosestValidPosition
 @blh 0x803BDE1, r7 @ FindUnitClosestValidPosition
-@ break 
+
 
 .equ IncreaseUnitStatsByLevelCount, 0x8017FC4
 .equ EnsureNoUnitStatCapOverflow, 0x80181c8
@@ -542,11 +548,6 @@ mov r0, #0x17	@makes the unit wait?? makes the menu disappear after command is s
 @ void AiSetDecision(int xPos, int yPos, int actionId, int targetId, int itemSlot, int xPos2, int yPos2);
 @ SetAiActionParameters(XX, YY, 5, 0, 0, 0, 0) 
 
-
-
-
-Break:
-mov r0, #1
 
 	pop {r6}
 	mov r9, r6 
