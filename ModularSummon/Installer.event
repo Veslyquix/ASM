@@ -53,7 +53,7 @@ UNIT
 
 // No need to touch stuff below here probably 
 #ifndef IsPointer
-	#define IsPointer #0x08000000 
+	#define IsPointer 0x08000000 
 #endif 
 #ifndef SDEQUEUE 
 	#define SDEQUEUE "SHORT 0x0722" 
