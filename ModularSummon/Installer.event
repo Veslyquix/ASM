@@ -79,14 +79,23 @@ UNIT
 #endif 
 
 
-
+ALIGN 4
+ClearMemorySlotQueueEvent:
+LABEL 0 
+BEQ 1 rD r0 
+SDEQUEUE 1
+GOTO 0 
+LABEL 1 
+ASMC ModularSummonEffect2
+NoFade 
+ENDA 
 
 ALIGN 4 
 ASMCModularSummonEvent:
 ASMC PauseEventEngineWhileUnitsAreMoving
 ASMC UpdateActiveUnitCoords 
 
-ASMC ModularSummonEffect
+ASMC ModularSummonEffect2
 ASMC 0x0801a1f5   //@RefreshFogAndUnitMaps 
 NoFade 
 ENDA 

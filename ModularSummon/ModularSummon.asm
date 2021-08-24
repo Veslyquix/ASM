@@ -37,6 +37,21 @@
 	.type   ModularSummonEffect, function
 
 ModularSummonEffect:
+push {r4, lr}
+mov r4, r0 @ Parent ? 
+ldr r0, =ClearMemorySlotQueueEvent
+mov r1, #1 
+blh EventEngine 
+
+mov r0, #0x17 
+pop {r4} 
+pop {r1} 
+bx r1
+
+	.global ModularSummonEffect2
+	.type   ModularSummonEffect2, function
+
+ModularSummonEffect2:
 	push	{r4-r7,lr}
 mov r7, r8  
 push {r7} @ Save r8 to restore at the end 
@@ -658,6 +673,10 @@ lsr r2, #8
 pop {r3} 
 bx r3 
 
+.type ClearTheMemorySlotQueue_ASMC, %function 
+ClearTheMemorySlotQueue_ASMC:
+
+
 
 .type Call_CanUnitCrossTerrain, %function 
 Call_CanUnitCrossTerrain:
@@ -1032,6 +1051,10 @@ EnqueueModularSummon:
 bl ModularSummonUsability 
 cmp r1, #1 
 bne NotWorthTryingToSummon
+ldr r0, =ClearMemorySlotQueueEvent 
+mov r1, #1 
+blh EventEngine 
+
 ldr r0, =ASMCModularSummonEvent 
 mov r1, #1 
 blh EventEngine 
