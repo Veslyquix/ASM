@@ -7,20 +7,31 @@
 .endm
 
 	.equ CheckEventId,0x8083da8
-	.equ SetEventId, 0x8083d80 
 	.equ MemorySlot,0x30004B8
 	.equ CurrentUnit, 0x3004E50
 	.equ EventEngine, 0x800D07C
 	.equ LoadUnit, 0x8017ac4 
-
+	.equ ClearUnit, 0x080177f4 
 	.equ GetUnitByEventParameter, 0x0800BC51
-	.equ GetUnit, 0x8019430
 	.equ GetUnitDropLocation, 0x80184E1
-	.equ UpdateRescueData, 0x8018371
 	.equ pr6C_NewBlocking,           0x08002CE0 
 	.equ pr6C_New,                   0x08002C7C
+	.equ Proc_CreateBlockingChild, 0x80031c5 @ProcInst06_AddBlockingChild
+	.equ NewBlockingProc, 0x8002CE1
 	.equ TerrainMap, 0x202E4DC
-	.equ RefreshTerrainMap, 0x08019a64 @RefreshTerrainMap
+	.equ RefreshTerrainMap, 0x08019a64 
+	.equ CanUnitCrossTerrain, 0x801949c 
+	.equ New6C_SummonGfx_FromActionStructCoords, 0x807AD09
+	.equ FindSafestTileAI, 0x803B809  
+	.equ AIScript12_Move_Towards_Enemy, 0x803ce18 
+	.equ AiSetDecision, 0x8039C21 
+	.equ IncreaseUnitStatsByLevelCount, 0x8017FC4
+	.equ EnsureNoUnitStatCapOverflow, 0x80181c8
+	.equ ProcStartBlocking, 0x08002CE0
+	.equ BreakProcLoop, 0x08002E94
+	.equ ProcFind, 0x08002E9C
+	.equ EnsureCameraOntoPosition,0x08015e0d
+	.equ CenterCameraOntoPosition,0x8015D85
 	
 	.global ModularSummonEffect
 	.type   ModularSummonEffect, function
@@ -176,7 +187,7 @@ beq LoadUnitTime @ Unit is cleared, so summon
 	
 	@ or just clear the unit 
 	@ r0 is unit def to load  
-	blh 0x080177f4 @ ClearUnit
+	blh ClearUnit @ 0x080177f4
 	mov r7, #1 
 LoadUnitTime:
 
@@ -196,11 +207,10 @@ b End
 // uDef is the rom unit in the unit group table 
 // therefore, it shouldn't be used here I don't think 
 @ 0803bde0 FindUnitClosestValidPosition
-@blh 0x803BDE1, r7 @ FindUnitClosestValidPosition
+@blh  0x803BDE1, r7 @ FindUnitClosestValidPosition
 
 
-.equ IncreaseUnitStatsByLevelCount, 0x8017FC4
-.equ EnsureNoUnitStatCapOverflow, 0x80181c8
+
 
 @place most recently loaded unit to valid coord 
 PlaceSummonedUnit:
@@ -256,10 +266,51 @@ push {r0} @ Save current units coords to the stack. Restore after restoring terr
 mov r3, r9 
 ldrb r0, [r3, #4] 
 cmp r0, #1 
+beq UsingRelativeCoords
+cmp r0, #2 
 bne NotUsingRelativeCoords
+
+@ Using Fixed Coords 
+ldrh r0, [r5, #4] 
+mov r1, #0xF 
+lsl r1, #8 
+add r1, #0xFF 
+@ r1 is 0xFFF. Top 4 bits used for stuff like Monster, Drop Item, etc. 
+and r0, r1 
+@ r0 is now coords only, 6 bits each  
+@ 3F is X, 0x40 - 0xFFF is y 
+mov r1, #0x3F
+mvn r1, r1 
+and r1, r0  
+lsr r1, #6 @ YY 
+mov r2, #0x3F
+and r0, r2 @ XX 
+
+
+bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX 
+cmp r0, #1 
+bne Fixed_C_DontAddOneToYCoord 
+
+mov r0, r2 @ XX 
+@ r1 is already yy 
+mov r2, r6 
+bl Call_CanUnitCrossTerrain
+cmp r0, #1 
+bne Fixed_C_DontAddOneToYCoord 
+add r1, #1 @ pretend we're 1 tile below where we want to spawn stuff 
+Fixed_C_DontAddOneToYCoord:
+mov r0, r2 
+
+ldr r3, =CurrentUnit 
+ldr r3, [r3] 
+strb r0, [r3, #0x10] @ XX coord 
+strb r1, [r3, #0x11] @ YY coord 
+b NotUsingRelativeCoords @ We used fixed coords already
+
+
+UsingRelativeCoords: 
 @ check that current unit can reach destination 
 @ if so, put the current unit to those coords 
-mov r1, #4  
 ldrh r0, [r5, #4] 
 mov r1, #0xF 
 lsl r1, #8 
@@ -316,7 +367,7 @@ bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX
 cmp r0, #1 
 bne DontAddOneToYCoord 
 mov r0, r2 
-bl CanWeTraverseTerrain 
+bl CanWeReachOnMovementMap 
 cmp r0, #1 
 bne DontAddOneToYCoord 
 add r1, #1 @ 1 below the tile we want 
@@ -328,11 +379,11 @@ sub r1, #1
 @ however, we'll write to adjacent tiles in the UnitMap so that summons avoid being adjacent 
 @ (just for cool factor, I guess) 
 
-bl CanWeTraverseTerrain
+bl CanWeReachOnMovementMap
 @ returns T/F r0, yy r1, xx r2 
 cmp r0, #0x1 
 bne NotUsingRelativeCoords
-UseRelativeCoords: 
+
 ldr r3, =CurrentUnit
 ldr r3, [r3] 
 mov r0, r2 
@@ -396,15 +447,41 @@ bl WriteDeploymentByteToGivenCoordsUnitMap
 
 
 
+
 ldr r0, =0x859da95 @ Procs SMSJumpAnimation 
-
-
-
-Do_pr6C_New:
-mov r1, #3
+mov r1, r8 @ Parent proc ? 
+mov r2, r1 
+@cmp r1, #0 
+@bne blocking_proc
+@ not blocking - new 
+mov r1, #3 
 blh pr6C_New @ Procs SMSJumpAnimation 
-Continue: 
+b Continue 
 
+blocking_proc: 
+@ r0 = Proc, r1 = parent 
+@mov r1, #3
+@
+@mov r11, r11 
+@ 32686
+mov r1, r8 @ Parent 
+ldr r0, =0x859da95 @ Procs SMSJumpAnimation 
+@mov r11, r11 
+blh 0x8002CE1 @ NewBlocking6C 
+
+
+
+@
+
+
+
+
+
+@Do_pr6C_New:
+@mov r1, #3
+@blh pr6C_New @ Procs SMSJumpAnimation 
+Continue: 
+@mov r11, r11 
 push {r0}
 
 
@@ -418,28 +495,34 @@ ldr r0, =CurrentUnit
 ldr r0, [r0] @ Rescuer's ram unit struct pointer [202BE4C]
 
 blh GetUnitDropLocation @ 184E0 
+
+
 pop {r0}
 
 ldr r1, [r0, #0x30] @ X
 ldr r2, [r0, #0x34] @ Y 
+
+
+
 strb r1, [r6, #0x10] @ X
 strb r2, [r6, #0x11] @ Y
 
-@ idk 
-@ldr r3, =0x203A958 @ ActionStruct 
-@strb r1, [r3, #0x13] @ XX 
-@strb r2, [r3, #0x14] @ YY 
+
+@mov r11, r11
 
 
-@blh 0x8019FA0 @ UpdateUnitMapAndVision RefreshUnitMapAndVision
+@blh  0x8019FA0 @ UpdateUnitMapAndVision RefreshUnitMapAndVision
 @ need to manually update so hidden units aren't removed @blh  0x0801a1f4   @RefreshFogAndUnitMaps @RefreshEntityMaps 
-@blh  0x0801a1f4   @RefreshFogAndUnitMaps
+@blh   0x0801a1f4   @RefreshFogAndUnitMaps
 
 ldrb r0, [r6, #0x10] @ XX 
 ldrb r1, [r6, #0x11] @ YY 
 ldrb r2, [r6, #0x0B] @ Deployment byte 
 
 bl WriteDeploymentByteToGivenCoordsUnitMap
+
+
+
 
 
 
@@ -474,7 +557,7 @@ blh EventEngine
 @ this causes the animations to all to occur at once 
 @ needs parent proc in r0 ? 
 @mov r0, r8 @ Parent proc (event engine) 
-@blh 0x807AD09 @ New6C_SummonGfx_FromActionStructCoords 
+@blh  0x807AD09 @ New6C_SummonGfx_FromActionStructCoords 
 
 
 strb r4, [r6, #0x1B] @ rescued Deployment byte 
@@ -532,6 +615,13 @@ lsr r0, #24
 strb r0, [r3, #0x1B] @ Rescuer/ee restored 
 
 
+@ Restore camera 
+ldr r0, =ModularSummon_RestoreCameraEvent 
+mov r1, #1 
+blh EventEngine 
+
+
+
 End:
 
 	
@@ -568,6 +658,22 @@ CurrentUnitFateData:
 	.long 0x203A958
 	.thumb 
 	
+.global ModularSummon_RestoreCameraASMC
+.type ModularSummon_RestoreCameraASMC, %function 
+ModularSummon_RestoreCameraASMC:
+push {lr}
+@mov r0,#1
+@ r0 = 0 , r1 X, r2 Y 
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+ldrb r1, [r3, #0x10] @ X coord 
+ldrb r2, [r3, #0x11] @ Y coord 
+@blh EnsureCameraOntoPosition
+@ r0 = parent proc, r1 x, r2 y
+blh CenterCameraOntoPosition
+pop {r0} 
+bx r0 
+	
 .type IsTileFreeFromUnits, %function 
 IsTileFreeFromUnits:
 push {lr}
@@ -600,8 +706,35 @@ pop {r3}
 bx r3 
 
 
-.type CanWeTraverseTerrain, %function 
-CanWeTraverseTerrain:
+.type Call_CanUnitCrossTerrain, %function 
+Call_CanUnitCrossTerrain:
+push {r4, lr}
+@ Given r0 = x, r1 = y, r2 = unit struct
+mov r4, r0 
+lsl r4, #8 
+add r4, r1 
+
+ldr		r3, =0x202E4DC @ Terrain map	@Load the location in the table of tables of the map you want
+ldr		r3,[r3]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r3,r1			@so that we can get the correct row pointer
+ldr		r3,[r3]			@Now we're at the beginning of the row data
+add		r3,r0			@add x coordinate
+ldrb	r1,[r3]			@load datum at those coordinates
+mov r0, r2 @ unit struct 
+blh CanUnitCrossTerrain @0x801949c 
+
+lsl r1, r4, #24 
+lsr r1, #24 
+lsr r2, r4, #8 
+@ return r0 true/false, r1 yy, r2 xx 
+pop {r4}
+pop {r3} 
+bx r3 
+
+
+.type CanWeReachOnMovementMap, %function 
+CanWeReachOnMovementMap:
 push {lr}
 @ Given r0 = x, r1 = y 
 mov r2, r0 
@@ -617,13 +750,13 @@ add		r3,r0			@add x coordinate
 ldrb	r0,[r3]			@load datum at those coordinates
 
 cmp r0, #0xFF 
-beq TileIsNotPassable 
+beq WeCannotReachOnMovementMap 
 mov r0, #1 
-b EndTraverseTerrainCheck
+b EndCanWeReachOnMovementMap
 
-TileIsNotPassable: 
+WeCannotReachOnMovementMap: 
 mov r0, #0 @ Tile is not free 
-EndTraverseTerrainCheck: 
+EndCanWeReachOnMovementMap: 
 lsl r1, r2, #24 
 lsr r1, #24 
 lsr r2, #8 
@@ -677,13 +810,26 @@ ldr r0, [r2, #0x34]
 add r0, #1 
 str r0, [r2, #0x34] 
 
-
-@ldr r1, =0x800D529 
 pop {r1} 
 bx r1 
 
 
-@[030004E4]!!
+.global ModularSummon_GetSummonedUnitCoords
+.type ModularSummon_GetSummonedUnitCoords, %function 
+	
+ModularSummon_GetSummonedUnitCoords:
+push {lr} 
+ldr r3, =MemorySlot 
+ldr r2, [r3, #4*0x01] @ Unit pointer 
+ldrb r0, [r2, #0x10] @ XX 
+ldrb r1, [r2, #0x11] @ YY 
+lsl r1, #16 
+add r0, r1 
+str r0, [r3, #4*0x0B] @ SlotB 
+pop {r0} 
+bx r0 
+
+
 .global WarpAnimationQueue 
 .type WarpAnimationQueue, %function 
 	
@@ -701,14 +847,16 @@ and r0, r1 @ remove 0x1 - Hidden
 str r0, [r5, #0x0C] 
 
 ldr r3, =0x203A958 @ ActionStruct 
-ldrb r0, [r5, #0x10]
-strb r0, [r3, #0x13] @ X 
-ldrb r1, [r5, #0x11] 
-strb r1, [r3, #0x14] @ Y 
+ldrb r1, [r5, #0x10]
+strb r1, [r3, #0x13] @ X 
+ldrb r2, [r5, #0x11] 
+strb r2, [r3, #0x14] @ Y 
+
+
 
 
 mov r0, r4 @ Parent proc (event engine) 
-blh 0x807AD09 @ New6C_SummonGfx_FromActionStructCoords 
+blh New6C_SummonGfx_FromActionStructCoords @0x807AD09  
 
 
 @blh  0x080271a0   @SMS_UpdateFromGameData
@@ -717,11 +865,11 @@ pop {r4-r5}
 pop {r1} 
 bx r1 
 	
+
 	
 	
-	
-.equ ProcStartBlocking, 0x08002CE0
-.equ BreakProcLoop, 0x08002E94
+
+
 .global PauseEventEngineWhileUnitsAreMoving
 .type PauseEventEngineWhileUnitsAreMoving, %function
 PauseEventEngineWhileUnitsAreMoving: @ r0 = parent proc (the event engine). This is presumably ASMCed. 
@@ -732,7 +880,7 @@ blh ProcStartBlocking, r2
 pop { r0 }
 bx r0
 	
-.equ ProcFind, 0x08002E9C
+
 
 .global IfActiveAIFinishedMovingThenStopPausingEventEngine
 .type IfActiveAIFinishedMovingThenStopPausingEventEngine, %function
@@ -796,7 +944,7 @@ ldr r0, =CurrentUnit
 ldr r0, [r0] 
 add r4, sp, #0x0C @ stack address to save something to  ? 
 mov r1, r4 
-blh 0x803B809 @ FindSafestTileAI
+blh FindSafestTileAI @0x803B809  
 
 @ returns true or false 
 @ if false, don't do AiSetDecision 
@@ -852,7 +1000,7 @@ add r0, #0x45
 @ 0x803ce18 @ AIScript12_Move_Towards_Enemy 
 @ r0 is 202D001, d049, d091 
 @ this is ActiveUnit ram address + 0x45 (AI2 count) 
-blh 0x803ce18 @ AIScript12_Move_Towards_Enemy
+blh AIScript12_Move_Towards_Enemy @0x803ce18 
 
 ldr r3, =0x203AA96 @ AI decision +0x92 (XX) 
 ldrb r1, [r3, #0x0] @ XX 
@@ -899,7 +1047,7 @@ str r3, [sp, #0] @ Item slot
 str r3, [sp, #4] @ X Coord2 (0 is fine) 
 str r3, [sp, #8] @ Y Coord2 (0 is fine)
 mov r3, #0 @ Target 
-blh 0x8039C21, r4 @ AiSetDecision
+blh AiSetDecision, r4 @0x8039C21 
 add sp, #0xC 
 @ breaks once per enemy with this AI, so perfect 
 @ but doesn't actually 'wait' at the spot, so it doesn't trigger range events.. 
@@ -958,7 +1106,6 @@ push {r4-r7, lr}
 mov r7, r8 
 push {r7}
 mov r1, #0
-@mov r11, r11 
 mov r8, r1 @ how many we can summon 
 ldr r3, =CurrentUnit 
 ldr r3, [r3] @ unit struct ram pointer 
@@ -1091,17 +1238,4 @@ mov r8, r7
 pop {r4-r7}
 pop {r2} 
 bx r2 
-
-
-.global ModularSummon_HowManyCanWeSummonOutOfTotal 
-.type ModularSummon_HowManyCanWeSummonOutOfTotal, %function
-
-ModularSummon_HowManyCanWeSummonOutOfTotal:
-
-
-
-
-pop {r4-r7}
-pop {r1} 
-bx r1 
 

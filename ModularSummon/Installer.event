@@ -12,48 +12,56 @@ ALIGN 12
 ModularSummonTable:
 // Unit ID, Class ID, ReqLevel, ReqFlag; POIN UnitGroup 
 // 0x0 = any unit, class, level, or flag is fine 
-// 		Unit, 	Class, 	LevelReq, 	FlagReq, 	RelativePos, 	MatchLvl, 	ResetStats		Idk
-BYTE 	0x1		 0x0 		0x0 		0x0 		True 			True 		$0 				$0 ; POIN EirikasSummonUnitGroup; ALIGN 12
-// Unit, 	Class, 	LevelReq, 	FlagReq, 	RelativePos, 	MatchLvl, 	ResetStats		Idk
-BYTE 2 		0x0 		0x0 		0x0			True 			True 		True 			0x0; POIN EirikasSummonUnitGroup; ALIGN 12
-BYTE 0xA1 0x0 0x0 0x0		True True 0x3 0x4; POIN AnotherUnitGroup; ALIGN 12
-BYTE 0xA0 0x0 0x0 0x0		True True 0x3 0x4; POIN EirikasSummonUnitGroup; ALIGN 12
+// 		Unit, 	Class, 	LevelReq, 	FlagReq, 	PosType, 		MatchLvl, 	ResetStats		Padding
+BYTE 	0x1		 0x0 		0x0 		0x0 		0x2				0x1 		0x0 			$0 ; POIN EirikasSummonUnitGroup; ALIGN 12
+// 		Unit, 	Class, 	LevelReq, 	FlagReq, 	PosType,	 	MatchLvl, 	ResetStats		Padding
+BYTE 	2 		0x0 		0x0 		0x0			0x1 			0x1 		0x1 			0x0; POIN SethsSummonUnitGroup; ALIGN 12
+BYTE 	0xA0 	0x0 		0x0 		0x0			0x2 			0x1 		0x1 			0x0; POIN AnotherUnitGroup; ALIGN 12
+BYTE 	0xA1 	0x0 		0x0 		0x0			0x1 			0x1 		0x1 			0x0; POIN EirikasSummonUnitGroup; ALIGN 12
 
 WORD 0 0 0 // Terminator 
-// (Aligh 12 is unnecessary but if you forget a byte it might make things explode a little less I'm hoping) 
+// (Align 12 is probably unnecessary but if you forget a byte it might make things explode a little less I'm hoping) 
 
-// Match Level will autolevel the summoned unit to match the level of the summoner. 
+// Match Level as 0x1 / True will autolevel the summoned unit to match the level of the summoner. 
 
-// Reset Stats will clear any data on the unit before summoning it. 
+// Reset Stats as 0x1 / True will clear any data on the unit before summoning it. 
 
-
-
+// Position type 
+// 0x0 = summon as close as possible to the summoner 
+// 0x2 = summon as close as possible to the specified coords 
+// 0x1 = summon relative to the coords given 
 // Relative Position uses the coords in your unit group compared with [10,10] 
 // So [8,13] would be 2 tiles left 3 tiles below that it tries to place the unit to 
 // If this fails, it should place them nearby instead 
 
-// If you load more than around 20 units at once as a summon, it'll probably crash the game or something idk lol
+// If you load more than around 20 units at once as a summon, it'll probably break something lol
+// Units that are alive/already deployed will not be summoned 
 #include "EAstdlib.event"
 EirikasSummonUnitGroup:
-//   UnitID  			ClassID    		Comm   Level,Alleg,AutoL  Coords Spec,ItemD,Mons n/a REDAShort	 ItemWord 				AIWord 
-UNIT 3  			Paladin 			0x0 	Level(1, Enemy, 1)     [8,8] 0b 0x0 0x0 0x0 				[0x2,0x3,0x4,0x5] 		[0x0,0x0,0x0,0x0]
-UNIT 4  Fighter 0x0 Level(1, Enemy, 1)     [12,8] 0b 0x0 0x0 0x0 [0x2,0x3,0x4,0x5] [0x0,0x0,0x0,0x0]
-UNIT 5  Bael 0x0 Level(1, Enemy, 1)     [8,12] 0b 0x0 0x0 0x0 [0x2,0x3,0x4,0x5] [0x0,0x0,0x0,0x0]
-UNIT 6  PegasusKnight 0x0 Level(1, Enemy, 1)     [12,12] 0b 0x0 0x0 0x0 [0x2,0x3,0x4,0x5] [0x0,0x0,0x0,0x0]
+//   UnitID  			ClassID    		Comm   Level,Alleg,AutoL  Coords Spec,ItemD,Mons n/a REDAShort	 ItemWord 								AIWord 
+UNIT 0x25  			WyvernLord 			0x0 	Level(1, Ally, 1)     [8,8] 0b 0x0 0x0 			0x0 		[SilverLance,Vulnerary,0x0,0x0] 		[0x0,0x0,0x0,0x0]
+UNIT 0x26  			MageKnight 			0x0 	Level(1, Ally, 1)     [12,8] 0b 0x0 0x0 			0x0 		[Fimbulvetr,Vulnerary,0x0,0x0] 		[0x0,0x0,0x0,0x0]
+UNIT 0x27  			WyvernKnight 			0x0 	Level(1, Ally, 1)     [8,12] 0b 0x0 0x0 			0x0 		[KillerLance,Vulnerary,0x0,0x0] 		[0x0,0x0,0x0,0x0]
+UNIT 0x28  			Bishop 				0x0 	Level(1, Ally, 1)     [12,12] 0b 0x0 0x0 			0x0 		[Purge,Vulnerary,0x0,0x0] 			[0x0,0x0,0x0,0x0]
 UNIT 
+// Default here is Glen, Selena, Valter, Riev, Ismaire, Caellach, Fado 
 
+SethsSummonUnitGroup:
+UNIT 0x2B  Swordmaster 0x0 Level(3, Ally, 1)     [11,11] 0b 0x0 0x0 0x0 [SilverSword,Vulnerary,0x0,0x0] [0x0,0x0,0x0,0x0]
+UNIT 
 
 AnotherUnitGroup:
-UNIT 19  EirikaLord 0x0 Level(3, Enemy, 1)     [9,11] 0b 0x0 0x0 0x0 [0x2,0x3,0x4,0x5] [0x0,0x0,0x0,0x0]
-UNIT 20  Knight 0x0 Level(3, Enemy, 1)     [11,11] 0b 0x0 0x0 0x0 [0x2,0x3,0x4,0x5] [0x0,0x0,0x0,0x0]
+UNIT 0x29  Hero 0x0 Level(1, Enemy, 1)     [6,22] 0b 0x0 0x0 0x0 [Tomahawk,Vulnerary,0x0,0x0] [0x0,0x0,0x0,0x0]
+UNIT 0x2A  General 0x0 Level(1, Enemy, 1)     [15,9] 0b 0x0 0x0 0x0 [BraveLance,Vulnerary,0x0,0x0] [0x0,0x0,0x0,0x0]
 UNIT 
+
 
 
 
 
 // No need to touch stuff below here probably 
 #ifndef IsPointer
-	#define IsPointer #0x08000000 
+	#define IsPointer 0x08000000 
 #endif 
 #ifndef SDEQUEUE 
 	#define SDEQUEUE "SHORT 0x0722" 
@@ -77,6 +85,7 @@ ALIGN 4
 ASMCModularSummonEvent:
 ASMC PauseEventEngineWhileUnitsAreMoving
 ASMC UpdateActiveUnitCoords 
+
 ASMC ModularSummonEffect
 ASMC 0x0801a1f5   //@RefreshFogAndUnitMaps 
 NoFade 
@@ -87,7 +96,17 @@ ENDA
 // 9A46AC gProc_summongfx
 WarpAnimationEvent:
 SDEQUEUE 1 // we stored a unit pointer to the memory slots queue, so now we retrive that pointer 
+ASMC ModularSummon_GetSummonedUnitCoords
+//0x7FFE 
+_0x2629 (-2) // CAM2
+
 ASMC WarpAnimationQueue
+NoFade 
+ENDA 
+
+ModularSummon_RestoreCameraEvent:
+ASMC ModularSummon_RestoreCameraASMC
+//CAM1 0x7FFF 
 NoFade 
 ENDA 
 
