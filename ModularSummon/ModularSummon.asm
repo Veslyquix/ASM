@@ -289,14 +289,15 @@ and r0, r2 @ XX
 
 bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX 
 cmp r0, #1 
-bne Fixed_C_DontAddOneToYCoord 
+bne Fixed_C_DontAddOneToYCoord @ Target tile is not free, but if we summon from there it should find a valid tile
 
 mov r0, r2 @ XX 
 @ r1 is already yy 
 mov r2, r6 
 bl Call_CanUnitCrossTerrain
 cmp r0, #1 
-bne Fixed_C_DontAddOneToYCoord 
+bne NotUsingRelativeCoords @ Fixed coords will bug if it can't place units to the tile, potentially 
+@bne Fixed_C_DontAddOneToYCoord 
 add r1, #1 @ pretend we're 1 tile below where we want to spawn stuff 
 Fixed_C_DontAddOneToYCoord:
 mov r0, r2 
@@ -339,7 +340,8 @@ ldr r3, [r3] @ Current unit ram struct pointer
 ldrb r2, [r3, #0x10] @ X 
 add r0, r2 
 
-@ Check that we wouldn't be summoning outside the border of the map 
+@ Check that we wouldn't be summoning outside the border of the map? 
+@ this probably is wrong for right/down borders 
 cmp r0, #0 
 bge NoCapXXLeft
 mov r0, #0 @ 
@@ -361,8 +363,7 @@ blt NoCapYYDown
 mov r1, #63 
 NoCapYYDown:
 
-@ pretend we're 1 tile below where we want to spawn stuff 
-add r1, #1 
+
 bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX 
 cmp r0, #1 
 bne DontAddOneToYCoord 
@@ -371,10 +372,9 @@ bl CanWeReachOnMovementMap
 cmp r0, #1 
 bne DontAddOneToYCoord 
 add r1, #1 @ 1 below the tile we want 
-
+@ pretend we're 1 tile below where we want to spawn stuff if the tile was free and reachable 
 DontAddOneToYCoord:
 mov r0, r2 @ XX 
-sub r1, #1 
 @ if this is false, then we cannot reach the destination, so we'll not use relative coords 
 @ however, we'll write to adjacent tiles in the UnitMap so that summons avoid being adjacent 
 @ (just for cool factor, I guess) 
@@ -442,49 +442,21 @@ strh r0, [r6, #0x10] @ So units have matching coords
 ldrb r0, [r2, #0x10] 
 ldrb r1, [r2, #0x11] 
 ldrb r2, [r2, #0x0B] @ Acting unit's deployment byte 
+
 bl WriteDeploymentByteToGivenCoordsUnitMap
 
 
-
-
-
-ldr r0, =0x859da95 @ Procs SMSJumpAnimation 
-mov r1, r8 @ Parent proc ? 
-mov r2, r1 
-@cmp r1, #0 
-@bne blocking_proc
-@ not blocking - new 
-mov r1, #3 
-blh pr6C_New @ Procs SMSJumpAnimation 
+sub sp, #0x38 
+mov r0, sp 
 b Continue 
 
-blocking_proc: 
-@ r0 = Proc, r1 = parent 
-@mov r1, #3
-@
-@mov r11, r11 
-@ 32686
-mov r1, r8 @ Parent 
-ldr r0, =0x859da95 @ Procs SMSJumpAnimation 
-@mov r11, r11 
-blh 0x8002CE1 @ NewBlocking6C 
+ldr r0, =0x859da94 @ Procs SMSJumpAnimation 
+mov r1, #3 
+blh pr6C_New @ Procs SMSJumpAnimation 
 
 
-
-@
-
-
-
-
-
-@Do_pr6C_New:
-@mov r1, #3
-@blh pr6C_New @ Procs SMSJumpAnimation 
 Continue: 
-@mov r11, r11 
-push {r0}
-
-
+push {r0} 
 str r6, [r0, #0x2C] @ First arg: Rescuee's unit struct [202BE94]
 mov r1, r0 
 add r1, #0x30 
@@ -502,13 +474,11 @@ pop {r0}
 ldr r1, [r0, #0x30] @ X
 ldr r2, [r0, #0x34] @ Y 
 
-
+add sp, #0x38 
 
 strb r1, [r6, #0x10] @ X
 strb r2, [r6, #0x11] @ Y
 
-
-@mov r11, r11
 
 
 @blh  0x8019FA0 @ UpdateUnitMapAndVision RefreshUnitMapAndVision
@@ -520,24 +490,6 @@ ldrb r1, [r6, #0x11] @ YY
 ldrb r2, [r6, #0x0B] @ Deployment byte 
 
 bl WriteDeploymentByteToGivenCoordsUnitMap
-
-
-
-
-
-
-@@ it works!!!! 
-
-@@ all that's left is to bugtest char/class/level/flag and add some bells and whistles 
-@ maybe also by chapter ? 
-
-@@ relative coord mode where it tries to summon units relative to where you are 
-@ this might cause them to be summoned somewhere bad, though.. 
-@ maybe I need to check that the current unit can path to that location 
-
-@ 
-
-
 
 ldr r0, [r6, #0x0C] @ New unit's state 
 mov r1, #1  @ 0x1 - Escaped,Hidden 
@@ -689,6 +641,7 @@ add		r3,r1			@so that we can get the correct row pointer
 ldr		r3,[r3]			@Now we're at the beginning of the row data
 add		r3,r0			@add x coordinate
 ldrb	r0,[r3]			@load datum at those coordinates
+
 cmp r0, #0 
 bne TileIsNotFree
 mov r0, #1 
@@ -723,7 +676,6 @@ add		r3,r0			@add x coordinate
 ldrb	r1,[r3]			@load datum at those coordinates
 mov r0, r2 @ unit struct 
 blh CanUnitCrossTerrain @0x801949c 
-
 lsl r1, r4, #24 
 lsr r1, #24 
 lsr r2, r4, #8 
@@ -741,7 +693,7 @@ mov r2, r0
 lsl r2, #8 
 add r2, r1 
 
-ldr		r3,=0x202E4E0	@Movement map 	@Load the location in the table of tables of the map you want
+ldr		r3,	=0x202E4F0	@=0x202E4E0	@Movement map 	@Load the location in the table of tables of the map you want
 ldr		r3,[r3]			@Offset of map's table of row pointers
 lsl		r1,#0x2			@multiply y coordinate by 4
 add		r3,r1			@so that we can get the correct row pointer
@@ -946,6 +898,7 @@ add r4, sp, #0x0C @ stack address to save something to  ?
 mov r1, r4 
 blh FindSafestTileAI @0x803B809  
 
+
 @ returns true or false 
 @ if false, don't do AiSetDecision 
 @ at a glance, it always returned true 
@@ -981,7 +934,8 @@ push {r4-r5, lr}
 @ContinueRunAway:
 mov r5, #0 @ Don't take offensive action 
 bl CopyAIScript11_Move_Towards_Safety @ based on current unit, should return r0 XX r1 YY coords 
-b SetAIToWaitAtCoords
+bl SetAIToWaitAtCoords
+b ReturnTrue
 
 .align 4
 .global ApproachEnemyModularSummon
@@ -989,11 +943,6 @@ b SetAIToWaitAtCoords
 ApproachEnemyModularSummon:
 push {r4-r5, lr} 
 mov r5, #1 @ Do take offensive action 
-bl ModularSummonUsability 
-cmp r1, #1 
-beq ContinueApproachEnemy
-b TryOtherAIOptionsInstead 
-ContinueApproachEnemy:
 ldr r3, =CurrentUnit 
 ldr r0, [r3] 
 add r0, #0x45 
@@ -1002,19 +951,31 @@ add r0, #0x45
 @ this is ActiveUnit ram address + 0x45 (AI2 count) 
 blh AIScript12_Move_Towards_Enemy @0x803ce18 
 
+
 ldr r3, =0x203AA96 @ AI decision +0x92 (XX) 
-ldrb r1, [r3, #0x0] @ XX 
-ldrb r2, [r3, #0x1] @ YY 
+ldrb r0, [r3, #0x0] @ XX 
+ldrb r1, [r3, #0x1] @ YY 
 
 ldr r3, =MemorySlot
 add r3, #4*0x0B @ Slot B 
-strh r1, [r3, #0] 
-strh r2, [r3, #2] 
+strh r0, [r3, #0] 
+strh r1, [r3, #2] 
+
+
+bl ModularSummonUsability 
+cmp r1, #1 
+bne TryOtherAIOptionsInstead 
+ldr r3, =0x203AA96 @ AI decision +0x92 (XX) 
+ldrb r0, [r3, #0x0] @ XX 
+ldrb r1, [r3, #0x1] @ YY 
+bl SetAIToWaitAtCoords 
 b EnqueueModularSummon
 
 
-@ given r0 = XX and r1 = YY, wait at coords. 
+.type SetAIToWaitAtCoords, %function 
 SetAIToWaitAtCoords:
+@ given r0 = XX and r1 = YY, wait at coords. 
+push {lr}
 sub sp, #0xC 
 
 ldr r3, =CurrentUnit 
@@ -1053,6 +1014,8 @@ add sp, #0xC
 @ but doesn't actually 'wait' at the spot, so it doesn't trigger range events.. 
 @ so we manually trigger them now 
 @ but first, let's put the active unit's coord into sB and their unit id in s2 
+pop {r1}
+bx r1 
 
 
 
@@ -1083,6 +1046,21 @@ b ReturnTrue
 @ If this is false, it tries to do other stuff like attack I guess 
 @ I really don't know how it works 
 TryOtherAIOptionsInstead:
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+mov r2, #0x41 @ AI4 
+mov r1, #0x20 @ BossAI
+ldrb r2, [r3, r2] 
+and r1, r2 
+cmp r1, #0 
+beq ReturnFalse
+@ do wait AI here instead 
+ldrb r0, [r3, #0x10] 
+ldrb r1, [r3, #0x11] 
+bl SetAIToWaitAtCoords
+b ReturnTrue 
+
+ReturnFalse: 
 mov r0, #0 @ False 
 b ExitModularSummonAI 
 
