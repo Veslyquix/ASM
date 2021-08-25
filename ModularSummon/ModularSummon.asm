@@ -219,8 +219,8 @@ b End
 
 
 @GetPreferredPositionForUNIT(uDef, &unit->xPos, &unit->yPos, FALSE);
-// uDef is the rom unit in the unit group table 
-// therefore, it shouldn't be used here I don't think 
+@ uDef is the rom unit in the unit group table 
+@ therefore, it shouldn't be used here I don't think 
 @ 0803bde0 FindUnitClosestValidPosition
 @blh  0x803BDE1, r7 @ FindUnitClosestValidPosition
 
