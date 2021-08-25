@@ -42,6 +42,9 @@ mov r4, r0 @ Parent ?
 ldr r0, =ClearMemorySlotQueueEvent
 mov r1, #1 
 blh EventEngine 
+ldr r0, =CallModularSummonASMC_Event
+mov r1, #1 
+blh EventEngine 
 
 mov r0, #0x17 
 pop {r4} 
@@ -259,7 +262,15 @@ strb r0, [r6, #0x13] @ Set to max hp
 
 DoNotMatchSummonsLevel: 
 
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
 
+@ need to manually update so hidden units aren't removed @blh  0x0801a1f4   @RefreshFogAndUnitMaps @RefreshEntityMaps 
+ldrb r0, [r3, #0x10] 
+ldrb r1, [r3, #0x11] 
+ldrb r2, [r3, #0x0B] @ Acting unit's deployment byte 
+
+bl WriteDeploymentByteToGivenCoordsUnitMap
 
 
 ldr r3, =CurrentUnit
@@ -301,7 +312,16 @@ lsr r1, #6 @ YY
 mov r2, #0x3F
 and r0, r2 @ XX 
 
-
+ldr		r3, =0x202E4D4 	@ Map Size  
+ldrh 	r2, [r3] @ XX 
+sub r2, #1 @ 1 aligned instead of 0 aligned 
+ldrh 	r3, [r3, #2] @ YY 
+sub r3, #1 @ 1 aligned instead of 0 aligned 
+cmp r0, r2 
+bgt NotUsingRelativeCoords @ Outside border of map 
+cmp r1, r3 
+bgt NotUsingRelativeCoords @ Outside border of map 
+@r0 still XX, r1 still yy 
 bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX 
 cmp r0, #1 
 bne Fixed_C_DontAddOneToYCoord @ Target tile is not free, but if we summon from there it should find a valid tile
@@ -355,7 +375,12 @@ sub r1, r1, r2 @ YY - 10
 ldr r3, =CurrentUnit 
 ldr r3, [r3] @ Current unit ram struct pointer 
 ldrb r2, [r3, #0x10] @ X 
+ldrb r3, [r3, #0x11] @ Y 
+
+
 add r0, r2 
+
+
 
 @ Check that we wouldn't be summoning outside the border of the map? 
 @ this probably is wrong for right/down borders 
@@ -363,22 +388,32 @@ cmp r0, #0
 bge NoCapXXLeft
 mov r0, #0 @ 
 NoCapXXLeft: 
-cmp r0, #63 
+ldr		r3, =0x202E4D4 	@ Map Size  
+ldrh 	r2, [r3] @ XX 
+sub r2, #1 @ 1 aligned instead of 0 aligned 
+cmp r0, r2 
 blt NoCapXXRight
-mov r0, #63 
+mov r0, r2 @ edge of map 
 NoCapXXRight:
 
+ldr r3, =CurrentUnit 
+ldr r3, [r3] @ Current unit ram struct pointer 
 
 ldrb r2, [r3, #0x11] @ Y 
+ 
 add r1, r2 
 cmp r1, #0 
 bge NoCapYYUp
 mov r1, #0 @ 
 NoCapYYUp: 
-cmp r1, #63 
+ldr		r3, =0x202E4D4 	@ Map Size  
+ldrh 	r3, [r3, #2] @ YY 
+sub r3, #1 @ 1 aligned instead of 0 aligned 
+cmp r1, r3 
 blt NoCapYYDown
-mov r1, #63 
+mov r1, r3 @ edge of map 
 NoCapYYDown:
+
 
 
 bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX 
@@ -388,10 +423,18 @@ mov r0, r2
 bl CanWeReachOnMovementMap 
 cmp r0, #1 
 bne DontAddOneToYCoord 
+
+@ We ruined the terrain earlier, so whatever 
+@mov r0, r2 
+@mov r2, r6 
+@bl Call_CanUnitCrossTerrain
+@cmp r0, #1 
+@bne DontAddOneToYCoord
+@ If we move this check earlier, we can potentially figure out if we are completely surrounded by walls 
+@ because stuff will break in that specific case 
+
 mov r0, r2
 b ValidCoordSkip
-@add r1, #1 @ 1 below the tile we want 
-@ pretend we're 1 tile below where we want to spawn stuff if the tile was free and reachable 
 DontAddOneToYCoord:
 mov r0, r2 @ XX 
 @ if this is false, then we cannot reach the destination, so we'll not use relative coords 
@@ -414,9 +457,15 @@ strb r1, [r3, #0x11]
 
 
 NotUsingRelativeCoords:
+
+@ If the summoner is stuck surrounded by walls for some reason, stuff below would fail 
+
+
 @ 202E4DC	Terrain map (tile id)
 @ We need to make our current tile terrain that cannot be crossed 
 @ We restore it at the end 
+
+
 ldr r3, =CurrentUnit
 ldr r3, [r3] 
 
@@ -457,12 +506,7 @@ strb r0, [r6, #0x1B] @
 ldrh r0, [r2, #0x10] 
 strh r0, [r6, #0x10] @ So units have matching coords 
 
-@ need to manually update so hidden units aren't removed @blh  0x0801a1f4   @RefreshFogAndUnitMaps @RefreshEntityMaps 
-ldrb r0, [r2, #0x10] 
-ldrb r1, [r2, #0x11] 
-ldrb r2, [r2, #0x0B] @ Acting unit's deployment byte 
 
-bl WriteDeploymentByteToGivenCoordsUnitMap
 
 
 sub sp, #0x38 
@@ -492,6 +536,7 @@ pop {r0}
 
 ldr r1, [r0, #0x30] @ X
 ldr r2, [r0, #0x34] @ Y 
+
 
 add sp, #0x38 
 
@@ -566,11 +611,26 @@ strh r0, [r3, #0x10]
 b LoadEachSummonLoop 
 
 ValidCoordSkip:
-
 strb r0, [r6, #0x10]
 strb r1, [r6, #0x11]
 
+@ldr		r3, =0x202E4D4 	@ Map Size  
+@ldrh 	r2, [r3] @ XX 
+@sub r2, #1
+@ldrh 	r3, [r3, #2] @ YY 
+@sub r3, #1
 
+
+@ unnecessary? 
+@ldr r3, =CurrentUnit 
+@ldr r3, [r3] 
+@strb r0, [r3, #0x10] 
+@strb r1, [r3, #0x11] 
+
+@ldr r3, =0x203A958 
+@strb r0, [r3, #0x13] 
+@strb r1, [r3, #0x14] 
+@
 ldrb r0, [r6, #0x10] @ XX 
 ldrb r1, [r6, #0x11] @ YY 
 ldrb r2, [r6, #0x0B] @ Deployment byte 
@@ -592,11 +652,11 @@ mov r1, #1
 blh EventEngine 
 
 
+
+
+
 @ Restore current unit's coords here, too 
 pop {r0}
-ldr r3, =CurrentUnit
-ldr r3, [r3] 
-
 strh r0, [r3, #0x10] 
 b LoadEachSummonLoop
 
@@ -721,6 +781,10 @@ ClearTheMemorySlotQueue_ASMC:
 
 
 
+
+
+
+
 .type Call_CanUnitCrossTerrain, %function 
 Call_CanUnitCrossTerrain:
 push {r4, lr}
@@ -751,20 +815,63 @@ bx r3
 CanWeReachOnMovementMap:
 push {lr}
 @ Given r0 = x, r1 = y 
+
+
+ldr r3, =0x202BCF0 @ gChapterData
+ldrb r3, [r3, #0xF] @ Phase 
+mov r2, #0xC0 
+and r3, r2
+
 mov r2, r0 
 lsl r2, #8 
 add r2, r1 
 
-ldr		r3,	=0x202E4F0	@=0x202E4E0	@Movement map 	@Load the location in the table of tables of the map you want
+cmp r3, #0 
+bne EnemyPhase
+TryPrimaryMovementMap:
+ldr		r3,	=0x202E4E0	@player =0x202E4E0	@Movement map 	@Load the location in the table of tables of the map you want
 ldr		r3,[r3]			@Offset of map's table of row pointers
 lsl		r1,#0x2			@multiply y coordinate by 4
 add		r3,r1			@so that we can get the correct row pointer
 ldr		r3,[r3]			@Now we're at the beginning of the row data
 add		r3,r0			@add x coordinate
 ldrb	r0,[r3]			@load datum at those coordinates
-
 cmp r0, #0xFF 
 beq WeCannotReachOnMovementMap 
+mov r0, #1 
+b EndCanWeReachOnMovementMap
+
+EnemyPhase:
+ldr		r3,	=0x202E4F0	@enemy =0x202E4f0	@Movement map 	@Load the location in the table of tables of the map you want
+ldr		r3,[r3]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r3,r1			@so that we can get the correct row pointer
+ldr		r3,[r3]			@Now we're at the beginning of the row data
+add		r3,r0			@add x coordinate
+ldrb	r0,[r3]			@load datum at those coordinates
+@mov r11, r11
+cmp r0, #0xFF 
+beq WeCannotReachOnMovementMap
+cmp r0, #0 
+bne WeCannotReachOnMovementMap
+
+lsl r1, r2, #24 
+lsr r1, #24 
+lsr r0, r2, #8 
+
+ldr		r3,	=0x202E4E0	@enemy =0x202E4E0	@Movement map 	@Load the location in the table of tables of the map you want
+ldr		r3,[r3]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r3,r1			@so that we can get the correct row pointer
+ldr		r3,[r3]			@Now we're at the beginning of the row data
+add		r3,r0			@add x coordinate
+ldrb	r0,[r3]			@load datum at those coordinates
+@mov r11, r11
+@ idk tbh 
+cmp r0, #0xFF 
+beq WeCannotReachOnMovementMap 
+
+WeCanReachOnMovementMap:
 mov r0, #1 
 b EndCanWeReachOnMovementMap
 
@@ -801,9 +908,27 @@ bx r0
 
 
 
+.global EmptyMemorySlotQueue
+.type EmptyMemorySlotQueue, %function
+EmptyMemorySlotQueue:
+push {lr} 
+ldr r3, =0x30004f0 
+ldr r2, =0x300050e 
+mov r0, #0 
+EmptyMemorySlotQueueLoop:
+str r0, [r3] 
+add r3, #4 
+cmp r3, r2 
+ble EmptyMemorySlotQueueLoop
+ldr r3, =MemorySlot
+str r0, [r3, #4*0x0D] 
+EmptyMemorySlotQueueEnd:
+pop {r0}
+bx r0 
 
 
-
+pop {r1} 
+bx r1 
 @ Queue starts at 030004F0 
 @ Queue size from mem slot D 
 @ find entry 
@@ -881,19 +1006,80 @@ bx r1
 	
 
 	
-	
+.global CallAIModularSummon_Event
+.type CallAIModularSummon_Event, %function
+CallAIModularSummon_Event: @ r0 = parent proc (the event engine). This is presumably ASMCed. 
+push { lr }
+ldr r0, =AIModularSummon_Event
+mov r1, #1 
+blh EventEngine 
+
+pop { r0 }
+bx r0
+
 
 
 .global PauseEventEngineWhileUnitsAreMoving
 .type PauseEventEngineWhileUnitsAreMoving, %function
 PauseEventEngineWhileUnitsAreMoving: @ r0 = parent proc (the event engine). This is presumably ASMCed. 
-push { lr }
+push { lr } 
 mov r1, r0
 ldr r0, =PauseEventEngineUnitsMovingProc
 blh ProcStartBlocking, r2
 pop { r0 }
 bx r0
 	
+.type CallWaitUntilAIMovesProc, %function
+CallWaitUntilAIMovesProc: 
+push { lr }
+@mov r1, r0 
+mov r1, #3
+ldr r0, =WaitUntilAIMovesProc
+
+blh pr6C_New, r2
+
+@blh ProcStartBlocking 
+pop { r0 }
+bx r0
+
+.global IfProcStateWrongThenYield 
+.type IfProcStateWrongThenYield, %function
+IfProcStateWrongThenYield:
+push {r4, lr} 
+mov r4, r0 @ Parent? 
+ldr r0, =0x85a8024 @gProc_CpPerform
+blh ProcFind, r1 
+
+cmp r0, #0 
+beq ProcStateError 
+ldr r1, [r0, #4] @ Code Cursor 
+@ldr r2, =0x85A804C @ Moving unit 
+
+ldr r2, =0x85A8064 @ wait 0x85a8024 + 0x40 @gProc_CpPerform
+
+
+cmp r1, r2 
+beq ReturnProcStateRight 
+
+ProcStateError:
+mov r0, #0 
+
+
+b EndIfProcStateWrongThenYield
+
+ReturnProcStateRight: 
+mov r0, r4 @ parent to break from 
+blh BreakProcLoop
+mov r0, #1
+
+EndIfProcStateWrongThenYield:
+pop {r4}
+pop {r1}
+bx r1 
+
+
+
+
 
 
 .global IfActiveAIFinishedMovingThenStopPausingEventEngine
@@ -901,14 +1087,28 @@ bx r0
 IfActiveAIFinishedMovingThenStopPausingEventEngine:
 push {r4, lr} 
 mov r4, r0 @ Parent? 
+
 ldr r0, =0x89a2c48 @gProc_MoveUnit
-blh ProcFind, r1
-cmp r0, #0x00
-beq BreakProcLoopNow
-	mov r1, #0x3F 
-	ldrb r0, [ r0, r1 ] 
-	cmp r0, #1 
-	bne ContinuePausingEventEngine 
+blh ProcFind, r1 
+cmp r0, #0 
+beq BreakProcLoopNow 
+mov r1, #0x3F 
+ldrb r0, [ r0, r1 ] 
+cmp r0, #1 
+bne ContinuePausingEventEngine 
+b BreakProcLoopNow
+
+blh 0x8078739 @ MU_IsAnyActive
+cmp r0, #0 
+bne ContinuePausingEventEngine 
+b BreakProcLoopNow
+
+@ uh idk if both work 
+@ but they require @gProc_CpPerform code cursor to be at +0x28 aka ldr r2, =0x85A804C @ Moving unit 
+
+
+
+
 BreakProcLoopNow: 
 mov r0, r4 @ parent to break from 
 blh BreakProcLoop
@@ -951,7 +1151,7 @@ bx r0
 @.global CopyAIScript11
 .type CopyAIScript11_Move_Towards_Safety, %function 
 CopyAIScript11_Move_Towards_Safety: 
-push {r4-r5, lr}
+push {r4-r6, lr}
 sub sp, #0x10 @ allocate space 
 mov r5, r0 @ dunno - 203CFFF ? not needed for my purposes i think 
 ldr r0, =CurrentUnit 
@@ -975,7 +1175,7 @@ mov r2, #2
 ldsh r1, [r4, r2] 
 @ then it stores stuff into the sp and runs AiSetDecision 
 add sp, #0x10 
-pop {r4-r5}
+pop {r4-r6}
 pop {r2} 
 bx r2 
 
@@ -983,8 +1183,8 @@ bx r2
 .global RunAwayModularSummon
 .type RunAwayModularSummon, %function 
 RunAwayModularSummon:
-push {r4-r5, lr} 
-
+push {r4-r6, lr} 
+mov r6, r0 @ Parent 
 @ if I do this, they instead will attack things so I commented these 5 lines out 
 @ ModularSummonEffect handles the case of it not actually being usable anyway 
 @ So it just has no effect 
@@ -1003,7 +1203,8 @@ b ReturnTrue
 .global ApproachEnemyModularSummon
 .type ApproachEnemyModularSummon, %function 
 ApproachEnemyModularSummon:
-push {r4-r5, lr} 
+push {r4-r6, lr} 
+mov r6, r0 @ Parent 
 mov r5, #1 @ Do take offensive action 
 ldr r3, =CurrentUnit 
 ldr r0, [r3] 
@@ -1013,7 +1214,13 @@ add r0, #0x45
 @ this is ActiveUnit ram address + 0x45 (AI2 count) 
 blh AIScript12_Move_Towards_Enemy @0x803ce18 
 
+ldr r3, =0x203AA96 @ AI decision +0x92 (XX) 
+ldrb r0, [r3, #0x0] @ XX 
+ldrb r1, [r3, #0x1] @ YY 
 
+bl ModularSummonUsability 
+cmp r1, #1 
+bne TryOtherAIOptionsInstead 
 ldr r3, =0x203AA96 @ AI decision +0x92 (XX) 
 ldrb r0, [r3, #0x0] @ XX 
 ldrb r1, [r3, #0x1] @ YY 
@@ -1022,14 +1229,6 @@ ldr r3, =MemorySlot
 add r3, #4*0x0B @ Slot B 
 strh r0, [r3, #0] 
 strh r1, [r3, #2] 
-
-
-bl ModularSummonUsability 
-cmp r1, #1 
-bne TryOtherAIOptionsInstead 
-ldr r3, =0x203AA96 @ AI decision +0x92 (XX) 
-ldrb r0, [r3, #0x0] @ XX 
-ldrb r1, [r3, #0x1] @ YY 
 bl SetAIToWaitAtCoords 
 b EnqueueModularSummon
 
@@ -1063,8 +1262,8 @@ str r2, [r3, #0x0B*4] @ ----YY--XX coord in sB
 @ #0x08 - targets something but no crash 
 @ #0x09 - wait ? 
 @ #0xFF - targets & crashes 
-
-mov r2, #0x5 
+@ is #5 is staffwait? @ 803a204 CpPerform_StaffWait
+mov r2, #0x5
 mov r3, #0 @ store into item slot / X / Y coord 
 str r3, [sp, #0] @ Item slot 
 str r3, [sp, #4] @ X Coord2 (0 is fine) 
@@ -1091,17 +1290,35 @@ bx r1
 
 EnqueueModularSummon: 
 
+
 bl ModularSummonUsability 
 cmp r1, #1 
 bne NotWorthTryingToSummon
-ldr r0, =ClearMemorySlotQueueEvent 
-mov r1, #1 
-blh EventEngine 
 
-ldr r0, =ASMCModularSummonEvent 
-mov r1, #1 
-blh EventEngine 
+bl EmptyMemorySlotQueue
+
+ldr r3, =MemorySlot
+ldr r0, [r3, #4*0x0B]
+@bl SendToQueueASMC
+
+ldr r3, =CurrentUnit
+ldr r3,[r3]
+ldrh r0, [r3, #0x10]
+ldr r3, =0x203A958 @ action
+mov r2, #0x13
+
+strh r0, [r3, r2] 
+@ldrh r1, [r3, r2] 
+@cmp r0, r1 
+@beq AltMethodStationary
+
+bl CallWaitUntilAIMovesProc
 b ReturnTrue 
+
+AltMethodStationary:
+bl CallWaitUntilAIMovesProc
+b ReturnTrue
+
 
 NotWorthTryingToSummon:
 cmp r5, #0 
@@ -1134,7 +1351,7 @@ ReturnTrue:
 mov r0, #1 @ True that we made an AI decision 
 
 ExitModularSummonAI:
-pop {r4-r5}
+pop {r4-r6}
 pop {r1} 
 bx r1 
 
