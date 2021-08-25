@@ -313,7 +313,9 @@ bl Call_CanUnitCrossTerrain
 cmp r0, #1 
 bne NotUsingRelativeCoords @ Fixed coords will bug if it can't place units to the tile, potentially 
 @bne Fixed_C_DontAddOneToYCoord 
-add r1, #1 @ pretend we're 1 tile below where we want to spawn stuff 
+mov r0, r2
+b ValidCoordSkip
+@add r1, #1 @ pretend we're 1 tile below where we want to spawn stuff 
 Fixed_C_DontAddOneToYCoord:
 mov r0, r2 
 
@@ -386,7 +388,9 @@ mov r0, r2
 bl CanWeReachOnMovementMap 
 cmp r0, #1 
 bne DontAddOneToYCoord 
-add r1, #1 @ 1 below the tile we want 
+mov r0, r2
+b ValidCoordSkip
+@add r1, #1 @ 1 below the tile we want 
 @ pretend we're 1 tile below where we want to spawn stuff if the tile was free and reachable 
 DontAddOneToYCoord:
 mov r0, r2 @ XX 
@@ -507,7 +511,7 @@ ldrb r2, [r6, #0x0B] @ Deployment byte
 bl WriteDeploymentByteToGivenCoordsUnitMap
 
 ldr r0, [r6, #0x0C] @ New unit's state 
-mov r1, #1  @ 0x1 - Escaped,Hidden 
+mov r1, #1  @ 0x1 - Hide 
 orr r0, r1 
 str r0, [r6, #0x0C] 
 
@@ -552,11 +556,50 @@ strb r0, [r3, #0x1B] @ Rescuer/ee restored
 
 @ Restore current unit's coords here, too 
 pop {r0}
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+
 strh r0, [r3, #0x10] 
 
 
 
 b LoadEachSummonLoop 
+
+ValidCoordSkip:
+
+strb r0, [r6, #0x10]
+strb r1, [r6, #0x11]
+
+
+ldrb r0, [r6, #0x10] @ XX 
+ldrb r1, [r6, #0x11] @ YY 
+ldrb r2, [r6, #0x0B] @ Deployment byte 
+
+bl WriteDeploymentByteToGivenCoordsUnitMap
+
+ldr r0, [r6, #0x0C] @ New unit's state 
+mov r1, #1  @ 0x1 - hide
+orr r0, r1 
+str r0, [r6, #0x0C] 
+
+mov r0, r6 
+bl SendToQueueASMC @ Store unit pointer in queue 
+
+@blh  0x080271a0   @SMS_UpdateFromGameData
+@
+ldr r0, =WarpAnimationEvent
+mov r1, #1 
+blh EventEngine 
+
+
+@ Restore current unit's coords here, too 
+pop {r0}
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+
+strh r0, [r3, #0x10] 
+b LoadEachSummonLoop
+
 	
 	
 RestoreTerrain:
