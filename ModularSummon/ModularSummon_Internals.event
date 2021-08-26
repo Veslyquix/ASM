@@ -57,7 +57,7 @@ ENDA
 // 3B808
 // 9A46AC gProc_summongfx
 WarpAnimationEvent:
-//EVBIT_F 2; FADI 16; Text(DebugTextHere)
+
 SDEQUEUE 1 // we stored a unit pointer to the memory slots queue, so now we retrive that pointer 
 ASMC ModularSummon_GetSummonedUnitCoords
 _0x2629 -2 // CAM2
