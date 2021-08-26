@@ -282,7 +282,7 @@ ldrh r0, [r3, #0x10]
 push {r0} @ Save current units coords to the stack. Restore after restoring terrain 
 
 
-
+strh r0, [r6, #0x10] @ match coords 
 
 
 
