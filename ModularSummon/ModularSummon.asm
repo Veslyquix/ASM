@@ -739,6 +739,22 @@ CurrentUnitFateData:
 	.long 0x203A958
 	.thumb 
 	
+.global ModularSummon_CenterCameraASMC
+.type ModularSummon_CenterCameraASMC, %function 
+ModularSummon_CenterCameraASMC:
+push {lr}
+@mov r0,#1
+@ r0 = 0 , r1 X, r2 Y 
+ldr r3, =MemorySlot 
+add r3, #4*0x0B 
+ldrb r1, [r3, #0] @ X coord 
+ldrb r2, [r3, #2] @ Y coord 
+@blh EnsureCameraOntoPosition
+@ r0 = parent proc, r1 x, r2 y
+blh CenterCameraOntoPosition
+pop {r0} 
+bx r0 
+	
 .global ModularSummon_RestoreCameraASMC
 .type ModularSummon_RestoreCameraASMC, %function 
 ModularSummon_RestoreCameraASMC:
@@ -1274,6 +1290,9 @@ push {r4-r6, lr}
 mov r6, r0 @ Parent 
 mov r5, #1 @ Do take offensive action 
 
+bl ModularSummonUsability 
+cmp r1, #1 
+bne OffensiveActionBranch
 
 ldr r3, =CurrentUnit
 ldr r3, [r3] 
@@ -1298,20 +1317,34 @@ add r0, #0x45
 @ r0 is 202D001, d049, d091 
 @ this is ActiveUnit ram address + 0x45 (AI2 count) 
 blh AIScript12_Move_Towards_Enemy @0x803ce18 
-
-
-
-bl ModularSummonUsability 
-cmp r1, #1 
-bne ShouldWeTryOtherAIOptionsInstead
-
 ldr r3, =0x203AA96 @ AI decision +0x92 (XX) 
 ldrb r0, [r3, #0x0] @ XX 
 ldrb r1, [r3, #0x1] @ YY 
-mov r11, r11 
-
 bl SetAIToWaitAtCoords 
 b EnqueueModularSummon
+
+OffensiveActionBranch: 
+ldr r3, =CurrentUnit
+ldr r3, [r3] 
+mov r2, #0x41 @ AI4 
+mov r1, #0x20 @ BossAI
+ldrb r2, [r3, r2] 
+and r1, r2 
+
+ldr r3, =CurrentUnit 
+ldr r0, [r3] 
+add r0, #0x43 
+
+ldr r3, =0x30017d0 @ 030017d0 gpAiScriptCurrent 
+ldr r2, =0x85A8870 @ vanilla ai attack in range ai1 aiscript gAiScript_ActionInRange
+str r2, [r3] 
+@ 30017d0 storing 918D2B8 AttackInRangeExceptF0toFF
+
+blh 0x803ca0c @AiScriptCmd_05_DoStandardAction
+b ReturnTrue 
+
+
+
 
 
 .type SetAIToWaitAtCoords, %function 
@@ -1326,6 +1359,9 @@ ldr r3, =CurrentUnit
 ldr r3, [r3] 
 cmp r0, #0 
 bne ContinueSetAIToWaitAtCoords
+
+
+
 mov r1, #0x10 
 ldrh r0, [r3, r1] 
 mov r1, #0x13
@@ -1436,9 +1472,29 @@ ShouldWeTryOtherAIOptionsInstead:
 @ldrb r1, [r3, #0x11] 
 @bl SetAIToWaitAtCoords
 
-cmp r5, #1 
-bne ReturnFalse 
+cmp r5, #1 @ Aggro should return false so that ai will try other stuff 
+@beq TryOffensiveAction 
 b ReturnTrue 
+
+TryOffensiveAction: @ 3d450 AiTryDoOffensiveAction
+@ should we try staff action? sub_803FA40 
+
+@ldr r0, _0803F674  @ sub_803F5E0
+
+	@ldr r0, _0803CA60  @ sub_803C864
+	@ldr r0, _0803CA44  @ sub_803C818
+	@ldr r0, _0803C9D8  @ sub_803C8F4 @ didn't work 
+	@bl sub_803D450 @ blh try offensive action 
+	@b _0803C9FC
+
+
+@ldr r0, =0x803C9D8 @ some table? 
+ldr r0, =0x803c819 @IsUnitEnemyWithActiveUnit
+
+blh 0x803d450 @ AiTryDoOffensiveAction 
+mov r11, r11 
+b ExitModularSummonAI
+
 
 ReturnFalse: 
 mov r0, #0 @ False 
@@ -1448,6 +1504,7 @@ ReturnTrue:
 mov r0, #1 @ True that we made an AI decision 
 
 ExitModularSummonAI:
+mov r11, r11 
 pop {r4-r6}
 pop {r1} 
 bx r1 
