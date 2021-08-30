@@ -1,9 +1,6 @@
-DecideToHideActiveUnitRangeDisplay=$1000001
-InsertEventOnTileSelect=$1000031
-TeleportActiveUnit=$1000051
-ToggleFlagAA=$1000101
-DisplayIfFlagAB=$1000131
-SetNoActiveUnitEvent=$100019C
-PlaceUnitsText=$10001AC
-PlaceUnitsHelpText=$10001B8
-ChapterMenu=$10001D0
+DecideToHideActiveUnitRangeDisplay=$1000089
+InsertEventOnTileSelect=$10000B9
+TeleportActiveUnit=$10000D9
+ToggleFlagAA=$1000189
+DisplayIfFlagAB=$10001B9
+SetNoActiveUnitEvent=$1000224
