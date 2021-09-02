@@ -16,35 +16,33 @@
 .thumb 
 .align 4 
 
-.global PreventAttacking
-.type PreventAttacking, %function 
+.global PreventAttTradeRescueEtc
+.type PreventAttTradeRescueEtc, %function 
 
-
-PreventAttacking:
-
+PreventAttTradeRescueEtc:
+ 
+@ vanilla stuff 
+add r0, r5, r0 
+ldr r0, [r0] 
+add r1, r0, r4 
+ldrb r0, [r1] @ Target Unit deployment ID 
 push {r4-r7, lr}
 
-
-mov r4, r0 @ target 
-ldr r0, =0x2033F3C @ gUnitSubject 
-ldr r5, [r0] 
-ldrb r0, [r5, #0x0B] @ Deployment byte 
-mov r1, #0x0B 
-ldsb r1, [r4, r1] @ Deployment byte 
-
-blh 0x8024d8c @AreUnitsAllied
-lsl r0, #24 
 cmp r0, #0 
-bne CannotAttack @ Units are allied, so exit 
-@ Vesly stuff 
+beq End
 
-@ Target's class id 
-ldr r6, [r4, #4] @ Class pointer 
-ldrb r6, [r6, #4] @ Class id
+push {r0} 
 
-@ Target's unit id 
+
+blh GetUnit @19431 
+cmp r0, #0 
+beq CannotAttack 
+mov r4, r0 
+
 ldr r5, [r4] @ Unit pointer 
 ldrb r5, [r5, #4] @ Char ID 
+ldr r6, [r4, #4] @ Class pointer 
+ldrb r6, [r6, #4] @ Class id
 
  
 
@@ -81,27 +79,23 @@ cmp r0, #1
 bne PreventAttackingLoop 
 b CannotAttack 
 
-WeCanAttack:
-@ back to vanilla stuff now 
-@ Add the target now 
-mov r0, #0x10 
-ldsb r0, [r4, r0] @ XX 
-mov r1, #0x11 
-ldsb r1, [r4, r1] @ YY 
-
-mov r2, #0xB 
-ldsb r2, [r4, r2] 
-mov r3, #0 
-blh 0x0804F8BC   @AddTarget
-
-
-
+WeCanAttack: 
+pop {r0}
+@ r0 should be their deployment ID eg. unit ram + 0x0B 
+b End 
 
 CannotAttack:
-
-pop {r4-r7}
 pop {r0}
-bx r0 
+mov r0, #0 
+
+
+End:
+pop {r4-r7}
+pop {r1} 
+
+ldr r1, =0x8024EED @ Return address 
+bx r1 
+
 
 
 

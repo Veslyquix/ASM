@@ -1,10 +1,20 @@
 #include "EAstdlib.event"
 #include "Extensions/Hack Installation.txt"
 
+PUSH 
+ORG $2517C 
+jumpToHack(PreventAttacking) 
+
+POP 
+
+
+// Uncomment this part if you want to prevent attacking, trading, rescuing, etc. 
+/*
 PUSH
 ORG $24EE4
-jumpToHack(PreventAttacking)
+jumpToHack(PreventAttTradeRescueEtc)
 POP 
+*/
 
 // Prevent Attacking 
 // By Vesly 
