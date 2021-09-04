@@ -678,9 +678,7 @@ ldrb r0, [r4, #3]
 cmp r0, #0 
 beq ValidFlagException2
 blh CheckEventId
-mov r1, r0 
-ldrb r0, [r4, #3] 
-cmp r0, r1 
+cmp r0, #1 
 bne TableLoopStart2
 
 ValidFlagException2:
