@@ -1,0 +1,22 @@
+#include "ItemSpecialEffect.lyn.event" 
+
+ALIGN 4 
+ItemSpecialEffectTable:
+// 8 bytes per entry 
+// ItemID, ReqFlag, Pad, Pad, POIN EventAddress 
+BYTE 0xBB 0 0 0; POIN ExampleEvent // 0xBB is gold gem 
+//BYTE Berry 0 0 0; POIN ExampleEvent
+// Entries
+ALIGN 4; WORD 0 // Terminator 
+
+
+ALIGN 4
+ExampleEvent:
+TutText(DebugTextHere)
+NoFade 
+ENDA 
+
+
+
+
+
