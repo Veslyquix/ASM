@@ -1,0 +1,5 @@
+ItemSpecialEffectUsability=$1000001
+ItemSpecialEffect=$1000047
+ItemSpecialEffectTable=$10000F0
+ExampleEvent=$10000FC
+ItemMenuTable=$1000114
