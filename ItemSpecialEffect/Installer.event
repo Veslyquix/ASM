@@ -1,4 +1,5 @@
 #include "ItemSpecialEffect.lyn.event" 
+#include EAstdlib.event
 
 // #define Take_Over_Item_Menu ""
 
@@ -14,7 +15,7 @@ ALIGN 4; WORD 0 // Terminator
 
 ALIGN 4
 ExampleEvent:
-TutText(DebugTextHere)
+Text(0x505)
 NoFade 
 ENDA 
 
