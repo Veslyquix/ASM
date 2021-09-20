@@ -10,7 +10,7 @@ ItemSpecialEffectTable:
 BYTE 0xBB 0 0 0; POIN ExampleEvent // 0xBB is gold gem 
 //BYTE Berry 0 0 0; POIN ExampleEvent
 // Entries
-ALIGN 4; WORD 0 // Terminator 
+WORD 0 0 // Terminator 
 
 
 ALIGN 4
