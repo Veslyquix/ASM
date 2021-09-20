@@ -294,14 +294,35 @@ cmp r7, #0x26
 bgt AnyoneWithinRangeLoop 
 mov r1, r0 @ Target 
 mov r0, r6 
-ldrh r2, [r0, r7]
+ldrh r2, [r6, r7]
 cmp r2, #0 @ 
 beq AnyoneWithinRangeLoop @ No weapon, so move on to next unit 
 @ r0 actor, r1 target, r2 weapon 
+push {r1} @ target 
 blh 0x803AC3C @ CouldStationaryUnitBeInRangeHeuristic
+pop {r1} 
+
+@pop {r1-r2}
+
 cmp r0, #1 
 bne ContinueAnyoneWithinRangeLoop 
+@mov r11, r11 
+push {r1}
+mov r0, r1 
+blh #0x801acbc @FillMapAttackRangeForUnit
+pop {r1} 
 
+ldrb r0, [r1, #0x10] @ X 
+ldrb r1, [r1, #0x11] @ Y 
+ldr r2, =0x202E4E4	@Range map
+ldr		r2,[r2]			@Offset of map's table of row pointers
+lsl		r1,#0x2			@multiply y coordinate by 4
+add		r2,r1			@so that we can get the correct row pointer
+ldr		r2,[r2]			@Now we're at the beginning of the row data
+add		r2,r0			@add x coordinate
+ldrb	r0,[r2]			@load datum at those coordinates
+cmp r0, #0 
+beq AnyoneWithinRangeLoop 
 
 
 mov r5, #1 @ True 
