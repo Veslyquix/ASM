@@ -298,17 +298,15 @@ ldrh r2, [r6, r7]
 cmp r2, #0 @ 
 beq AnyoneWithinRangeLoop @ No weapon, so move on to next unit 
 @ r0 actor, r1 target, r2 weapon 
-push {r1} @ target 
+mov r3, r0 
+push {r1, r3} @ target 
 blh 0x803AC3C @ CouldStationaryUnitBeInRangeHeuristic
-pop {r1} 
-
-@pop {r1-r2}
+pop {r1, r3} 
 
 cmp r0, #1 
 bne ContinueAnyoneWithinRangeLoop 
-@mov r11, r11 
 push {r1}
-mov r0, r1 
+mov r0, r3
 blh #0x801acbc @FillMapAttackRangeForUnit
 pop {r1} 
 
