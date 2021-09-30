@@ -316,7 +316,7 @@ pop {r1-r2}
 cmp r0, #1 
 bne ContinueAnyoneWithinRangeLoop @ try next weapon 
 push {r1}
-mov r0, r1 @ target 
+mov r0, r6 @ actor 
 mov r1, r2 @ wep 
 blh 0x803B558 @ FillMovementAndRangeMapForItem
 pop {r1} 
