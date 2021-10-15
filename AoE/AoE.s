@@ -221,7 +221,17 @@ mov r0, r4 @ XX
 mov r1, r5  @ YY 
 bl CreateMoveMapFromTemplate
 
-mov r0, #0x40 @ purple now, thanks to huichelaar & mokha 
+ldrb r1, [r6, #ConfigByte] @ Stationary bool 
+mov r0, #HealBool
+and r0, r1 
+cmp r0, #0 
+beq DisplayRed
+mov r0, #0x44 @ Green / purple
+b DisplayColour
+DisplayRed:
+mov r0, #0x42 @ red / purple
+DisplayColour:
+@ purple now, thanks to huichelaar & mokha 
 blh 0x801da98 @DisplayMoveRangeGraphics
 
 
@@ -596,6 +606,7 @@ ldr r4, [r4]
 
 bl AoE_GetTableEntryPointer
 mov r5, r0 
+bl AoE_ClearMoveMap 
 
 ldrb r1, [r5, #ConfigByte] @ Stationary bool 
 mov r0, #HealBool
@@ -1055,7 +1066,7 @@ beq DoNotDamageTarget
 
 AlwaysDamage: 
 ldrb r1, [r5, #ConfigByte]  
-mov r0, #FriendlyFireBool
+mov r0, #FixedDamageBool
 tst r0, r1 
 bne DoFixedDmg 
 
@@ -1221,7 +1232,6 @@ ldrb r0, [r3, #0x10] @ XX
 ldrb r1, [r3, #0x11] @ YY 
 ldrb r2, [r4, #MinRangeByte] @ Min range 
 ldrb r3, [r4, #MaxRangeByte] @ Max range 
-mov r11, r11 
 @ Arguments: r0 = x, r1 = y, r2 = min, r3 = max
 blh CreateRangeMapFromRange, r4
 
