@@ -376,43 +376,14 @@ NoCapYYDown:
 
 bl IsTileFreeFromUnits @ Returns r0 T/F, r1 YY, r2 XX 
 cmp r0, #1 
-bne DontAddOneToYCoord 
+bne NotUsingRelativeCoords
 mov r0, r2 
 mov r2, r6 
 bl CanWeReachOnMovementMap 
 cmp r0, #1 
-bne DontAddOneToYCoord 
-
-@ We ruined the terrain earlier, so whatever 
-@mov r0, r2 
-@mov r2, r6 
-@bl Call_CanUnitCrossTerrain
-@cmp r0, #1 
-@bne DontAddOneToYCoord
-@ If we move this check earlier, we can potentially figure out if we are completely surrounded by walls 
-@ because stuff will break in that specific case 
-
+bne NotUsingRelativeCoords
 mov r0, r2
 b ValidCoordSkip
-DontAddOneToYCoord:
-mov r0, r2 @ XX 
-@ if this is false, then we cannot reach the destination, so we'll not use relative coords 
-@ however, we'll write to adjacent tiles in the UnitMap so that summons avoid being adjacent 
-@ (just for cool factor, I guess) 
-mov r2, r6 
-bl CanWeReachOnMovementMap
-@ returns T/F r0, yy r1, xx r2 
-cmp r0, #0x1 
-bne NotUsingRelativeCoords
-
-ldr r3, =CurrentUnit
-ldr r3, [r3] 
-mov r0, r2 
-@ r1 is already y 
-strb r0, [r3, #0x10] 
-strb r1, [r3, #0x11] 
-
-
 
 
 NotUsingRelativeCoords:
