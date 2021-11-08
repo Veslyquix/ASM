@@ -21,11 +21,13 @@
 
 ALIGN 4
 WarpAnimationEvent:
+EVBIT_MODIFY 4
 // we stored a unit pointer to the memory slots queue, so now we retrive that pointer to mem slot 1 
 SHORT 0x0722 0x1 // SDEQUEUE, as old EA doesn't define this 
 ASMC ModularSummon_GetSummonedUnitCoords
 ASMC ModularSummon_CenterCameraASMC //SHORT 0x2629 0xFFFE // CAM2 - older EA doesn't have _0x2629 defined & this can freeze the game 
 ASMC WarpAnimationQueue
+EVBIT_MODIFY 0
 NoFade 
 ENDA 
 
