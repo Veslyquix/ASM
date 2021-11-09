@@ -1,14 +1,29 @@
+//#define INSTALL_BONUS_ANIMATIONS
+
+// 17,144 non-compressed (410) 
+// 730, 761 with default (31) 
+// 844 with bonus anims (114)
+// 
+
 #include "Draw.lyn.event"
 #include "EAstdlib.event"
 #include "Extensions/ProcDefinitions.txt"
-#include "MapAnimations/Installer.event"
+//This line should occur before this #include: #define INSTALL_BONUS_ANIMATIONS (if installing them)
+#include "MapAnimations/Installer.event" 
 
+ALIGN 4
+SaveScreenNumbers:
+#incbin "MapAnimations/Dmp/NumbersFromSaveScreen.dmp"
+
+ALIGN 4
+SaveScreenNumbersPal:
+//#incbin "MapAnimations/Dmp/NumbersFromSaveScreen_pal.dmp" // same thing but only 32 bytes instead of 512 from png2dmp 
+BYTE $0E $52 $C7 $14 $E4 $28 $26 $2D $A4 $1C $8A $3D $CC $41 $0E $4A $50 $52 $92 $56 $C7 $14 $FF $03 $7D $67 $D7 $52 $11 $3E $00 $00
 
 
 
 
 #define Empty_AnimID 0 
-
 #define Break1AnimID 1
 #define Break2AnimID 2
 #define CircleAnimID 3
@@ -24,12 +39,12 @@
 #define ThickSlashAnimID 13
 #define FlashAnimID 14 
 #define FreezeAnimID 15 
-#define BoomerangAnimID 2
-
-
-
-
-
+#define BoomerangAnimID 16
+#define FeatherAnimID 17
+#define CauterizeAnimID 18
+#define FireballAnimID 19
+#define HealAnimID 20
+#define NumberOfAnimIDs 20
 
 ALIGN 4
 WeaponTypeAnimations:
@@ -46,12 +61,12 @@ BYTE 0 0 0 0; ALIGN 4 // Terminator
 
 
 #ifndef SilverSword 
-	#define SilverSword 8 
+	#define SilverSword 4 
 #endif 
 
 ALIGN 4
 SpecificWeaponAnimations:
-BYTE SilverSword Break1AnimID 
+BYTE SilverSword Shards1AnimID 
 
 /*
 BYTE Confusion FreezeAnimID
@@ -74,37 +89,40 @@ BYTE 0 0 0 0; ALIGN 4 // Terminator
 
 
 
+#define AnimTable_Entry(ID, SpecificAnimationTable, PaletteAddr) "PUSH; ORG AnimTable2 + (ID*12); POIN SpecificAnimationTable PaletteAddr; SHORT 0 0; POP"
+
+#define FillWithZeroes "WORD 0 0 0 0 0 0 0 0 0 0 0 0" // 4 entries 
+#define FillTwentyEntries "FillWithZeroes; FillWithZeroes; FillWithZeroes; FillWithZeroes; FillWithZeroes"
+
 
 
 ALIGN 4
 AnimTable2:
 WORD 0 0 0 // 0th animation is blank 
-
-POIN Break1_Small_Anim Break1Data_pal; SHORT 0 0
-POIN Break2_Small_Anim Break2Data_pal; SHORT 0 0
-POIN Circle_Small_Anim CircleData_pal; SHORT 0 0
-POIN Hit1_Small_Anim Hit1Data_pal; SHORT 0 0
-POIN Hit2_Small_Anim Hit2Data_pal; SHORT 0 0
-POIN Impact1_Small_Anim Impact1Data_pal; SHORT 0 0
-POIN Impact2_Small_Anim Impact2Data_pal; SHORT 0 0
-POIN Shards1_Small_Anim Shards1Data_pal; SHORT 0 0
-POIN Shards2_Small_Anim Shards2Data_pal; SHORT 0 0
-POIN Splash1_Small_Anim Splash1Data_pal; SHORT 0 0
-POIN Splash2_Small_Anim Splash2Data_pal; SHORT 0 0
-POIN Slashing_A_Anim SlashingData_pal; SHORT 0 0
-POIN Slashing_B_Anim SlashingData_pal; SHORT 0 0 // same palete 
-POIN Flash_Anim FlashData_pal; SHORT 0 0
-POIN Freeze_Anim FreezeData_pal; SHORT 0 0
+FillTwentyEntries 
 
 
-POIN Boomerang_Anim BoomerangData_pal; SHORT 0 0
-POIN Cauterize_Anim CauterizeData_pal; SHORT 0 0
-POIN Feather_Anim FeatherData_pal; SHORT 0 0
-
-
-//POIN Heal_Anim HealData_pal; SHORT 0 0 // SFX 
-//POIN Fireball_Anim FireballData_pal; SHORT 0 0
-WORD 0 0 0
+AnimTable_Entry(ThinSlashAnimID,Slashing_A_Anim, SlashingData_pal)
+AnimTable_Entry(Hit1AnimID,Hit1_Small_Anim, Hit1Data_pal)
+AnimTable_Entry(Shards2AnimID,Shards2_Small_Anim, Shards2Data_pal)
+AnimTable_Entry(Break1AnimID,Break1_Small_Anim, Break1Data_pal)
+AnimTable_Entry(Splash2AnimID,Splash2_Small_Anim, Splash2Data_pal)
+AnimTable_Entry(FlashAnimID,Flash_Anim, FlashData_pal)
+AnimTable_Entry(Impact1AnimID,Impact1_Small_Anim, Impact1Data_pal)
+AnimTable_Entry(Shards1AnimID,Shards1_Small_Anim, Shards1Data_pal)
+#ifdef INSTALL_BONUS_ANIMATIONS 
+AnimTable_Entry(Break2AnimID,Break2_Small_Anim, Break2Data_pal)
+AnimTable_Entry(CircleAnimID,Circle_Small_Anim, CircleData_pal)
+AnimTable_Entry(CauterizeAnimID,Cauterize_Anim, CauterizeData_pal) // small hit 2 was here 
+AnimTable_Entry(Impact2AnimID,Impact2_Small_Anim, Impact2Data_pal)
+AnimTable_Entry(Splash1AnimID,Splash1_Small_Anim, Splash1Data_pal)
+AnimTable_Entry(ThickSlashAnimID,Slashing_B_Anim, SlashingData_pal) // same palete as Slashing_A
+AnimTable_Entry(FreezeAnimID,Freeze_Anim, FreezeData_pal)
+AnimTable_Entry(BoomerangAnimID,Boomerang_Anim, BoomerangData_pal)
+AnimTable_Entry(FeatherAnimID,Feather_Anim, FeatherData_pal)
+//AnimTable_Entry(HealAnimID,Heal_Anim, HealData_pal) // SFX 
+//AnimTable_Entry(FireballAnimID,Fireball_Anim, FireballData_pal)
+#endif 
 
 
 #define VRAM_Address 0x6013300
@@ -112,7 +130,8 @@ ALIGN 4
 VRAM_Address_Link:
 WORD VRAM_Address 
 
-#define MinimumFrames 28
+#define MinimumFrames 28 
+// Vanilla's default is 28 frames here. 
 ALIGN 4
 MinimumFramesLink:
 WORD MinimumFrames 

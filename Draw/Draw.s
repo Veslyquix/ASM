@@ -106,11 +106,13 @@ bx r1
 .type Draw_StoreToBuffer, %function 
 Draw_StoreToBuffer:
 push {r4-r7, lr}
-ldr r4, =0x6010000 @ tile one 
-ldr r5, =0x6010FFF @ end of first two rows 
 
 
-blh 0x8001FE0 @| ClearTileRigistry
+@ clearing unnecessary I think 
+@ldr r4, =0x6010000 @ tile one 
+@ldr r5, =0x6010FFF @ end of first two rows 
+@blh 0x8001FE0 @| ClearTileRigistry
+
 
 blh GetGameClock 
 ldr r3, =MemorySlot
@@ -474,6 +476,14 @@ bge TryNextFrameLoop
 
 ldr r0, [r3, #4] 
 
+bl Draw_UpdateVRAM
+
+ldr r0, =gGenericBuffer 
+@ push to a buffer 
+@ ldr r0, =BufferAddress 
+
+
+
 ldr r1, =VRAM_Address_Link
 ldr r1, [r1] 
 ldr r2, =#4096 @ number of bytes 
@@ -482,17 +492,15 @@ mov r3, #8
 @ Arguments: r0 = Source gfx (uncompressed), r1 = Target pointer, r2 = Tile Width, r3 = Tile Height
 blh RegisterObjectTileGraphics, r4
 
-
-ldr r0, [r3, #4] 
-
-
-
-
 sub sp, #8 
 
 
 @ Prepare OAM data
+mov r3, #0x4 
+lsl r3, #24 
 mov   r2, #0x1
+add r2, r3 
+
 mov   r1, sp
 str   r2, [r1]
 mov   r2, #0x0
@@ -503,19 +511,6 @@ str   r2, [r1, #0x4]
 @			bit 10    | Horizontal Flip (0=Normal, 1=Mirrored)
 @			bit 11    | Vertical Flip   (0=Normal, 1=Mirrored)
 @			bit 12-15 | Palette Number  (0-15)
-
-
-
-
-
-@ Clear number data buffer 
-@ldr r3, =0x2028e44 @gDebugNumberString
-@mov r2, #0 
-@str r2, [r3] 
-@add r3, #4 
-@str r2, [r3] 
-@add r3, #4 
-@str r2, [r3] @ Cleared 
 
 
 
@@ -538,6 +533,11 @@ orr   r0, r2                    @ Sprite size, 32x32
 
 lsl r1, r6, #4 @ 16*YY 
 sub r1, #8 
+
+mov r2, #0x4 @ blend bit? ??? 
+lsl r2, #24 
+add r1, r2 
+
 sub r0, #8 
 
 
@@ -565,7 +565,34 @@ pop {r1}
 bx r1 
 
 
+.equ    UnLZ77Decompress, 0x08012F50
+.equ    CpuFastSet, 0x080D1674
+.equ    gGenericBuffer, 0x02020188
 
+.type Draw_UpdateVRAM, %function 
+Draw_UpdateVRAM:
+@ Arguments:
+@ r0: lz77 compressed image 
+.thumb
+
+push  {r4, r14}
+
+  
+@ Decompress image into buffer
+ldr   r1, =gGenericBuffer
+blh UnLZ77Decompress 
+
+ldr r0, =gGenericBuffer 
+ldr r1, =VRAM_Address_Link
+ldr r1, [r1] 
+mov   r3, #0x80 @ size ? 
+mov   r2, #0x20  
+
+blh CpuFastSet, r4 
+
+pop   {r4}
+pop   {r1}
+bx    r1
 
 
 
