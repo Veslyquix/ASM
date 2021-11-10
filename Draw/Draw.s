@@ -5,6 +5,14 @@
   .short 0xf800
 .endm
 
+.macro blh_free to, reg=r3
+  push {\reg}
+  ldr \reg, =\to
+  mov lr, \reg
+  pop {\reg}
+  .short 0xf800
+.endm
+
 	.equ pr6C_NewBlocking,           0x08002CE0 
 	.equ pr6C_New,                   0x08002C7C
 	.equ Proc_CreateBlockingChild, 0x80031c4 
@@ -140,33 +148,7 @@ blh CopyToPaletteBuffer @Arguments: r0 = source pointer, r1 = destination offset
 
 
 
-ldr r3, =MemorySlot 
-ldr r3, [r3, #4] @ Slot 1 
-lsl r3, #2 @ x4 
-add r0, r3, r3 @ x8 
-add r0, r3 @ x12 
-add r0, #4 @ palette offset in table 
-ldr r2, =AnimTable2 
 
-ldr r0, [r2, r0] @ Palette 
-cmp r0, #0 
-beq SkipUpdatingPalette @ No animation 
-
-UpdatePalette:
-mov r1, #26 @ palette # 
-lsl r1, #5 @ multiply by #0x20
-
-
-
-mov	r2,#0x20
-blh CopyToPaletteBuffer @Arguments: r0 = source pointer, r1 = destination offset, r2 = size (0x20 per full palette)
-
-@ palette must be updated 
-ldr	r0,=#0x300000E @ 0300000E is a byte (bool) that tells the game whether the palette RAM needs to be updated
-mov	r1,#1
-strb r1,[r0]
-
-SkipUpdatingPalette:
 
 mov r0, #0 
 ldr r3, =MemorySlot 
@@ -217,17 +199,16 @@ ldr r3, =MemorySlot
 ldr r3, [r3, #4] @ Slot 1 as AnimID 
 lsl r3, #2 @ x4 
 add r2, r3, r3 @ x8 
-add r2, r3 @ x12 
 ldr r3, =AnimTable2
 ldr r3, [r3, r2] @ Specific animation table 
 cmp r3, #0 
 beq NoAnimation
 
-sub r3, #8
+sub r3, #12
 mov r2, #0 @ Number of frames to wait 
 
 NumberOfFramesLoop:
-add r3, #8 
+add r3, #12 
 ldrh r1, [r3] 
 add r2, r1 @ total frames 
 cmp r1, #0 
@@ -427,8 +408,17 @@ lsl r0, r5, #4 @ 16*XX
 lsl r1, r6, #4 @ 16*YY 
 bl Draw_NumberDuringBattle
 
-sub r5, #1 @ offset by 1 to center 64x64 animations 
-sub r6, #1 
+@cmp r5, #1 
+@blt CapXX
+@sub r5, #1 @ offset by 1 to center 64x64 animations 
+@CapXX:
+@cmp r6, #1 
+@blt CapYY
+@sub r6, #1 
+@CapYY:
+
+
+
 
 
 blh GetGameClock 
@@ -444,13 +434,12 @@ sub r0, r2 @ frame we're on
 ldr r3, =MemorySlot 
 ldr r3, [r3, #4] @ Slot 1 
 lsl r3, #2 @ x4 
-add r2, r3, r3 @ x8 
-add r2, r3 @ x12 
+add r2, r3, r3 @ x8 @ fixed
 ldr r3, =AnimTable2
 ldr r3, [r3, r2] @ Specific animation table 
 cmp r3, #0 @ No animation, so exit 
 beq ExitAnimation
-sub r3, #8 
+sub r3, #12 
 mov r1, #0 @ frames offset 
 b TryNextFrameLoop 
 ExitAnimation: 
@@ -464,7 +453,7 @@ ExitAnimation:
 b Skip
 
 TryNextFrameLoop:
-add r3, #8 
+add r3, #12 
 ldrh r2, [r3] 
 add r1, r2 
 cmp r2, #0 
@@ -472,18 +461,30 @@ beq ExitAnimation
 cmp r0, r1 
 bge TryNextFrameLoop 
 
+push {r3} @ Table offset 
+ldr r0, [r3, #8] @ Palette to use 
+
+@UpdatePalette
+mov r1, #26 @ palette # 
+lsl r1, #5 @ multiply by #0x20
+mov	r2,#0x20 @ size 
+blh CopyToPaletteBuffer @Arguments: r0 = source pointer, r1 = destination offset, r2 = size (0x20 per full palette)
+
+@ palette must be updated 
+ldr	r0,=#0x300000E @ 0300000E is a byte (bool) that tells the game whether the palette RAM needs to be updated
+mov	r1,#1
+strb r1,[r0]
+
+pop {r3} 
 
 
-ldr r0, [r3, #4] 
+ldr r0, [r3, #4] @ image address 
 
-bl Draw_UpdateVRAM
+
+
+bl Draw_UpdateVRAM @ push to a buffer
 
 ldr r0, =gGenericBuffer 
-@ push to a buffer 
-@ ldr r0, =BufferAddress 
-
-
-
 ldr r1, =VRAM_Address_Link
 ldr r1, [r1] 
 ldr r2, =#4096 @ number of bytes 
@@ -496,11 +497,7 @@ sub sp, #8
 
 
 @ Prepare OAM data
-mov r3, #0x4 
-lsl r3, #24 
-mov   r2, #0x1
-add r2, r3 
-
+mov   r2, #0x1 @ ASDF ASDF 
 mov   r1, sp
 str   r2, [r1]
 mov   r2, #0x0
@@ -512,45 +509,112 @@ str   r2, [r1, #0x4]
 @			bit 11    | Vertical Flip   (0=Normal, 1=Mirrored)
 @			bit 12-15 | Palette Number  (0-15)
 
-
-
 ldr r7, =VRAM_Address_Link
 ldr r7, [r7] 
+lsl r7, #16 @ Cut of |0x601---- 
+lsr r7, #16 
+
 lsr r7, #5 @ eg. tile #0x198 - offset where we put the tiles 
+
+
+
+mov r4, #0 @ Counter 
+sub r4, #1 
+
+DisplaySpriteChunkLoop:
+add r4, #1 
+cmp r4, #16
+bge ExitDisplaySpriteLoop 
+
+
+@ remainder 
+
+@ 3300 / #0x198
+@ 3340 / #0x19A (+2) 
+@ 3380 / 19c, 19f 
+@ 33C0 
+@ 3b00 1d8, 1da, 1dc, 1df 
+
+@ 4300 / #0x218, 21a, 21c, 21f 
+@ 4340  
+@ 4380 / 
+@ 43C0 
+@ 4b00 258
 
 @ Push to secondary OAM
 @To compute the offset for one tile in the map buffer given its (x, y) pos: offset = 2*x + 0x40*y
-lsl r0, r5, #4 @ 16*XX 
+
+@ 800
+lsl r2, r4, #30 @ we only want 2 bits left 
+lsr r2, #30 @ X coord offset 
+
+mov r0, r5 
+add r0, r2
+lsl r0, #4 @ 16*XX 
+
+
 
 
 @	00 | short | base OAM0 data (y coord, various flags, shape)
 @			02 | short | base OAM1 data (x coord, flips, size)
 @			04 | short | base OAM2 data (tile index, priority, palette index)
-mov   r2, #0xc0 @ #0xC0 64x64  FF 
-lsl   r2, #0x8 @ shifted by this amount 
-orr   r0, r2                    @ Sprite size, 32x32
+@mov   r2, #0xc0 @ #0xC0 64x64  FF 
 
 
-lsl r1, r6, #4 @ 16*YY 
-sub r1, #8 
 
-mov r2, #0x4 @ blend bit? ??? 
-lsl r2, #24 
+
+
+mov r1, r6 
+lsr r2, r4, #2 @ Counter / 4 (Y coord offset) 
 add r1, r2 
-
-sub r0, #8 
-
+lsl r1, #4 @ 16*YY 
 
 
-mov r3, r7
+cmp r0, #24 
+blt DisplaySpriteChunkLoop @ Can't display this chunk as it would be offscreen 
+sub r0, #24 
+
+
+cmp r1, #24 
+blt DisplaySpriteChunkLoop @ Can't display this chunk as it would be offscreen 
+sub r1, #24 
+
+
+
+mov r2, #0x40 @ 16x16 
+lsl   r2, #0x8 @ shifted by this amount 
+orr   r0, r2                    @ Sprite size, 16x16
+
+
+mov r2, #0x4 @ blend bit
+lsl r2, #8 
+orr r1, r2 
+
+
+
+
+lsr r2, r4, #2 @ Counter / 4 (Y coord offset) 
+lsl r2, #6 @ 0x40 * (Counter/4) @ gets us Y offset to use 
+mov r3, r7 
+add r3, r2 
+@ now to add +2, +4, or +6 
+lsl r2, r4, #30 @ we only want 2 bits left 
+lsr r2, #29 @ *2 of X coord 
+add r3, r2 @ VRAM address we want 
+
+
 mov r2, #26 @ palette # 26 - or 27 is the light rune palette i think 
 lsl r2, #12 @ bits 12-15 
-add r3, r2 @ palette | flips | tile 
+orr r3, r2 @ palette | flips | tile 
 
 mov r2, sp 
 
 @ r0 = base x coord, r1 = base y coord, r2 = pointer to OAM Data, r3 = base OAM2 (tile/palette index)
-blh PushToSecondaryOAM, r4 
+blh_free PushToSecondaryOAM, r3 @ pushes / pops r3  
+
+b DisplaySpriteChunkLoop
+
+ExitDisplaySpriteLoop:
 
 add sp, #8 
 
@@ -567,7 +631,7 @@ bx r1
 
 .equ    UnLZ77Decompress, 0x08012F50
 .equ    CpuFastSet, 0x080D1674
-.equ    gGenericBuffer, 0x02020188
+.equ    gGenericBuffer, 0x02020188 // #10016 bytes, I think 
 
 .type Draw_UpdateVRAM, %function 
 Draw_UpdateVRAM:
@@ -617,6 +681,11 @@ push {r4-r7, lr}
 mov r4, r0 @ XX 
 mov r5, r1 @ YY 
 
+ldr r0, =0x859dabc @gProc_Battle
+blh ProcFind 
+cmp r0, #0 
+beq ExitDraw_NumberDuringBattle
+
 
 blh GetGameClock 
 ldr r3, =MemorySlot
@@ -624,65 +693,24 @@ ldr r2, [r3, #4*3] @ slot 3
 sub r0, r2 @ Number of frames since animation started 
 mov r6, r0 
 lsr r6, #1 @ every 2 frames move upwards 
-cmp r6, #13 
+cmp r6, #12 
 blt Continue_DrawNumber
-mov r6, #13 @ max height is +16 above 
+mov r6, #12 @ max height is +12 above 
 Continue_DrawNumber:
 sub r5, r6 
 
 lsr r0, r6, #1 
-add r0, #5 
+
+add r0, #4 
 DivisionLoop:
-sub r0, #5 
-cmp r0, #5 
+sub r0, #4 
+cmp r0, #4 
 bgt DivisionLoop 
 
-add r4, #5 
+add r4, #4 
 sub r4, r0 @ subtract or add based on the remainder so that it will wiggle ? 
 
 
-
-
-
-
-
-
-@bl Draw_GetActiveAttackerOrDefender
-@cmp r0, #0 
-@beq ExitDraw_NumberDuringBattle
-@ldr r1, =0x203A4EC @ Atkr 
-@
-@@DetermineBattleActorSide:
-@ldr r2, =0x203E108 @ what side is the battle actor on? 
-@ldrb r2, [r2] 
-@cmp r2, #1 
-@bne DontSwapSides
-@ldr r1, =0x203A56C @ Dfdr 
-@DontSwapSides:
-@
-@cmp r0, r1 
-@bne BattleSideRight 
-@
-@DeducedAtkrOrDfdr: 
-@mov r2, r0 @ Active unit 
-@mov r3, r1 @ Target
-@
-@BattleSideLeft:
-@mov r0, #0 
-@ldr r3, =0x0203E1BC @ Battle side 1 - See febuilder debugger "BattleSome" struct starting at 0203E0F0
-@ldsh r0, [r3, r0] 
-@cmp r0, #0 
-@blt ExitDraw_NumberDuringBattle
-@b FoundDamage
-@
-@BattleSideRight:
-@mov r0, #0 
-@ldr r3, =0x203E1BE @ Battle side 2
-@ldsh r0, [r3, r0] 
-@cmp r0, #0 
-@blt ExitDraw_NumberDuringBattle
-
-@FoundDamage:
 
 
 ldr r3, =0x203E24A @ current round - from function 8161C - address 81676 
@@ -693,14 +721,11 @@ cmp r1, #0
 bne ExitDraw_NumberDuringBattle
 ldrb r0, [r3, #3] @ dmg? 
 
-
-
-
-
+cmp r0, #99 
+ble NoCap 
+mov r0, #99 @ Max damage to display, i guess 
+NoCap:
 mov r7, r0 @ Damage to deal 
-
-@mov r7, #64
-
 
 mov r1, r7 
 cmp r7, #10 
@@ -730,19 +755,9 @@ bl Draw_NumberOAM
 SkipTensDigit:
 mov r0, r4 
 mov r1, r5 
-add r0, #8 
+add r0, #8 @ 8 pixels to the right for ones column 
 mov r2, r7 
 bl Draw_NumberOAM
-
-
-	@ Inputs:
-	@ r0: X coordinate
-	@ r1: Y coordinate
-	@ r2: Number
-@mov r2, #64 
-
-mov r2, r7 
-@blh MMBDrawUnsignedNumber
 
 ExitDraw_NumberDuringBattle:
 
@@ -787,24 +802,6 @@ orr r3, r2
 @ palette | flips | tile 
 
 ldr		r2, =SpriteData8x8 @ OAM data for a single 8x8 sprite
-
-@
-@sub sp, #8 
-@@ Prepare OAM data
-@mov   r2, #0x1
-@mov   r1, sp
-@str   r2, [r1]
-@mov   r2, #0x0
-@str   r2, [r1, #0x4]
-@
-@
-@@	bit 0-9   | Tile Number     (0-1023)
-@@			bit 10    | Horizontal Flip (0=Normal, 1=Mirrored)
-@@			bit 11    | Vertical Flip   (0=Normal, 1=Mirrored)
-@@			bit 12-15 | Palette Number  (0-15)
-@
-@add sp, #8 
-
 
 .short 0xf800 
 
