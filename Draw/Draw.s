@@ -440,8 +440,9 @@ ldrh r6, [r3, #2]
 
 
 
-mov r0, r5 
-mov r1, r6 
+mov r0, r5 @ X coord
+mov r1, r6 @ Y coord
+mov r2, r4 @ parent proc 
 bl Draw_NumberDuringBattle
 
 blh GetGameClock 
@@ -763,7 +764,7 @@ bx    r1
 Draw_NumberDuringBattle:
 push {r4-r7, lr}
 
-
+mov r6, r2 @ parent proc 
 
 lsl r0, #4 
 lsl r1, #4 
@@ -791,8 +792,7 @@ beq ExitDraw_NumberDuringBattle
 
 
 blh GetGameClock 
-ldr r3, =MemorySlot
-ldr r2, [r3, #4*3] @ slot 3
+ldr r2, [r6, #0x30] 
 sub r0, r2 @ Number of frames since animation started 
 mov r6, r0 
 lsr r6, #1 @ every 2 frames move upwards 
