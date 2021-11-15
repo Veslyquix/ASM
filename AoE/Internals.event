@@ -118,7 +118,9 @@ ASMC AoE_StartBlockingProc
 NoFade 
 ENDA 
 
-
+#ifndef PROC_YIELD
+	#define PROC_YIELD "PROC_YEILD"
+#endif 
 
 
 ALIGN 4
