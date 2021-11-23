@@ -29,7 +29,6 @@
 ItemSpecialEffect:
 push {r4-r7, lr} 
 
-@ reduce durability and remove item if 0 durability 
 
 ldr r5, =CurrentUnit 
 ldr r5, [r5]
@@ -38,31 +37,8 @@ ldrb r4, [r3, #0x12] @ inventory slot #
 lsl r4, #1 @ 2 bytes per inv slot 
 add r4, #0x1E 
 add r4, r5 @ unit ram address of actual item to load 
-ldrh r0, [r4]
-blh GetItemAfterUse
-
-@ldrh r1, [r4] 
-strh r0, [r4] @ version after use 
-@mov r4, #0xFF 
-@and r4, r1 @ item id 
-
-
-@ldr r6, ItemSpecialEffectTable 
-@sub r6, #12
-@FindValidItemLoop_Effect:
-@add r6, #12 
-@ldr r0, [r6] 
-@cmp r0, #0 
-@beq ExitItemSpecialEffect
-@ldrb r0, [r6] @ item id 
-@cmp r0, r4 @ if they match, return true 
-@bne FindValidItemLoop_Effect 
-@ldrh r0, [r6, #4] @ flag 
-@cmp r0, #0 
-@beq RunEvent @ Always true if flag is 0 
-@blh CheckEventId
-@cmp r0, #1 
-@bne FindValidItemLoop_Effect
+ldrb r0, [r4] 
+mov r1, r5 
 
 ldr r3, ItemSpecialEffectUsability 
 mov lr, r3 
@@ -81,6 +57,16 @@ add r6, #8
 ldr r0, [r6] @ event address 
 mov r1, #1 
 blh EventEngine 
+
+
+@ reduce durability and remove item if 0 durability 
+
+
+ldrh r0, [r4]
+blh GetItemAfterUse
+
+strh r0, [r4] @ version after use 
+
 
 mov r0, r5 
 blh RemoveUnitBlankItems

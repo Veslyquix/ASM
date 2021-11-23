@@ -32,6 +32,7 @@ BNE Skip2
     BLH 0x08003E60   @{U} Text_SetColorId
 Skip2:
 
+mov r0, r4 
 bl get_menu_name
 mov r1,r0
 cmp r1, #0x00
@@ -76,15 +77,15 @@ BX r1
 
 .align 
 
-.equ ItemSpecialEffectUsability, ItemSpecialEffectTable+4
 
 get_menu_name:
 PUSH {r4,r5,lr}
 
-ldr r3, ItemSpecialEffectUsability 
+
+ldr r3, ItemSpecialEffectCallUsability 
 mov lr, r3 
 .short 0xF800 
-mov r4, r1 @ Table 
+@mov r4, r1 @ Table 
 
 
 add r1, #6 @ String to use 
@@ -107,4 +108,4 @@ bx r1
 
 .ltorg
 .align 
-ItemSpecialEffectTable:
+ItemSpecialEffectCallUsability:

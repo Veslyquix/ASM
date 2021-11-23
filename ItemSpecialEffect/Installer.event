@@ -5,8 +5,6 @@
 #include "Extensions/Hack Installation.txt"
 
 
-// @r8 contains whether to draw as white or gray 
-
 PUSH 
 ORG $16854
 callHack_r3(ItemMenuTextColorHack|1) // White or gray text for the item after selecting "item" 
@@ -15,19 +13,19 @@ POP
 
 ALIGN 4
 ItemMenuTextColorHack:
-//#include "ItemMenuTextColor.lyn.event"
 #incbin "ItemMenuTextColor.dmp"
-POIN ItemSpecialEffectTable
+POIN ItemSpecialEffectUsability
 
 
 ALIGN 4 
 ItemSpecialEffectTable:
 // 12 bytes per entry 
-// ItemID, Pad, Pad, Pad, ReqFlag, TextID, POIN EventAddress 
+// ItemID, unit, class, hp%, ReqFlag, TextID, POIN EventAddress 
 BYTE 0xBB   0        0    0; SHORT 0     0     ; POIN ExampleEvent // 0xBB is gold gem 
-//BYTE OrionBolt 0 0 0; SHORT 0 0x505; POIN ExampleEvent
+
+//BYTE OrionBolt Eirika EirikaLord 80 ; SHORT 0 0x508; POIN ExampleEvent // only usable at 80% or less hp 
 // Entries
-WORD 0 // Terminator 
+WORD 0 0 0 // Terminator 
 
 
 ALIGN 4
@@ -51,9 +49,12 @@ POIN ItemSpecialEffectTable
 ALIGN 4
 ItemSpecialDraw:
 #incbin "ItemSpecialDraw.dmp"
-POIN ItemSpecialEffectTable
-POIN ItemSpecialEffectUsability
+POIN ItemSpecialEffectCallUsability
 
+ALIGN 4
+ItemSpecialEffectCallUsability:
+#incbin "ItemSpecialEffectCallUsability.dmp"
+POIN ItemSpecialEffectUsability
 
 
 #ifdef Take_Over_Item_Menu 
@@ -86,7 +87,7 @@ POP
 ALIGN 4
 ItemMenuTable:
 
-MenuCommand(0x505, 0, BlueText, ItemSpecialEffectUsability|1, ItemSpecialDraw|1, ItemSpecialEffect|1)
+MenuCommand(0x505, 0, BlueText, ItemSpecialEffectCallUsability|1, ItemSpecialDraw|1, ItemSpecialEffect|1)
 IM_Use
 IM_Equip
 IM_Trade

@@ -27,34 +27,14 @@ ldr r5, [r5]
 mov r4, #0xFF 
 and r4, r1 @ item id 
 
+mov r0, r4 @ item 
+mov r1, r5 @ unit 
+ldr r3, ItemSpecialEffectUsability
+mov lr, r3
+.short 0xf800 
 
-ldr r6, ItemSpecialEffectTable
-sub r6, #12
-FindValidItemLoop:
-add r6, #12
-ldr r0, [r6] 
-cmp r0, #0 
-beq RetFalse 
-ldrb r0, [r6] @ item id 
-cmp r0, r4 @ if they match, return true 
-bne FindValidItemLoop 
-ldrh r0, [r6, #4] @ flag 
-cmp r0, #0 
-beq RetTrue @ Always true if flag is 0 
-blh CheckEventId
-cmp r0, #1 
-bne FindValidItemLoop 
 
-RetTrue: 
-mov r0, #1
-b Continue
-
-RetFalse: 
-mov r0, #3 @ 3 is false lol 
 @ if hover item = our item, return true 
-
-
-Continue:
 
 cmp r0, #1 
 bne Vanilla
@@ -91,6 +71,6 @@ bx r3
 
 .align 
 .ltorg 
-ItemSpecialEffectTable:
+ItemSpecialEffectUsability:
 
 

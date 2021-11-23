@@ -7,8 +7,8 @@
 .endm
 
 
-.equ gActionData, 0x203A958
-.equ CurrentUnit, 0x3004E50
+
+
 .equ CheckEventId,0x8083da8
 
 .global ItemSpecialEffectUsability
@@ -16,35 +16,83 @@
 ItemSpecialEffectUsability:
 push {r4-r6, lr} 
 
-
-ldr r5, =CurrentUnit 
-ldr r5, [r5]
-ldr r3, =gActionData 
-ldrb r4, [r3, #0x12] @ inventory slot # 
-lsl r4, #1 @ 2 bytes per inv slot 
-add r4, #0x1E 
-add r4, r5 @ unit ram address of actual item to load 
-ldrh r1, [r4] 
-mov r4, #0xFF 
-and r4, r1 @ item id 
-
+mov r4, r0 @ item ID 
+mov r5, r1 @ unit 
 
 ldr r6, ItemSpecialEffectTable
 sub r6, #12
 FindValidItemLoop:
 add r6, #12
+
+@ word 0 0 0 as terminator 
 ldr r0, [r6] 
 cmp r0, #0 
-beq RetFalse 
+bne Continue 
+ldr r0, [r6,#4] 
+cmp r0, #0 
+bne Continue 
+ldr r0, [r6,#8] 
+cmp r0, #0 
+bne Continue 
+b RetFalse
+
+Continue:
 ldrb r0, [r6] @ item id 
 cmp r0, r4 @ if they match, return true 
 bne FindValidItemLoop 
 ldrh r0, [r6, #4] @ flag 
 cmp r0, #0 
-beq RetTrue @ Always true if flag is 0 
+beq SkipFlagCheck @ Always true if flag is 0 
 blh CheckEventId
 cmp r0, #1 
 bne FindValidItemLoop 
+
+SkipFlagCheck:
+ldrb r0, [r6, #1] @ unit id
+cmp r0, #0 
+beq SkipUnitCheck
+ldr r1, [r5]
+ldrb r1, [r1, #4] 
+cmp r0, r1 
+bne FindValidItemLoop
+
+
+SkipUnitCheck:
+
+ldrb r0, [r6, #2] @ class id
+cmp r0, #0 
+beq SkipClassCheck
+ldr r1, [r5, #4]
+ldrb r1, [r1, #4] 
+cmp r0, r1 
+bne FindValidItemLoop
+
+
+SkipClassCheck:
+
+ldrb r0, [r6, #3] @ hp percentage 
+cmp r0, #0 
+beq SkipHealthCheck
+ldrb r1, [r5, #0x12] @ max hp 
+ldrb r2, [r5, #0x13] @ current hp 
+
+
+mov r3, #100 
+mul r2, r3 
+
+mov r3, #0 @ counter 
+
+DivLoop:
+add r3, #1 
+sub r2, r1 
+cmp r2, r1 
+bgt DivLoop
+sub r3, #1
+cmp r3, r0
+bgt FindValidItemLoop
+
+SkipHealthCheck:
+
 
 RetTrue: 
 mov r0, #1
