@@ -1,8 +1,23 @@
-//#include "ItemSpecialEffect.lyn.event" 
-
-// #define Take_Over_Item_Menu ""
+//#define Take_Over_Item_Menu
 
 
+#include "EAstdlib.event"
+#include "Extensions/Hack Installation.txt"
+
+
+// @r8 contains whether to draw as white or gray 
+
+PUSH 
+ORG $16854
+callHack_r3(ItemMenuTextColorHack|1) // White or gray text for the item after selecting "item" 
+SHORT 0x46C0 0x46C0 0x46C0 0x46C0 0x46C0 0x46C0 
+POP 
+
+ALIGN 4
+ItemMenuTextColorHack:
+//#include "ItemMenuTextColor.lyn.event"
+#incbin "ItemMenuTextColor.dmp"
+POIN ItemSpecialEffectTable
 
 
 ALIGN 4 
@@ -10,14 +25,14 @@ ItemSpecialEffectTable:
 // 12 bytes per entry 
 // ItemID, Pad, Pad, Pad, ReqFlag, TextID, POIN EventAddress 
 BYTE 0xBB   0        0    0; SHORT 0     0     ; POIN ExampleEvent // 0xBB is gold gem 
-//BYTE Berry 0 0 0; SHORT 0 DebugTextHere; POIN ExampleEvent
+//BYTE OrionBolt 0 0 0; SHORT 0 0x505; POIN ExampleEvent
 // Entries
 WORD 0 // Terminator 
 
 
 ALIGN 4
 ExampleEvent:
-TutText(DebugTextHere)
+Text(0x9df) 
 NoFade 
 ENDA 
 
@@ -44,6 +59,14 @@ POIN ItemSpecialEffectUsability
 #ifdef Take_Over_Item_Menu 
 
 #ifndef IM_USE 
+
+#define NormalText 0x0
+#define GrayText 0x1
+#define BlueText 0x2
+#define OrangeText 0x3
+#define GreenText 0x4
+#define BlackText 0x5
+
 #define MenuCommand(name,description,colour,usability,drawingroutine, effect) "WORD $80d7d94; SHORT name description; BYTE colour $4e; SHORT 0; POIN usability|1; POIN drawingroutine|1; POIN effect|1; WORD 0 0 0"
 #define MenuCommand(name,description,colour,usability,effect) "WORD $80d7d94; SHORT name description; BYTE colour $4e; SHORT 0; POIN usability|1; WORD 0; POIN effect|1; WORD 0 0 0"
 #define IM_Use "BYTE $8C $7D $0D $08 $96 $06 $DB $06 $00 $34 $00 $00 $7D $36 $02 $08 $00 $00 $00 $00 $71 $37 $02 $08 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00"
@@ -64,7 +87,6 @@ ALIGN 4
 ItemMenuTable:
 
 MenuCommand(0x505, 0, BlueText, ItemSpecialEffectUsability|1, ItemSpecialDraw|1, ItemSpecialEffect|1)
-//MenuCommand(0x696, 0x6DB, BlueText, ItemSpecialEffectUsability|1, ItemSpecialEffect|1)
 IM_Use
 IM_Equip
 IM_Trade
