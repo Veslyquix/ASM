@@ -2,7 +2,21 @@
 // this is to display purple tiles while selecting an area to attack 
 // briefly uses a byte in ram at 0x0203F101, which combat arts also use. 
 // it should not conflict with combat arts. 
+
+
+// Uncomment if you are using FEBuilder. 
+//#define USING_FEBUILDER
+
+// 0x4AB is DUMMY text
+#ifdef USING_FEBUILDER
+	#define UM_AoEName 0x4AB // Replace with text IDs you wish to use. 
+	#define UM_AoEDesc 0x4AB
+	#define UM_AoEHelp 0x4AB
+	#define UM_AoEHealHelp 0x4AB
+#endif 
+
 #include "Internals.event"
+
 
 // Add this to your Unit Menu 
 // MenuCommand(UM_AoEName, UM_AoEDesc, NormalText, AoE_AreAnyUsable, AoE_Effect)
@@ -26,9 +40,11 @@ Select an area to Heal. Press L/R to Rotate.[X]
 
 */
 
-// 0x4AB is DUMMY text
+
 
 // 8022C99 - HideMoveRangeGraphicsWrapper
+
+
 
 
 // These are the submenu options that appear:
@@ -140,43 +156,43 @@ ENDA
 // If your animation event overwrites Memory Slot 3, you will get a random rotation. 
 
 RocksEvent_MiddleVertical:
-SVAL r1 2 // 2nd vertical line it finds 
+SVAL 1 2 // 2nd vertical line it finds 
 ASMC AoE_ShowBrokenWall_Vertical 
 NoFade 
 ENDA 
 
 RocksEvent_MiddleHorizontal:
-SVAL r1 2 // 2nd horizontal line it finds 
+SVAL 1 2 // 2nd horizontal line it finds 
 ASMC AoE_ShowBrokenWall_Horizontal
 NoFade 
 ENDA 
 
 RocksEvent_Cross:
-SVAL r1 1 
+SVAL 1 1 
 ASMC AoE_ShowBrokenWall_Vertical
-SVAL r1 1 
+SVAL 1 1 
 ASMC AoE_ShowBrokenWall_Horizontal
 NoFade 
 ENDA 
 
 
 RocksEvent_Vertical: // This drops rocks in vertical lines, repeating from left to right
-SVAL r1 1
-SVAL r3 1 
+SVAL 1 1
+SVAL 3 1 
 LABEL 0
 ASMC AoE_ShowBrokenWall_Vertical
-SADD r1 r1 r3 
-BEQ 0 rC r3 // Repeat until false is returned 
+SADD 0x311 //SADD s1 s1 s3 
+BEQ 0 0xC 3 // Repeat until false is returned 
 NoFade 
 ENDA 
 
 RocksEvent_Horizontal: // This drops rocks in horizontal lines, repeating from top to bottom 
-SVAL r1 1
-SVAL r3 1 
+SVAL 1 1
+SVAL 3 1 
 LABEL 0
 ASMC AoE_ShowBrokenWall_Horizontal
-SADD r1 r1 r3 
-BEQ 0 rC r3 // Repeat until false is returned 
+SADD 0x311 //SADD s1 s1 s3 
+BEQ 0 0xC 3 // Repeat until false is returned 
 NoFade 
 ENDA 
 
