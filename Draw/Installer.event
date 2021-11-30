@@ -15,7 +15,8 @@ ASMC ASMC_Draw
 */
 
 PUSH // Only vanilla address that we take over. 
-ORG $81274 // Poin to the vanilla proc 
+ORG $81274 // Poin to the vanilla proc	//{U}
+//ORG $835B4 // Poin to the vanilla proc	//{J}
 POIN gProc_MapAnimRound_Animation
 POP 
 
