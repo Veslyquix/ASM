@@ -87,7 +87,12 @@ PurpleMovementSquares:
 	#define UM_Separator  "WORD 0 0 0 0 0 0 0 0 0"
 #endif 
 
-
+/*
+GenericASMC_DrawEvent:
+ASMC ASMC_Draw
+NoFade 
+ENDA
+*/
 
 Call_AoE_ExternalAnimationEvent:
 EVBIT_MODIFY 4
