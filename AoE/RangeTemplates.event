@@ -361,7 +361,6 @@ BYTE 0 1 1
 BYTE 1 1 1    
 BYTE 0 1 1 
 BYTE 0 0 1
- 
 
 ALIGN 4
 RangeTemplateTable_Triangle2:
@@ -370,9 +369,6 @@ BYTE 2 0
 BYTE 0 0 1 0 0            
 BYTE 0 1 1 1 0             
 BYTE 1 1 1 1 1    
-
-
-
 
 ALIGN 4
 RangeTemplateTable_Triangle3:
@@ -384,8 +380,6 @@ BYTE 1 1 1
 BYTE 1 1 0 
 BYTE 1 0 0
 
-
-
 ALIGN 4
 RangeTemplateTable_Triangle4:
 BYTE 5 3 
@@ -393,7 +387,7 @@ BYTE 2 2
 BYTE 1 1 1 1 1
 BYTE 0 1 1 1 0             
 BYTE 0 0 1 0 0    
-        
+
 
 
 ALIGN 4
