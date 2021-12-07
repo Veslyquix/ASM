@@ -125,7 +125,7 @@ POIN RangeTemplateTable_LargeCone2
 POIN RangeTemplateTable_LargeCone3
 POIN RangeTemplateTable_LargeCone4
 
-WORD 0 // Terminator 
+WORD 0 0 0 0 // Terminator 
 
 ALIGN 4
 RangeTemplateTable_Line1:
