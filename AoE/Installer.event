@@ -10,7 +10,7 @@
 #endif // FEBUILDER_EXTRA_ORG
 
 #include "Internals.event"
-
+#include "AoE_ASMC.lyn.event"
 
 // Add this to your Unit Menu 
 // MenuCommand(UM_AoEName, UM_AoEDesc, NormalText, AoE_AreAnyUsable, AoE_Effect)
