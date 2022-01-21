@@ -193,13 +193,7 @@ HideMMSFunc:
 	@ Arguments: nothing 
 	@ Returns:   nothing
 push {lr} 
-
-
-@mov r4, r0 @ unit struct 
 @ even if giving exp to a unit that is not the active unit, we only want to show sms for the active unit 
-
-
-
 blh 0x80790a4 @ End MMS 
 ldr r0, =gProc_MoveUnit
 blh ProcFind 
@@ -218,7 +212,6 @@ ldr r1, [r3, #0x0C] @ Unit state
 mov r2, #1 @ Hide 
 bic r1, r2 @ Show SMS 
 str r1, [r3, #0x0C] 
-
 
 Exit:
 blh 0x08019FA0   //UpdateUnitMapAndVision
