@@ -1,0 +1,70 @@
+#include "eastdlib.event" 
+
+// Add a menu command to use. 
+// 	MenuCommand(UM_Promote, UM_PromoteDesc, GreenText, PromoteUsability, PromoteEffect) 
+
+/*
+## UM_Promote
+ Promote[X]
+ 
+## UM_PromoteDesc
+Promote this unit.[X]
+*/
+
+
+ALIGN 4
+PromotionMenuList: // Size: 8 bytes per entry. 
+//BYTE Unit Class RequiredLevel ChapterID BoolException 0; SHORT Flag 
+// UnitID to match
+// ClassID to match
+// Must be this level or higher
+// Must be in this chapter or past it
+// If true, units meeting the criteria *will not* be able to use the command. If false, they *will* be able to use the command. 
+// Padding of 0. 
+// Short of Flag. 
+BYTE 0 0 0 0 	False 0 ; SHORT 0
+BYTE 1 0 0 0xff True 0 ; SHORT 0
+WORD 0xFFFFFFFF 0xFFFFFFFF // Terminator. 
+
+
+PromotionMenuEvent:
+ASMC PromoteStart
+ASMC PromoteFinish 
+NoFade 
+ENDA 
+
+
+ALIGN 4
+PUSH 
+ORG CurrentOffset+1
+PromoteUsability:
+POP
+#incbin "PromoteUsability.dmp"
+POIN PromotionMenuList 
+
+ALIGN 4
+PUSH 
+ORG CurrentOffset+1
+PromoteEffect:
+POP
+#incbin "PromoteEffect.dmp"
+POIN PromotionMenuEvent
+
+
+ALIGN 4
+PUSH 
+ORG CurrentOffset+1
+PromoteStart:
+POP
+#incbin "PromoteStart.dmp"
+
+ALIGN 4
+PUSH 
+ORG CurrentOffset+1
+PromoteFinish:
+POP
+#incbin "PromoteFinish.dmp"
+
+
+
+
