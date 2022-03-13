@@ -41,6 +41,7 @@ blh EndMMS
 
 
 Exit: 
+mov r0, #0xB7
 
 pop {r4} 
 pop {r1}
