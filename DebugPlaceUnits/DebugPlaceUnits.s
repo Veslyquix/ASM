@@ -65,30 +65,37 @@ bx r3
 	.type   InsertEventOnTileSelect, function
 InsertEventOnTileSelect:
 
-push {lr} 
-lsl r0, r5, #3 
-add r0, r7 
-ldr r1, [r0] 
-mov r0, r4  
-bl BXR1 
+push {lr}
+lsr r4, r0, #24
+ldr r3, =0x202bcf0 @gChData 
+ldrb r0, [r3, #0xE] @ ch 
+blh 0x80346b0 @gCh Event Data Pointer
 
-@ 3007D98
-@ this seems to be the ram address used 
-@ when Dunno2 / "When player has selected coordinate to move to" is hit 
-ldr r3, =0x3007D98 
-cmp r4, r3 
-bne SkipTeleportActiveUnit 
-blh TeleportActiveUnit
+push {r4}
+mov r4, r0 
 
+
+
+ldr r2, =0x202BCF0
+ldrb r1, [r2, #0xF] @ Phase 
+cmp r1, #0 
+bne SkipTeleportActiveUnit @ If not player phase, exit 
+
+ldr r1, =CurrentUnit
+ldr r1, [r1]
+cmp r1, #0 
+beq SkipTeleportActiveUnit
+bl TeleportActiveUnit
 SkipTeleportActiveUnit:
-cmp r0, #1 
+mov r0, r4 
+pop {r4} 
 
 pop {r1}
 BXR1:
 bx r1 
 
 
-.equ MuCtr_CreateWithReda,0x800FEF5 @r0 = char struct, target x coord, target y coord
+.equ MuCtr_CreateWithReda,0x800FEF4 @r0 = char struct, target x coord, target y coord
 .align 4 
 	.global TeleportActiveUnit
 	.type   TeleportActiveUnit, function
