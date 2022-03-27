@@ -30,7 +30,7 @@
 @ 
 @ ORG 0x801CC20 
 @ callHackr0(DecideToHideActiveUnitRangeDisplay) 
-
+.set prMap_Fill,                 0x080197E4 @ arguments: r0 = rows start ptr, r1 = value; returns: nothing
 .equ DisplayActiveUnitEffectRange, 0x0801cc7c 
 
 .align 4 
@@ -52,8 +52,18 @@ bne SkipDisplayingRange
 
 ldr r0, [r4] @ Copied vanilla code
 blh DisplayActiveUnitEffectRange
+b End_Preamble
 SkipDisplayingRange:
+ldr r0, =0x202E4E0 @ movement map 0xFF can't move anywhere 
+ldr r0, [r0] 
+mov r1, #0xFF 
+blh prMap_Fill
 
+ldr r0, =0x202E4E4 @ range map 0 = can't move/att there 
+ldr r0, [r0] 
+mov r1, #0 
+blh prMap_Fill 
+End_Preamble: 
 
 pop {r3}
 bx r3 
