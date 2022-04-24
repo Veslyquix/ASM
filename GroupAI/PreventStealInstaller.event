@@ -6,7 +6,7 @@ PUSH
 
 
 ORG $3D46C 
-jumpToHack(PreventMovingStealIfBossAI|1)
+jumpToHack(PreventStealIfBossAI|1)
 ORG $3D474 
 SHORT $46C0 $46C0 // nop nop 
 
