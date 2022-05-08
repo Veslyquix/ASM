@@ -4,7 +4,7 @@
 #define MinimumFrames 28 // Vanilla does 28 frames 
 
 
-#define ShowAnimation(AnimationID, Coordinate) "SVAL r1 AnimationID; SVAL r2 0; SCOORDS rB Coordinate; ASMC ASMC_Draw" 
+#define ShowAnimation(AnimationID, Coordinate) "SVAL r1 AnimationID; SVAL r2 0; SCOORD rB Coordinate; ASMC ASMC_Draw" 
 
 /*
 // Usage: 
