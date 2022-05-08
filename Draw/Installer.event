@@ -3,8 +3,10 @@
 #define VRAM_Address 0x6013300 // Where in VRAM (see No$Gba Obj window) to draw animation 
 #define MinimumFrames 28 // Vanilla does 28 frames 
 
-
-#define ShowAnimation(AnimationID, Coordinate) "SVAL r1 AnimationID; SVAL r2 0; SCOORD rB Coordinate; ASMC ASMC_Draw" 
+#ifndef COORD 
+	#define Coord(XX,YY) "YY<<16|XX" 
+#endif 
+#define ShowAnimation(AnimationID, Coordinate) "SVAL r1 AnimationID; SVAL r2 0; SVAL rB Coordinate; ASMC ASMC_Draw" 
 
 /*
 // Usage: 
