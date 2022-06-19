@@ -31,12 +31,14 @@ PostBattleMovementCalcLoopFunc:
 push {r4, lr} 
 mov r4, r0
 
-bl MovementCalcLoopFunc
+
 
 ldr r3, =gActionData
 ldrb r0, [r3, #0x11] 
 cmp r0, #2 
-bne SkipDefender @ only update coords if attacked this turn 
+bne SkipPostBattleCalcLoop @ only update coords if attacked this turn 
+
+bl MovementCalcLoopFunc
 
 ldr r3, =Attacker 
 ldrb r0, [r3, #0x0B] @ deployment byte 
@@ -67,6 +69,8 @@ blh UpdateUnitMapAndVision
 blh UpdateTrapHiddenStates 
 blh SMS_UpdateFromGameData
 blh UpdateGameTilesGraphics 
+
+SkipPostBattleCalcLoop:
 
 
 ldrb r0, [r4, #4] 
