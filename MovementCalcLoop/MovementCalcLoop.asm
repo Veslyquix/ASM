@@ -33,6 +33,11 @@ mov r4, r0
 
 bl MovementCalcLoopFunc
 
+ldr r3, =gActionData
+ldrb r0, [r3, #0x11] 
+cmp r0, #2 
+bne SkipDefender @ only update coords if attacked this turn 
+
 ldr r3, =Attacker 
 ldrb r0, [r3, #0x0B] @ deployment byte 
 blh GetUnit 
