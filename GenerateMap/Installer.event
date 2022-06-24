@@ -1,0 +1,29 @@
+#include "GenerateMap.lyn.event"
+#include "Map/GeneratedInstaller.event"
+
+
+ALIGN 4
+PUSH; ORG CurrentOffset+1
+NewLoadChapterMap: ; POP 
+#include "LoadChapterMap.lyn.event"
+
+
+PUSH 
+ORG $198AC 
+jumpToHack(NewLoadChapterMap)
+POP 
+
+
+
+ALIGN 4 
+NumberOfMapPieces: // defined in GeneratedInstaller.event 
+WORD NumberOfMapPiecesDef 
+
+
+
+
+
+
+
+
+
