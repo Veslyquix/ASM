@@ -46,6 +46,11 @@ NextUnit:
 mov r0, r4
 mov lr, r5
 .short 0xf800
+cmp r0, #0 
+beq NotInGroup 
+ldr r1, [r0] 
+cmp r1, #0 
+beq NotInGroup 
 @r0 is now ram
 
 mov r2, #0x41
