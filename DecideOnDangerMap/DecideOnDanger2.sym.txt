@@ -1,5 +1,0 @@
-Start=$30
-RetZero=$2C
-QuickExit=$2E
-VanillaBehaviour=$5E
-End=$66

@@ -3,53 +3,22 @@
 	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
 
-// AiGetTileWeightForAttack is after FillAiDangerMap 
-// fe8j at 803ddec [20304A0..2030800]?!!
 
 PUSH 
+//ORG $3E308 // from $3E2F4 SetupAiDangerMap	//{U}
 
-// These are a couple of offsets for Target AI3 
-//ORG $D817E	//{U}
-//BYTE 0 // prioritize accuracy ai3 0x8 to ignore attack power of opponents 
-//ORG $D81A6	//{U}
-//BYTE 0 // prioritize damage ai3 0x10 to ignore attack power of opponents 
+ORG $3E298 // from SetupAiDangerMap	//{J}
+callHackNew(DecideOnDanger|1) 
 
-//ORG $3E2F4 // SetupAiDangerMap	//{U}
-ORG $3E284 // SetupAiDangerMap	//{J}
-//SHORT $4770 // bx lr! 
-SHORT $B500 // Push lr 
-ORG $3E298 
-callHackNew(DecideOnDanger3|1) 
-
-//ORG $3E12C // from AiBattleGetTileDangerWeight	//{U}
-//ORG $3E0BC // from AiBattleGetTileDangerWeight	//{J} from ComputeAiAttackWeight 
-//callHackNew(DecideWhetherToFillAiDangerMap|1) 
-
-// FindClosestBestPosition also looks at gMapMovement2 
-// IsAiTileSafe, too from AiTryMoveTowards 
-
-ORG $3E0BC 
-SHORT $7800 $08C1 $4806 $6800 $7980 $4341 // vanilla data 
-//#incbin "DecideWhetherToFillAiDangerMap.dmp" 
-
-
-
-ORG $3DE2C // from AiGetTileWeightForAttack	//{J}
-//callHackNew(DecideOnDanger2|1) 
-
+// Restore vanilla data for Kaitou 
+//ORG $3E284 
+//SHORT $B500 // Push lr 
+//ORG $3E0BC 
+//SHORT $7800 $08C1 $4806 $6800 $7980 $4341 // vanilla data 
 
 POP 
 
-//ALIGN 4 
-//DecideWhetherToFillAiDangerMap: 
-//#incbin "DecideWhetherToFillAiDangerMap.dmp" 
-
-
 ALIGN 4 
-DecideOnDanger2: 
-//#incbin "DecideOnDanger2.dmp" 
-
-ALIGN 4 
-DecideOnDanger3: 
-#incbin "DecideOnDanger3.dmp" 
+DecideOnDanger: 
+#incbin "DecideOnDanger.dmp" 
 

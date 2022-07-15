@@ -1,3 +1,2 @@
 ASMC_Draw=$AC7410
-DecideOnDanger2=$6D2E4
-DecideOnDanger3=$6D2E4
+DecideOnDanger=$6D2E4
