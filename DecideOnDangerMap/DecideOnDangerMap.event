@@ -5,17 +5,9 @@
 
 
 PUSH 
-//ORG $3E308 // from $3E2F4 SetupAiDangerMap	//{U}
-
-ORG $3E298 // from SetupAiDangerMap	//{J}
+ORG $3E308 // from $3E2F4 SetupAiDangerMap	//{U}
+//ORG $3E298 // from SetupAiDangerMap	//{J}
 callHackNew(DecideOnDanger|1) 
-
-// Restore vanilla data for Kaitou 
-//ORG $3E284 
-//SHORT $B500 // Push lr 
-//ORG $3E0BC 
-//SHORT $7800 $08C1 $4806 $6800 $7980 $4341 // vanilla data 
-
 POP 
 
 ALIGN 4 

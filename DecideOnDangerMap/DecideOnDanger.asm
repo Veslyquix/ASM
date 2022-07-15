@@ -6,18 +6,18 @@
 .endm
 
 @ FE8U
-@.equ AiData, 0x203AA04	@{U}
-@.equ ClearMapWith, 0x80197E4	@{U}
-@.equ FillAiDangerMap, 0x803E320	@{U}
+.equ AiData, 0x203AA04	@{U}
+.equ ClearMapWith, 0x80197E4	@{U}
+.equ FillAiDangerMap, 0x803E320	@{U}
 @.equ ai3_address, 0x80D8178 @{U}
-@.equ ai3_pointer, 0x803E1DC @{U}
+.equ ai3_pointer, 0x803E1DC @{U}
 
 @ FE8J
-.equ AiData, 0x203AA00	@{J}
-.equ ClearMapWith, 0x80194BC	@{J}
-.equ FillAiDangerMap, 0x803E2B0	@{J}
-@.equ ai3_address, 0x80DCE54 @ {J} 
-.equ ai3_pointer, 0x803E16C @{J}
+@.equ AiData, 0x203AA00	@{J}
+@.equ ClearMapWith, 0x80194BC	@{J}
+@.equ FillAiDangerMap, 0x803E2B0	@{J}
+@@.equ ai3_address, 0x80DCE54 @ {J} 
+@.equ ai3_pointer, 0x803E16C @{J}
 
 push {lr} 
 ldr r0, [r0] 
