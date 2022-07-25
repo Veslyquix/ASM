@@ -1,4 +1,4 @@
-
+#include "eastdlib.event"
 
 
 ALIGN 4 
@@ -16,7 +16,7 @@ ExampleEvent:
 ASMC ComputeRepairCost|1 
 // This returns the cost to repair your weapons in memory slot C 
 SADD r1 rC r0
-MemSlotToString(r1) // See the patch: Convert Memory Slot to String 
+//MemSlotToString(r1) // See the patch: Convert Memory Slot to String 
 EVBIT_MODIFY 4 // No scene skipping 
 SVAL r7 1 
 EVBIT_F 2 
