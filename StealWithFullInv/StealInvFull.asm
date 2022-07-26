@@ -33,8 +33,6 @@ bne Exit
 mov r4, r0 @ proc 
 
 ldr r0, =Attacker 
-
-
 ldr r1, =Defender 
 add r1, #0x48 
 ldrh r1, [r1] 
@@ -59,7 +57,7 @@ ldrh r1, [r1]
 mov r2, r4 
 blh HandleNewItemGetFromDrop @ edited to return new proc pointer 
 
-ldr r0, =StealFixProc
+ldr r0, StealFixProc
 mov r1, #3 @ root proc 3 
 blh ProcStart 
 
@@ -68,32 +66,5 @@ pop {r4}
 pop {r0} 
 bx r0 
 .ltorg 
+StealFixProc: 
 
-
-
-.type Steal3, %function 
-.global Steal3 
-Steal3: 
-push {lr} 
-ldr r3, =Attacker 
-ldrb r0, [r3, #0x0B] 
-blh GetUnitStruct 
-cmp r0, #0 
-beq Exit2 
-ldr r3, =Attacker 
-add r0, #0x1e 
-add r3, #0x1e 
-mov r2, #0 
-Loop: 
-cmp r2, #10 
-bge Exit2 
-ldrh r1, [r0, r2] 
-strh r1, [r3, r2] 
-add r2, #2 
-b Loop 
-
-
-Exit2: 
-pop {r0} 
-bx r0 
-.ltorg 
