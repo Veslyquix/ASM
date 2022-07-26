@@ -13,15 +13,12 @@ PUSH
 ORG $32506 
 SHORT $46c0 $46c0 // don't give the item early 
 
-#ifndef SkillTester 
 ORG $9a3618 //from "MapAnimSteal" at 0x9A32C8 proc 
 _6C_CALL_ROUTINE(StealInvFull|1)
-#endif 
-#ifdef SkillTester 
+
+#ifdef SKILLSYSTEM_SKILL_TESTER
 ORG $9a3608 
 _6C_JUMP(0x9A3618)
-ORG $9a3618 //from "MapAnimSteal" at 0x9A32C8 proc 
-_6C_CALL_ROUTINE(StealInvFull|1)
 #endif 
 
 ORG $241CA 
