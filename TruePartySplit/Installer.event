@@ -50,3 +50,48 @@ ALIGN 4
 */
 g_tps_current_party: WORD TPS_STATE_ADDR
 g_tps_party_array: WORD TPS_STATE_ADDR+4
+
+
+
+
+ALIGN 4
+TpsInfo: POIN TpsInfoList
+TpsInfoList:
+    POIN Party1Info
+    POIN Party2Info
+    WORD 0 // end
+Party1Info:
+    WORD 0 // party id
+    POIN Party1Forced
+Party2Info:
+    WORD 1 // party id
+    POIN Party2Forced
+ALIGN 4 
+Party1Forced: BYTE 0 Eirika 0 // this doesn't work 
+ALIGN 4 
+Party2Forced: BYTE 0 Ephraim 0
+ALIGN 4 
+
+
+ExamplePartySplitEvent:
+EVBIT_F 2
+CALL 0x8592140 // clear bg if needed and unfade from black 
+
+SVAL s2 Ephraim // unit ID 
+SVAL s3 1 // party 1 
+ASMC Asmc_Tps_SetUnitParty
+SVAL s2 Kyle // unit ID 
+SVAL s3 1 // party 1 
+ASMC Asmc_Tps_SetUnitParty
+SVAL s2 Forde // unit ID 
+SVAL s3 1 // party 1 
+ASMC Asmc_Tps_SetUnitParty
+SVAL s2 TpsInfo|IsPointer // data above: Party1 led by Eirika and Party2 led by Ephraim 
+ASMC Asmc_Tps_StartMenu
+
+SVAL s2 1 // party 1 instead of 0 
+ASMC Asmc_Tps_SetActiveParty
+NoFade 
+ENDA 
+
+
