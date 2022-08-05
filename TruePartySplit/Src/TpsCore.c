@@ -8,23 +8,23 @@ enum { BITS_PER_PARTY_ID = 4 };
 
 int TpsGetPartyRawByPid(int pid)
 {
-    static int const mask = (1 << BITS_PER_PARTY_ID) - 1;
+    static int const mask = 0xF; //4 bits 
 
-    int const slot = pid / (8 / BITS_PER_PARTY_ID);
-    int const shift = (pid % (8 / BITS_PER_PARTY_ID)) * BITS_PER_PARTY_ID;
+    int const slot = pid >> 1; //divide by 2
+    int const shift = ((pid & 1) ^ 1) << 2; //4 if an even number, 0 otherwise 
 
     return (g_tps_party_array[slot] >> shift) & mask;
 }
 
 void TpsSetPartyRawForPid(int pid, int party)
 {
-    static int const mask = (1 << BITS_PER_PARTY_ID) - 1;
+    static int const mask = 0xF; //4 bits 
 
-    int const slot = pid / (8 / BITS_PER_PARTY_ID);
-    int const shift = (pid % (8 / BITS_PER_PARTY_ID)) * BITS_PER_PARTY_ID;
+    int const slot = pid >> 1; //divide by 2
+    int const shift = ((pid & 1) ^ 1) << 2; //4 if an even number, 0 otherwise 
 
-    g_tps_party_array[slot] &= mask << shift;
-    g_tps_party_array[slot] |= (party & mask) << shift;
+    g_tps_party_array[slot] &= ~(mask << shift); //clear the bits we are about to set
+    g_tps_party_array[slot] |= (party & mask) << shift; //set the bits
 }
 
 int TpsGetPartyByPid(int pid)
@@ -34,9 +34,11 @@ int TpsGetPartyByPid(int pid)
 
 void TpsSetPartyByPid(int pid, int party)
 {
-    static int const mask = (1 << (BITS_PER_PARTY_ID-1)) - 1;
+    static int const mask = (1 << (BITS_PER_PARTY_ID)) - 1;
 
     int val = TpsGetPartyRawByPid(pid);
+
+
 
     val &= ~mask;
     val |= party & mask;
@@ -79,12 +81,12 @@ void TpsRefreshUnitAwayBits(void)
         if (PARTY_RM(party) || PARTY_ID(party) != *g_tps_current_party)
         {
             // Unit is disabled
-            unit->state |= US_HIDDEN | US_BIT16 | US_BIT26;
+            unit->state |= US_NOT_DEPLOYED | US_HIDDEN | US_BIT16 | US_BIT26;
         }
         else
         {
             // Unit is enabled
-            unit->state &= ~(US_HIDDEN | US_BIT16 | US_BIT26);
+            unit->state &= ~(US_NOT_DEPLOYED | US_HIDDEN | US_BIT16 | US_BIT26);
         }
     }
 }

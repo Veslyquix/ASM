@@ -379,6 +379,7 @@ void TpsMenuUnitList_Loop(struct TpsMenuUnitListProc* proc)
 
         PutUnitSpriteExt(10-i, x, y, (1 << 10), GetUnit(unit_id));
     }
+	
 }
 
 struct TpsMenuUnitListProc* StartTpsMenuUnitList(int bg, int x, int y, int party, struct TpsMenuProc* parent)
@@ -522,6 +523,8 @@ PROC_LABEL(L_TPSMENU_NEUTRAL),
 
 PROC_LABEL(L_TPSMENU_SELECTED),
     PROC_LOOP_ROUTINE(TpsMenu_SelectedLoop),
+
+PROC_LABEL(5), 
 
     PROC_END,
 };
@@ -710,6 +713,7 @@ void TpsMenu_NeutralLoop(struct TpsMenuProc* proc)
             if (proc->unit_list_proc[proc->hover_col]->uid_storage->uids[proc->hover_row] == 0)
             {
                 // cannot move nothing!
+				
 
                 // TODO: SONG IDS
                 PlaySfx(0x6C);
@@ -738,6 +742,13 @@ void TpsMenu_NeutralLoop(struct TpsMenuProc* proc)
     if (gKeyState.pressedKeys & KEY_BUTTON_START)
     {
         // TODO: SONG IDS
+		//BreakProcLoop((void*)proc); //ProcInstruction
+		ProcGoto((struct Proc*) proc, 5); // 
+		ClearBG0BG1();
+		FillBgMap(&gBg2MapBuffer[0], 0);
+		EnableBgSyncByMask(BG0_SYNC_BIT);
+		EnableBgSyncByMask(BG1_SYNC_BIT);
+		EnableBgSyncByMask(BG2_SYNC_BIT);
         PlaySfx(0x6C);
     }
 
@@ -780,7 +791,28 @@ void TpsMenu_SelectedLoop(struct TpsMenuProc* proc)
         }
         else
         {
-            TpsMenu_DoSwapUids(proc);
+
+			
+			
+            
+			
+			// update unit on right side to be in party Y 
+			u8 uid = proc->unit_list_proc[proc->hover_col]->uid_storage->uids[proc->hover_row];
+			u8 party = proc->info->party_info_list[proc->select_col]->party_num; 
+			//u8 party = proc->info->party_info_list[proc->current_party_select[proc->hover_col]]->party_num;
+			asm("mov r11, r11");
+			if (uid)
+				TpsSetPartyRawForPid(uid, party);
+			
+			// update unit on left side to be in party X 
+			uid = proc->unit_list_proc[proc->select_col]->uid_storage->uids[proc->select_row];
+			party = proc->info->party_info_list[proc->hover_col]->party_num; 
+			asm("mov r11, r11");
+			if (uid)
+				TpsSetPartyRawForPid(uid, party);
+			
+			TpsRefreshUnitAwayBits();
+			TpsMenu_DoSwapUids(proc);
 
             proc->hover_col = proc->select_col;
             proc->hover_row = proc->select_row;
