@@ -54,8 +54,8 @@ LoadDialogueBoxGfxHook:
 
 PUSH 
 
-ORG $9C640 // remove portrait from supply "use" screen 
-SHORT $46c0 $46c0 
+ORG $9C63C
+BYTE 1 
 
 ORG $8A126		//{U}
 //ORG $8C436		//{J}
