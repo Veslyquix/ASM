@@ -14,10 +14,12 @@
 //#define gProc_ChapterMenuStatus $A73C0C	//{J}
 #define gProc_PrepSomethingUnknown $A1898C 
 #define gProc_PrepSomethingUnknown2 $A18944 // backup 
+
 ALIGN 4 
 ProcExceptionsList:
 POIN gProc_SaveMenu gProc_SaveMenu2 gProc_ChapterMenuUnit gProc_ChapterMenuStatus
 POIN gProc_PrepSomethingUnknown 
+POIN gProc_PrepSomethingUnknown2 
 WORD 0 // Terminator 
 
 
@@ -50,6 +52,11 @@ LoadDialogueBoxGfxHook:
 #incbin "LoadDialogueBoxGfxHook.dmp" 
 
 PUSH 
+
+ORG $9C63C
+//ORG 0x09E8E2    //{J}
+BYTE 1 
+
 ORG $8A126		//{U}
 //ORG $8C436		//{J}
 SHORT $46C0 
@@ -149,5 +156,12 @@ SHORT 0x42C0 // vanilla 0x4240
 //SHORT 0x4280 
 //ORG $B53BC 
 
+//Obsoleted by vesly-ExtendWeaponDescBox-tradefix.
+//ORG 0x09C63C	//{U}
+////ORG 0x09E8E2	//{J}
+//BYTE 0x1
+
+
 POP 
 
+#include "vesly-ExtendWeaponDescBox-tradefix/tradefix.event"
