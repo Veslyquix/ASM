@@ -1,0 +1,22 @@
+
+ALIGN 4 
+SkipChIntro:
+#incbin "SkipChIntro.dmp" 
+POIN SkipChIntroList
+
+PUSH 
+ORG $15510 
+jumpToHack(SkipChIntro|1) 
+POP 
+
+ALIGN 4 
+SkipChIntroList: 
+BYTE 0x38 // vanilla 
+//BYTE 1 // test case 
+BYTE 0xFF // Terminator 
+
+
+
+
+
+
