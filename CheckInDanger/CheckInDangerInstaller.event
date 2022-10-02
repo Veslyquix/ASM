@@ -1,4 +1,17 @@
+
+// TargetInRange by Vesly 
+// Check if a unit can target any unit of an opposing allegiance. 
+// Eg. if Eirika can attack any enemy, or if ONeil can attack any npc/player. 
+#include "TargetInRange.lyn.event" 
+
+
+
+// Original by StanH 
 // By StanH 
-
-
+// Check if a coordinate would be dangerous for the current allegiance. 
+// On player phase, it checks if the coordinate would be in danger of enemies. 
+// On enemy phase, it checks if the coordinate would be in danger of players. 
 #include "CheckInDanger.lyn.event"
+
+
+
