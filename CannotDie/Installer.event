@@ -1,0 +1,29 @@
+#include "eastdlib.event" 
+
+#ifndef callHackNew 
+	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+#endif 
+
+ALIGN 4; PUSH; ORG CurrentOffset+1; CannotDieEffect: ; POP 
+#incbin "CannotDie.dmp" 
+POIN CannotDieList 
+
+ALIGN 4 
+CannotDieList: 
+// unitID, classID, flag 
+// if the flag is ON, then they are no longer immune to death 
+//BYTE 0 0; SHORT 0 // everyone is immune lol 
+BYTE Eirika 0; SHORT 0 // Eirika cannot die through combat 
+BYTE 0xFD 0; SHORT 0 // Arena unit cannot die through combat 
+WORD 0xFFFFFFFF  // Terminator 
+
+
+
+
+PUSH 
+ORG $2B87C
+callHackNew(CannotDieEffect)
+POP 
+
+
+
