@@ -16,10 +16,10 @@
 
 	
 
-.global ASMC_Draw
-.type ASMC_Draw, %function 
+.global Draw_ASMC
+.type Draw_ASMC, %function 
 
-ASMC_Draw:
+Draw_ASMC:
 push {r4-r5, lr} 
 mov r4, r0 
 mov r1, r4 @ Parent proc 
