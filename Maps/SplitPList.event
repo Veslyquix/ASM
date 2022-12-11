@@ -1,0 +1,18 @@
+#include "Internals.event" 
+// -------------------------------Tile Anims-------------------------------
+// this is the only part that is not automated 
+//<property name="Anims" value="WaterAnimation"/>
+
+#include "TilesetAnimations/UpdatedVillage/Installer.event"
+#define UpdatedVillageAnimations 1
+TileAnimPointerTable(UpdatedVillageAnimations, UpdatedVillageTilesetAnimation)
+
+
+
+
+#include "GeneratedInstaller.event"
+
+ALIGN 4
+
+
+#include "Master Map Installer.event"

@@ -1,0 +1,40 @@
+//Generated. Do not edit!
+//Avoid specific values for vanilla tileset compatibility
+.avoid 0
+.avoid 1
+.avoid 234
+.avoid 230
+.avoid 14
+.avoid 24
+.avoid 46
+.avoid 60
+.avoid 66
+.avoid 80
+.avoid 95
+.avoid 108
+.avoid 121
+.avoid 136
+.avoid 2
+.avoid 56
+.avoid 76
+.avoid 91
+.avoid 15
+.avoid 114
+.avoid 25
+.avoid 72
+.avoid 87
+.avoid 185
+.avoid 47
+.avoid 52
+.avoid 61
+.avoid 104
+.avoid 206
+.avoid 67
+.avoid 81
+.avoid 96
+.avoid 109
+.avoid 163
+.avoid 122
+.avoid 137
+UpdatedVillageObj
+UpdatedVillagePal

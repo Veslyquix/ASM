@@ -1,0 +1,15 @@
+//Generated. Do not edit!
+//Avoid specific values for vanilla tileset compatibility
+.avoid 0
+.avoid 3
+.avoid 16
+.avoid 26
+.avoid 48
+.avoid 62
+.avoid 68
+.avoid 82
+.avoid 97
+.avoid 110
+.avoid 123
+.avoid 138
+UpdatedVillageConf

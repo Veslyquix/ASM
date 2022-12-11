@@ -1,0 +1,6 @@
+//Generated. Do not edit!
+
+ObjTypePalettePointerTable(UpdatedVillagePal,UpdatedVillagePalData)
+ObjTypePalettePointerTable(UpdatedVillageObj,UpdatedVillageObjData)
+TileConfigPointerTable(UpdatedVillageConf,UpdatedVillageConfData)
+ALIGN 4UpdatedVillageObjData:#incbin "dmp/UpdatedVillage.dmp"ALIGN 4UpdatedVillagePalData:#incbin "dmp/UpdatedVillage_pal.dmp"ALIGN 4UpdatedVillageConfData:#incbin "dmp/UpdatedVillage_comp.dmp"

@@ -1,0 +1,387 @@
+
+
+PUSH
+ORG 0x19900
+POIN TileConfigPLIST
+
+ORG 0x19968
+POIN ObjTypePalettePLIST
+
+ORG 0x1999C
+POIN ObjTypePalettePLIST
+
+ORG 0x30134
+POIN TileAnimPLIST
+
+ORG 0x30C78
+POIN TileAnimPLIST
+
+ORG 0x34680
+POIN MapPLIST
+
+ORG 0x346AC
+POIN MapChangesPLIST
+
+ORG 0xB3018
+POIN MapChangesPLIST
+
+ORG 0xC66E8
+POIN MapChangesPLIST
+
+POP
+
+
+ALIGN 4
+
+    //MESSAGE tile config plist space starts at currentOffset
+
+TileConfigPLIST:
+ORG TileConfigPLIST + (0x4 * 0xFF)
+
+
+    //MESSAGE tile config plist space starts at currentOffset
+
+ObjTypePalettePLIST:
+ORG ObjTypePalettePLIST + (0x4 * 0xFF)
+
+TileAnimPLIST:
+ORG TileAnimPLIST + (0x4 * 0xFF)
+
+MapPLIST:
+ORG MapPLIST + (0x4 * 0xFF)
+
+MapChangesPLIST:
+ORG MapChangesPLIST + (0x4 * 0xFF)
+
+
+#define TileAnimPointerTable(aId, apointer) "PUSH; ORG TileAnimPLIST+(0x4 * aId); POIN apointer; POP"
+#define ConfAnimsTiles(duration, tileSize, imgPointer) "SHORT duration tileSize; POIN imgPointer"
+
+TileAnimPointerTable(5,     0x859D498)
+TileAnimPointerTable(0x12, 0x0859D568)
+TileAnimPointerTable(0x1C, 0x0859D6F8)
+TileAnimPointerTable(0x54, 0x0859D800)
+TileAnimPointerTable(0x7D, 0x0859D678)
+TileAnimPointerTable(0xD3, 0x0859D520)
+
+
+
+
+#define TileConfigPointerTable(aId, apointer) "PUSH; ORG TileConfigPLIST+(0x4 * aId); POIN apointer; POP"
+// Confchip_config
+
+#define ObjTypePalettePointerTable(aId, apointer) "PUSH; ORG ObjTypePalettePLIST+(0x4 * aId); POIN apointer; POP"
+
+#define Map_Pointer_Table(aId, apointer) "PUSH; ORG MapPLIST+(4*aId); POIN apointer; POP"
+#define Map_Pointer_Table2(aId, apointer) "PUSH; ORG MapPLIST+(4*aId); WORD apointer; POP"
+
+// By default, TMX2EA generates this: 
+//EventPointerTable(ViridianForestNCh, MapChanges)
+// but we want it to make this instead: 
+#define MapChangesPointerTable(aId, apointer) "PUSH; ORG MapChangesPLIST+(0x4 * aId); POIN apointer; POP"
+
+// Vesly added for convenience 
+// But you could edit this in your csv if you prefer 
+#define EventsIDEntry(ChapterID) "PUSH; ORG NewChapterDataTable +(148 * ChapterID)+ 116 ; BYTE ChapterID+1; POP" // 116 is the offset of the EventsID byte, while each row has 148 bytes of data  
+// if you really want to have it not just be identical to your chapter ID+1, then use this below I guess 
+#define EventsIDEntry(ChapterID, EventID) "PUSH; ORG NewChapterDataTable +(148 * ChapterID)+ 116 ; BYTE EventID; POP" // 116 is the offset of the EventsID byte, while each row has 148 bytes of data  
+// to do: test & use these so I don't have to manually type them in the csv lol 
+
+
+
+
+
+//=====================================
+// 		Vanilla maps as defaults 
+//=====================================
+Map_Pointer_Table(4, $1B76F4)
+Map_Pointer_Table(8, $1B75D0)
+Map_Pointer_Table($B, $1B743C)
+Map_Pointer_Table($11, $1B72D4)
+Map_Pointer_Table($15, $1B715C)
+Map_Pointer_Table($1B, $1B6F78)
+Map_Pointer_Table($1f, $1B6DBC)
+Map_Pointer_Table($22, $1B6A0C)
+Map_Pointer_Table($25, $1B6718)
+Map_Pointer_Table($28, $1B6480)
+Map_Pointer_Table($2b, $1B61BC)
+Map_Pointer_Table($31, $1B5E2C)
+Map_Pointer_Table($35, $1B5A9C)
+Map_Pointer_Table($39, $1B584C)
+Map_Pointer_Table($3f, $1B558C)
+Map_Pointer_Table($45, $1B52CC)
+Map_Pointer_Table($49, $1B4FE4)
+Map_Pointer_Table($4d, $1B4CCC)
+Map_Pointer_Table($53, $1B4914)
+Map_Pointer_Table($58, $1B464C)
+Map_Pointer_Table($5c, $1B4254)
+Map_Pointer_Table($62, $1B3E7C)
+Map_Pointer_Table($65, $1B3B08)
+Map_Pointer_Table($69, $1B3870)
+Map_Pointer_Table($6f, $1B35B4)
+Map_Pointer_Table($73, $1B3258)
+Map_Pointer_Table($76, $1B2FB8)
+Map_Pointer_Table($7c, $1B2BC4)
+Map_Pointer_Table($45, $1B52CC)
+Map_Pointer_Table($49, $1B4FE4)
+Map_Pointer_Table($4d, $1B4CCC)
+Map_Pointer_Table($53, $1B4914)
+Map_Pointer_Table($58, $1B464C)
+Map_Pointer_Table($5c, $1B4254)
+Map_Pointer_Table($62, $1B3E7C)
+Map_Pointer_Table($65, $1B3B08)
+Map_Pointer_Table($8b, $1B2A60)
+Map_Pointer_Table($8e, $1B28EC)
+Map_Pointer_Table($91, $1B26EC)
+Map_Pointer_Table($94, $1B24D8)
+Map_Pointer_Table($97, $1B2300)
+Map_Pointer_Table($9a, $1B216C)
+Map_Pointer_Table($9d, $1B1F40)
+Map_Pointer_Table($a0, $1B1CD0)
+//Map_Pointer_Table($a0, $1B1CD0)
+//Map_Pointer_Table($a0, $1B1CD0)
+Map_Pointer_Table($a4, $1B1A8C)
+Map_Pointer_Table($a7, $1B1820)
+Map_Pointer_Table($aa, $1B15C0)
+Map_Pointer_Table($ad, $1B13C0)
+Map_Pointer_Table($b0, $1B1198)
+Map_Pointer_Table($b3, $1B0F8C)
+Map_Pointer_Table($b6, $1B0D40)
+Map_Pointer_Table($ba, $1B0B90)
+Map_Pointer_Table($bd, $1B0940)
+Map_Pointer_Table($c0, $1B0718)
+Map_Pointer_Table($c3, $1B070C)
+Map_Pointer_Table($c6, $1B03CC)
+Map_Pointer_Table($c9, $1B02C4)
+Map_Pointer_Table($ca, $1B0270)
+Map_Pointer_Table($cc, $1B023C)
+Map_Pointer_Table($cf, $1B000C)
+Map_Pointer_Table($d2, $1AFEF8)
+Map_Pointer_Table($d6, $1AFDB0)
+Map_Pointer_Table($d7, $1AFC74)
+Map_Pointer_Table($d8, $1AFB48)
+Map_Pointer_Table($d9, $1AFA2C)
+Map_Pointer_Table($db, $1AF980)
+Map_Pointer_Table($dc, $1AF8AC)
+Map_Pointer_Table($dd, $1AF7B0)
+Map_Pointer_Table($de, $1AF604)
+Map_Pointer_Table($e0, $1AF51C)
+Map_Pointer_Table($e2, $1AF434)
+Map_Pointer_Table($e4, $1AF320)
+Map_Pointer_Table($e5, $1AF220)
+Map_Pointer_Table($e7, $1AF120)
+Map_Pointer_Table($e8, $1AEFEC)
+Map_Pointer_Table($e9, $1AEEEC)
+Map_Pointer_Table($eb, $1AED30)
+
+
+// ------------------------------- Vanilla tile changes ----------------------------
+// #define MapChangesPointerTable(aId, apointer) "PUSH; ORG MapChangesPLIST+(0x4 * aId); POIN apointer; POP"
+MapChangesPointerTable($6,  $A1E0F8)
+MapChangesPointerTable($9,  $A1E104)
+MapChangesPointerTable($C,  $A1E160)
+MapChangesPointerTable($13, $A1E1F4)
+MapChangesPointerTable($16, $A1E2AC)
+MapChangesPointerTable($1d, $A1E3AC)
+MapChangesPointerTable($20, $A1E338)
+MapChangesPointerTable($23, $A1E3F0)
+MapChangesPointerTable($26, $A1E414)
+MapChangesPointerTable($29, $A1E450)
+MapChangesPointerTable($2c, $A1E4CC)
+MapChangesPointerTable($32, $A1E514)
+MapChangesPointerTable($36, $A1E5B8)
+MapChangesPointerTable($3a, $A1E5F4)
+MapChangesPointerTable($40, $A1E798)
+MapChangesPointerTable($46, $A1E860)
+MapChangesPointerTable($4a, $A1E8B0)
+MapChangesPointerTable($4e, $A1E938)
+MapChangesPointerTable($55, $A1E974)
+MapChangesPointerTable($59, $A1E990)
+MapChangesPointerTable($5d, $A1E9F0)
+MapChangesPointerTable($63, $A1EA08)
+MapChangesPointerTable($66, $A1EA44)
+MapChangesPointerTable($6a, $A1EA6C)
+MapChangesPointerTable($70, $A1EAF0)
+MapChangesPointerTable($74, $A1EE74)
+MapChangesPointerTable($77, $A1EEC8)
+MapChangesPointerTable($7e, $A1EF58)
+MapChangesPointerTable($8c, $A1F0F4)
+MapChangesPointerTable($8f, $A1F100)
+MapChangesPointerTable($92, $A1F110)
+MapChangesPointerTable($95, $A1F128)
+MapChangesPointerTable($98, $A1F138)
+MapChangesPointerTable($9b, $A1F20C)
+MapChangesPointerTable($9e, $A1F344)
+MapChangesPointerTable($a1, $A1F390)
+//MapChangesPointerTable($, $A1F390)
+//MapChangesPointerTable($, $A1F390)
+MapChangesPointerTable($a5, $A1F3C4)
+MapChangesPointerTable($a8, $A1F3E8)
+MapChangesPointerTable($ab, $A1F43C)
+MapChangesPointerTable($ae, $A1F5C0)
+MapChangesPointerTable($b1, $A1F6C4)
+MapChangesPointerTable($b4, $A1F71C)
+MapChangesPointerTable($b7, $A1F764)
+MapChangesPointerTable($bb, $A1F830)
+MapChangesPointerTable($be, $A1F8F0)
+MapChangesPointerTable($c1, $A1F918)
+MapChangesPointerTable($c4, $A1F930)
+MapChangesPointerTable($c7, $A1F93C)
+MapChangesPointerTable($d0, $A1E568)
+MapChangesPointerTable($d4, $A1EE28)
+MapChangesPointerTable($da, $A1FA70)
+MapChangesPointerTable($df, $A1FA90)
+MapChangesPointerTable($e1, $A1FAB0)
+MapChangesPointerTable($e3, $A1FADC)
+
+
+
+//=====================================
+// 		Vanilla tilesets below 
+//=====================================
+#define FieldsTileConfig 3
+TileConfigPointerTable(FieldsTileConfig, 0x1AB69C) //03
+
+#define VillageTileConfig $10
+TileConfigPointerTable(VillageTileConfig, 0x1AA140) //10
+
+#define CastleTileConfig $1A
+TileConfigPointerTable(CastleTileConfig, 0x1A8CCC) //1A
+
+#define PlainsTileConfig $30
+TileConfigPointerTable(PlainsTileConfig, 0x1A7674) //30
+
+#define FortTileConfig $3E
+TileConfigPointerTable(FortTileConfig, 0x1A6604) //3E
+
+#define DesertTileConfig $44
+TileConfigPointerTable(DesertTileConfig, 0x1A55B4) //44
+
+#define LavaCaveTileConfig $52
+TileConfigPointerTable(LavaCaveTileConfig, 0x1A4510) //52
+
+#define RuinsTileConfig $61
+TileConfigPointerTable(RuinsTileConfig, 0x1A3660) //61
+
+#define MountainsTileConfig $6E
+TileConfigPointerTable(MountainsTileConfig, 0x1A1FC0) //6E
+
+#define StrongholdTileConfig $7B
+TileConfigPointerTable(StrongholdTileConfig, 0x1A1440) //7B
+
+#define TempleTileConfig $8A
+TileConfigPointerTable(TempleTileConfig, 0x1A0514) //8A
+
+
+#define FieldsObjType 1
+ObjTypePalettePointerTable(FieldsObjType, 0x198D8C) //01
+
+#define VillageObjType $E
+ObjTypePalettePointerTable(VillageObjType, 0x191B14) //0E
+
+#define CastleObjType $18
+ObjTypePalettePointerTable(CastleObjType, 0x18B89C) //18
+
+#define PlainsObjType $2E
+ObjTypePalettePointerTable(PlainsObjType, 0x185154) //2E
+
+#define FortObjType $3C
+ObjTypePalettePointerTable(FortObjType, 0x1816B8) //3C
+
+#define DesertObjType $42
+ObjTypePalettePointerTable(DesertObjType, 0x17A9F4) //42
+
+#define LavaCastleObjType $50
+ObjTypePalettePointerTable(LavaCastleObjType, 0x1756B4) //50
+
+#define RuinsObjType $5F
+ObjTypePalettePointerTable(RuinsObjType, 0x170DA8) //5F
+
+#define MountainsObjType $6C
+ObjTypePalettePointerTable(MountainsObjType, 0x169D54) //6C
+
+#define StrongholdObjType $79
+ObjTypePalettePointerTable(StrongholdObjType, 0x165F7C) //79
+
+#define TempleObjType $88
+ObjTypePalettePointerTable(TempleObjType, 0x1609BC) //88
+
+
+#define FieldsPalette1 2
+ObjTypePalettePointerTable(FieldsPalette1, 0x1AEBF0) //02
+
+#define FieldsPalette2 $38
+ObjTypePalettePointerTable(FieldsPalette2, 0x1AE5B0) //38
+
+#define FieldsPalette3 $4C
+ObjTypePalettePointerTable(FieldsPalette3, 0x1AE0B0) //4C
+
+#define FieldsPalette4 $5B
+ObjTypePalettePointerTable(FieldsPalette4, 0x1ADCF0) //5B
+
+#define VillagePalette1 $F
+ObjTypePalettePointerTable(VillagePalette1, 0x1AEAB0) //0F
+
+#define VillagePalette2 $72
+ObjTypePalettePointerTable(VillagePalette2, 0x1AD7F0) //72
+
+#define VillagePalette3 $EA
+ObjTypePalettePointerTable(VillagePalette3, 0x1ACF30) //72
+
+
+#define CastlePalette1 $19
+ObjTypePalettePointerTable(CastlePalette1, 0x1AE970) //19
+
+#define CastlePalette2 $48
+ObjTypePalettePointerTable(CastlePalette2, 0x1AE1F0) //48
+
+#define CastlePalette3 $57
+ObjTypePalettePointerTable(CastlePalette3, 0x1ADE30) //57
+
+#define CastlePalette4 $B9
+ObjTypePalettePointerTable(CastlePalette4, 0x1AD2F0) //B9
+
+#define PlainsPalette1 $2F
+ObjTypePalettePointerTable(PlainsPalette1, 0x1AE830) //2F
+
+#define PlainsPalette2 $34
+ObjTypePalettePointerTable(PlainsPalette2, 0x1AE6F0) //34
+
+#define FortPalette1 $3D
+ObjTypePalettePointerTable(FortPalette1, 0x1AE470) //3D
+
+#define FortPalette2 $68
+ObjTypePalettePointerTable(FortPalette2, 0x1ADA70) //68
+
+#define FortPalette3 $CE
+ObjTypePalettePointerTable(FortPalette3, 0x1AD1B0) //CE
+
+#define DesertPalette1 $43
+ObjTypePalettePointerTable(DesertPalette1, 0x1AE330) //43
+
+#define LavaCavePalette1 $51
+ObjTypePalettePointerTable(LavaCavePalette1, 0x1ADF70) //51
+
+#define RuinsPalette1 $60
+ObjTypePalettePointerTable(RuinsPalette1, 0x1ADBB0) //60
+
+#define MountainsPalette1 $6D
+ObjTypePalettePointerTable(MountainsPalette1, 0x1AD930) //6D
+
+#define MountainsPalette2 $A3
+ObjTypePalettePointerTable(MountainsPalette2, 0x1AD430) //A3
+
+#define StrongholdPalette1 $7A
+ObjTypePalettePointerTable(StrongholdPalette1, 0x1AD6B0) //7A
+
+#define StrongholdPalette2 $E6
+ObjTypePalettePointerTable(StrongholdPalette2, 0x1AD070) //E6
+
+#define TemplePalette1 $89
+ObjTypePalettePointerTable(TemplePalette1, 0x1AD570) //89
+
+
+
+
+
+
