@@ -4,6 +4,7 @@
   mov lr, \reg
   .short 0xf800
 .endm
+.equ SecondRound, 0x203E152 @ for doubling? 
 	.equ CheckEventId,0x8083da8
 	.equ CurrentRound_ComputeWeaponEffect, 0x802B600 
 .global CannotDieEffect 
@@ -11,15 +12,8 @@
 CannotDieEffect: 
 mov r1, r5 @ vanilla 
 push {r4-r7, lr} 
-mov r5, r8 
-mov r6, r9 
-mov r7, r10
-push {r5-r7} 
-mov r8, r0 @attacker
-mov r9, r1 @defender
+mov r5, r1 @ defender 
 
-mov r0, #0 
-mov r10, r0 
 ldr     r0,=0x802b444    @pointer to the current round
 ldr     r0, [r0]          @current round pointer (usually 203a608)
 ldr     r6, [r0]         @current round (originally starting at 203a5ec), increment by 4 bytes to get the next round
@@ -29,20 +23,9 @@ mov     r7, r0
 
 @mov r6, r2 @battle buffer
 @mov r7, r3 @battle data
-mov r5, r9 
+
 ldr r4, CannotDieList 
 sub r4, #4 
-b Loop 
-
-TryAttacker: 
-mov r5, r8
-mov r0, r10 
-cmp r0, #0 
-bne Break 
-mov r0, #1 
-mov r10, r0 
-ldr r4, CannotDieList 
-sub r4, #4
 
 Loop: 
 add r4, #4
@@ -50,7 +33,7 @@ ldr r0, [r4]
 mov r1, #0 
 sub r1, #1 @ 0xFFFFFFFF terminator 
 cmp r0, r1
-beq TryAttacker 
+beq Break 
 ldr r2, [r5] @ char pointer 
 ldrb r2, [r2, #4] @ char id 
 ldrb r0, [r4] @ matching char ID 
@@ -110,13 +93,9 @@ strh r0, [r7, #0x04] @ no damage
 
 
 Break: 
-pop {r5-r7} 
-mov r8, r5
-mov r9, r6
-mov r10, r7  
 pop {r4-r7}
-mov r0, r4 
-mov r1, r5 
+mov r0, r4 @ atkr 
+mov r1, r5 @ dfdr 
 blh CurrentRound_ComputeWeaponEffect
 mov r0, #0x13 
 ldsb r0, [r4, r0] 
