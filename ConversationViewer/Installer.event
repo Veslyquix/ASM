@@ -9,10 +9,18 @@
 
 #include "ConversationViewer.lyn.event" 
 
+//#define ImmediateConversationViewer
+
 PUSH 
 // Support Completion proc 
 ORG 0xA1988 
 callHackNew(ConversationViewer_ASMC) 
+
+#ifdef ImmediateConversationViewer
+ORG $9A04 
+callHackNew(ConversationViewer_ASMC) 
+SHORT $46C0 $46C0 $46C0 $46C0 
+#endif 
 
 ORG 0xA14E4 
 POIN HistoryGFX // Replace "Supports" image with "History" (Credits: Retina) 
@@ -27,6 +35,9 @@ BYTE 0x01		//GGM_IsCharacterKnown always 1
 POP 
 
 
+ALIGN 4 
+ConversationViewer_DefaultBGM:
+SHORT 0x9 // Distant roads 
 
 ALIGN 4 
 ConvoChapterEntry: 
@@ -52,8 +63,9 @@ POIN 0
 ORG ConvoChapterEntry+(4*0xFF) 
 ALIGN 4 
 ChapterOneConversations: 
-// Optional event to run instead, text id to show, BG to use, chapter ID (for its ch name), text id for the name of the event, 0 padding 
-POIN AnotherEvent; 					SHORT 0x93B; 	BYTE 0xFF	0; 								SHORT 0x160 0
+// Optional event to run instead, text id to show, BG to use, chapter ID (for its ch name), text id for the name of the event, bgm to play 
+//POIN AnotherEvent; 					SHORT 0x93B; 	BYTE 0xFF	0; 								SHORT 0x160 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x354 0xA
 POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x354 0
 //POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x355 0
 //POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x356 0

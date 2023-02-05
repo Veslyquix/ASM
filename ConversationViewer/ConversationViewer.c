@@ -46,7 +46,7 @@ struct ConversationViewer_Struct
 	u8 bg; 
 	u8 chapterID; 
 	u16 titleTextID; 
-	u16 pad; 
+	u16 bgm; 
 }; 
 
 extern struct ConversationViewer_Struct* ConvoChapterEntry[0xFF]; 
@@ -293,7 +293,7 @@ static int ConversationViewerInputLoop(struct MenuProc* menu, struct MenuCommand
 		proc->updated = true; 
 		menu->commandIndex = 0; 
 		} 
-        PlaySfx(0x6B);
+        PlaySfx(0x66);
     }
 
     if (gKeyState.repeatedKeys & KEY_DPAD_DOWN)
@@ -309,7 +309,7 @@ static int ConversationViewerInputLoop(struct MenuProc* menu, struct MenuCommand
 		menu->commandIndex = NumberOfChapters-1; // to make it 0-indexed 
 		proc->updated = true; 
 		}
-        PlaySfx(0x6B);
+        PlaySfx(0x66);
     }
 	
 	
@@ -384,7 +384,7 @@ static int CharacterInputLoop(struct MenuProc* menu, struct MenuCommandProc* com
 		proc->updated = true; 
 		menu->commandIndex = 0; 
 		} 
-        PlaySfx(0x6B);
+        PlaySfx(0x66);
     }
 
     if (gKeyState.repeatedKeys & KEY_DPAD_DOWN)
@@ -400,7 +400,7 @@ static int CharacterInputLoop(struct MenuProc* menu, struct MenuCommandProc* com
 		menu->commandIndex = NumberOfEvents-1; // to make it 0-indexed 
 		proc->updated = true; 
 		}
-        PlaySfx(0x6B);
+        PlaySfx(0x66);
     }
 	
 	
@@ -508,6 +508,8 @@ static void DrawChapterTitle(struct MenuProc* menu, struct MenuCommandProc* comm
 	
 }
 
+//extern void m4aSongNumStart(u16 
+extern u16 ConversationViewer_DefaultBGM; 
 static int SelectYes(struct MenuProc* menu, struct MenuCommandProc* command)
 {
 	
@@ -525,7 +527,10 @@ static int SelectYes(struct MenuProc* menu, struct MenuCommandProc* command)
 			if (ConvoEntry->textID != 0xFFFF) { // if text id is 0xFFFF, do nothing 
 				gEventSlot[0x3] = ConvoEntry->textID;
 				gEventSlot[0x2] = ConvoEntry->bg;
-				if (ConvoEntry->bg == 0xFF) gEventSlot[0x2] = 0x37; 
+				u16 bgm = ConvoEntry->bgm; 
+				if (ConvoEntry->bg == 0xFF) gEventSlot[0x2] = 0x37; // 0x37 is reserved for random BGs in vanilla 
+				if (bgm == 0xFFFF || bgm == 0) bgm = ConversationViewer_DefaultBGM; // default bgm as Distant Roads 
+				Sound_PlaySong(bgm, 0);
 				CallMapEventEngine((void*) ((int)&SomeTestEvent), 3); 
 			} 
 		}
@@ -554,6 +559,7 @@ void ConversationViewerMenuEnd_ReturnTrue(void) // Did some event
 {
 	Struct_ConversationViewerProc* proc = (Struct_ConversationViewerProc*)ProcFind(&ProcInstruction_ConversationViewer);
 	ProcGoto((Proc*)proc,5); // Destructor sequence 
+	Sound_PlaySongSmooth(0x43, 0); // main theme bgm or 0x43 
 }
 
 void ConversationViewerMenuEnd_ReturnFalse(void)
