@@ -260,7 +260,7 @@ static const struct MenuCommandDefinition MenuCommands_ConfirmationProc[] =
 
 static const struct MenuDefinition MenuDef_ConfirmCharacter =
 {
-    .geometry = { 16, 5, 13 },
+    .geometry = { 16, 5, 14 },
     .commandList = MenuCommands_ConfirmationProc, 
 
     //.onEnd = ConversationViewerMenuEnd,
@@ -627,7 +627,7 @@ static const struct MenuCommandDefinition MenuCommands_ConversationViewer[] =
 
 static const struct MenuDefinition MenuDef_ConversationViewer =
 {
-    .geometry = { 1, 5, 14 },
+    .geometry = { 1, 5, 15 },
 	.style = 0,
     .commandList = MenuCommands_ConversationViewer,
 	._u14 = 0,
