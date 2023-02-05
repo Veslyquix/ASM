@@ -1,0 +1,266 @@
+#include "eastdlib.event" 
+
+// Conversation Viewer
+// by Vesly 
+// Commissioned by Retina & Vyland. 
+
+// Replaces the Support Conversations menu from the title screen 
+// with a new menu for viewing events, rather than just supports 
+
+#include "ConversationViewer.lyn.event" 
+
+PUSH 
+// Support Completion proc 
+ORG 0xA1988 
+callHackNew(ConversationViewer_ASMC) 
+
+ORG 0xA14E4 
+POIN HistoryGFX // Replace "Supports" image with "History" (Credits: Retina) 
+
+// Enable support room always by 7743 
+ORG 0xA36C4
+BYTE 0x03 0x20	//必ず支援3まであると返す
+ORG 0xAB93A
+BYTE 0x00 0x00	//必ずエクストラ支援画面を表示する
+ORG 0xA3824
+BYTE 0x01		//GGM_IsCharacterKnown always 1
+POP 
+
+
+
+ALIGN 4 
+ConvoChapterEntry: 
+FILL(4*0xFF) 
+ORG ConvoChapterEntry 
+POIN ChapterOneConversations  
+POIN ChapterTwoConversations 
+POIN ChapterThreeConversations 
+POIN ChapterFourConversations 
+POIN ChapterFiveConversations 
+POIN ChapterSixConversations 
+//POIN 0 // terminator but you need at least 6 entries before this lol 
+POIN ChapterSevenConversations 
+POIN ChapterEightConversations 
+POIN ChapterNineConversations 
+POIN ChapterTenConversations 
+POIN ChapterElevenConversations 
+POIN ChapterTwelveConversations 
+POIN ChapterThirteenConversations 
+POIN 0 
+
+
+ORG ConvoChapterEntry+(4*0xFF) 
+ALIGN 4 
+ChapterOneConversations: 
+// Optional event to run instead, text id to show, BG to use, chapter ID (for its ch name), text id for the name of the event, 0 padding 
+POIN AnotherEvent; 					SHORT 0x93B; 	BYTE 0xFF	0; 								SHORT 0x160 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x354 0
+//POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x355 0
+//POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x356 0
+//POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x357 0
+//POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x358 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator, but it will always show a minimum of 6 options 
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+
+
+ALIGN 4 
+ChapterTwoConversations: 
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x50B 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x50B 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+
+ALIGN 4 
+ChapterThreeConversations: 
+POIN 0; SHORT 0x9DE; BYTE 0xFF 0xFF; SHORT 0xFFFF  0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x506  0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x507  0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x508  0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x509  0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x50A  0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x50B  0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4                         
+ChapterFourConversations:       
+POIN 0; SHORT 0x9DE; BYTE 0xFF 3; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 3; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 3; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 3; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 3; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 3; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 3; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4                         
+ChapterFiveConversations:       
+POIN 0; SHORT 0x9DE; BYTE 0xFF 4; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 4; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 4; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 4; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 4; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 4; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 4; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4                         
+ChapterSixConversations:        
+POIN 0; SHORT 0x9DE; BYTE 0xFF 5; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 5; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 5; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 5; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 5; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 5; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 5; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4                         
+ChapterSevenConversations:      
+POIN 0; SHORT 0x9DE; BYTE 0xFF 6; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 6; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 6; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 6; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 6; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 6; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 6; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4                        
+ChapterEightConversations:      
+POIN 0; SHORT 0x9DE; BYTE 0xFF 7; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 7; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 7; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 7; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 7; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 7; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 7; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4                         
+ChapterNineConversations:       
+POIN 0; SHORT 0x9DE; BYTE 0xFF 8; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 8; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 8; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 8; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 8; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 8; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 8; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4                         
+ChapterTenConversations:        
+POIN 0; SHORT 0x9DE; BYTE 0xFF 9; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 9; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 9; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 9; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 9; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 9; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 9; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4 
+ChapterElevenConversations: 
+POIN 0; SHORT 0x9DE; BYTE 0xFF 10; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 10; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 10; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 10; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 10; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 10; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 10; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4 
+ChapterTwelveConversations: 
+POIN 0; SHORT 0x9DE; BYTE 0xFF 11; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 11; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 11; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 11; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 11; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 11; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 11; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+ALIGN 4 
+ChapterThirteenConversations: 
+POIN 0; SHORT 0x9DE; BYTE 0xFF 12; SHORT 0x505 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 12; SHORT 0x506 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 12; SHORT 0x507 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 12; SHORT 0x508 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 12; SHORT 0x509 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 12; SHORT 0x50A 0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 12; SHORT 0x50B 0
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
+
+
+
+ALIGN 4 
+HistoryGFX: 
+BYTE $10 $00 $10 $00 $1D $00 $00 $00 $F0 $01 $F0 $01 $E0 $01 $05 $40 $03 $F1 $F0 $01 $C0 $24 $F0 $01 $F0 $01 $00 $00 $66 $00 $03 $55 $11 $00 $03 $44 $00 $03 $67 $00 $03 $60 $00 $03 $40 $40 $40 $03 $00 $66 $66 $66 $66 $11 $00 $51 $56 $12 $12 $64 $66 $15 $11 $22 $76 $67 $00 $03 $60 $13 $21 $20 $03 $40 $50 $12 $20 $1F $06 $00 $3C $74 $00 $00 $41 $00 $76 $60 $06 $62 $77 $46 $62 $62 $00 $07 $34 $31 $63 $07 $56 $51 $63 $39 $07 $66 $10 $57 $E0 $01 $00 $2E $00 $76 $00 $03 $77 $77 $F0 $1B $80 $91 $00 $25 $36 $00 $54 $F0 $01 $F0 $01 $FF $F0 $01 $20 $01 $10 $C4 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $C1 $F0 $01 $D0 $01 $65 $66 $66 $56 $65 $10 $07 $03 $56 $00 $00 $50 $66 $05 $00 $03 $00 $08 $56 $65 $00 $04 $60 $13 $57 $65 $00 $11 $03 $B7 $55 $D4 $10 $20 $03 $2B $50 $00 $1B $00 $10 $12 $65 $56 $EF $10 $29 $00 $09 $03 $B5 $55 $F3 $7F $00 $01 $20 $29 $00 $04 $75 $55 $10 $04 $00 $39 $40 $12 $36 $40 $03 $26 $40 $03 $40 $16 $10 $03 $21 $66 $46 $12 $11 $11 $00 $11 $11 $51 $55 $55 $11 $51 $76 $00 $56 $11 $41 $77 $56 $21 $41 $07 $00 $36 $21 $61 $07 $36 $31 $61 $07 $00 $26 $31 $65 $07 $60 $66 $65 $07 $00 $36 $43 $64 $47 $12 $63 $74 $60 $80 $30 $03 $76 $60 $11 $63 $76 $40 $11 $60 $65 $10 $03 $00 $1E $06 $07 $26 $11 $65 $00 $67 $12 $23 $61 $47 $31 $46 $62 $00 $57 $21 $43 $66 $57 $11 $22 $65 $80 $04 $45 $63 $57 $65 $15 $65 $60 $16 $00 $64 $06 $46 $11 $32 $66 $26 $11 $00 $52 $46 $46 $21 $66 $36 $56 $21 $00 $76 $26 $56 $31 $76 $16 $36 $31 $02 $76 $14 $36 $51 $76 $14 $10 $E9 $34 $00 $51 $06 $60 $12 $13 $64 $26 $51 $00 $16 $62 $34 $61 $16 $62 $56 $62 $04 $16 $62 $36 $62 $14 $00 $03 $15 $63 $20 $26 $56 $00 $E5 $13 $32 $65 $23 $11 $00 $11 $61 $12 $11 $53 $66 $14 $21 $00 $66 $77 $14 $21 $76 $07 $24 $31 $24 $76 $00 $00 $42 $00 $36 $00 $1E $00 $32 $00 $23 $42 $07 $41 $15 $43 $07 $62 $00 $15 $76 $07 $51 $23 $76 $00 $31 $01 $52 $76 $00 $21 $42 $77 $00 $00 $9D $FF $F1 $1D $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F5 $F0 $01 $F0 $01 $F0 $01 $90 $01 $55 $12 $E1 $50 $13 $E6 $DF $F0 $01 $13 $A7 $55 $13 $CC $23 $A7 $20 $2D $13 $F7 $03 $BC $3E $05 $60 $03 $E9 $13 $FA $17 $9B $10 $04 $14 $21 $66 $6A $56 $00 $4C $20 $0B $00 $10 $4F $50 $04 $2F $55 $7E $05 $24 $2B $00 $14 $13 $28 $00 $01 $44 $16 $10 $28 $05 $D6 $10 $03 $04 $39 $14 $00 $63 $11 $00 $62 $10 $65 $77 $D0 $10 $21 $04 $62 $55 $50 $97 $62 $66 $24 $31 $08 $21 $45 $13 $11 $10 $3B $77 $77 $77 $F0 $27 $B2 $20 $68 $14 $7C $00 $38 $66 $56 $21 $64 $0C $63 $24 $11 $63 $90 $1F $98 $76 $37 $42 $00 $15 $65 $57 $21 $21 $64 $67 $34 $18 $65 $76 $07 $40 $1F $90 $01 $36 $51 $45 $00 $26 $56 $11 $42 $56 $67 $55 $66 $0A $67 $00 $77 $77 $83 $90 $55 $10 $DE $60 $20 $31 $21 $14 $1A $76 $13 $56 $65 $77 $98 $00 $5F $07 $70 $81 $17 $20 $D5 $51 $76 $00 $11 $40 $21 $74 $05 $11 $76 $00 $60 $00 $5D $C8 $14 $BF $04 $B7 $60 $31 $04 $C2 $65 $05 $00 $00 $47 $76 $11 $64 $07 $00 $21 $74 $25 $07 $00 $00 $27 $00 $61 $00 $7D $63 $00 $61 $0E $76 $07 $00 $50 $10 $88 $F3 $FD $50 $79 $56 $7F $06 $35 $4F $15 $79 $F0 $01 $F9 $5E $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $B6 $28 $23 $55 $08 $25 $02 $88 $50 $F7 $E9 $58 $43 $66 $F7 $10 $04 $14 $68 $47 $EB $A4 $6B $56 $08 $3B $03 $46 $14 $0B $FF $00 $05 $F2 $D3 $34 $07 $13 $6F $04 $77 $F0 $5F $24 $4D $34 $75 $7F $56 $F3 $2B $10 $3E $04 $60 $20 $23 $F0 $3F $90 $C2 $24 $9D $FE $F0 $1B $00 $9F $00 $5D $10 $93 $00 $5E $F5 $23 $20 $17 $75 $31 $77 $50 $F0 $3F $E3 $A7 $66 $66 $65 $14 $4F $93 $F0 $01 $00 $50 $05 $61 $65 $66 $01 $22 $F0 $1F $FF $30 $DF $00 $D8 $F1 $5D $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $FF $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $F0 $01 $E0 $F0 $01 $F0 $01 $F0 $01 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00
+
+
+
+ALIGN 4 
+SomeTestEvent: 
+EVBIT_MODIFY 3 // No pressing start (this causes an extra fade to black) 
+
+LOAD1 1 EirikaGroup 
+ENUN 
+SET_ACTIVE 1 // Just in case LOADFACE 0xFFFF is used  
+MUSI 
+TEXTSTART 
+CALL 0x89EE2E8 // Fade to background in s2 
+SADD s2 s3 s0 
+TEXTSHOW (-1) 
+TEXTEND 
+TEXTCONT // Just in case they used LoadOverworldFaces 
+TEXTEND 
+TEXTCONT 
+TEXTEND 
+REMA 
+MUNO 
+// Don't clear the BG in the event 
+NoFade 
+ENDA 
+
+
+EirikaGroup: // For [LoadActive] we load Eirika in an event 
+UNIT Eirika Lord 0x1 Level(1,Ally,False)   [5,5] 0b 0x0 0x0 0x0 [0] [0x0]
+UNIT 
+
+
+
+ALIGN 4 
+AnotherEvent: 
+EVBIT_MODIFY 3 // No pressing start (this causes an extra fade to black) 
+
+LOAD1 1 EirikaGroup 
+ENUN 
+SET_ACTIVE 1 // Just in case LOADFACE 0xFFFF is used  
+MUSI 
+TEXTSTART 
+SVAL s2 0x2
+CALL 0x89EE2E8 // Fade to background in s2 
+SADD s2 s3 s0 
+TEXTSHOW 0x9DF 
+TEXTEND 
+TEXTCONT 
+TEXTEND 
+TEXTCONT 
+TEXTEND 
+REMA 
+MUNO 
+// Don't clear the BG in the event 
+NoFade 
+ENDA 
+
+
+//AB89C add item to start menu 
+
+//AB932 as disable support viewer 
+
+// RunSupportEvent by 7743 keeps the menu but allows for specific events for each support level for each char 
+
+// 0x80AA158 at 0x80AA1AE calls 
+	// 0x80A1984 starts the proc 0x8A1975C support room stuff I think 
+// 0x80AA1BC is called after exiting support viewer 
+
+
