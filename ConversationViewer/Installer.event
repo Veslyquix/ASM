@@ -34,11 +34,11 @@ FILL(4*0xFF)
 ORG ConvoChapterEntry 
 POIN ChapterOneConversations  
 POIN ChapterTwoConversations 
+//POIN 0 // terminator 
 POIN ChapterThreeConversations 
 POIN ChapterFourConversations 
 POIN ChapterFiveConversations 
 POIN ChapterSixConversations 
-//POIN 0 // terminator but you need at least 6 entries before this lol 
 POIN ChapterSevenConversations 
 POIN ChapterEightConversations 
 POIN ChapterNineConversations 
@@ -59,7 +59,7 @@ POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x354 0
 //POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x356 0
 //POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x357 0
 //POIN 0; SHORT 0x9DE; BYTE 0xFF 0; SHORT 0x358 0
-POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator, but it will always show a minimum of 6 options 
+POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator
 POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
 POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
 POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
@@ -71,6 +71,7 @@ ChapterTwoConversations:
 POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x505 0
 POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x506 0
 POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x507 0
+//POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator 
 POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x508 0
 POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x509 0
 POIN 0; SHORT 0x9DE; BYTE 0xFF 1; SHORT 0x50A 0
@@ -81,7 +82,7 @@ POIN 0xFFFFFFFF; SHORT 0xFFFF; BYTE 0xFF 0xFF; SHORT 0xFFFF 0xFFFF // terminator
 
 ALIGN 4 
 ChapterThreeConversations: 
-POIN 0; SHORT 0x9DE; BYTE 0xFF 0xFF; SHORT 0xFFFF  0
+POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x505  0
 POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x506  0
 POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x507  0
 POIN 0; SHORT 0x9DE; BYTE 0xFF 2; SHORT 0x508  0

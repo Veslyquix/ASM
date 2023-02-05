@@ -283,7 +283,11 @@ static int ConversationViewerInputLoop(struct MenuProc* menu, struct MenuCommand
 	//struct Struct_ConversationViewerProc* proc = (void*) menu->parent; 
     if (gKeyState.repeatedKeys & KEY_DPAD_UP)
     {
-		if (menu->commandIndex == 5) { 
+		int NumberOfChapters = CountChapters(); 
+		if (NumberOfChapters>6) NumberOfChapters = 6; 
+		NumberOfChapters--; // to make it 0-indexed 
+		
+		if (menu->commandIndex == NumberOfChapters) { 
         if (proc->currOptionIndex != 0)
             proc->currOptionIndex--;
 		proc->updated = true; 
@@ -295,12 +299,14 @@ static int ConversationViewerInputLoop(struct MenuProc* menu, struct MenuCommand
     if (gKeyState.repeatedKeys & KEY_DPAD_DOWN)
     {
 		if (menu->commandIndex == 0) {
-		int chaptersTotal = CountChapters(); 
-        if (proc->currOptionIndex < (chaptersTotal-6))
+		int NumberOfChapters = CountChapters(); 
+		
+        if (proc->currOptionIndex < (NumberOfChapters-6))
 		{
             proc->currOptionIndex++;
 		} 
-		menu->commandIndex = 5; 
+		if (NumberOfChapters>6) NumberOfChapters = 6; 
+		menu->commandIndex = NumberOfChapters-1; // to make it 0-indexed 
 		proc->updated = true; 
 		}
         PlaySfx(0x6B);
@@ -339,7 +345,7 @@ int CountChapters(void)
 	int value = 0; 
 	for (int i = 0; (ConvoChapterEntry[i] != 0 && i<0x80); i++)
 		value++; 
-	if (value<6) value = 6; 
+	//if (value<6) value = 6; 
 	return value; 
 } 
 
@@ -356,7 +362,7 @@ int CountEvents(int entry)
 		if (ConvoEntry->scene == 0xFFFFFFFF) break;
 		else value++;
 	}	
-	if (value<6) value = 6; 
+	//if (value<6) value = 6; 
 	return value; 
 } 
 
@@ -366,7 +372,13 @@ static int CharacterInputLoop(struct MenuProc* menu, struct MenuCommandProc* com
 	//struct Struct_ConversationViewerProc* proc = (void*) menu->parent; 
     if (gKeyState.repeatedKeys & KEY_DPAD_UP)
     {
-		if (menu->commandIndex == 5) { 
+		struct MenuProc* parentMenu = menu->parent;
+		int NumberOfEvents = CountEvents(proc->currOptionIndex+parentMenu->commandIndex); 
+		if (NumberOfEvents>6) NumberOfEvents = 6; 
+		NumberOfEvents--; // to make it 0-indexed 
+		
+		
+		if (menu->commandIndex == NumberOfEvents) { 
         if (proc->charOptionIndex != 0)
             proc->charOptionIndex--;
 		proc->updated = true; 
@@ -379,12 +391,13 @@ static int CharacterInputLoop(struct MenuProc* menu, struct MenuCommandProc* com
     {
 		if (menu->commandIndex == 0) { 
 		struct MenuProc* parentMenu = menu->parent;
-		int numberOfEvents = CountEvents(proc->currOptionIndex+parentMenu->commandIndex); 
-        if (proc->charOptionIndex < (numberOfEvents-6))
+		int NumberOfEvents = CountEvents(proc->currOptionIndex+parentMenu->commandIndex); 
+        if (proc->charOptionIndex < (NumberOfEvents-6))
 		{
             proc->charOptionIndex++;
 		} 
-		menu->commandIndex = 5; 
+		if (NumberOfEvents>6) NumberOfEvents = 6; 
+		menu->commandIndex = NumberOfEvents-1; // to make it 0-indexed 
 		proc->updated = true; 
 		}
         PlaySfx(0x6B);
@@ -418,6 +431,9 @@ void ConversationViewer_StartMenu(struct Struct_ConversationViewerProc* proc)
 	//ConvoCreateMenuGFX(proc); 
 	MenuProc* menu = StartMenu(&MenuDef_ConversationViewer);
 	menu->commandIndex = proc->menuOption; 
+	int NumberOfChapters = CountChapters(); 
+	if (NumberOfChapters>6) NumberOfChapters = 6; 
+	menu->commandCount = NumberOfChapters; 
 	Menu_Draw(menu); 
 }
 
@@ -429,7 +445,12 @@ static int SelectConvo(struct MenuProc* menu, struct MenuCommandProc* command)
 	struct ConversationViewer_Struct* ConvoEntry = ConvoChapterEntry[menu->commandIndex + proc->currOptionIndex];
 	if (ConvoEntry->titleTextID != 0xFFFF) { 
 		
-		StartMenuChild(&MenuDef_ConfirmCharacter, (void*) menu);
+		struct MenuProc* childMenu = StartMenuChild(&MenuDef_ConfirmCharacter, (void*) menu); 
+		int NumberOfEvents = CountEvents(proc->currOptionIndex+menu->commandIndex); 
+		if (NumberOfEvents>6) NumberOfEvents = 6; 
+		childMenu->commandCount = NumberOfEvents; 
+		Menu_Draw(childMenu); 
+	
 		DrawUpperRightText();
 		return ME_PLAY_BEEP; 
 	} 
