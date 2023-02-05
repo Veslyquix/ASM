@@ -61,6 +61,12 @@ POIN 0
 
 
 ORG ConvoChapterEntry+(4*0xFF) 
+
+// Optional macros 
+#define ConversationEntry(textid,bg,chapterid,titleid, bgm) "POIN 0; SHORT textid; BYTE bg chapterid; SHORT titleid bgm;"
+#define ConversationEntry_Event(event,chapterid,titleid, bgm) "POIN event; SHORT 0; BYTE 0xFF chapterid; SHORT titleid bgm;"
+#define ConversationEntryTerminator "WORD 0xFFFFFFFF 0xFFFFFFFF 0xFFFFFFFF"
+
 ALIGN 4 
 ChapterOneConversations: 
 // Optional event to run instead, text id to show, BG to use, chapter ID (for its ch name), text id for the name of the event, bgm to play 
