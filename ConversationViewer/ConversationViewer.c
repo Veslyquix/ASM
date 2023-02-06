@@ -440,8 +440,10 @@ void ConversationViewer_StartMenu(struct Struct_ConversationViewerProc* proc)
 	//s8 Sound_IsSongPlaying(void); //! FE8U = 0x8002265
 	int currBGM = Sound_GetCurrentSong();
 	if (currBGM != ConversationViewer_DefaultBGM) 
+	{
 		//return;
 		Sound_PlaySongSmooth(ConversationViewer_DefaultBGM, 0); 
+	}
 }
 
 
@@ -538,10 +540,12 @@ static int SelectYes(struct MenuProc* menu, struct MenuCommandProc* command)
 				//Sound_PlaySong(bgm, 0);
 				int currBGM = Sound_GetCurrentSong();
 				if (currBGM != bgm) 
+				{
 					Sound_FadeSongOut((-1)); //! FE8U = 0x800231D
 					Sound_FadeOut_800237C((-1)); //! FE8U = 0x800237D
 					Sound_FadeOut_80023E0((-1)); //! FE8U = 0x80023E1
-					Sound_PlaySong(bgm, 0); 
+					Sound_PlaySongSmooth(bgm, 0); 
+				}
 				CallMapEventEngine((void*) ((int)&SomeTestEvent), 3); 
 			} 
 		}
