@@ -1,0 +1,36 @@
+#include "eastdlib.event" 
+
+
+#define ReplaceWeapons "ASMC ReplaceWeaponsByDifficulty" 
+// Use after loading enemies 
+
+#include "ReplaceWepsByDifficulty.lyn.event" 
+
+
+// Wep to replace, EasyVer, NormVer, HardVer 
+ALIGN 4 
+ReplaceWepList:
+BYTE Hammer IronAxe SteelAxe Hammer // I built my game around HardMode 
+/* Search all enemies for the Hammer item.
+
+On easy, replace with IronAxe.
+On normal, replace with SteelAxe.
+On Hard, replace with Hammer. */ 
+BYTE Javelin SlimLance Javelin Spear // I built my game around NormalMode 
+BYTE SlimSword SlimSword IronSword SteelSword // I built my game around EasyMode 
+WORD 0xFFFFFFFF // terminator 
+
+
+ALIGN 4 
+ReplaceWepsUnitDef: // used only for "autolevel: true" bitflag that is expected of the routine 
+//UnitAutolevelWExp(struct Unit* unit, const struct UnitDefinition* uDef
+// https://github.com/FireEmblemUniverse/fireemblem8u/blob/d63c61bc764b47a020a41d5f6afb2c8f00b333cc/src/bmunit.c#L741
+UNIT Eirika Lord 0x1 Level(1,Ally,True)   [5,5] 0b 0x0 0x0 0x0 [0] [0x0]
+UNIT 
+
+
+
+
+
+
+
