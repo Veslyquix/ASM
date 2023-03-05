@@ -82,14 +82,16 @@ orr     r1, r0
 ldr     r0,=#0xFFF80000                @ 0802B434 4804     
 and     r0,r2                @ 0802B436 4010     
 orr     r0,r1                @ 0802B438 4308     
+
+mov r1, #1 
+lsl r1, #21 
+bic r0, r1 @ 	BATTLE_HIT_INFO_KILLS_TARGET = (1 << 2),
 str     r0,[r6]                @ 0802B43A 6018   
 
 
-mov	r0,#0xFF	@no animation!
-strb	r0,[r6,#4]
-
 mov r0, #0 
 strh r0, [r7, #0x04] @ no damage 
+
 
 
 Break: 

@@ -14,7 +14,49 @@ CannotDieList:
 // if the flag is ON, then they are no longer immune to death 
 //BYTE 0 0; SHORT 0 // everyone is immune lol 
 BYTE Eirika 0; SHORT 0 // Eirika cannot die through combat 
-BYTE 0xFD 0; SHORT 0 // Arena unit cannot die through combat 
+BYTE 0x2  0 0 0
+BYTE 0x3  0 0 0
+BYTE 0x4  0 0 0
+BYTE 0x5  0 0 0
+BYTE 0x6  0 0 0
+BYTE 0x7  0 0 0
+BYTE 0x8  0 0 0
+BYTE 0x9  0 0 0
+BYTE 0xA  0 0 0
+BYTE 0xB  0 0 0
+BYTE 0xC  0 0 0
+BYTE 0xD  0 0 0
+BYTE 0xE  0 0 0
+BYTE 0xF  0 0 0
+BYTE 0x10 0 0 0
+BYTE 0x11 0 0 0
+BYTE 0x12 0 0 0
+BYTE 0x13 0 0 0
+BYTE 0x14 0 0 0
+BYTE 0x15 0 0 0
+BYTE 0x16 0 0 0
+BYTE 0x17 0 0 0
+BYTE 0x18 0 0 0
+BYTE 0x19 0 0 0
+BYTE 0x1A 0 0 0
+BYTE 0x1C 0 0 0
+BYTE 0x1D 0 0 0
+BYTE 0x1E 0 0 0
+BYTE 0x1F 0 0 0
+BYTE 0x20 0 0 0
+BYTE 0x21 0 0 0
+BYTE 0x22 0 0 0
+BYTE 0x23 0 0 0
+BYTE 0x24 0 0 0
+BYTE 0x25 0 0 0
+BYTE 0x26 0 0 0
+BYTE 0x27 0 0 0
+BYTE 0x28 0 0 0
+BYTE 0x29 0 0 0
+BYTE 0x2A 0 0 0
+BYTE 0x2B 0 0 0
+BYTE 0x2C 0 0 0
+//BYTE 0xFD 0; SHORT 0 // Arena unit cannot die through combat 
 WORD 0xFFFFFFFF  // Terminator 
 
 

@@ -1,2 +1,2 @@
-CannotDieEffect=$1000001
-CannotDieList=$10000D0
+CannotDieEffect=$1000469
+CannotDieList=$1000510
