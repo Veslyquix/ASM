@@ -12,6 +12,7 @@
 .equ gChapterData, 0x202BCF0 
 .equ GetUnit, 0x8019430
 .equ IsItemStealable, 0x8017054
+.equ VanillaIsItemStealableBytes, 0x1C01B500
 .equ BattleMapState,				0x0202BCB0
 .equ CallARM_PushToSecondaryOAM,	0x08002bb9
 .equ OAMTable,						0x08590f44
@@ -258,13 +259,22 @@ bx r3
 .global SetupCacheForStealableItems
 .type SetupCacheForStealableItems, %function 
 SetupCacheForStealableItems:
-push {r4-r6, lr} 
+push {r4-r7, lr} 
 
 @ clear cache 
 mov r0, #0 
 ldr r3, StealableItemCache 
 str r0, [r3] 
 str r0, [r3, #4] 
+
+mov r7, #1 @ true vanilla 
+ldr r3, =IsItemStealable 
+ldr r0, [r3] @ what bytes are here? 
+ldr r1, =VanillaIsItemStealableBytes 
+cmp r0, r1 
+beq YesVanilla
+mov r7, #0 
+YesVanilla: 
 
 mov r6, #0x7F 
 LoopUnits: 
@@ -286,11 +296,14 @@ ldrh r0, [r4, r5]
 cmp r0, #0 
 beq LoopUnits 
 @r0=unit data ptr of unit being stolen from, r1=slot number
+cmp r7, #1 
+beq VanillaParams
 mov r0, r4 
 mov r1, r5 
 mov r2, #0x1E 
 sub r1, r2 
 lsr r1, #1 @ slot number 
+VanillaParams: 
 blh IsItemStealable 
 cmp r0, #1 
 beq SetUnitStealableItem 
@@ -313,8 +326,7 @@ strb r2, [r3]
 b LoopUnits 
 
 BreakCache: 
-
-pop {r4-r6} 
+pop {r4-r7} 
 pop {r0} 
 bx r0 
 .ltorg 

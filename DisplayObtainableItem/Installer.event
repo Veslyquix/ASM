@@ -2,9 +2,6 @@
 ERROR "You're not assembling to an FE8 ROM!"
 #endif
 
-// Comment this out if you're not using skillsys 
-#define UsingStealPlus
-
 #include EAStdlib.event
 #include "Extensions/Hack Installation.txt"
 
@@ -33,12 +30,7 @@ POIN NewGraphic
 POP
 ALIGN 4
 FOG:
-#ifdef UsingStealPlus
 #include "DroppableItem.lyn.event"
-#endif 
-#ifndef UsingStealPlus 
-#include "DroppableItem - Vanilla.lyn"
-#endif 
 WORD StealableItemCache
 WORD False // Not using DangerRadius 
 WORD 0x865 
