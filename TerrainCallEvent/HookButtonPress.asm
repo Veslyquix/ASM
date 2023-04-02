@@ -16,9 +16,9 @@ blh GetUnit
 mov r4, r0 
 blh GetUnitSelectionValueThing
 mov r5, r0 @ something to return 
-cmp r4, #0 
-bne GotoEnd 
 mov r0, r6 @ proc 
+mov r1, r5 
+mov r2, r4 @ unit 
 bl TerrainTryCallEvent
 mov r5, r0 
 GotoEnd: 
