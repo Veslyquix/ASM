@@ -25,6 +25,24 @@ ldr     r6, [r0]         @current round (originally starting at 203a5ec), increm
 ldr     r0,=0x203A4D4    @Battle Stats Data?                @ 0802B3FA 4C11   
 mov     r7, r0
 
+
+ldr r0, =CannotDieProc 
+blh ProcFind 
+cmp r0, #0 
+beq Normal
+ldr r1, [r0, #0x30] @ the round it calculated for 
+cmp r6, r1 
+ble Normal 
+@ last round couldn't die, so end immediately 
+ldr r2, [r6] @ current round flags 
+mov r1, #0x80 @ end battle 
+lsl r1, #16 
+orr r2, r1 
+str r2, [r6] @ end battle 
+@b Break 
+
+
+Normal: 
 @mov r6, r2 @battle buffer
 @mov r7, r3 @battle data
 
@@ -64,11 +82,26 @@ blh CheckEventId
 cmp r0, #1 
 beq Loop 
 AnyFlag: 
+
+ldr r2, [r6] 
+mov r0, #1 @ critical 
+tst r0, r2 
+beq NoReduceDmg 
+bic r2, r0 @ remove crit 
+str r2, [r6] 
+ldrb r0, [r7, #0x04] @ dmg 
+mov r1, #3 @ div by 3 
+swi 6 
+strb r0, [r7, #4] @ dmg 
+
+
+
+NoReduceDmg: 
 @only activate if damage > current enemy hp-1
 ldrb	r1,[r5,#0x13]
 @mov	r0,#0x01
 @sub	r5,r0 @ current hp - 1 
-ldrh    r0,[r7,#0x04] @ damage 
+ldrb    r0,[r7,#0x04] @ damage 
 cmp	r1,r0
 bgt Break @ if health > damage, exit 
 @ copied bane 
@@ -107,18 +140,7 @@ b StoreDmg
 ZeroDmg: 
 mov r0, #0
 StoreDmg:  
-strh r0, [r7, #0x04] @ no damage 
-
-ldrh r0, [r4, #6] @ flag to set 
-blh SetEventId 
-
-
-
-ldrh r3, [r4, #4] @ death quote? 
-cmp r3, #0 
-beq Break 
-ldr r2, =MemorySlot 
-str r3, [r2, #4*2] @ s2 
+strb r0, [r7, #0x04] @ no damage 
 
 ldr r0, =CannotDieProc 
 blh ProcFind 
@@ -130,7 +152,11 @@ DontEnd:
 ldr r0, =CannotDieProc 
 mov r1, #3 @ root 3 
 blh New6C 
-
+ldrh r3, [r4, #4] @ quote
+strh r3, [r0, #0x2c] @ 
+str r6, [r0, #0x30] @ current round pointer 
+ldrh r1, [r4, #6] @ flag to set 
+strh r1, [r0, #0x2e] @ flag to set 
 
 
 Break: 
@@ -155,65 +181,62 @@ bx r1
 .global WaitUntilBattleEnds
 .type WaitUntilBattleEnds, %function
 WaitUntilBattleEnds:
-push {r4, lr} 
-mov r4, r0 @ Parent? 
-
-@ 5B9604 efxHPBar calls 523ED which at 524AC calls ShouldDisplayDeathQuote 
-b Error 
-
-ldr r0, =0x859DABC
-blh ProcFind 
-cmp r0, #0 
-beq Error @ Battle has not started 
-
-blh 0x0800D1B0	@BattleEventEngineExists	{U}
-@blh 0x0800D474	@BattleEventEngineExists	{J}
-cmp r0, #0x1
-beq Error
-
-ldr r0, =0x85b9604 
-blh ProcFind 
-cmp r0, #0 
-beq Error 
-mov r1, #0x50 @ hp to display 
-ldr r1, [r0, r1] 
-cmp r1, #1 
-bne Error @ not at 1 hp yet 
-@ efxHPBar 85b9604 + 0x50 is hp to display 
-
-@ldr r1, [r0, #4] @ code cursor 
-@ldr r2, =0x859DAD4 
-@cmp r1, r2 
-@bne Error @ not at the right place yet? 
-
-
-
-mov r0, r4 @  @ parent to break from 
-blh BreakProcLoop
-
-ldr r0, QuoteEvent 
-mov r1, #2 @ battle quote event 
-blh EventEngine 
-
-
-Error: 
-pop {r4}
-pop {r1}
-bx r1 
+bx lr 
 .ltorg 
 .global new_8052F24 
 .type new_8052F24, %function 
 new_8052F24:
-push {r4, lr} 
+push {r4-r5, lr} 
 mov r4, r0 
 blh 0x0800D1B0	@BattleEventEngineExists	{U}
-cmp r0, #0 
+mov r5, r0 
+cmp r5, #0 
 bne ContinueLoop 
+blh 0x0805B07C   //PlayBattleCroudSfxIfArena
+LDR r0, [r4, #0x5C]
+LDR r1, [r4, #0x60]
+@blh 0x08052FAC   //StartEfxDead
+blh 0x08051F1C
+LDR r0, [r4, #0x5C]
+blh 0x0805A16C   //GetAISSubjectId r0=@AnimationInterpreter
+LDR r1, =0x203E104 @# pointer:08052F80 -> 0203E104 (gBattleAnimUnitEnabledLookup )
+LSL r0 ,r0 ,#0x1
+ADD r0 ,r0, R1
+STRH r5, [r0, #0x0]   //gBattleAnimUnitEnabledLookup
+MOV r0, #0x1
+blh 0x08001FAC   //BG_EnableSyncByMask
+MOV r0, #0x0
+MOV r1, #0x7
+blh 0x08056D24   //NewEkrWindowAppear
+MOV r0, #0x0
+MOV r1, #0x7
+MOV r2, #0x0
+blh 0x08056E10   //NewEkrNamewinAppear
+blh 0x08051228   //EkrGauge_8051228
+blh 0x08051BA0
+blh 0x08051180   //EkrGauge_8051180
+
+LDR r0, [r4, #0x5C]
+blh 0x0805A16C   @//GetAISSubjectId r0=@AnimationInterpreter
+ldr r1, =0x203E188 @ ToLeftPointer 
+lsl r2, r0, #2 @ 4 bytes per 
+add r2, r1 @ poin attacker or defender 
+ldr r2, [r2] 
+ldrb r3, [r2, #0x12] @ max hp 
+strb r3, [r2, #0x13] @ current hp 
+
+ldr r1, =0x8052494 
+ldr r1, [r1]  @ 203E1AC (gBattleHpDisplayedValue )
+lsl r0, #1 
+add r0, r1 
+strh r3, [r0] @ new hp 
+
+
 mov r0, r4 
 blh BreakProcLoop 
 
 ContinueLoop: 
-pop {r4} 
+pop {r4-r5} 
 pop {r0} 
 bx r0 
 .ltorg 
@@ -222,10 +245,113 @@ bx r0
 .equ TryBattleQuote, 0x8050000
 .equ ShouldDisplayDeathQuoteForChar, 0x80835A8
 
-.global ShouldDisplayDeathQuote 
-.type ShouldDisplayDeathQuote, %function 
-ShouldDisplayDeathQuote:
+.global ShouldDisplayNearDeathQuote_MapAnim 
+.type ShouldDisplayNearDeathQuote_MapAnim, %function 
+ShouldDisplayNearDeathQuote_MapAnim:
+push {r4-r7, lr} 
+mov r4, r1 
+mov r5, r2 
+
+ldr r0, =CannotDieProc 
+blh ProcFind 
+cmp r0, #0 
+beq ContinueAsNormal 
+mov r7, r0 @ proc 
+@ldr     r0,=0x802b444    @pointer to the current round
+@ldr     r0, [r0]          @current round pointer (usually 203a608)
+@ldr     r0, [r0]         @current round (originally starting at 203a5ec), increment by 4 bytes to get the next round
+@ldr r1, [r7, #0x30] @ pointer to the relevant round 
+@cmp r0, r1 
+@bne ContinueAsNormal 
+ldrh r0, [r7, #0x2e] @ flag to set 
+blh SetEventId 
+
+
+
+mov r0, #1 
+ldr r3, =0x203E211 
+ldrb r2, [r3] 
+cmp r2, #1 
+beq WeFoundSomeoneAt1Hp 
+mov r0, #0 
+ldr r3, =0x203E1FD 
+ldrb r2, [r3] 
+cmp r2, #1 
+bne ContinueAsNormal
+WeFoundSomeoneAt1Hp: 
+mov r6, r0 
+
+
+ldrh r0, [r7, #0x2c] @ text to display 
+cmp r0, #0 
+beq MapAnim_Vanilla
+mov r5, r6 
+
+lsl r0, r5, #2 
+add r0, r5 
+lsl r0, #2 
+add r0, r4 
+ldr r0, [r0] @ relevant battle struct 
+
+ldrb r1, [r0, #0x12] @ 
+strb r1, [r0, #0x13] @ curr hp 
+strb r1, [r3] @ 
+
+@ based on 7A984 MapAnimProc_DisplayDeathQuote
+blh 0x0807BBB8  @ //DeleteBattleAnimInfoThing
+bl TryDisplayCannotDieQuote 
+
+b MapAnim_Vanilla 
+
+ContinueAsNormal: 
+mov r0, #1 
+neg r0, r0 @ 0xFFFFFFFF 
+cmp r5, r0 
+beq MapAnim_Vanilla 
+
+Exit_MapAnim: 
+lsl r0, r5, #2 
+add r0, r5 
+lsl r0, #2 
+
+mov r3, r4 
+mov r2, r5 
+pop {r4-r7} 
+
+pop {r1} 
+bx r1 
+.ltorg 
+
+MapAnim_Vanilla:
+
+mov r3, r4 
+mov r2, r5 
+pop {r4-r5} 
+pop {r1} 
+ldr r1, =0x807A9F5 
+bx r1 
+.ltorg 
+
+
+.global ShouldDisplayNearDeathQuote 
+.type ShouldDisplayNearDeathQuote, %function 
+ShouldDisplayNearDeathQuote:
 push {r4, lr} 
+
+ldr r0, =CannotDieProc 
+blh ProcFind 
+cmp r0, #0 
+beq DontSetFlag 
+@ldr     r0,=0x802b444    @pointer to the current round
+@ldr     r0, [r0]          @current round pointer (usually 203a608)
+@ldr     r0, [r0]         @current round (originally starting at 203a5ec), increment by 4 bytes to get the next round
+@ldr r1, [r7, #0x30] @ pointer to the relevant round 
+@cmp r0, r1 
+@bne ContinueAsNormal 
+ldrh r0, [r0, #0x2e] @ flag to set 
+blh SetEventId 
+DontSetFlag: 
+
 ldr r0, [r5, #0x50] 
 cmp r0, #1 
 bgt ContinueBattle 
@@ -238,37 +364,12 @@ ldr r0, =CannotDieProc
 blh ProcFind 
 cmp r0, #0 
 beq ContinueBattle 
+mov r4, r0 @ proc 
+ldrh r0, [r4, #0x2c] @ text to display 
+cmp r0, #0 
+beq ContinueBattle 
 
-@ldr r0, =0x85B9378 @ ekrBattle 
-@blh ProcFind 
-@cmp r0, #0 
-@beq ContinueBattle 
-@
-@
-@mov r4, r0 @ CannotDieProc 
-@mov r1, #1 
-@str r1, [r4, #0x54] 
-@mov r1, #0 
-@str r1, [r4, #0x58] 
-@mov r1, #0x1E 
-@strh r1, [r4, #0x2c]
-@mov r11, r11  
-@blh TryBattleQuote
-@@ need to pause battle here or end it depending on its state 
-@
-@
-@
-@b ContinueBattle 
-@ 4FF64 - ekrBattle_Init: ShouldCallBattleQuote 
 
-mov r0, r6 @ 
-blh GetAISSubjectId 
-ldr r1, =0x203E190 @ gBatttleUnitID1
-add r0, r1 
-ldrb r0, [r0] 
-blh ShouldDisplayDeathQuoteForChar 
-cmp r0, #1 
-bne ContinueBattle 
 ldr r0, =efxNearDeathEVTENT @ new version without death fade 
 mov r1, #3 
 blh New6C 
@@ -278,6 +379,9 @@ ldr r1, =0x8052DF8 @ poin 2017738
 ldr r1, [r1] 
 mov r0, #1 
 str r0, [r1] @ end of vanilla 
+
+
+
 
 b ContinueBattle 
 
@@ -297,6 +401,26 @@ pop {r3}
 ldr r3, =0x80524E5 
 bx r3 
 .ltorg 
+.global new_8052DFC
+.type new_8052DFC, %function 
+new_8052DFC: 
+push {r4-r5, lr} 
+mov r5, r0 
+LDR r0, [r5, #0x5C]
+blh 0x0805A16C   @//GetAISSubjectId r0=@AnimationInterpreter
+ldr r1, =0x8052494 
+ldr r1, [r1]  @ 203E1AC (gBattleHpDisplayedValue )
+lsl r0, #1 
+add r0, r1 
+mov r1, #120
+strh r1, [r0] @ new hp 
+mov r0, r5 @ proc 
+blh 0x8052DFC
+pop {r4-r5} 
+pop {r0} 
+bx r0 
+.ltorg 
+
 
 .global new_8052EAC
 .type new_8052EAC, %function 
@@ -330,17 +454,13 @@ MOV r0, #0x1
 blh 0x08001FAC   @//BG_EnableSyncByMask
 blh 0x08051190   @//EkrGauge_8051190
 LDR r4, =0x203E190 @# pointer:08052F20 -> 0203E190 (gBatttleUnitID1 )
-LDR r0, [r5, #0x5C]
-blh 0x0805A16C   @//GetAISSubjectId r0=@AnimationInterpreter
-ADD r0 ,r0, R4
-LDRB r0, [r0] 
 
-ldr r0, =MemorySlot 
-ldr r0, [r0, #4*2] @ text to display 
-cmp r0, #0 
-beq exit_new_8052EAC 
-blh 0x800D284 @ CallBattleQuoteTextEvents 
-@blh 0x080835DC   @//DisplayDeathQuoteForChar
+
+bl TryDisplayCannotDieQuote
+
+
+
+
 MOV r0 ,r5
 blh 0x08002E94   @//Break6CLoop
 exit_new_8052EAC: 
@@ -348,6 +468,24 @@ ADD SP, #0x4
 POP {r4,r5}
 POP {r0}
 BX r0
+.ltorg 
+
+TryDisplayCannotDieQuote: 
+push {r4, lr} 
+ldr r0, =CannotDieProc @ our stuff 
+blh ProcFind 
+cmp r0, #0 
+beq exit_DisplayCannotDieQuote
+ldrh r1, [r0, #0x2c] 
+push {r1} 
+blh EndProc @ so multiple don't spawn 
+pop {r0} 
+blh 0x800D284 @ CallBattleQuoteTextEvents 
+@blh 0x080835DC   @//DisplayDeathQuoteForChar
+exit_DisplayCannotDieQuote: 
+pop {r4} 
+pop {r0} 
+bx r0 
 .ltorg 
 
 CannotDieList: 
