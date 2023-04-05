@@ -8,15 +8,7 @@
 ALIGN 4; PUSH; ORG CurrentOffset+1; CannotDieEffect: ; POP 
 #include "CannotDie.lyn.event" 
 POIN CannotDieList 
-POIN QuoteEvent
 
-QuoteEvent: 
-TEXTSTART 
-TEXTSHOW (-1) 
-TEXTEND 
-REMA 
-EVBIT_T 7  
-ENDA 
 
 ALIGN 4 
 CannotDieProc: 
@@ -105,8 +97,7 @@ BYTE 0x2B 0; SHORT 0 0 0
 BYTE 0x2C 0; SHORT 0 0 0 
 //BYTE 0xFD 0; SHORT 0 0 0  // Arena unit cannot die through combat 
 */
-WORD 0xFFFFFFFF  // Terminator 
-WORD 0xFFFFFFFF  // Terminator 
+WORD 0xFFFFFFFF 0xFFFFFFFF  // Terminator 
 
 
 

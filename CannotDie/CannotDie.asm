@@ -10,7 +10,6 @@
 	.equ EventEngine, 0x800D07C 
 	.equ MemorySlot, 0x30004B8 
 	.equ CurrentRound_ComputeWeaponEffect, 0x802B600 
-	.equ QuoteEvent, CannotDieList+4 
 @.global CannotDieEffect 
 @.type CannotDieEffect, %function 
 @CannotDieEffect: 
