@@ -1,18 +1,64 @@
 #include "eastdlib.event" 
+#include "ProcDefinitions.txt" 
 
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
 
 ALIGN 4; PUSH; ORG CurrentOffset+1; CannotDieEffect: ; POP 
-#incbin "CannotDie.dmp" 
+#include "CannotDie.lyn.event" 
 POIN CannotDieList 
+POIN QuoteEvent
+
+QuoteEvent: 
+TEXTSTART 
+TEXTSHOW (-1) 
+TEXTEND 
+REMA 
+EVBIT_T 7  
+ENDA 
+
+ALIGN 4 
+CannotDieProc: 
+PROC_YIELD // Buffer.
+PROC_SET_NAME(ShowNearDeathQuoteAfterBattleName)
+PROC_SLEEP(0)
+PROC_LOOP_ROUTINE(WaitUntilBattleEnds)
+PROC_END
+
+ALIGN 4 
+ShowNearDeathQuoteAfterBattleName:
+String("ShowNearDeathQuoteAfterBattle") ; BYTE 0
+ALIGN 4
+
+ALIGN 4 
+efxNearDeathEVTENT: 
+PROC_YIELD // Buffer.
+PROC_SET_NAME(ShowNearDeathQuoteAfterBattleName2)
+PROC_SLEEP(0)
+PROC_LOOP_ROUTINE(0x8052DFD)
+PROC_LOOP_ROUTINE(0x8052E7D)
+//PROC_LOOP_ROUTINE(0x8052EAD) // new_8052EAC
+PROC_LOOP_ROUTINE(new_8052EAC)
+PROC_LOOP_ROUTINE(new_8052F24) // skip old ver 
+PROC_LOOP_ROUTINE(0x8052F85) 
+
+PROC_END
+
+ALIGN 4 
+ShowNearDeathQuoteAfterBattleName2:
+String("ShowNearDeathQuoteAfterBattle2") ; BYTE 0
+ALIGN 4
+
 
 ALIGN 4 
 CannotDieList: 
 // unitID, classID, flag 
 // if the flag is ON, then they are no longer immune to death 
 //BYTE 0 0; SHORT 0 // everyone is immune lol 
+BYTE 0x68 0; SHORT 0 0x936 8// O'Neill 
+
+/*
 BYTE Eirika 0; SHORT 0 // Eirika cannot die through combat 
 BYTE 0x2  0 0 0
 BYTE 0x3  0 0 0
@@ -57,6 +103,8 @@ BYTE 0x2A 0 0 0
 BYTE 0x2B 0 0 0
 BYTE 0x2C 0 0 0
 //BYTE 0xFD 0; SHORT 0 // Arena unit cannot die through combat 
+*/
+WORD 0xFFFFFFFF  // Terminator 
 WORD 0xFFFFFFFF  // Terminator 
 
 
@@ -65,6 +113,8 @@ WORD 0xFFFFFFFF  // Terminator
 PUSH 
 ORG $2B87C
 callHackNew(CannotDieEffect)
+ORG $5247C // in efxHPBar 
+callHackNew(ShouldDisplayDeathQuote)
 POP 
 
 

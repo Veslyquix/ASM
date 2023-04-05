@@ -1,2 +1,11 @@
-CannotDieEffect=$1000469
-CannotDieList=$1000510
+CannotDieEffect=$1000001
+WaitUntilBattleEnds=$10000FD
+new_8052F24=$100015D
+ShouldDisplayDeathQuote=$1000181
+new_8052EAC=$1000209
+QuoteEvent=$10002D0
+CannotDieProc=$10002E8
+ShowNearDeathQuoteAfterBattleName=$1000310
+efxNearDeathEVTENT=$1000330
+ShowNearDeathQuoteAfterBattleName2=$1000378
+CannotDieList=$100039C

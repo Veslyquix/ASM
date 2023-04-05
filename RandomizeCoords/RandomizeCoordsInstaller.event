@@ -32,6 +32,11 @@
 //#define Grass 0x0C // Forest 
 //#define Sea 0x15 // Sea 
 //#define Shallow 0x16 // River 
-
-
+ALIGN 4 
+RandomizeCoordsEvent: 
+RandomizeCoords(Range(0,0,7,3), Range(2,11,20,21))
+RandomizeCoords(Range(0,0,7,3), Range(14,3,21,13))
+RandomizeCoords(Range(0,0,7,3), Range(1,1,13,11))
+EVBIT_T 7
+ENDA 
 
