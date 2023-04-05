@@ -83,16 +83,16 @@ cmp r0, #1
 beq Loop 
 AnyFlag: 
 
-ldr r2, [r6] 
-mov r0, #1 @ critical 
-tst r0, r2 
-beq NoReduceDmg 
-bic r2, r0 @ remove crit 
-str r2, [r6] 
-ldrb r0, [r7, #0x04] @ dmg 
-mov r1, #3 @ div by 3 
-swi 6 
-strb r0, [r7, #4] @ dmg 
+@ldr r2, [r6] 
+@mov r0, #1 @ critical 
+@tst r0, r2 
+@beq NoReduceDmg 
+@bic r2, r0 @ remove crit 
+@str r2, [r6] 
+@ldrb r0, [r7, #0x04] @ dmg 
+@mov r1, #3 @ div by 3 
+@swi 6 
+@strb r0, [r7, #4] @ dmg 
 
 
 
