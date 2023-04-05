@@ -105,12 +105,32 @@ WORD 0xFFFFFFFF 0xFFFFFFFF  // Terminator
 PUSH 
 ORG $2B87C
 callHackNew(CannotDieEffect)
+
+#ifndef SKILLSYSTEM_SKILL_TESTER
 ORG $5247C // in efxHPBar 
 callHackNew(ShouldDisplayNearDeathQuote)
+#endif 
+#ifdef SKILLSYSTEM_SKILL_TESTER
+ORG $52354
+POIN NewEfxHPBar2
+#endif 
 ORG $7A9AE 
 SHORT $1C19 // Mov r1, r3 
 callHackNew(ShouldDisplayNearDeathQuote_MapAnim)
 POP 
 
+ALIGN 4 
+NewEfxHPBar2:
+WORD 1
+POIN $da3e4
+WORD 3
+// POIN $523ed
+POIN Vesly_efxHPBarRoutine
+
+WORD 3
+POIN $52505
+WORD 3
+POIN $525a5
+WORD 0 0
 
 
