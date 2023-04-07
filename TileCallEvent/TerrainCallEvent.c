@@ -56,6 +56,8 @@ int TerrainTryCallEvent(Proc* proc, int value, struct Unit* unit) {
 						if ((list.unitID == unitID) || (list.unitID == 0)) { 
 							if ((list.classID == classID) || (list.classID == 0)) { 
 								if (unit) { 
+									if ((list.unitID == 0) && (list.classID == 0)) 
+										continue; // we wanted no unit here 
 									if (unit->index>>6) { // if not a player, do nothing 
 										continue; } 
 									unit->state = unit->state & ~(US_HIDDEN); 
