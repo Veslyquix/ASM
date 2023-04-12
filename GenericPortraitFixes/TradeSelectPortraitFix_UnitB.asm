@@ -10,6 +10,7 @@ ldr r0, [r0] @ char table
 ldrh r0, [r0, #6] @ portrait 
 cmp r0, #0 
 beq DoNotDisplay 
+Display: 
 sub sp, #4 
 mov r0, #2 
 str r0, [sp] 

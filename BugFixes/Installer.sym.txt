@@ -1,4 +1,0 @@
-ItemSelectPortraitFix=$1000001
-TradeSelectPortraitFix_UnitA=$1000031
-TradeSelectPortraitFix_UnitB=$1000061
-LoadGenericFaceCard=$1000091
