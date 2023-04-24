@@ -46,7 +46,8 @@ ldrb r0, [r3]
 cmp r0, #1 
 beq NoFadeFromBlack
 
-
+blh 0x8026628
+blh 0x8019C3C
 blh CleanCommand @ CLEAN 
 
 mov r0, #4 @ Speed 
