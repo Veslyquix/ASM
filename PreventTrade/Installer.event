@@ -10,6 +10,9 @@ jumpToHack(giveall_fix)
 ORG 0x1e214
 callHackNew(inventory_full) 
 
+ORG $1E19E
+SHORT $F013 $F9F9 // return to vanilla 
+
 ORG 0xe18B4
 jumpToHack(supply_fix)
 ORG 0x9e872
