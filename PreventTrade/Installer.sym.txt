@@ -1,0 +1,6 @@
+giveall_fix=$1000000
+inventory_full=$1000080
+supply_fix=$10000F4
+trade_fix=$100015C
+trade_fix_WM=$10001D4
+PreventTradingList=$1000248

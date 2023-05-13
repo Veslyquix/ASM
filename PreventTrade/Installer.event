@@ -1,12 +1,14 @@
+
+#ifndef callHackNew
+	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+#endif 
+
 PUSH
 
 ORG 0xe1908
 jumpToHack(giveall_fix)
-ORG 0xe1964
-jumpToHack(inventory_full)
-
-ORG 0x1e19e 
-BYTE 0xc3 0xf0 0xe1 0xfb
+ORG 0x1e214
+callHackNew(inventory_full) 
 
 ORG 0xe18B4
 jumpToHack(supply_fix)
@@ -38,7 +40,7 @@ giveall_fix:
 
 ALIGN 4
 inventory_full:
-#incbin "inventory_full.dmp"
+#include "inventory_full.lyn.event"
 
 ALIGN 4
 supply_fix:
