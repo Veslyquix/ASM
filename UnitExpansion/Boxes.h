@@ -43,7 +43,9 @@ struct __attribute__((packed)) BoxUnit {
 	u32 conBonus : 4; 
 	u32 movBonus : 4; 
 	u32 hp : 7; 
-	u32 lvl : 7; 
+	u32 lvl : 6; 
+	u32 escaped : 1; 
+	u32 departed : 1; 
 	u32 exp : 7; 
 	u32 mag : 6; 
 	u32 str : 6; 
@@ -86,6 +88,7 @@ void* PC_GetSaveAddressBySlot(unsigned slot);
 int UnpackUnitsFromBox(int slot);
 void PackUnitsIntoBox(int slot);
 int CountTempUnits(void); 
+int CountAndUndeployTempUnits(void);
 void DeploySelectedUnits(void);
 int CountUnitsInUnitStructRam(void);
 void ClearPCBoxUnitsBuffer(void);
@@ -94,6 +97,10 @@ void ClearAllBoxUnits(int slot);
 void ClearAllBoxUnitsASMC(void);
 void EnsureUnitInPartyASMC(void);
 int EnsureUnitInParty(int slot, int charID);
+
+int CountTotalUnitsInUnitStructRam(void); 
+int CountUnusableUnitsUpToIndex(int index);
+int CountUnusableStoredUnitsUpToIndex(int index);
 
 
 struct SaveBlockDecl {

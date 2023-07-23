@@ -146,7 +146,7 @@ void PrepUnit_InitSMS(struct ProcPrepUnit *proc)
 void MakePrepUnitList()
 {
     int i; 
-	int cur = CountTempUnits();
+	int cur = CountAndUndeployTempUnits();
     struct Unit *unit;
     for (i = 1; i < 64; i++) {
         unit = GetUnit(i);
@@ -154,14 +154,16 @@ void MakePrepUnitList()
         if (!UNIT_IS_VALID(unit))
             continue;
 
-        //if (IsUnitInCurrentRoster(unit)) {
+        if (IsUnitInCurrentRoster(unit)) {
             //NewRegisterPrepUnitList(cur, unit);
             cur++;
-        //}
+        }
+		else { unit->state |= US_NOT_DEPLOYED; } 
     }
 
     PrepSetUnitAmount(cur);
 }
+
 
 int CountUnitsInUnitStructRam(void) { 
 	int cur = 0;
@@ -170,24 +172,69 @@ int CountUnitsInUnitStructRam(void) {
         unit = &gUnitArrayBlue[i];
 
         if (UNIT_IS_VALID(unit)) { 
-            cur++; 
+			if (IsUnitInCurrentRoster(unit)) {
+				//NewRegisterPrepUnitList(cur, unit);
+				cur++;
+			}
 		} 
 		
     }
 	return cur; 
 } 
 
+
+
+int CountTotalUnitsInUnitStructRam(void) { 
+	int cur = 0;
+    struct Unit *unit;
+    for (int i = 0; i < 63; i++) {
+        unit = &gUnitArrayBlue[i];
+
+        if (UNIT_IS_VALID(unit)) { 
+			cur++;
+		} 
+		
+    }
+	return cur; 
+} 
+
+int CountUnusableUnitsUpToIndex(int index) { 
+	int cur = 0;
+    struct Unit *unit;
+    for (int i = 0; i < 64; i++) {
+        unit = &gUnitArrayBlue[i];
+
+        if (UNIT_IS_VALID(unit)) { 
+			if (!IsUnitInCurrentRoster(unit)) {
+				//NewRegisterPrepUnitList(cur, unit);
+				cur++;
+			}
+			else { 
+				if (i >= index) { 
+					break; // keep counting until we find a valid unit so we know how many units to skip over 
+				} 
+			}
+		} 
+		
+    }
+	return cur; 
+} 
+
+
 struct Unit *GetUnitFromPrepList(int index) // called in 6 other functions
 {
 	// return gPrepUnitList.units[index];
 	struct Unit* unit;
-	int c = CountUnitsInUnitStructRam(); 
+	int c = CountTotalUnitsInUnitStructRam(); 
+	
 	if (index < c) { 
-		unit = &gUnitArrayBlue[index];
+		int offset = CountUnusableUnitsUpToIndex(index); 
+		unit = &gUnitArrayBlue[index+offset];
 	}
 	else { 
 		index = index - c; 
-		unit = &PCBoxUnitsBuffer[index]; 
+		int offset = CountUnusableStoredUnitsUpToIndex(index); 
+		unit = &PCBoxUnitsBuffer[index + offset]; 
 	} 
 	return unit; 
 }
