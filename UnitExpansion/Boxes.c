@@ -460,7 +460,7 @@ int CountAndUndeployTempUnits(void) {
 				cur++;
 			}
 			else { 
-				//unit->state |= US_NOT_DEPLOYED; 
+				unit->state |= US_NOT_DEPLOYED; 
 			}
 		}
     }

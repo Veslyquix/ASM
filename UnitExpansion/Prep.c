@@ -190,7 +190,7 @@ void MakePrepUnitList()
             NewRegisterPrepUnitList(cur, unit);
             cur++;
         }
-		//else { unit->state |= US_NOT_DEPLOYED; } 
+		else { unit->state |= US_NOT_DEPLOYED; } 
     }
 
     PrepSetUnitAmount(cur);
