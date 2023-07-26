@@ -456,10 +456,11 @@ int CountAndUndeployTempUnits(void) {
         struct Unit* unit = GetTempUnit(i);
         if (unit->pCharacterData) { 
 			if (IsUnitInCurrentRoster(unit)) {
+				NewRegisterPrepUnitList(cur, unit);
 				cur++;
 			}
 			else { 
-				unit->state |= US_NOT_DEPLOYED; 
+				//unit->state |= US_NOT_DEPLOYED; 
 			}
 		}
     }
@@ -477,6 +478,7 @@ int CountUnusableStoredUnitsUpToIndex(int index) {
 				cur++;
 			}
 			else { 
+				//cur++;
 				if (i >= index) { 
 					break; // keep counting until we find a valid unit so we know how many units to skip over 
 				} 

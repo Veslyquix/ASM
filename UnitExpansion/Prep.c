@@ -85,6 +85,36 @@ void CopyPCBox(int sourceSlot, int targetSlot) {
 	UnpackUnitsFromBox(targetSlot); 
 }
 
+void PrepAutoCapDeployUnits(struct ProcAtMenu* proc)
+{
+    int i;
+    struct Unit *unit;
+
+    proc->cur_counter = 0;
+    proc->unit_count = 0;
+
+    //for (i = 0; i < PrepGetUnitAmount(); proc->unit_count++, i++) {
+    for (i = 0; i < 150; proc->unit_count++, i++) {
+        unit = GetUnitFromPrepList(i);
+
+        if (unit->state & US_DEAD)
+            continue;
+
+        if (unit->state & US_NOT_DEPLOYED)
+            continue;
+        {
+            if (proc->cur_counter >= proc->max_counter)
+                unit->state = 8;
+            else
+                proc->cur_counter++;
+        }
+    }
+
+    if (proc->unit_count < proc->max_counter)
+        proc->max_counter = proc->unit_count;
+}
+
+
 void PrepAtMenu_OnInit(struct ProcAtMenu *proc)
 {
 	if (!CheckFlag(InitSRAM_Flag)) { 
@@ -92,7 +122,7 @@ void PrepAtMenu_OnInit(struct ProcAtMenu *proc)
 		SetFlag(InitSRAM_Flag); 
 	} 
 	
-	ReorderPlayerUnitsBasedOnDeployment(); // removes gaps 
+	//ReorderPlayerUnitsBasedOnDeployment(); // removes gaps 
 	ClearPCBoxUnitsBuffer();
 	UnpackUnitsFromBox(gPlaySt.gameSaveSlot); 
 	//RelocateUnitsPastThreshold(index); 
@@ -143,6 +173,8 @@ void PrepUnit_InitSMS(struct ProcPrepUnit *proc)
     PrepAutoCapDeployUnits(proc->proc_parent);
     PrepUpdateSMS();
 }
+
+ // latest unit is in proc+0x2C 
 void MakePrepUnitList()
 {
     int i; 
@@ -155,16 +187,16 @@ void MakePrepUnitList()
             continue;
 
         if (IsUnitInCurrentRoster(unit)) {
-            //NewRegisterPrepUnitList(cur, unit);
+            NewRegisterPrepUnitList(cur, unit);
             cur++;
         }
-		else { unit->state |= US_NOT_DEPLOYED; } 
+		//else { unit->state |= US_NOT_DEPLOYED; } 
     }
 
     PrepSetUnitAmount(cur);
 }
 
-
+/*
 int CountUnitsInUnitStructRam(void) { 
 	int cur = 0;
     struct Unit *unit;
@@ -173,7 +205,7 @@ int CountUnitsInUnitStructRam(void) {
 
         if (UNIT_IS_VALID(unit)) { 
 			if (IsUnitInCurrentRoster(unit)) {
-				//NewRegisterPrepUnitList(cur, unit);
+				NewRegisterPrepUnitList(cur, unit);
 				cur++;
 			}
 		} 
@@ -181,6 +213,7 @@ int CountUnitsInUnitStructRam(void) {
     }
 	return cur; 
 } 
+*/
 
 
 
@@ -210,6 +243,7 @@ int CountUnusableUnitsUpToIndex(int index) {
 				cur++;
 			}
 			else { 
+				//cur++;
 				if (i >= index) { 
 					break; // keep counting until we find a valid unit so we know how many units to skip over 
 				} 
@@ -239,15 +273,12 @@ struct Unit *GetUnitFromPrepList(int index) // called in 6 other functions
 	return unit; 
 }
 
-/*
+
 void NewRegisterPrepUnitList(int index, struct Unit *unit)
 {
     gPrepUnitList.units[index] = unit;
-	struct Unit* destUnit = GetFreeTempUnitAddr();
-	memcpy(destUnit, unit, 0x48);
-	ClearUnit(unit);
 }
-*/
+
 
 void ProcPrepUnit_OnInit(struct ProcPrepUnit *proc)
 {

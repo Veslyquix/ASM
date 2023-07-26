@@ -71,7 +71,7 @@ extern struct Unit PCBoxUnitsBuffer[]; //0x2026E30 size 0x2048
 
 //extern struct BoxUnit BoxUnitSaved[]; 
 
-
+void NewRegisterPrepUnitList(int index, struct Unit *unit);
 int GetFreeUnitID(void);
 int GetFreeDeploymentID(void);
 int IsBoxFull(int slot);
