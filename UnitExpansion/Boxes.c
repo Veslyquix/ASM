@@ -201,7 +201,9 @@ void DeploySelectedUnits() {
 			newUnit = &gUnitArrayBlue[deploymentID];
 			memcpy((void*)newUnit, (void*)&unit[i], 0x48);
 			newUnit->index = deploymentID; 
-			
+			#ifdef POKEMBLEM_VERSION 
+			newUnit->pCharacterData = &gCharacterData[GetFreeUnitID()]; 
+			#endif 
 			ClearUnit(&unit[i]); 
 		}
 	} 
@@ -213,6 +215,9 @@ void DeploySelectedUnits() {
 			newUnit = &gUnitArrayBlue[deploymentID];
 			memcpy((void*)newUnit, (void*)unitTemp, 0x48);
 			newUnit->index = deploymentID;  // copy unit into a free slot in unit struct ram 
+			#ifdef POKEMBLEM_VERSION 
+			newUnit->pCharacterData = &gCharacterData[GetFreeUnitID()]; 
+			#endif 
 			ClearUnit(unitTemp); 
 		}
 	}
@@ -226,7 +231,9 @@ void DeploySelectedUnits() {
 			newUnit = &gUnitArrayBlue[deploymentID];
 			memcpy((void*)newUnit, (void*)&unit[i], 0x48);
 			newUnit->index = deploymentID;  // copy unit into a free slot in unit struct ram 
-			
+			#ifdef POKEMBLEM_VERSION 
+			newUnit->pCharacterData = &gCharacterData[GetFreeUnitID()]; 
+			#endif 
 			ClearUnit(&unit[i]); 
 			c++; 
 			} 
