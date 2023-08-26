@@ -490,18 +490,42 @@ int CountUnusableStoredUnitsUpToIndex(int index) {
 }
 
 
+struct Unit* GetBoxUnitStructFromCharID(int id) { 
+	struct Unit* unit = NULL; 
+	
+	int i;
+    for (i = 0; i < BoxBufferCapacity; ++i) {
+        unit = GetTempUnit(i);
+        if (unit->pCharacterData->number == id) { 
+            return unit;
+		} 
+    }
+
+	return NULL; 
+} 
+
 int GetFreeUnitID(void) { 
 	struct Unit* unit; 
+	int result = 0xFF; 
 	for (int i = 1; i<0x40; i++) { // unit ID, not deployment ID 
-		unit = &gUnitArrayBlue[i]; 
-		if (unit->pCharacterData) { 
+		unit = GetUnitStructFromEventParameter(i); 
+		if (unit) { 
 			continue; 
 		}
 		else {
-			return i; 
+			unit = GetBoxUnitStructFromCharID(i); 
+			if (unit) { 
+			continue; 
+			} 
+			else { 
+			result = i; 
+			break; 
+			} 
 		}
 	}
-	return 0xFF; 
+	
+	
+	return result; 
 } 
 
 
