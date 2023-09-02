@@ -268,7 +268,7 @@ bx r0
 .global Draw_WaitXFrames
 .type Draw_WaitXFrames, %function 
 Draw_WaitXFrames:
-push {r4, lr}
+push {r4-r5, lr}
 
 mov r4, r0 @ Parent? 
 
@@ -355,7 +355,7 @@ blh 0x8081914 @ default routine wait for hp to finish going down	@{U}
 mov r0, #1
 End_DrawPause:
 
-pop {r4}
+pop {r4-r5}
 pop {r1}
 bx r1 
 
