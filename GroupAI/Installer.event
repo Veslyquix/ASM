@@ -4,12 +4,20 @@
 #endif 
 // By PhantomSentine. Edited by Vesly 
 
+//#define AggroIfInDanger 
+//If uncommented, enemies part of the same group will all be aggro'd if any of them are in danger of being attacked 
+//Warning: If using AggroIfInDanger, it should be installed after charge as it takes over the same hook 
+// https://github.com/FireEmblemUniverse/SkillSystem_FE8/blob/23c28fdd2136a886040065898d697e3eaa28f9e2/EngineHacks/SkillSystem/Skills/PreBattleSkills/Charge/AIMoveDistance/AIMoveDistance.s
+
+
 PUSH 
 ORG $37748 // HandlePostActionTraps occurs before the hook at $1D308 and sets action to "wait" when standing on a trap right after this code
 jumpToHack(GroupAI|1)
 
+#ifdef AggroIfInDanger
 ORG $39C44 
 callHackNew(AggroGroupAI_IfInDanger) 
+#endif 
 
 POP  
 
