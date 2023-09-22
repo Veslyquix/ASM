@@ -22,7 +22,7 @@ POP
 // Will only take effect when a certain flag is on, or always if flag is 0xFF.  
 
 #include "PreventAttacking.lyn.event"
-#include "PreventAttTradeRescue.lyn.event"
+#include "PreventAttTradeRescueEtc.lyn.event"
 
 ALIGN 4
 PreventAttackingTable:
