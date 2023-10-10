@@ -95,10 +95,27 @@ AnyFlag:
 @strb r0, [r7, #4] @ dmg 
 
 
-
+	.equ GetUnit, 0x8019430
 NoReduceDmg: 
 @only activate if damage > current enemy hp-1
 ldrb	r1,[r5,#0x13]
+cmp r1, #1 
+bne ContinueStuff
+@mov r11, r11 
+add r1, #1 
+strb r1, [r5, #0x13] @ must have at least 2 hp? 
+ldrb r0, [r5, #0x0B] 
+push {r1} 
+blh GetUnit 
+pop {r1} 
+strb r1, [r0, #0x13] @ hp 
+
+@ldr r2, =0x8058258 
+@ldr r2, [r2] @ vanilla is 203e156 
+@strh r1, [r2] 
+@strh r1, [r2, #2] 
+
+ContinueStuff: 
 @mov	r0,#0x01
 @sub	r5,r0 @ current hp - 1 
 ldrb    r0,[r7,#0x04] @ damage 
