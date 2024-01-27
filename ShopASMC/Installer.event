@@ -1,0 +1,22 @@
+#include "ShopASMC.lyn.event" 
+
+
+ALIGN 4 
+ExampleShopEvent: 
+SVAL sD 0 // Initialize memory slot queue to 0 entries 
+SVAL s1 0x20001 // Iron sword, slim sword 
+SAVETOQUEUE 
+SVAL s1 0x40003 
+SAVETOQUEUE 
+SVAL s1 0x60005 
+SAVETOQUEUE 
+SVAL s1 0x80007 
+SAVETOQUEUE 
+SVAL s1 0 // Terminator 
+SAVETOQUEUE 
+SVAL s1 1 // Type of shop: Armoury (0), Vendor (1), or Secret (2) 
+ASMC CallShopASMC
+NoFade 
+ENDA 
+
+
