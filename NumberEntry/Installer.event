@@ -1,0 +1,17 @@
+
+ALIGN 4 
+#include "NumberEntry.lyn.event" 
+
+ALIGN 4 
+ExampleEvent:
+SVAL s1 12345 // initial value of number
+SVAL s2 15 // min 
+SVAL s3 123469 // max 
+SVAL s4 GameSeedText // text id like 0x505 - Title 
+SVAL s5 GameSeedDesc // text id like 0x505 - line 1 
+SVAL s6 GameSeedDesc2 // text id like 0x505 - line 2 
+SVAL s7 GameSeedDesc3 // text id like 0x505 - line 3 
+ASMC StartSeedMenu2
+NoFade 
+ENDA 
+
