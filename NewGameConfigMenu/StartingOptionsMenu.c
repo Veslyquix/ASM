@@ -620,7 +620,7 @@ extern struct ProcCode* ProcScr_BmFadeOUT; // save screen fade out
 void SaveStartingOptionsLoop(OptionsSavedProc* CurrentProc){
 	OptionsProc* proc = (void*)ProcFind((void*)&StartingOptionsProc); 
 	if (proc) { 
-		for (int commandID = 0; commandID < PAGE1MAXINDEX; commandID++) { 
+		for (int commandID = 0; commandID <= PAGE1MAXINDEX; commandID++) { 
 			u16* data = GetOptionsToFlagData(commandID);
 			//asm("mov r11, r11"); 
 			if (data) CurrentProc->FlagOn[commandID] = data[proc->Option[commandID]]; 
