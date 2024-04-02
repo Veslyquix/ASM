@@ -1,2 +1,0 @@
-HashBits=$1000169
-_UpdateKeyStatus=$100018D

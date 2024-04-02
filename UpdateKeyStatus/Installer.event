@@ -1,1 +1,14 @@
+
+
+ALIGN 4 
+RandomizeInputsFlag_Link: 
+WORD 0x89 // world map initialized flag 
+
+ALIGN 4 
+RandomizeInputsSpeed: 
+WORD 0x8 // every 4 seconds. 
+//WORD 0x7 // every 2 seconds. 
+//WORD 0x9 // every 8 seconds. 
+//WORD 0xA // every 16 seconds. 
+
 #include "UpdateKeyStatus.lyn.event" 
