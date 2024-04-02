@@ -47,7 +47,7 @@ u16 HashDirection(int dir, int noise) {
 	dir = (dir&0xF0)>>5; 
 	int num; // first result 
 	u16 directionResults[] = { KEY_DPAD_RIGHT, KEY_DPAD_LEFT, KEY_DPAD_UP, KEY_DPAD_DOWN }; 
-	int size = sizeof(directionResults); 
+	int size = 4; //sizeof(directionResults); 
 	if (dir >= size) { dir = 0x3; } 
 	u16 newList[size]; 
 	
@@ -60,7 +60,7 @@ u16 HashDirection(int dir, int noise) {
 	return newList[dir]; 
 } 
 
-u16 HashDirection(int dir, int noise) { 
+u16 HashButton(int dir, int noise) { 
 
 	switch (dir) { 
 		case KEY_BUTTON_A: { dir = 0; break; } 
@@ -71,7 +71,7 @@ u16 HashDirection(int dir, int noise) {
 	}
 	int num; // first result 
 	u16 directionResults[] = { KEY_BUTTON_A, KEY_BUTTON_B, KEY_BUTTON_R, KEY_BUTTON_L }; 
-	int size = sizeof(directionResults); 
+	int size = 4; //sizeof(directionResults); 
 	u16 newList[size]; 
 	
 	for (int i = 0; i < size; i++) { 
@@ -92,17 +92,13 @@ u16 HashBits(u16 number, int max){
 	if (!number) { return number; } 
 	
 	u16 init_num = number; 
-	int totalPossibilities = 5; // possibilities 
+	int totalPossibilities = 12; // possibilities 
 	int time = GetGameClock() >> RandomizeInputsSpeed; // every 4 seconds 
 	int value = HashByte(time, totalPossibilities); 
 	
 	switch (value) { 
-		case 0: { number = (1 << NextRN_N(9)) | KEY_BUTTON_B; break; } // back out of things lol 
-		//case 1: { number = (1 << HashByte((init_num + time), 9)) | KEY_BUTTON_R; break; } // view descriptions 
-		//case 2: { number = (1 << NextRN_N(9)) | KEY_BUTTON_A; break; } // random input and A 
-		case 1: { break; } // number = (1 << NextRN_N(9)); break; } // randomly created input
-		//case 2: { number = init_num << 1; break; } 
-		//case 3: { number = init_num >> 1; break; } 
+		case 0: { number = (1 << NextRN_N(10)) | KEY_BUTTON_B; return number; break; } // back out of things lol 
+		case 1:
 		case 2: { 
 			if (init_num & KEY_BUTTON_A) { number &= ~KEY_BUTTON_A; number |= KEY_BUTTON_B; } 
 			if (init_num & KEY_BUTTON_B) { number &= ~KEY_BUTTON_B; number |= KEY_BUTTON_A; } 
@@ -114,6 +110,7 @@ u16 HashBits(u16 number, int max){
 			if (init_num & KEY_BUTTON_SELECT) { number &= ~KEY_BUTTON_SELECT; number |= KEY_BUTTON_START; } 
 			if (init_num & KEY_BUTTON_R) { number &= ~KEY_BUTTON_R; number |= KEY_BUTTON_L; } 
 			if (init_num & KEY_BUTTON_L) { number &= ~KEY_BUTTON_L; number |= KEY_BUTTON_R; } 
+			return number; 
 			break; 
 		} 
 		case 3: { 
@@ -127,6 +124,7 @@ u16 HashBits(u16 number, int max){
 			if (init_num & KEY_BUTTON_SELECT) { number &= ~KEY_BUTTON_SELECT; number |= KEY_BUTTON_START; } 
 			if (init_num & KEY_BUTTON_R) { number &= ~KEY_BUTTON_R; number |= KEY_BUTTON_B; } 
 			if (init_num & KEY_BUTTON_L) { number &= ~KEY_BUTTON_L; number |= KEY_BUTTON_A; } 
+			//return number; 
 			break; 
 		} 
 		case 4: { 
@@ -140,15 +138,16 @@ u16 HashBits(u16 number, int max){
 			if (init_num & KEY_BUTTON_SELECT) { number &= ~KEY_BUTTON_SELECT; number |= KEY_BUTTON_START; } 
 			if (init_num & KEY_BUTTON_R) { number &= ~KEY_BUTTON_R; number |= KEY_DPAD_RIGHT; } 
 			if (init_num & KEY_BUTTON_L) { number &= ~KEY_BUTTON_L; number |= KEY_DPAD_LEFT; } 
+			//return number; 
 			break; 
 		}
 		default: 
 	} 
-	if (init_num < 4) { number |= (1 << HashByte((init_num + time), 2)); } // if you pressed A or B, also press one of them at random 
-	
-	// this part didn't work how i wanted it to 
-	if (init_num & 0xF0) { number = HashDirection(init_num, time); } // if you pressed a direction, also press one of them at random 
-	if (init_num & 0x303) { number = HashButton(init_num, time); } // if you pressed a direction, also press one of them at random 
+	//if (init_num < 4) { number |= (1 << HashByte((init_num + time), 2)); } // if you pressed A or B, also press one of them at random 
+	//time = 50; 
+	if (init_num & (KEY_BUTTON_A|KEY_BUTTON_B|KEY_BUTTON_R|KEY_BUTTON_L)) { number = HashButton(init_num, time); } // if you pressed ABLR, press one of them at random 
+
+	if (init_num & 0xF0) { number = HashDirection(init_num, time); } // if you pressed a direction, press one of them at random 
 
 	return number & 0x3FF; 
   //u32 hash = 5381;
