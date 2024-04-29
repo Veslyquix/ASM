@@ -1,0 +1,21 @@
+#ifndef callHackNew 
+	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+#endif 
+
+#include "MakeStolenItemDroppable.lyn.event" 
+PUSH
+#ifdef _FE6_
+ORG $2EF4C 
+callHackNew(MakeStolenItemDroppable_FE6)
+#endif 
+#ifdef _FE7_
+ORG $35378
+callHackNew(MakeStolenItemDroppable_FE7)
+#endif 
+#ifdef _FE8_
+ORG $3A15C
+callHackNew(MakeStolenItemDroppable_FE8)
+SHORT 0x46C0
+#endif 
+POP
+
