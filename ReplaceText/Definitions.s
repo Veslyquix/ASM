@@ -92,6 +92,7 @@ SET_FUNC Text_DrawStringAscii, 0x80064b5
 SET_FUNC PutText, 0x8005ab5
 SET_FUNC GetLang, 0x800562d
 SET_DATA sMsgString, 0x2029404 
+SET_DATA u32MsgString, 0x2029404 
 SET_FUNC gARM_DecompText, 0x3003780
 SET_FUNC CallARM_DecompText, 0x800384d 
 SET_DATA gPrepUnitList, 0x200e6d4
@@ -180,12 +181,14 @@ SET_DATA ProcScr_FadeCore, 0x8B929AC
 SET_DATA ProcScr_BmFadeIN, 0x8CE4C50 
 SET_DATA ProcScr_BmFadeOUT, 0x8CE4C80 
 SET_DATA sMsgString, 0x202A5B4 
+SET_DATA u32MsgString, 0x202A5B4 
 
 SET_FUNC gARM_DecompText, 0x3003940 
 SET_FUNC CallARM_DecompText, 0x8004365 
 
 .endif 
 .if FE8 == true 
+SET_DATA u32MsgString, 0x0202A6AC
 SET_FUNC gARM_DecompText, 0x3004150 
 SET_FUNC CallARM_DecompText, 0x8002ba5 
 SET_DATA gVision, 0x202BCF0+0x0D

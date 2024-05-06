@@ -24,6 +24,7 @@ TextD: ; String("another name"); BYTE 0
 TextE:
 String("I "); BYTE 0 
 TextF: ; String("arbitrary text "); BYTE 0 
+#endif 
 
 #ifdef _FE7_
 
