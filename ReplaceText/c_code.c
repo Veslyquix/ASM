@@ -103,7 +103,7 @@ void CallARM_DecompText(const char *a, char *b) // 2ba4 // fe7 8004364 fe6 80038
 	#endif 
 	for (int c = 0; c < 255; ++c) { 
 		if (!ReplaceTextList[c].find) { break; } 
-		if (ReplaceTextList[c].flag) { if (CheckFlag(ReplaceTextList[c].flag)) { continue; }} 
+		if (ReplaceTextList[c].flag) { if (!CheckFlag(ReplaceTextList[c].flag)) { continue; }} 
 		if (ReplaceTextList[c].chapterID != 0xFF) { if (gCh != ReplaceTextList[c].chapterID) { continue; }} 
 		for (int i = 0; i < 0x1000; ++i) { 
 			ReplaceIfMatching(&sMsgString[i], ReplaceTextList[c].find, ReplaceTextList[c].replace, i);
