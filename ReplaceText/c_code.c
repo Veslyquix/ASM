@@ -56,9 +56,9 @@ void ShiftDataInBuffer(char *buffer, int amount, int offset, int usedBufferLengt
 
 } 
 
-int ReplaceIfMatching(int usedBufferLength[], const char* find, const char* replace, int c) { 
+int ReplaceIfMatching(int usedBufferLength[], const char* find, const char* replace, int c, char* b) { 
 	int i; 
-	char* buffer = &sMsgString[c]; 
+	char* buffer = &b[c]; 
 	
 	// could string be in the next 4 bytes? 
 	if (!(c & 3)) { //4 aligned, as the buffers all start 4 aligned 
@@ -76,7 +76,7 @@ int ReplaceIfMatching(int usedBufferLength[], const char* find, const char* repl
 	} 
 	
 	int len2 = GetStringLength(replace); 
-	ShiftDataInBuffer(sMsgString, len2-i, c, usedBufferLength); 
+	ShiftDataInBuffer(b, len2-i, c, usedBufferLength); 
 	
 	for (i = 0; i < len2; ++i) { 
 		buffer[i] = replace[i]; 
@@ -93,7 +93,7 @@ void CallARM_DecompText(const char *a, char *b) // 2ba4 // fe7 8004364 fe6 80038
 	if ((int)a & 0x80000000) { // anti huffman 
 		a = (const char*) ((int)a & 0x7FFFFFFF); 
 		for (int i = 0; i < 0x1000; ++i) { 
-			sMsgString[i] = a[i];
+			b[i] = a[i];
 			if (!a[i]) { 
 			length[0] = i; 
 			break; }  
@@ -111,11 +111,11 @@ void CallARM_DecompText(const char *a, char *b) // 2ba4 // fe7 8004364 fe6 80038
 		#endif 
 	} 
 	#ifdef FE8 
-	//SetMsgTerminator(sMsgString); 
+	//SetMsgTerminator(b); 
 	#endif 
 	if (length[0] < 0xFFF) {
-		sMsgString[length[0]] = 0; 
-		sMsgString[length[0]+1] = 0; 
+		b[length[0]] = 0; 
+		b[length[0]+1] = 0; 
 	} 
 	
 	
@@ -123,9 +123,9 @@ void CallARM_DecompText(const char *a, char *b) // 2ba4 // fe7 8004364 fe6 80038
 		if (!ReplaceTextList[c].find) { break; } 
 		if (ReplaceTextList[c].flag) { if (!CheckFlag(ReplaceTextList[c].flag)) { continue; }} 
 		if (ReplaceTextList[c].chapterID != 0xFF) { if (gCh != ReplaceTextList[c].chapterID) { continue; }} 
-		for (int i = 0; i < 0x1000; ++i) { 
-			i = ReplaceIfMatching(length, ReplaceTextList[c].find, ReplaceTextList[c].replace, i);
-			if (!sMsgString[i]) { break; } 
+		for (int i = 0; i < 0x555; ++i) { 
+			i = ReplaceIfMatching(length, ReplaceTextList[c].find, ReplaceTextList[c].replace, i, b);
+			if (!b[i]) { break; } 
 		}
 	} 
 	
