@@ -6,11 +6,13 @@
 #include "C_Code.lyn.event" 
 
 PUSH 
-ORG 0x52304
-jumpToHack(TestFunc)
+ORG 0x599f4
+callHackNew(TestFunc)
 POP 
 
-
+ALIGN 4 
+BonusDamage:
+WORD 5 
 
 
 

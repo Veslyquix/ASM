@@ -8,22 +8,18 @@
 .global TestFunc
 .type TestFunc, %function 
 TestFunc: 
-push  {r4-r6, r14}
-mov   r4, r0
-
+push  {r14}
 
 bl SomeC_Code
 
+ldr r0, =0x8C00008
+mov r10, r0 
+ldr r1, =0x201fb1c 
+mov r0, #0 
+str r0, [r1, #4] 
+str r0, [r1] 
 
-
-
-
-@ Vanilla. Overwritten by hook.
-mov   r0, r4
-ldr   r3, =GetAnimPosition
-bl    GOTO_R3
-ldr   r3, =0x805230D
-GOTO_R3:
-bx    r3
+pop {r3} 
+bx r3 
 .ltorg 
 
