@@ -2,10 +2,12 @@
 
 typedef struct {
     /* 00 */ PROC_HEADER;
-	int timer[2]; 
+	int timer; 
 	struct Unit* unit[2];
-	u8 hitEarly[2]; 
-	u8 hitOnTime[2]; 
+	u8 hitEarly; 
+	u8 hitOnTime; 
+	u8 side; 
+	u8 didBonusDmg; 
 } SomeProc;
 void LoopSomeProc(SomeProc* proc);
 const struct ProcCmd SomeProcCmd[] =
@@ -23,15 +25,13 @@ void SomeC_Code(void) {
 	if (!proc) { 
 	proc = Proc_Start(SomeProcCmd, (void*)3); 
 	} 
-	proc->timer[0] = 0; 
-	proc->timer[1] = 0; 
+	proc->side = 0xFF; 
+	proc->timer = 0; 
 	proc->unit[0] = NULL; 
 	proc->unit[1] = NULL; 
-	proc->hitEarly[0] = false; 
-	proc->hitEarly[1] = false; 
-	proc->hitOnTime[0] = false; 
-	proc->hitOnTime[1] = false; 
-
+	proc->hitEarly = false; 
+	proc->hitOnTime = false; 
+	proc->didBonusDmg = false;
 	// load graphics into obj vram here 
 	//LoadObjUIGfx(); // usually already loaded anyway 
 
@@ -43,7 +43,28 @@ void SomeC_Code(void) {
 //extern u16 gEkrHitEfxBool; // 0x2017780  [0x2017780..0x2017783]!!
 // UpdateBanimFrame occurs once at start of battle 80599e8
 // ekrGaugeMain 0x8051284 is called every frame 
+//gpProcEkrGauge
 
+// ekrBattle has anim* in +0x5C, as does efxHPBarColorChange 
+// efxStatusUnit exists twice and has both anim* in respective +0x5C 
+
+/*
+struct ProcEkrBattle {
+    PROC_HEADER;
+
+    u8 speedup;
+    u8 _pad_2A[0x2C - 0x2A];
+    s16 timer;
+    s16 end;
+    u8 _pad_30[0x44 - 0x30];
+    int side;
+    int counter;
+    u8 _pad_4C[0x54 - 0x4C];
+    int is_quote;
+    int unk58;
+    struct Anim * anim;
+};
+*/ 
 
 const u16 sSprite_HitInput[] = {
     1,
@@ -57,53 +78,92 @@ const u16 sSprite_MissedInput[] = {
 	0x4000, 
 	0x01cc // tile number 
 };
-void DoStuffIfHit(SomeProc* proc, u32 keys, int x, int y, int side);
+extern const int EnemiesCanDoBonusDamage; 
+extern struct BattleHit* GetCurrentRound(int roundID); 
+void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side);
 void LoopSomeProc(SomeProc* proc) { 
-	proc->timer[0]++; 
-	proc->timer[1]++; 
+	proc->timer++; 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
 	int x = 0; 
 	int y = 0; 
-	//PutSprite(int layer, int x, int y, const u16* object, int oam2) // oam2 is palette & other stuff 
-	
-	//struct Anim* anim = 
-	
-	//if (proc->timer > 50) { Proc_Break(proc); } 
-	DoStuffIfHit(proc, keys, x+(5*8), y, 0); 
-	//DoStuffIfHit(proc, keys, x, y, 1); 
+	struct ProcEkrBattle* battleProc = gpProcEkrBattle; 
+	struct Anim* anim = NULL; 
+	if (battleProc) { anim = battleProc->anim; } 
+	else { return; } 
+	struct Anim* anim2 = GetAnimAnotherSide(anim);
+	if (!anim2) { return; } 
+	//asm("mov r11, r11"); 
+	int nextRoundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId : anim2->nextRoundId; 
+	struct BattleHit* currentRound = GetCurrentRound(nextRoundId-1); 
+	// if (!Proc_Find(updatebanimframe proc)) { Proc_Break(proc); } 
+	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
+	int side = 1 ^ gEkrInitialPosition[(nextRoundId-1)&1]; 
+	if (proc->side != side) { proc->side = side; proc->timer = 0; proc->didBonusDmg = false; } 
+	if (!EnemiesCanDoBonusDamage && side) { return; } 
+	DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+(5*8), y, side); 
 
 
 
 
 } 
-extern const int BonusDamage; 
-void DoStuffIfHit(SomeProc* proc, u32 keys, int x, int y, int side) { 
-	// wrong size for ss 
-		gBattleHitArray[0].hpChange = 5; // used by Huichelaar's banim numbers 
-		//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; 
+
+void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2); 
+void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side) { 
+	
+	//int side = 1 ^ battleProc->side; // we want to affect the opposite side 
 	int hitTime = EkrEfxIsUnitHittedNow(side); 
 	if (hitTime) { 
-		if (gBattleTarget.unit.curHP < BonusDamage) { gBattleTarget.unit.curHP = 0; } 
-		else { gBattleTarget.unit.curHP -= BonusDamage; } 
-		proc->timer[side] = 0; 
-		if (proc->hitEarly[side]) { PutSprite(2, x, y, sSprite_MissedInput, 0); return; } 
-		if (keys & A_BUTTON) { 
-			proc->hitOnTime[side] = true; 
+		if (!proc->didBonusDmg) { 
+			proc->didBonusDmg = true; 
+			ApplyBonusDamage(HpProc, side, round, anim, anim2); 
 		} 
-		if (proc->hitOnTime[side] && (!proc->hitEarly[side])) { 
+		if (proc->hitEarly) { 
+			//PutSprite(int layer, int x, int y, const u16* object, int oam2) // oam2 is palette & other stuff 
+			PutSprite(2, x, y, sSprite_MissedInput, 0); return; 
+		} 
+		if (keys & A_BUTTON) { 
+			proc->hitOnTime = true; 
+		} 
+		if (proc->hitOnTime && (!proc->hitEarly)) { 
 			PutSprite(2, x, y, sSprite_HitInput, 0);
 		} 
 	} 
 	else { 
-		if (keys & A_BUTTON) { proc->hitEarly[side] = true; } 
-		int otherSide = 0; 
-		if (!side) { otherSide = 1; } 
-		if ((proc->timer[side] && (proc->timer[side] < 10)) || (!proc->timer[otherSide])) { proc->hitEarly[side] = false; proc->hitEarly[otherSide] = false; } // 10 frames after hitting where it's okay to have A held down 
+		if (keys & A_BUTTON) { proc->hitEarly = true; } 
+		if (proc->timer < 10) { proc->hitEarly = false; } // 10 frames after hitting where it's okay to have A held down 
 	}
 
 
 } 
 
+extern const int BonusDamage; 
+void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2) { 
+	struct BattleUnit* bunit = NULL; 
+	if (gEkrInitialPosition[side] == 0) { // actor is on the left 
+		bunit = &gBattleActor; 
+	} 
+	else { bunit = &gBattleTarget; } 
+	int damage = BonusDamage; 
+	//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; // might need to end battle early? 
+	if (HpProc->post < damage) { damage = HpProc->post; HpProc->post = 0; HpProc->death = true; } 
+	round->hpChange += damage; // used by Huichelaar's banim numbers 
+	if (bunit->unit.curHP <= damage) { // they are dead 
+		//asm("mov r11, r11"); 
+		//gpProcEkrBattle->end = true; // does nothing 
+		//gEkrBattleEndFlag = true; // immediately ends without waiting for anything 
+		//NewEkrbattleending(); // crashes 
+		anim->nextRoundId = 8; // seems to work 
+		anim2->nextRoundId = 8; 
+		//gBanimDoneFlag[0] = true; 
+		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
+		
+		bunit->unit.curHP = 0; 
+		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
+	} 
+	else { bunit->unit.curHP -= damage; } 
 
+	
+	
+} 
 
 

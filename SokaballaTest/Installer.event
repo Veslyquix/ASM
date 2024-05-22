@@ -12,8 +12,9 @@ POP
 
 ALIGN 4 
 BonusDamage:
-WORD 5 
-
+WORD 44
+EnemiesCanDoBonusDamage:
+WORD 0 
 
 
 
