@@ -118,6 +118,8 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 		if (!proc->didBonusDmg) { 
 			//asm("mov r11, r11"); 
 			proc->didBonusDmg = true; 
+			//PlaySFX(int songid, int volume, int locate, int type)
+			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
 			ApplyBonusDamage(HpProc, side, round, anim, anim2); 
 		} 
 		//if (proc->hitEarly) { 
