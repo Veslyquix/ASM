@@ -16,7 +16,12 @@ WORD 6
 EnemiesCanDoBonusDamage:
 WORD 0 
 
-
+ALIGN 4 
+Press_A_Image:
+#incbin "Press_A.dmp" 
+ALIGN 4 
+gPal_Press_A_Image:
+#incbin "Press_A_pal.dmp" 
 
 
 

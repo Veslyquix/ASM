@@ -16,7 +16,8 @@ const struct ProcCmd SomeProcCmd[] =
 	PROC_REPEAT(LoopSomeProc), 
     PROC_END,
 };
-
+extern void* Press_A_Image; 
+extern u16 gPal_Press_A_Image[];
 extern struct KeyStatusBuffer sKeyStatusBuffer; // 2024C78
 void SomeC_Code(void) { 
 	SomeProc* proc; 
@@ -31,8 +32,7 @@ void SomeC_Code(void) {
 	proc->didBonusDmg = false;
 	// load graphics into obj vram here 
 	//LoadObjUIGfx(); // usually already loaded anyway 
-	
-	
+	Copy2dChr(&Press_A_Image, (void*)0x06012000, 5, 4);
 
 } 
 
@@ -46,16 +46,22 @@ void SomeC_Code(void) {
 // efxStatusUnit exists twice and has both anim* in respective +0x5C 
 
 const u16 sSprite_HitInput[] = {
-    1,
+    1, // number of entries below (each entry has 3 lines) 
     0x0002, 
 	0x4000, 
 	0x01ca // tile number 
 };
 const u16 sSprite_MissedInput[] = {
     1,
-    0x0002, 
+    0x0000, 
 	0x4000, 
 	0x01cc // tile number 
+};
+const u16 sSprite_PressInput[] = {
+    1,
+    OAM0_SHAPE_64x32, 
+	OAM1_SIZE_64x32, 
+	OAM2_CHR(0x0100) // tile number 
 };
 extern const int EnemiesCanDoBonusDamage; 
 extern struct BattleHit* GetCurrentRound(int roundID); 
@@ -64,7 +70,7 @@ void LoopSomeProc(SomeProc* proc) {
 	proc->timer++; 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
 	int x = 0; 
-	int y = 0; 
+	int y = 8 * 5; 
 	struct ProcEkrBattle* battleProc = gpProcEkrBattle; 
 	struct Anim* anim = NULL; 
 	if (battleProc) { anim = battleProc->anim; } 
@@ -84,9 +90,16 @@ void LoopSomeProc(SomeProc* proc) {
 	//int side = anim->state & (ANIM_BIT_ENABLED | ANIM_BIT_HIDDEN | ANIM_BIT_2 | ANIM_BIT_FROZEN) ? 0 : 1; 
 	//int side = anim->state2 & ANIM_BIT2_POS_RIGHT ? 0 : 1; 
 	//int side = 1 ^ gEkrInitialPosition[(roundId-1)&1]; 
-	if (proc->roundId != roundId) { proc->roundId = roundId; proc->timer = 0; proc->didBonusDmg = false; } 
+	if (proc->roundId != roundId) { 
+		proc->roundId = roundId; 
+		proc->timer = 0; 
+		proc->hitEarly = false; 
+		proc->hitOnTime = false; 
+		proc->didBonusDmg = false;
+	} 
 	
 	if (!EnemiesCanDoBonusDamage && side) { return; } 
+	if (roundId >= 2) { asm("mov r11, r11");}
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+((1^side)*12*8), y, side); 
 
 	// hp display 203E1AC
@@ -100,9 +113,10 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 	//int side = 1 ^ battleProc->side; // we want to affect the opposite side 
 	int hitTime = EkrEfxIsUnitHittedNow(side); 
 	if (hitTime) { 
-		
+
+		//PutSprite(0, x, y, sSprite_PressInput, oam2);
 		if (!proc->didBonusDmg) { 
-		//asm("mov r11, r11"); 
+			//asm("mov r11, r11"); 
 			proc->didBonusDmg = true; 
 			ApplyBonusDamage(HpProc, side, round, anim, anim2); 
 		} 
@@ -113,8 +127,16 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 		if (keys & A_BUTTON) { 
 			proc->hitOnTime = true; 
 		} 
+		
 		if (proc->hitOnTime && (!proc->hitEarly)) { 
-			PutSprite(2, x, y, sSprite_HitInput, 0);
+		    asm("mov r11, r11");
+			CallARM_PushToSecondaryOAM(OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_HitInput, 0); 
+		} 
+		else if (!proc->hitEarly) { 
+			asm("mov r11, r11");
+			ApplyPalettes(gPal_Press_A_Image, 15+16, 0x10);
+			int oam2 = OAM2_PAL(15) | OAM2_LAYER(0); //OAM2_CHR(0);
+			CallARM_PushToSecondaryOAM(OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
 		} 
 	} 
 	else { 
