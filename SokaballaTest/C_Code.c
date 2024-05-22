@@ -5,7 +5,7 @@ typedef struct {
 	int timer; 
 	u8 hitEarly; 
 	u8 hitOnTime; 
-	u8 side; 
+	u8 roundId; 
 	u8 didBonusDmg; 
 } SomeProc;
 void LoopSomeProc(SomeProc* proc);
@@ -24,7 +24,7 @@ void SomeC_Code(void) {
 	if (!proc) { 
 	proc = Proc_Start(SomeProcCmd, (void*)3); 
 	} 
-	proc->side = 0xFF; 
+	proc->roundId = 0xFF; 
 	proc->timer = 0; 
 	proc->hitEarly = false; 
 	proc->hitOnTime = false; 
@@ -72,16 +72,24 @@ void LoopSomeProc(SomeProc* proc) {
 	struct Anim* anim2 = GetAnimAnotherSide(anim);
 	if (!anim2) { return; } 
 	//asm("mov r11, r11"); 
-	int nextRoundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId : anim2->nextRoundId; 
-	struct BattleHit* currentRound = GetCurrentRound(nextRoundId-1); 
+	int roundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId-1 : anim2->nextRoundId-1; 
+	struct BattleHit* currentRound = GetCurrentRound(roundId); 
 	// if (!Proc_Find(updatebanimframe proc)) { Proc_Break(proc); } 
 	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
-	int side = 1 ^ gEkrInitialPosition[(nextRoundId-1)&1]; 
-	if (proc->side != side) { proc->side = side; proc->timer = 0; proc->didBonusDmg = false; EndEmitStars(); } 
+	//asm("mov r11, r11"); 
+	int side = gEkrInitialPosition[1]; 
+	if (gAnimRoundData[roundId] == 6) { side = 1 ^ side; } 
+	
+	//asm("mov r11, r11"); 
+	//int side = anim->state & (ANIM_BIT_ENABLED | ANIM_BIT_HIDDEN | ANIM_BIT_2 | ANIM_BIT_FROZEN) ? 0 : 1; 
+	//int side = anim->state2 & ANIM_BIT2_POS_RIGHT ? 0 : 1; 
+	//int side = 1 ^ gEkrInitialPosition[(roundId-1)&1]; 
+	if (proc->roundId != roundId) { proc->roundId = roundId; proc->timer = 0; proc->didBonusDmg = false; } 
+	
 	if (!EnemiesCanDoBonusDamage && side) { return; } 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+((1^side)*12*8), y, side); 
 
-
+	// hp display 203E1AC
 
 
 } 
@@ -94,8 +102,8 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 	if (hitTime) { 
 		
 		if (!proc->didBonusDmg) { 
+		//asm("mov r11, r11"); 
 			proc->didBonusDmg = true; 
-			StartEmitStarsAnim(proc, 11*8, 7*8, 12, 12);
 			ApplyBonusDamage(HpProc, side, round, anim, anim2); 
 		} 
 		//if (proc->hitEarly) { 
@@ -126,25 +134,27 @@ void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* r
 	else { bunit = &gBattleTarget; } 
 	int damage = BonusDamage; 
 	//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; // might need to end battle early? 
-	if (HpProc->post <= damage) { damage = HpProc->post; HpProc->post = 0; HpProc->death = true; } 
-	else { HpProc->post -= damage; } 
-	round->hpChange += damage; // used by Huichelaar's banim numbers 
-	if (bunit->unit.curHP <= damage) { // they are dead 
+	if (HpProc->post > damage) { HpProc->post -= damage; bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
+	else { // they are dead 
+		damage = HpProc->post; 
+		round->hpChange += damage; // used by Huichelaar's banim numbers 
+		bunit->unit.curHP = 0; 
+		HpProc->post = 0; 
+		gEkrGaugeHp[side] = round->hpChange;
+		HpProc->death = true; 
+		
 		//asm("mov r11, r11"); 
 		//gpProcEkrBattle->end = true; // does nothing 
 		//gEkrBattleEndFlag = true; // immediately ends without waiting for anything 
 		//NewEkrbattleending(); // crashes 
+
+		anim2->nextRoundId = 8; // seems to work for now see GetAnimNextRoundType
 		anim->nextRoundId = 8; // seems to work for now see GetAnimNextRoundType
-		anim2->nextRoundId = 8; 
+
 		//gBanimDoneFlag[0] = true; 
 		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
-		
-		bunit->unit.curHP = 0; 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 	} 
-	else { bunit->unit.curHP -= damage; } 
-
-	
 	
 } 
 
