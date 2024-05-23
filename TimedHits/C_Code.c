@@ -25,7 +25,7 @@ void SomeC_Code(void) {
 	SomeProc* proc; 
 	proc = Proc_Find(SomeProcCmd); 
 	if (!proc) { 
-	proc = Proc_Start(SomeProcCmd, (void*)0); 
+	proc = Proc_Start(SomeProcCmd, (void*)3); 
 	} 
 	proc->broke = false; 
 	proc->roundId = 0xFF; 
@@ -88,79 +88,50 @@ void LoopSomeProc(SomeProc* proc) {
 	else { return; } 
 	struct Anim* anim2 = GetAnimAnotherSide(anim1);
 	if (!anim2) { return; } 
-	struct Anim* anim = NULL; 
+	//struct Anim* anim = NULL; 
 	
-	for (int i = 0; i < 4; i++) {
-        anim = gAnims[i];
-        if (!anim) { continue; } 
-		int type = anim->state2 & ANIM_BIT2_CMD_MASK;
-		if (type == 0) { continue; } 
-		//if (anim->commandQueueSize == 0) { continue; }
-		//if (!(type & ANIM_BIT2_COMMAND)) { continue; } 
-		
 
-		//int roundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId-1 : anim2->nextRoundId-1; 
-		int roundId = anim->nextRoundId-1; 
-		struct BattleHit* currentRound = GetCurrentRound(roundId); 
-		// if (!Proc_Find(updatebanimframe proc)) { Proc_Break(proc); } 
-		struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
-		int side = GetAnimPosition(anim); 
-		int roundType = GetAnimRoundType(anim); 
-		BreakOnce(proc);
-		if (roundType) { continue; } 
+	int roundId = anim1->nextRoundId > anim2->nextRoundId ? anim1->nextRoundId-1 : anim2->nextRoundId-1; 
+	if (proc->roundId != roundId) { 
+		proc->broke = false; 
+		proc->roundId = roundId; 
+		proc->timer = 0; 
+		proc->hitEarly = false; 
+		proc->hitOnTime = false; 
+		proc->didBonusDmg = false;
+	} 
+	struct BattleHit* currentRound = GetCurrentRound(roundId); 
+	// if (!Proc_Find(updatebanimframe proc)) { Proc_Break(proc); } 
+	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
+	int side = 0xFF; //GetAnimPosition(anim1); 
+	if (EkrEfxIsUnitHittedNow(0)) { side = 1; } // side is only correct once the target is hit 
+	if (EkrEfxIsUnitHittedNow(1)) { side = 0; } 
 
-			
-		//if ((anim->state2 & ANIM_BIT2_CMD_MASK) ) { 
-		//	BreakOnce(proc);
-		//	//if ((anim2->state2 & ANIM_BIT2_CMD_MASK)) { return; } 
-		//	side = GetAnimPosition(anim); 
-		//} 
 
+	//
+	//DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+((1^side)*12*8), y, side); 
+	DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim1, anim2, keys, x, y, side); 
+
+	// hp display 203E1AC
+
+} 
+
+void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2); 
+void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side) { 
+	//BreakOnce(proc);
+	//int side = 1 ^ battleProc->side; // we want to affect the opposite side 
+	int hitTime = EkrEfxIsUnitHittedNow(1 ^ side); 
+	if (hitTime) { 
 		struct BattleUnit* active_bunit = gpEkrBattleUnitLeft; 
 		struct BattleUnit* opp_bunit = gpEkrBattleUnitRight; 
 		if (side) { //If GetAnimPosition returns 1, right unit is currently acting.
 			active_bunit = gpEkrBattleUnitRight; 
 			opp_bunit = gpEkrBattleUnitLeft;
 		} 
+		if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
 		
-		//if (gEkrInitialHitSide) { 
-		//if (anim->nextRoundId > anim2->nextRoundId) { 
-		//side = GetAnimPosition(anim); 
-		//} 
-		//else { side = GetAnimPosition(anim2); } 
-		// (
-		
-		//int side = gEkrInitialPosition[1]; 
-		
-		//if (gAnimRoundData[roundId] == gAnimRoundData[0]) { side = 1 ^ side; } 
-		//if (6 == gAnimRoundData[0]) { side = 1 ^ side; } 
-		//int side = anim->state & (ANIM_BIT_ENABLED | ANIM_BIT_HIDDEN | ANIM_BIT_2 | ANIM_BIT_FROZEN) ? 0 : 1; 
-		//int side = anim->state2 & ANIM_BIT2_POS_RIGHT ? 0 : 1; 
-		//int side = 1 ^ gEkrInitialPosition[(roundId-1)&1]; 
-		if (proc->roundId != roundId) { 
-			proc->broke = false; 
-			proc->roundId = roundId; 
-			proc->timer = 0; 
-			proc->hitEarly = false; 
-			proc->hitOnTime = false; 
-			proc->didBonusDmg = false;
-		} 
-		
-		//if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
-		DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+((1^side)*12*8), y, side); 
-
-		// hp display 203E1AC
-
-		}
-} 
-
-void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2); 
-void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side) { 
-	BreakOnce(proc);
-	//int side = 1 ^ battleProc->side; // we want to affect the opposite side 
-	int hitTime = EkrEfxIsUnitHittedNow(1 ^ side); 
-	if (hitTime) { 
-		
+		x = x+((1^side)*12*8);
+		BreakOnce(proc);
 		//PutSprite(0, x, y, sSprite_PressInput, oam2);
 		if (!proc->didBonusDmg) { 
 			proc->didBonusDmg = true; 
