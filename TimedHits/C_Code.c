@@ -101,10 +101,9 @@ void LoopSomeProc(SomeProc* proc) {
 		proc->didBonusDmg = false;
 	} 
 	struct BattleHit* currentRound = GetCurrentRound(roundId); 
-	// if (!Proc_Find(updatebanimframe proc)) { Proc_Break(proc); } 
 	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
-	int side = 0xFF; //GetAnimPosition(anim1); 
-	if (EkrEfxIsUnitHittedNow(0)) { side = 1; } // side is only correct once the target is hit 
+	int side = 0xFF; // side is only correct once the target is hit 
+	if (EkrEfxIsUnitHittedNow(0)) { side = 1; } 
 	if (EkrEfxIsUnitHittedNow(1)) { side = 0; } 
 
 
@@ -115,40 +114,43 @@ void LoopSomeProc(SomeProc* proc) {
 	// hp display 203E1AC
 
 } 
-
-void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2); 
+//#define AlwaysWork
+void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2);
 void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side) { 
-	//BreakOnce(proc);
-	//int side = 1 ^ battleProc->side; // we want to affect the opposite side 
 	int hitTime = EkrEfxIsUnitHittedNow(1 ^ side); 
 	if (hitTime) { 
 		struct BattleUnit* active_bunit = gpEkrBattleUnitLeft; 
 		struct BattleUnit* opp_bunit = gpEkrBattleUnitRight; 
-		if (side) { //If GetAnimPosition returns 1, right unit is currently acting.
+		if (side) { 
 			active_bunit = gpEkrBattleUnitRight; 
 			opp_bunit = gpEkrBattleUnitLeft;
 		} 
 		if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
 		
-		x = x+((1^side)*12*8);
+		x = x+((side)*12*8);
 		BreakOnce(proc);
-		//PutSprite(0, x, y, sSprite_PressInput, oam2);
-		if (!proc->didBonusDmg) { 
-			proc->didBonusDmg = true; 
-			//PlaySFX(int songid, int volume, int locate, int type)
-			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
-			ApplyBonusDamage(HpProc, side, round, anim, anim2); 
-		} 
-		//if (proc->hitEarly) { 
-			//PutSprite(int layer, int x, int y, const u16* object, int oam2) // oam2 is palette & other stuff 
-			//PutSprite(2, x, y, sSprite_MissedInput, 0); return; 
-		//} 
 		if (keys & A_BUTTON) { 
 			proc->hitOnTime = true; 
 		} 
 		
+		#ifdef AlwaysWork
+		if (!proc->didBonusDmg) { 
+			proc->didBonusDmg = true; 
+			//PlaySFX(int songid, int volume, int locate, int type)
+			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
+			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2); 
+		} 
+		#endif 
 		if (proc->hitOnTime && (!proc->hitEarly)) { 
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_HitInput, 0); 
+			#ifndef AlwaysWork 
+			if (!proc->didBonusDmg) { 
+			proc->didBonusDmg = true; 
+			//PlaySFX(int songid, int volume, int locate, int type)
+			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
+			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2); 
+			} 
+			#endif 
 		} 
 		else if (!proc->hitEarly) { 
 			ApplyPalettes(gPal_Press_A_Image, 15+16, 0x10);
@@ -157,28 +159,38 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 		} 
 	} 
 	else { 
-		if (keys & A_BUTTON) { proc->hitEarly = true; } 
 		if (proc->timer < 10) { proc->hitEarly = false; } // 10 frames after hitting where it's okay to have A held down 
+		else if (keys & A_BUTTON) { 
+			if (!proc->hitEarly) { 
+				PlaySFX(0x13d, 0x100, 120, 1); 
+			}
+			proc->hitEarly = true; 
+		} 
+		
 	}
 
 
 } 
 
 extern const int BonusDamage; 
-void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2) { 
-	struct BattleUnit* bunit = NULL; 
+int GetBonusDamageAmount(struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit) { 
+	return BonusDamage; 
+} 
+
+
+void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2) { 
 	if (!HpProc->post) { return; } 
 	if (gEkrInitialPosition[side] == 0) { // actor is on the left 
-		bunit = gpEkrBattleUnitLeft; 
+		opp_bunit = gpEkrBattleUnitLeft; 
 	} 
-	else { bunit = gpEkrBattleUnitRight; } 
-	int damage = BonusDamage; 
+	else { opp_bunit = gpEkrBattleUnitRight; } 
+	int damage = GetBonusDamageAmount(active_bunit, opp_bunit); 
 	//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; // might need to end battle early? 
-	if (HpProc->post > damage) { HpProc->post -= damage; bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
+	if (HpProc->post > damage) { HpProc->post -= damage; opp_bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
 	else { // they are dead 
 		damage = HpProc->post; 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 
-		bunit->unit.curHP = 0; 
+		opp_bunit->unit.curHP = 0; 
 		HpProc->post = 0; 
 		gEkrGaugeHp[side] = round->hpChange;
 		HpProc->death = true; 
