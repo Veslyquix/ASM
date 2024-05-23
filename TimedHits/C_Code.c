@@ -9,6 +9,7 @@ typedef struct {
 	u8 didBonusDmg; 
 	u8 currentUnitAIS;
 	u8 broke; 
+	u8 loadedImg;
 } SomeProc;
 void LoopSomeProc(SomeProc* proc);
 const struct ProcCmd SomeProcCmd[] =
@@ -36,10 +37,10 @@ void SomeC_Code(void) {
 	proc->hitOnTime = false; 
 	proc->didBonusDmg = false;
 	proc->currentUnitAIS = 0;
+	proc->loadedImg = false;
 	// load graphics into obj vram here 
 	//LoadObjUIGfx(); // usually already loaded anyway 
-	Copy2dChr(&Press_A_Image, (void*)0x06012000, 5, 4);
-	Copy2dChr(&BattleStar, (void*)0x06012160, 4, 4);
+
 
 } 
 
@@ -85,7 +86,7 @@ void BreakOnce(SomeProc* proc) {
 extern s16 GetAnimRoundType(struct Anim * anim);
 extern const int EnemiesCanDoBonusDamage; 
 extern struct BattleHit* GetCurrentRound(int roundID); 
-void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side);
+void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side, int roundid);
 void LoopSomeProc(SomeProc* proc) { 
 	proc->timer++; 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
@@ -108,6 +109,7 @@ void LoopSomeProc(SomeProc* proc) {
 		proc->hitEarly = false; 
 		proc->hitOnTime = false; 
 		proc->didBonusDmg = false;
+		proc->loadedImg = false;
 	} 
 	struct BattleHit* currentRound = GetCurrentRound(roundId); 
 	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
@@ -118,14 +120,14 @@ void LoopSomeProc(SomeProc* proc) {
 
 	//
 	//DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+((1^side)*12*8), y, side); 
-	DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim1, anim2, keys, x, y, side); 
+	DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim1, anim2, keys, x, y, side, roundId); 
 
 	// hp display 203E1AC
 
 } 
 //#define AlwaysWork
-void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2);
-void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side) { 
+void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, int roundid);
+void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side, int roundid) { 
 	//side = 1 ^ side; 
 	int hitTime = EkrEfxIsUnitHittedNow(side); 
 	if (hitTime) { 
@@ -136,7 +138,11 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 			opp_bunit = gpEkrBattleUnitLeft;
 		} 
 		if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
-		
+		if (!proc->loadedImg) {
+			Copy2dChr(&Press_A_Image, (void*)0x06012000, 8, 4);
+			Copy2dChr(&BattleStar, (void*)0x06012160, 4, 4);
+			proc->loadedImg = true;
+		}
 		x = x+((side ^ 1)*12*8);
 		//BreakOnce(proc);
 		if (keys & A_BUTTON) { 
@@ -148,10 +154,11 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 			proc->didBonusDmg = true; 
 			//PlaySFX(int songid, int volume, int locate, int type)
 			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
-			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2); 
+			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2, roundid); 
 		} 
 		#endif 
 		if (proc->hitOnTime && (!proc->hitEarly)) { 
+		
 			ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
 			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
@@ -162,7 +169,7 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 			proc->didBonusDmg = true; 
 			//PlaySFX(int songid, int volume, int locate, int type)
 			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
-			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2); 
+			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2, roundid); 
 			} 
 			#endif 
 		} 
@@ -191,21 +198,41 @@ int GetBonusDamageAmount(struct BattleUnit* active_bunit, struct BattleUnit* opp
 	return BonusDamage; 
 } 
 
+void AdjustAllRounds(int id, int amount) { 
+	int hp;
+	for (int i = id; i < 22; i += 2) {
+		hp = gEfxHpLut[i]; 
+		if (hp == 0xffff) { break; }
+		if (hp >= amount) { gEfxHpLut[i] -= amount; }
+		else { gEfxHpLut[i] = 0; }
+	}
+}
 
-void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2) { 
-	if (!HpProc->post) { return; } 
+extern s16 gEfxHpLutOff[]; // 203e152 B gEfxHpLutOff
+void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, int roundid) { 
+	//if (!HpProc->post) { return; } 
 	int damage = GetBonusDamageAmount(active_bunit, opp_bunit); 
 	int hp = round->hpChange + damage; 
 	//int hp = opp_bunit->unit.curHP - damage;
-	hp = gEkrGaugeHp[side] - hp; 
 	//hp = gEkrGaugeHp[side] - hp; 
+	int id = (gEfxHpLutOff[side] * 2) + (side);
+	//id = roundid; 
+	//asm("mov r11, r11");
+	hp = GetEfxHp(id); 
+	if (!hp) { return; } 
+	
+	hp -= (round->hpChange + damage); 
+	//hp -= (damage); 
+	//hp = HpProc->pre - hp; 
 	//asm("mov r11, r11");
 	//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; // might need to end battle early? 
-	if (hp > 0) { HpProc->post -= damage; opp_bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
+	if (hp > 0) { HpProc->post -= damage; opp_bunit->unit.curHP -= damage; round->hpChange += damage; AdjustAllRounds(id, damage); } // used by Huichelaar's banim numbers 
 	else { // they are dead 
 	//asm("mov r11, r11");
-		gEkrGaugeHp[side] += damage;
+		
 		damage = opp_bunit->unit.curHP; //HpProc->post; 
+		//gEkrGaugeHp[side] += damage;
+		AdjustAllRounds(id, damage); 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 
 		opp_bunit->unit.curHP = 0; 
 		HpProc->post = 0; 
@@ -226,8 +253,6 @@ void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bun
 		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 	} 
-	
-	if (opp_bunit->unit.curHP < 0) {  }
 	
 } 
 
