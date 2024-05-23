@@ -103,8 +103,8 @@ void LoopSomeProc(SomeProc* proc) {
 	struct BattleHit* currentRound = GetCurrentRound(roundId); 
 	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
 	int side = 0xFF; // side is only correct once the target is hit 
-	if (EkrEfxIsUnitHittedNow(0)) { side = 1; } 
-	if (EkrEfxIsUnitHittedNow(1)) { side = 0; } 
+	if (EkrEfxIsUnitHittedNow(0)) { side = 0; } 
+	if (EkrEfxIsUnitHittedNow(1)) { side = 1; } 
 
 
 	//
@@ -117,18 +117,19 @@ void LoopSomeProc(SomeProc* proc) {
 //#define AlwaysWork
 void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2);
 void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side) { 
-	int hitTime = EkrEfxIsUnitHittedNow(1 ^ side); 
+	//side = 1 ^ side; 
+	int hitTime = EkrEfxIsUnitHittedNow(side); 
 	if (hitTime) { 
 		struct BattleUnit* active_bunit = gpEkrBattleUnitLeft; 
 		struct BattleUnit* opp_bunit = gpEkrBattleUnitRight; 
-		if (side) { 
+		if (!side) { 
 			active_bunit = gpEkrBattleUnitRight; 
 			opp_bunit = gpEkrBattleUnitLeft;
 		} 
 		if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
 		
-		x = x+((side)*12*8);
-		BreakOnce(proc);
+		x = x+((side ^ 1)*12*8);
+		//BreakOnce(proc);
 		if (keys & A_BUTTON) { 
 			proc->hitOnTime = true; 
 		} 
@@ -180,18 +181,19 @@ int GetBonusDamageAmount(struct BattleUnit* active_bunit, struct BattleUnit* opp
 
 void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2) { 
 	if (!HpProc->post) { return; } 
-	if (gEkrInitialPosition[side] == 0) { // actor is on the left 
-		opp_bunit = gpEkrBattleUnitLeft; 
-	} 
-	else { opp_bunit = gpEkrBattleUnitRight; } 
 	int damage = GetBonusDamageAmount(active_bunit, opp_bunit); 
+	int hp = round->hpChange + damage; 
+	hp = gEkrGaugeHp[side] - hp; 
+	//asm("mov r11, r11");
 	//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; // might need to end battle early? 
-	if (HpProc->post > damage) { HpProc->post -= damage; opp_bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
+	if (hp > 0) { HpProc->post -= damage; opp_bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
 	else { // they are dead 
 		damage = HpProc->post; 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 
 		opp_bunit->unit.curHP = 0; 
 		HpProc->post = 0; 
+		 
+		gEkrGaugeHp[side ^ 1] = round->hpChange;
 		gEkrGaugeHp[side] = round->hpChange;
 		HpProc->death = true; 
 
