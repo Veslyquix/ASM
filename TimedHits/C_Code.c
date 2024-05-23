@@ -7,6 +7,8 @@ typedef struct {
 	u8 hitOnTime; 
 	u8 roundId; 
 	u8 didBonusDmg; 
+	u8 currentUnitAIS;
+	u8 broke; 
 } SomeProc;
 void LoopSomeProc(SomeProc* proc);
 const struct ProcCmd SomeProcCmd[] =
@@ -23,13 +25,15 @@ void SomeC_Code(void) {
 	SomeProc* proc; 
 	proc = Proc_Find(SomeProcCmd); 
 	if (!proc) { 
-	proc = Proc_Start(SomeProcCmd, (void*)3); 
+	proc = Proc_Start(SomeProcCmd, (void*)0); 
 	} 
+	proc->broke = false; 
 	proc->roundId = 0xFF; 
 	proc->timer = 0; 
 	proc->hitEarly = false; 
 	proc->hitOnTime = false; 
 	proc->didBonusDmg = false;
+	proc->currentUnitAIS = 0;
 	// load graphics into obj vram here 
 	//LoadObjUIGfx(); // usually already loaded anyway 
 	Copy2dChr(&Press_A_Image, (void*)0x06012000, 5, 4);
@@ -63,6 +67,13 @@ const u16 sSprite_PressInput[] = {
 	OAM1_SIZE_64x32, 
 	OAM2_CHR(0x0100) // tile number 
 };
+void BreakOnce(SomeProc* proc) { 
+	if (proc->broke) { return; } 
+	proc->broke = true; 
+	asm("mov r11, r11");
+} 
+
+extern s16 GetAnimRoundType(struct Anim * anim);
 extern const int EnemiesCanDoBonusDamage; 
 extern struct BattleHit* GetCurrentRound(int roundID); 
 void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side);
@@ -72,57 +83,86 @@ void LoopSomeProc(SomeProc* proc) {
 	int x = 0; 
 	int y = 8 * 5; 
 	struct ProcEkrBattle* battleProc = gpProcEkrBattle; 
-	struct Anim* anim = NULL; 
-	if (battleProc) { anim = battleProc->anim; } 
+	struct Anim* anim1 = NULL; 
+	if (battleProc) { anim1 = battleProc->anim; } 
 	else { return; } 
-	struct Anim* anim2 = GetAnimAnotherSide(anim);
+	struct Anim* anim2 = GetAnimAnotherSide(anim1);
 	if (!anim2) { return; } 
-	int roundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId-1 : anim2->nextRoundId-1; 
-	struct BattleHit* currentRound = GetCurrentRound(roundId); 
-	// if (!Proc_Find(updatebanimframe proc)) { Proc_Break(proc); } 
-	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
+	struct Anim* anim = NULL; 
 	
-	int side; 
-	//if (gEkrInitialHitSide) { 
-	if (anim->nextRoundId > anim2->nextRoundId) { 
-	side = GetAnimPosition(anim); 
-	} 
-	else { side = GetAnimPosition(anim2); } 
-	// (gpEkrBattleUnitLeft
-	
-	//int side = gEkrInitialPosition[1]; 
-	
-	//if (gAnimRoundData[roundId] == gAnimRoundData[0]) { side = 1 ^ side; } 
-	//if (6 == gAnimRoundData[0]) { side = 1 ^ side; } 
-	//int side = anim->state & (ANIM_BIT_ENABLED | ANIM_BIT_HIDDEN | ANIM_BIT_2 | ANIM_BIT_FROZEN) ? 0 : 1; 
-	//int side = anim->state2 & ANIM_BIT2_POS_RIGHT ? 0 : 1; 
-	//int side = 1 ^ gEkrInitialPosition[(roundId-1)&1]; 
-	if (proc->roundId != roundId) { 
-		proc->roundId = roundId; 
-		proc->timer = 0; 
-		proc->hitEarly = false; 
-		proc->hitOnTime = false; 
-		proc->didBonusDmg = false;
-	} 
-	
-	if (!EnemiesCanDoBonusDamage && side) { asm("mov r11, r11"); return; } 
-	DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+((1^side)*12*8), y, side); 
+	for (int i = 0; i < 4; i++) {
+        anim = gAnims[i];
+        if (!anim) { continue; } 
+		int type = anim->state2 & ANIM_BIT2_CMD_MASK;
+		if (type == 0) { continue; } 
+		//if (anim->commandQueueSize == 0) { continue; }
+		//if (!(type & ANIM_BIT2_COMMAND)) { continue; } 
+		
 
-	// hp display 203E1AC
+		//int roundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId-1 : anim2->nextRoundId-1; 
+		int roundId = anim->nextRoundId-1; 
+		struct BattleHit* currentRound = GetCurrentRound(roundId); 
+		// if (!Proc_Find(updatebanimframe proc)) { Proc_Break(proc); } 
+		struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
+		int side = GetAnimPosition(anim); 
+		int roundType = GetAnimRoundType(anim); 
+		BreakOnce(proc);
+		if (roundType) { continue; } 
 
+			
+		//if ((anim->state2 & ANIM_BIT2_CMD_MASK) ) { 
+		//	BreakOnce(proc);
+		//	//if ((anim2->state2 & ANIM_BIT2_CMD_MASK)) { return; } 
+		//	side = GetAnimPosition(anim); 
+		//} 
 
+		struct BattleUnit* active_bunit = gpEkrBattleUnitLeft; 
+		struct BattleUnit* opp_bunit = gpEkrBattleUnitRight; 
+		if (side) { //If GetAnimPosition returns 1, right unit is currently acting.
+			active_bunit = gpEkrBattleUnitRight; 
+			opp_bunit = gpEkrBattleUnitLeft;
+		} 
+		
+		//if (gEkrInitialHitSide) { 
+		//if (anim->nextRoundId > anim2->nextRoundId) { 
+		//side = GetAnimPosition(anim); 
+		//} 
+		//else { side = GetAnimPosition(anim2); } 
+		// (
+		
+		//int side = gEkrInitialPosition[1]; 
+		
+		//if (gAnimRoundData[roundId] == gAnimRoundData[0]) { side = 1 ^ side; } 
+		//if (6 == gAnimRoundData[0]) { side = 1 ^ side; } 
+		//int side = anim->state & (ANIM_BIT_ENABLED | ANIM_BIT_HIDDEN | ANIM_BIT_2 | ANIM_BIT_FROZEN) ? 0 : 1; 
+		//int side = anim->state2 & ANIM_BIT2_POS_RIGHT ? 0 : 1; 
+		//int side = 1 ^ gEkrInitialPosition[(roundId-1)&1]; 
+		if (proc->roundId != roundId) { 
+			proc->broke = false; 
+			proc->roundId = roundId; 
+			proc->timer = 0; 
+			proc->hitEarly = false; 
+			proc->hitOnTime = false; 
+			proc->didBonusDmg = false;
+		} 
+		
+		//if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
+		DoStuffIfHit(proc, battleProc, HpProc, currentRound, anim, anim2, keys, x+((1^side)*12*8), y, side); 
+
+		// hp display 203E1AC
+
+		}
 } 
 
 void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2); 
 void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side) { 
-	
+	BreakOnce(proc);
 	//int side = 1 ^ battleProc->side; // we want to affect the opposite side 
-	int hitTime = EkrEfxIsUnitHittedNow(side); 
+	int hitTime = EkrEfxIsUnitHittedNow(1 ^ side); 
 	if (hitTime) { 
-
+		
 		//PutSprite(0, x, y, sSprite_PressInput, oam2);
 		if (!proc->didBonusDmg) { 
-			asm("mov r11, r11"); 
 			proc->didBonusDmg = true; 
 			//PlaySFX(int songid, int volume, int locate, int type)
 			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
@@ -137,11 +177,9 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 		} 
 		
 		if (proc->hitOnTime && (!proc->hitEarly)) { 
-		    //asm("mov r11, r11");
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_HitInput, 0); 
 		} 
 		else if (!proc->hitEarly) { 
-			//asm("mov r11, r11");
 			ApplyPalettes(gPal_Press_A_Image, 15+16, 0x10);
 			int oam2 = OAM2_PAL(15) | OAM2_LAYER(0); //OAM2_CHR(0);
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
@@ -160,9 +198,9 @@ void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, int side, struct BattleHit* r
 	struct BattleUnit* bunit = NULL; 
 	if (!HpProc->post) { return; } 
 	if (gEkrInitialPosition[side] == 0) { // actor is on the left 
-		bunit = &gBattleActor; 
+		bunit = gpEkrBattleUnitLeft; 
 	} 
-	else { bunit = &gBattleTarget; } 
+	else { bunit = gpEkrBattleUnitRight; } 
 	int damage = BonusDamage; 
 	//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; // might need to end battle early? 
 	if (HpProc->post > damage) { HpProc->post -= damage; bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
