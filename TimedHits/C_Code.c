@@ -19,7 +19,9 @@ const struct ProcCmd SomeProcCmd[] =
     PROC_END,
 };
 extern void* Press_A_Image; 
+extern void* BattleStar; 
 extern u16 gPal_Press_A_Image[];
+extern u16 gPal_BattleStar[];
 extern struct KeyStatusBuffer sKeyStatusBuffer; // 2024C78
 void SomeC_Code(void) { 
 	SomeProc* proc; 
@@ -37,6 +39,7 @@ void SomeC_Code(void) {
 	// load graphics into obj vram here 
 	//LoadObjUIGfx(); // usually already loaded anyway 
 	Copy2dChr(&Press_A_Image, (void*)0x06012000, 5, 4);
+	Copy2dChr(&BattleStar, (void*)0x06012160, 4, 4);
 
 } 
 
@@ -66,6 +69,12 @@ const u16 sSprite_PressInput[] = {
     OAM0_SHAPE_64x32, 
 	OAM1_SIZE_64x32, 
 	OAM2_CHR(0x0100) // tile number 
+};
+const u16 sSprite_Star[] = {
+    1,
+    OAM0_SHAPE_32x32, 
+	OAM1_SIZE_32x32, 
+	OAM2_CHR(0x010B) // tile number 
 };
 void BreakOnce(SomeProc* proc) { 
 	if (proc->broke) { return; } 
@@ -143,7 +152,11 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 		} 
 		#endif 
 		if (proc->hitOnTime && (!proc->hitEarly)) { 
-			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_HitInput, 0); 
+			ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
+			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
+			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
+			
+			//PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_HitInput, 0); 
 			#ifndef AlwaysWork 
 			if (!proc->didBonusDmg) { 
 			proc->didBonusDmg = true; 
@@ -183,18 +196,23 @@ void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bun
 	if (!HpProc->post) { return; } 
 	int damage = GetBonusDamageAmount(active_bunit, opp_bunit); 
 	int hp = round->hpChange + damage; 
+	//int hp = opp_bunit->unit.curHP - damage;
 	hp = gEkrGaugeHp[side] - hp; 
+	//hp = gEkrGaugeHp[side] - hp; 
 	//asm("mov r11, r11");
 	//gBattleHitArray[0].attributes |= BATTLE_HIT_ATTR_SILENCER; // might need to end battle early? 
 	if (hp > 0) { HpProc->post -= damage; opp_bunit->unit.curHP -= damage; round->hpChange += damage; } // used by Huichelaar's banim numbers 
 	else { // they are dead 
-		damage = HpProc->post; 
+	//asm("mov r11, r11");
+		gEkrGaugeHp[side] += damage;
+		damage = opp_bunit->unit.curHP; //HpProc->post; 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 
 		opp_bunit->unit.curHP = 0; 
 		HpProc->post = 0; 
 		 
-		gEkrGaugeHp[side ^ 1] = round->hpChange;
-		gEkrGaugeHp[side] = round->hpChange;
+		//gEkrGaugeHp[side ^ 1] = round->hpChange;
+		
+		//gEkrGaugeHp[side ^ 1] = 22;//+= damage;
 		HpProc->death = true; 
 
 		//gpProcEkrBattle->end = true; // does nothing 
@@ -208,6 +226,8 @@ void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bun
 		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 	} 
+	
+	if (opp_bunit->unit.curHP < 0) {  }
 	
 } 
 

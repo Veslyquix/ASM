@@ -22,6 +22,12 @@ Press_A_Image:
 ALIGN 4 
 gPal_Press_A_Image:
 #incbin "Press_A_pal.dmp" 
+ALIGN 4 
+BattleStar:
+#incbin "BattleStar.dmp" 
+ALIGN 4 
+gPal_BattleStar:
+#incbin "BattleStar_pal.dmp" 
 
 
 
