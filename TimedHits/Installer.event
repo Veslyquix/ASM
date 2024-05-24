@@ -15,8 +15,13 @@ jumpToHack(InitCurrentAnimForTimedHitsProc)
 POP 
 
 ALIGN 4 
-BonusDamage:
-WORD 6
+BonusDamagePercent:
+WORD 400
+ReducedDamagePercent:
+WORD 50 
+FramesToDisplayGfx:
+WORD 15 
+
 EnemiesCanDoBonusDamage:
 WORD 0 
 

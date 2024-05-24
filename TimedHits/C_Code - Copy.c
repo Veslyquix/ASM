@@ -127,13 +127,16 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 } 
 
-int HitNow(TimedHitsProc* proc) { 
+int HitNow(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc) {
+	if (!HpProc) { return false; } 
+	if (HpProc->pre != HpProc->cur) { return false; } 
 	return EkrEfxIsUnitHittedNow(proc->side);
 } 
 int PressedSpecificKeys(TimedHitsProc* proc, u32 keys) { 
 	return (keys & A_BUTTON); 
 } 
 
+extern int FramesToDisplayGfx; 
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round) { 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
 	int side = proc->side; 
@@ -147,7 +150,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	} 
 	proc->active_bunit = active_bunit; 
 	proc->opp_bunit = opp_bunit; 
-	int hitTime = HitNow(proc); 
+	int hitTime = HitNow(proc, HpProc); 
 	if (hitTime) { 
 
 		//if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
@@ -157,10 +160,11 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			Copy2dChr(&BattleStar, (void*)0x06012100, 2, 2);
 			proc->loadedImg = true;
 		}
-		x = x+((side)*4*8);
+		
 		if (PressedSpecificKeys(proc, keys)) { 
 			proc->hitOnTime = true; 
 		} 
+		
 		
 		#ifdef AlwaysWork
 		if (!proc->adjustedDmg) { 
@@ -173,35 +177,48 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 		#ifndef AlwaysWork
 		if (proc->hitOnTime && (!proc->hitEarly)) { 
 		#endif 
-			//int clock = GetGameClock(); // proc->timer; 
-			int clock = proc->timer2; 
-			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
-			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
-			x += Mod(clock, 8) >> 1; 
-			y -= clock; 
-			//if (y < 40) { y = 40; } 
-			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
-
 			#ifndef AlwaysWork 
 			if (!proc->adjustedDmg) { 
-			proc->adjustedDmg = true; 
-			//PlaySFX(int songid, int volume, int locate, int type)
-			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
-			AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round); 
+			#endif
+				proc->adjustedDmg = true; 
+				//PlaySFX(int songid, int volume, int locate, int type)
+				PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
+				AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round); 
+			#ifndef AlwaysWork
 			} 
 			#endif 
 		#ifndef AlwaysWork
 		} 
-		else if (!proc->hitEarly) { 
-			//ApplyPalettes(gPal_Press_A_Image, 14+16, 0x10);
-			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
-			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
-		} 
+
 		#endif 
 		// kill off enemies for adjusted rounds if a timed hit was done previously 
 		if (!proc->adjustedDmg) {
 		CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
 		}
+	}
+	if (proc->timer2 < FramesToDisplayGfx) { 
+		x = x+((side)*4*8);
+		#ifndef AlwaysWork
+		if (proc->hitOnTime && (!proc->hitEarly)) { 
+		#endif 
+		//int clock = GetGameClock(); // proc->timer; 
+		int clock = proc->timer2; 
+		//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
+		int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
+		x += Mod(clock, 8) >> 1; 
+		y -= clock; 
+		//if (y < 40) { y = 40; } 
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
+		#ifndef AlwaysWork
+		}
+		else if (!proc->hitEarly) { 
+		#endif 
+			//ApplyPalettes(gPal_Press_A_Image, 14+16, 0x10);
+			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
+			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
+		#ifndef AlwaysWork
+		} 
+		#endif 
 	} 
 	else { 
 		if (proc->timer < 10) { proc->hitEarly = false; } // 10 frames after hitting where it's okay to have A held down 
