@@ -1,4 +1,4 @@
-//#define AlwaysWork
+
 
 #include "C_Code.h" // headers 
 #define PUREFUNC __attribute__((pure))
@@ -11,13 +11,13 @@ typedef struct {
 	struct BattleHit* currentRound;
 	struct BattleUnit* active_bunit;
 	struct BattleUnit* opp_bunit;
-	u8 hitEarly; 
 	u8 hitOnTime; 
 	u8 roundId; 
 	u8 adjustedDmg; 
 	u8 broke; 
 	u8 loadedImg;
 	u8 side; 
+	u8 frame;
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc* proc);
 const struct ProcCmd TimedHitsProcCmd[] =
@@ -27,6 +27,11 @@ const struct ProcCmd TimedHitsProcCmd[] =
 	PROC_REPEAT(LoopTimedHitsProc), 
     PROC_END,
 };
+extern const int AlwaysWork; 
+extern const int MinFramesToDisplayGfx; 
+extern const int LenienceFrames; 
+extern const int BonusDamagePercent; 
+extern const int ReducedDamagePercent; 
 extern void* Press_A_Image; 
 extern void* BattleStar; 
 extern u16 gPal_Press_A_Image[];
@@ -42,8 +47,7 @@ void StartTimedHitsProc(void) {
 	proc->broke = false; 
 	proc->roundId = 0; 
 	proc->timer = 0; 
-	proc->timer2 = 0; 
-	proc->hitEarly = false; 
+	proc->timer2 = 99; 
 	proc->hitOnTime = false; 
 	proc->adjustedDmg = false;
 	proc->loadedImg = false;
@@ -51,11 +55,11 @@ void StartTimedHitsProc(void) {
 	proc->currentRound = NULL; 
 	proc->active_bunit = NULL; 
 	proc->opp_bunit = NULL; 
+	proc->frame = 0; 
 } 
 
 extern struct BattleHit* GetCurrentRound(int roundID); 
 extern s16 GetAnimRoundType(struct Anim * anim);
-extern const int EnemiesCanDoBonusDamage; 
 void SetCurrentAnimInProc(struct Anim* anim) { 
 	TimedHitsProc* proc; 
 	proc = Proc_Find(TimedHitsProcCmd); 
@@ -65,8 +69,6 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	proc->broke = false; 
 	//proc->roundId++; 
 	proc->roundId = anim->nextRoundId-1; 
-	proc->timer = 0; 
-	proc->hitEarly = false; 
 	proc->hitOnTime = false; 
 	proc->adjustedDmg = false;
 	proc->loadedImg = false; // reload after each round 
@@ -127,12 +129,28 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 } 
 
-int HitNow(TimedHitsProc* proc) { 
+int HitNow(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc) {
+	if (!HpProc) { return false; } 
+	if (HpProc->pre != HpProc->cur) { return false; } 
 	return EkrEfxIsUnitHittedNow(proc->side);
 } 
 int PressedSpecificKeys(TimedHitsProc* proc, u32 keys) { 
+
 	return (keys & A_BUTTON); 
 } 
+void SaveInputFrame(TimedHitsProc* proc, u32 keys) { 
+	if (PressedSpecificKeys(proc, keys)) { 
+		if (!proc->frame) { 
+			proc->frame = proc->timer; // locate is side for stereo? 
+			PlaySFX(0x13e, 0x100, 120, 1); //PlaySFX(int songid, int volume, int locate, int type)
+		}
+	}
+}  
+
+int DidWeHitOnTime(TimedHitsProc* proc) {
+	if (AlwaysWork) { return true; } 
+	return proc->hitOnTime;
+}
 
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round) { 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
@@ -147,32 +165,33 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	} 
 	proc->active_bunit = active_bunit; 
 	proc->opp_bunit = opp_bunit; 
-	int hitTime = HitNow(proc); 
-	if (hitTime) { 
-
-		//if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
+	int hitTime = HitNow(proc, HpProc); 
+	if (hitTime) { // 2 frames 
 		if (!proc->loadedImg) {
 			proc->timer2 = 0; 
 			Copy2dChr(&Press_A_Image, (void*)0x06012000, 8, 4);
 			Copy2dChr(&BattleStar, (void*)0x06012100, 2, 2);
 			proc->loadedImg = true;
 		}
-		x = x+((side)*4*8);
-		if (PressedSpecificKeys(proc, keys)) { 
+		SaveInputFrame(proc, keys); 
+		if ((proc->timer - proc->frame) < LenienceFrames) { 
 			proc->hitOnTime = true; 
 		} 
-		
-		#ifdef AlwaysWork
-		if (!proc->adjustedDmg) { 
-			proc->adjustedDmg = true; 
-			//PlaySFX(int songid, int volume, int locate, int type)
-			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
-			AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round); 
+
+		if (DidWeHitOnTime(proc)) { 
+			if (!proc->adjustedDmg) { 
+				proc->adjustedDmg = true; 
+				AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round); 
+			} 
 		} 
-		#endif 
-		#ifndef AlwaysWork
-		if (proc->hitOnTime && (!proc->hitEarly)) { 
-		#endif 
+		// kill off enemies for adjusted rounds if a timed hit was done previously 
+		if (!proc->adjustedDmg) {
+			CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
+		}
+	}
+	if ((proc->timer2 < MinFramesToDisplayGfx) || HpProc) { 
+		x = x+((side)*4*8);
+		if (DidWeHitOnTime(proc)) { 
 			//int clock = GetGameClock(); // proc->timer; 
 			int clock = proc->timer2; 
 			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
@@ -181,35 +200,18 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			y -= clock; 
 			//if (y < 40) { y = 40; } 
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
-
-			#ifndef AlwaysWork 
-			if (!proc->adjustedDmg) { 
-			proc->adjustedDmg = true; 
-			//PlaySFX(int songid, int volume, int locate, int type)
-			PlaySFX(0x13e, 0x100, 120, 1); // locate is side for stereo? 
-			AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round); 
-			} 
-			#endif 
-		#ifndef AlwaysWork
-		} 
-		else if (!proc->hitEarly) { 
-			//ApplyPalettes(gPal_Press_A_Image, 14+16, 0x10);
-			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
-			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
-		} 
-		#endif 
-		// kill off enemies for adjusted rounds if a timed hit was done previously 
-		if (!proc->adjustedDmg) {
-		CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
 		}
+		else { 
+		//ApplyPalettes(gPal_Press_A_Image, 14+16, 0x10);
+		int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
+		}
+
 	} 
 	else { 
-		if (proc->timer < 10) { proc->hitEarly = false; } // 10 frames after hitting where it's okay to have A held down 
-		else if (PressedSpecificKeys(proc, keys)) { 
-			if (!proc->hitEarly) { 
-				PlaySFX(0x13d, 0x100, 120, 1); 
-			}
-			proc->hitEarly = true; 
+		if (proc->timer < 10) { proc->frame = 0; } // 10 frames after hitting where it's okay to have A held down 
+		else {
+			SaveInputFrame(proc, keys); 
 		} 
 		
 	}
@@ -217,8 +219,6 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 
 } 
 
-extern const int BonusDamagePercent; 
-extern const int ReducedDamagePercent; 
 int GetDefaultDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit) { 
 	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { return ReducedDamagePercent; } 
 	return BonusDamagePercent; 
@@ -291,8 +291,11 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 	int damage = (round->hpChange * percent) / 100; 
 	//asm("mov r11, r11");
 	if (damage > round->hpChange) { 
+		hp -= damage;
 		damage -= round->hpChange; 
-		hp -= damage; 
+		 
+		if (hp < 0) { asm("mov r11, r11"); damage -= ABS(hp); } 
+		
 		HpProc->post -= damage;
 		opp_bunit->unit.curHP -= damage; 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 

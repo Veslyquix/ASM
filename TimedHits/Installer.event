@@ -19,11 +19,12 @@ BonusDamagePercent:
 WORD 400
 ReducedDamagePercent:
 WORD 50 
-FramesToDisplayGfx:
-WORD 15 
-
-EnemiesCanDoBonusDamage:
-WORD 0 
+MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting 
+WORD 30
+LenienceFrames:
+WORD 10 
+AlwaysWork: 
+WORD 0
 
 ALIGN 4 
 Press_A_Image:
