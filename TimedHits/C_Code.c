@@ -289,7 +289,7 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 		proc->anim->nextRoundId = 8; // seems to work for now see GetAnimNextRoundType
 		GetAnimAnotherSide(proc->anim)->nextRoundId = 8; 
 
-		//gBanimDoneFlag[0] = true; 
+		gBanimDoneFlag[side ^ 1] = true; 
 		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 	} 
@@ -312,7 +312,10 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		damage -= round->hpChange; 
 		 
 		if (hp < 0) { damage -= ABS(hp); } 
-		
+		//hp = HpProc->post; 
+		//hp -= damage;
+		//if (hp < 0) { damage -= ABS(hp); } 
+		//asm("mov r11, r11");
 		HpProc->post -= damage;
 		opp_bunit->unit.curHP -= damage; 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 
