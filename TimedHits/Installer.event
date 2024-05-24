@@ -20,7 +20,7 @@ WORD 400
 ReducedDamagePercent:
 WORD 50 
 MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting 
-WORD 30
+WORD 25
 LenienceFrames:
 WORD 10 
 AlwaysWork: 

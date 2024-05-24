@@ -18,6 +18,7 @@ typedef struct {
 	u8 loadedImg;
 	u8 side; 
 	u8 frame;
+	u8 code4frame;
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc* proc);
 const struct ProcCmd TimedHitsProcCmd[] =
@@ -56,6 +57,7 @@ void StartTimedHitsProc(void) {
 	proc->active_bunit = NULL; 
 	proc->opp_bunit = NULL; 
 	proc->frame = 0; 
+	proc->code4frame = 0xff;
 } 
 
 extern struct BattleHit* GetCurrentRound(int roundID); 
@@ -74,6 +76,7 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	proc->loadedImg = false; // reload after each round 
 	proc->currentRound = GetCurrentRound(proc->roundId); 
 	proc->side = GetAnimPosition(anim) ^ 1; 
+	proc->code4frame = 0xff;
 } 
 
 
@@ -139,6 +142,15 @@ int PressedSpecificKeys(TimedHitsProc* proc, u32 keys) {
 	return (keys & A_BUTTON); 
 } 
 void SaveInputFrame(TimedHitsProc* proc, u32 keys) { 
+	struct Anim* anim = proc->anim; 
+	u32 instruction = *anim->pScrCurrent++; 
+	if (ANINS_GET_TYPE(instruction) == ANIM_INS_TYPE_COMMAND) {
+		if (ANINS_COMMAND_GET_ID(instruction) == 4) {
+			//asm("mov r11, r11");
+			proc->code4frame = proc->timer;
+		}
+	}
+	instruction = *anim->pScrCurrent--; 
 	if (PressedSpecificKeys(proc, keys)) { 
 		if (!proc->frame) { 
 			proc->frame = proc->timer; // locate is side for stereo? 
@@ -146,6 +158,13 @@ void SaveInputFrame(TimedHitsProc* proc, u32 keys) {
 		}
 	}
 }  
+void SaveIfWeHitOnTime(TimedHitsProc* proc) {
+	if (ABS(proc->code4frame - proc->frame) < (LenienceFrames/2)) { 
+	//if ((proc->timer - proc->frame) < LenienceFrames) { 
+		proc->hitOnTime = true; 
+	} 
+	
+}
 
 int DidWeHitOnTime(TimedHitsProc* proc) {
 	if (AlwaysWork) { return true; } 
@@ -174,9 +193,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			proc->loadedImg = true;
 		}
 		SaveInputFrame(proc, keys); 
-		if ((proc->timer - proc->frame) < LenienceFrames) { 
-			proc->hitOnTime = true; 
-		} 
+		SaveIfWeHitOnTime(proc);
 
 		if (DidWeHitOnTime(proc)) { 
 			if (!proc->adjustedDmg) { 
@@ -189,7 +206,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
 		}
 	}
-	if ((proc->timer2 < MinFramesToDisplayGfx) || HpProc) { 
+	if ((proc->timer2 < MinFramesToDisplayGfx) || HpProc || (proc->code4frame != 0xFF)) { 
 		x = x+((side)*4*8);
 		if (DidWeHitOnTime(proc)) { 
 			//int clock = GetGameClock(); // proc->timer; 
@@ -254,13 +271,13 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 	if (hp < 0) { hp = GetEfxHp(id) - round->hpChange; } // + round->hpChange; 
 	if (hp <= 0) { // they are dead 
 		hp = 0; 
-		asm("mov r11, r11"); 
+		//asm("mov r11, r11"); 
 		//gEkrGaugeHp[side] += damage;
 		//damage = opp_bunit->unit.curHP; //HpProc->post; 
 		//round->hpChange = hp; // used by Huichelaar's banim numbers 
 		opp_bunit->unit.curHP = 0; 
 		HpProc->post = 0; 
-		 
+		proc->code4frame = 0xff;
 		//gEkrGaugeHp[side ^ 1] = round->hpChange;
 		
 		//gEkrGaugeHp[side ^ 1] = 22;//+= damage;
@@ -294,7 +311,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		hp -= damage;
 		damage -= round->hpChange; 
 		 
-		if (hp < 0) { asm("mov r11, r11"); damage -= ABS(hp); } 
+		if (hp < 0) { damage -= ABS(hp); } 
 		
 		HpProc->post -= damage;
 		opp_bunit->unit.curHP -= damage; 
