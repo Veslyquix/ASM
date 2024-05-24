@@ -1,5 +1,6 @@
 #include "C_Code.h" // headers 
-
+#define PUREFUNC __attribute__((pure))
+int Mod(int a, int b) PUREFUNC;
 typedef struct {
     /* 00 */ PROC_HEADER;
 	int timer; 
@@ -73,8 +74,8 @@ const u16 sSprite_PressInput[] = {
 };
 const u16 sSprite_Star[] = {
     1,
-    OAM0_SHAPE_32x32, 
-	OAM1_SIZE_32x32, 
+    OAM0_SHAPE_16x16, 
+	OAM1_SIZE_16x16, 
 	OAM2_CHR(0x010B) // tile number 
 };
 void BreakOnce(SomeProc* proc) { 
@@ -125,7 +126,7 @@ void LoopSomeProc(SomeProc* proc) {
 	// hp display 203E1AC
 
 } 
-//#define AlwaysWork
+#define AlwaysWork
 void ApplyBonusDamage(struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int side, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, int roundid);
 void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round, struct Anim* anim, struct Anim* anim2, u32 keys, int x, int y, int side, int roundid) { 
 	//side = 1 ^ side; 
@@ -140,7 +141,7 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 		if (!EnemiesCanDoBonusDamage && (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)) { return; } 
 		if (!proc->loadedImg) {
 			Copy2dChr(&Press_A_Image, (void*)0x06012000, 8, 4);
-			Copy2dChr(&BattleStar, (void*)0x06012160, 4, 4);
+			Copy2dChr(&BattleStar, (void*)0x06012160, 2, 2);
 			proc->loadedImg = true;
 		}
 		x = x+((side ^ 1)*12*8);
@@ -157,10 +158,15 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2, roundid); 
 		} 
 		#endif 
+		#ifndef AlwaysWork
 		if (proc->hitOnTime && (!proc->hitEarly)) { 
-		
-			ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
+		#endif 
+			int clock = GetGameClock(); // proc->timer; 
+			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
 			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
+			x += Mod(clock, 8) >> 1; 
+			y -= Mod(clock, 32); 
+			//if (y < 40) { y = 40; } 
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
 			
 			//PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_HitInput, 0); 
@@ -172,12 +178,14 @@ void DoStuffIfHit(SomeProc* proc, struct ProcEkrBattle* battleProc, struct ProcE
 			ApplyBonusDamage(HpProc, active_bunit, opp_bunit, side, round, anim, anim2, roundid); 
 			} 
 			#endif 
+		#ifndef AlwaysWork
 		} 
 		else if (!proc->hitEarly) { 
-			ApplyPalettes(gPal_Press_A_Image, 15+16, 0x10);
-			int oam2 = OAM2_PAL(15) | OAM2_LAYER(0); //OAM2_CHR(0);
+			//ApplyPalettes(gPal_Press_A_Image, 14+16, 0x10);
+			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
 		} 
+		#endif 
 	} 
 	else { 
 		if (proc->timer < 10) { proc->hitEarly = false; } // 10 frames after hitting where it's okay to have A held down 

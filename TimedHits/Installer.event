@@ -18,16 +18,16 @@ WORD 0
 
 ALIGN 4 
 Press_A_Image:
-#incbin "Press_A.dmp" 
+#incbin "images/Press_A.dmp" 
 ALIGN 4 
 gPal_Press_A_Image:
-#incbin "Press_A_pal.dmp" 
+#incbin "images/Press_A_pal.dmp" 
 ALIGN 4 
 BattleStar:
-#incbin "BattleStar.dmp" 
+#incbin "images/BattleStar.dmp" 
 ALIGN 4 
 gPal_BattleStar:
-#incbin "BattleStar_pal.dmp" 
+#incbin "images/BattleStar_pal.dmp" 
 
 
 

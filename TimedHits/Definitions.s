@@ -15,6 +15,10 @@
 @ division & other libgcc functions
 SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
+
+SET_FUNC __aeabi_idiv,    __divsi3
+SET_FUNC Div, __divsi3
+SET_FUNC Mod, __modsi3
 SET_DATA gEfxHpLutOff, 0x203e152
 
 
