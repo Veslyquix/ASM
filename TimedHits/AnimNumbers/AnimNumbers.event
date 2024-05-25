@@ -1,5 +1,8 @@
 #ifdef BATTLE_ANIMATION_NUMBERS
 
+#ifndef BATTLE_ANIMATION_NUMBERS_FLAG
+	#define BATTLE_ANIMATION_NUMBERS_FLAG 0xEE 
+#endif 
   // Display numbers hovering over battle sprites
   // indicating damage dealt/ HP healed.
   // By Huichelaar. I got inspired by Lex Talionis.
@@ -12,7 +15,11 @@
   
     // Start the Anim numbers animations.
     ORG 0x52304
-    jumpToHack(BAN_HookAttack)
+    //jumpToHack(BAN_HookAttack)
+// Vesly - revert to vanilla 
+SHORT $b570 $1c04 $f007 $ff30
+	
+	
     ORG 0x52A0C
     jumpToHack(BAN_HookHeal)
     ORG 0x525E8
@@ -69,7 +76,9 @@
   BAN_HookNosferatu2:
   #include "asm/HookNosferatu2.lyn.event"
   ALIGN 4
+  PUSH; ORG CURRENTOFFSET+1; 
   BAN_DisplayDamage:
+  POP
   #include "asm/DisplayDamage.lyn.event"
   
   ALIGN 4
@@ -94,15 +103,18 @@
   SHORT 0xE 0x1 0x0 0x0
   SHORT 0x2 0x0; POIN BAN_DelayNODAMGEMIS|1
   WORD 0x0 0x0
-  
+  #define PROC_SET_NAME(apsNamePointer)                "SHORT 0x01 0; POIN apsNamePointer"
   // Delay Digits graphics.
   ALIGN 4; BAN_DelayDigits:
   #include "asm/DelayDigits.lyn.event"
   ALIGN 4; BAN_Proc_DelayDigits:
+  PROC_SET_NAME(someName)
   SHORT 0xE 0x1 0x0 0x0
   SHORT 0x2 0x0; POIN BAN_DelayDigits|1
   WORD 0x0 0x0
   
+  someName:
+  String("asdf"); BYTE 0 
   // FrameData for the AISes.
   #include "FrameData/Digits1FD.event"
   #include "FrameData/Digits2FD.event"

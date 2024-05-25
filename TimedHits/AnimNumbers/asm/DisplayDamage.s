@@ -3,6 +3,7 @@
 @   r1: 0 if OverDamage or OverHeal (recipient). 1 otherwise.
 @   r2: X of previous damage display. 0 if there is none.
 @   r3: Digitcount of previous damage display. 0 if there is none.
+@ sp: 
 @ Return:
 @   Digitcount of new damage display.
 .thumb
@@ -13,7 +14,7 @@ mov   r4, r0
 mov   r5, r1
 str   r2, [sp]
 str   r3, [sp, #0x4]
-
+ldr r6, [sp, #4*7] @ roundId 
 
 ldr   r0, =BATTLE_ANIMATION_NUMBERS_FLAG
 lsl   r0, #0x5
@@ -37,6 +38,9 @@ bne   End
   Max:
   
   sub   r0, #0x1
+  
+  mov r0, r6 @ roundId 
+  
   ldr   r1, =0x802b90a      @ &BattleBufferWidth.
   ldrb  r1, [r1]
   mul   r0, r1
