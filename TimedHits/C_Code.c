@@ -20,6 +20,7 @@ typedef struct {
 	u8 frame;
 	u8 code4frame;
 	u8 codefframe;
+	u8 roundEnd;
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc* proc);
 const struct ProcCmd TimedHitsProcCmd[] =
@@ -60,6 +61,7 @@ void InitVariables(TimedHitsProc* proc) {
 	proc->active_bunit = NULL; 
 	proc->opp_bunit = NULL; 
 	proc->frame = 0; 
+	proc->roundEnd = true; 
 	proc->code4frame = 0xff;
 	proc->codefframe = 0xff;
 
@@ -81,6 +83,7 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	proc = Proc_Find(TimedHitsProcCmd); 
 	int timer2 = proc->timer2; 
 	InitVariables(proc); 
+	proc->roundEnd = false; 
 	proc->timer2 = timer2; 
 	proc->anim = anim; 
 	proc->roundId = anim->nextRoundId-1; 
@@ -92,6 +95,19 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 		proc->active_bunit = gpEkrBattleUnitRight; 
 		proc->opp_bunit = gpEkrBattleUnitLeft;
 	} 
+	if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange)) { return; } 
+	if (!proc->loadedImg) {
+		proc->timer2 = 0; 
+		Copy2dChr(&Press_Image, (void*)0x06012000, 8, 2);
+		Copy2dChr(&BattleStar, (void*)0x06012100, 2, 2); // 0x108 
+		Copy2dChr(&A_Button, (void*)0x06012800, 2, 2); // 0x140
+		Copy2dChr(&B_Button, (void*)0x06012840, 2, 2); // 0x142 
+		Copy2dChr(&Left_Button, (void*)0x06012880, 2, 2); // 0x144
+		Copy2dChr(&Right_Button, (void*)0x060128C0, 2, 2); // 0x146
+		Copy2dChr(&Up_Button, (void*)0x06012900, 2, 2); // 0x148
+		Copy2dChr(&Down_Button, (void*)0x06012940, 2, 2); // 0x14a
+		proc->loadedImg = true;
+	}
 }
 
 
@@ -114,9 +130,15 @@ const u16 sSprite_MissedInput[] = {
 };
 const u16 sSprite_PressInput[] = {
     1,
-    OAM0_SHAPE_64x32, 
-	OAM1_SIZE_64x32, 
+    OAM0_SHAPE_32x16, 
+	OAM1_SIZE_32x16, 
 	OAM2_CHR(0x0100) // tile number 
+};
+const u16 sSprite_PressInput2[] = {
+    1,
+    OAM0_SHAPE_16x16, 
+	OAM1_SIZE_16x16, 
+	OAM2_CHR(0x0104) // tile number 
 };
 const u16 sSprite_Star[] = {
     1,
@@ -124,6 +146,28 @@ const u16 sSprite_Star[] = {
 	OAM1_SIZE_16x16, 
 	OAM2_CHR(0x0108) // tile number 
 };
+const u16 sSprite_A_Button[] = {
+    1, OAM0_SHAPE_16x16, OAM1_SIZE_16x16, OAM2_CHR(0x0140) // tile number 
+};
+const u16 sSprite_B_Button[] = {
+    1, OAM0_SHAPE_16x16, OAM1_SIZE_16x16, OAM2_CHR(0x0142) // tile number 
+};
+const u16 sSprite_Left_Button[] = {
+    1, OAM0_SHAPE_16x16, OAM1_SIZE_16x16, OAM2_CHR(0x0144) // tile number 
+};
+const u16 sSprite_Right_Button[] = {
+    1, OAM0_SHAPE_16x16, OAM1_SIZE_16x16, OAM2_CHR(0x0146) // tile number 
+};
+const u16 sSprite_Up_Button[] = {
+    1, OAM0_SHAPE_16x16, OAM1_SIZE_16x16, OAM2_CHR(0x0148) // tile number 
+};
+const u16 sSprite_Down_Button[] = {
+    1, OAM0_SHAPE_16x16, OAM1_SIZE_16x16, OAM2_CHR(0x014a) // tile number 
+};
+
+
+
+
 void BreakOnce(TimedHitsProc* proc) { 
 	if (proc->broke) { return; } 
 	proc->broke = true; 
@@ -162,10 +206,10 @@ void SaveInputFrame(TimedHitsProc* proc, u32 keys) {
 	u32 instruction = *anim->pScrCurrent++; 
 	if (ANINS_GET_TYPE(instruction) == ANIM_INS_TYPE_COMMAND) {
 		if (ANINS_COMMAND_GET_ID(instruction) == 4) {
-			proc->code4frame = proc->timer;
+			proc->code4frame = proc->timer; proc->timer2 = 0; 
 		}
 		if (ANINS_COMMAND_GET_ID(instruction) == 0xF) {
-			proc->codefframe = proc->timer;
+			proc->codefframe = proc->timer; proc->timer2 = 0; 
 		}
 	}
 	instruction = *anim->pScrCurrent--; 
@@ -191,22 +235,38 @@ int DidWeHitOnTime(TimedHitsProc* proc) {
 	return proc->hitOnTime;
 }
 
+void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) { 
+
+
+
+	//ApplyPalettes(gPal_Press_Image, 15+16, 0x10); // always pal 15 
+	int oam2 = OAM2_PAL(palID) | OAM2_LAYER(0); //OAM2_CHR(0);
+	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
+	x += 32; 
+	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput2, oam2); 
+	y += 16; x -= 36; 
+	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_A_Button, oam2); 
+	x += 18; 
+	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_B_Button, oam2); 
+	x += 18; 
+	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Left_Button, oam2); 
+
+
+
+
+} 
+
+
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round) { 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
 	int side = proc->side; 
 	int x = 12 * 8; 
 	int y =  5 * 8;
-
+	x = x+((side)*4*8);
 	struct BattleUnit* active_bunit = proc->active_bunit; 
 	struct BattleUnit* opp_bunit = proc->opp_bunit; 
 	int hitTime = HitNow(proc, HpProc); 
 	if (hitTime) { // 2 frames 
-		if (!proc->loadedImg) {
-			proc->timer2 = 0; 
-			Copy2dChr(&Press_Image, (void*)0x06012000, 8, 4);
-			Copy2dChr(&BattleStar, (void*)0x06012100, 2, 2);
-			proc->loadedImg = true;
-		}
 		SaveInputFrame(proc, keys); 
 		SaveIfWeHitOnTime(proc);
 
@@ -221,8 +281,9 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
 		}
 	}
-	if ((proc->timer2 < MinFramesToDisplayGfx) || HpProc || (proc->code4frame != 0xFF)) { 
-		x = x+((side)*4*8);
+	//if ((proc->timer2 < MinFramesToDisplayGfx) || EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
+	if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
+		
 		if (DidWeHitOnTime(proc)) { 
 			//int clock = GetGameClock(); // proc->timer; 
 			int clock = proc->timer2; 
@@ -233,17 +294,19 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			//if (y < 40) { y = 40; } 
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
 		}
-		else { 
-		//ApplyPalettes(gPal_Press_Image, 14+16, 0x10);
-		int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
-		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
+		else if (proc->timer2 < 20) { 
+			DrawButtonsToPress(proc, x, y, 14); 
 		}
+		proc->roundEnd = true; 
 
 	} 
 	else { 
 		if (proc->timer < 10) { proc->frame = 0; } // 10 frames after hitting where it's okay to have A held down 
 		else {
 			SaveInputFrame(proc, keys); 
+			if (!proc->roundEnd) { 
+			DrawButtonsToPress(proc, x, y, 15); 
+			} 
 		} 
 		
 	}
