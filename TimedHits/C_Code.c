@@ -488,15 +488,15 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 		//gEkrGaugeHp[side ^ 1] = 22;//+= damage;
 		HpProc->death = true; 
 
-		//gpProcEkrBattle->end = true; // does nothing 
+		//gpProcEkrBattle->end = true; // does nothing visible
 		//gEkrBattleEndFlag = true; // immediately ends without waiting for anything 
-		//NewEkrbattleending(); // crashes 
-		proc->anim->nextRoundId = 8; // seems to work for now see GetAnimNextRoundType
+		//NewEkrbattleending(); // crashes sometimes 
+		proc->anim->nextRoundId = 8; // seems to mostly work for now? see GetAnimNextRoundType
 		proc->anim2->nextRoundId = 8; 
 
-		gBanimDoneFlag[0] = true; // stop follow ups / counters 
-		gBanimDoneFlag[1] = true; 
-		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
+		gBanimDoneFlag[0] = true; // stop counterattacks ?
+		gBanimDoneFlag[1] = true; // [201fb04..201fb07]!! - nothing else is writing to it. good. 
+
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 		
 		
