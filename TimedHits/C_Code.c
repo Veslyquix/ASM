@@ -19,6 +19,7 @@ typedef struct {
 	u8 side; 
 	u8 frame;
 	u8 code4frame;
+	u8 codefframe;
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc* proc);
 const struct ProcCmd TimedHitsProcCmd[] =
@@ -38,12 +39,8 @@ extern void* BattleStar;
 extern u16 gPal_Press_A_Image[];
 extern u16 gPal_BattleStar[];
 extern struct KeyStatusBuffer sKeyStatusBuffer; // 2024C78
-void StartTimedHitsProc(void) { 
-	TimedHitsProc* proc; 
-	proc = Proc_Find(TimedHitsProcCmd); 
-	if (!proc) { 
-	proc = Proc_Start(TimedHitsProcCmd, (void*)3); 
-	} 
+
+void InitVariables(TimedHitsProc* proc) { 
 	proc->anim = NULL; 
 	proc->broke = false; 
 	proc->roundId = 0; 
@@ -51,13 +48,24 @@ void StartTimedHitsProc(void) {
 	proc->timer2 = 99; 
 	proc->hitOnTime = false; 
 	proc->adjustedDmg = false;
-	proc->loadedImg = false;
+	proc->loadedImg = false; // reload after each round 
 	proc->side = 0xFF; 
 	proc->currentRound = NULL; 
 	proc->active_bunit = NULL; 
 	proc->opp_bunit = NULL; 
 	proc->frame = 0; 
 	proc->code4frame = 0xff;
+	proc->codefframe = 0xff;
+
+} 
+
+void StartTimedHitsProc(void) { 
+	TimedHitsProc* proc; 
+	proc = Proc_Find(TimedHitsProcCmd); 
+	if (!proc) { 
+		proc = Proc_Start(TimedHitsProcCmd, (void*)3); 
+	} 
+
 } 
 
 extern struct BattleHit* GetCurrentRound(int roundID); 
@@ -65,19 +73,20 @@ extern s16 GetAnimRoundType(struct Anim * anim);
 void SetCurrentAnimInProc(struct Anim* anim) { 
 	TimedHitsProc* proc; 
 	proc = Proc_Find(TimedHitsProcCmd); 
+	int timer2 = proc->timer2; 
+	InitVariables(proc); 
+	proc->timer2 = timer2; 
 	proc->anim = anim; 
-	proc->timer = 0; 
-	//asm("mov r11, r11"); 
-	proc->broke = false; 
-	//proc->roundId++; 
 	proc->roundId = anim->nextRoundId-1; 
-	proc->hitOnTime = false; 
-	proc->adjustedDmg = false;
-	proc->loadedImg = false; // reload after each round 
 	proc->currentRound = GetCurrentRound(proc->roundId); 
 	proc->side = GetAnimPosition(anim) ^ 1; 
-	proc->code4frame = 0xff;
-} 
+	proc->active_bunit = gpEkrBattleUnitLeft; 
+	proc->opp_bunit = gpEkrBattleUnitRight; 
+	if (!proc->side) { 
+		proc->active_bunit = gpEkrBattleUnitRight; 
+		proc->opp_bunit = gpEkrBattleUnitLeft;
+	} 
+}
 
 
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round);
@@ -147,8 +156,10 @@ void SaveInputFrame(TimedHitsProc* proc, u32 keys) {
 	u32 instruction = *anim->pScrCurrent++; 
 	if (ANINS_GET_TYPE(instruction) == ANIM_INS_TYPE_COMMAND) {
 		if (ANINS_COMMAND_GET_ID(instruction) == 4) {
-			//asm("mov r11, r11");
 			proc->code4frame = proc->timer;
+		}
+		if (ANINS_COMMAND_GET_ID(instruction) == 0xF) {
+			proc->codefframe = proc->timer;
 		}
 	}
 	instruction = *anim->pScrCurrent--; 
@@ -160,10 +171,12 @@ void SaveInputFrame(TimedHitsProc* proc, u32 keys) {
 	}
 }  
 void SaveIfWeHitOnTime(TimedHitsProc* proc) {
-	if (ABS(proc->code4frame - proc->frame) < (LenienceFrames)) { 
-	//if ((proc->timer - proc->frame) < LenienceFrames) { 
-		proc->hitOnTime = true; 
-	} 
+	int num = proc->codefframe; 
+	if (num != 0xFF) { 
+		if (ABS(num - proc->frame) < (LenienceFrames)) { proc->hitOnTime = true; }
+	}
+	else if (proc->code4frame != 0xFF) { if (ABS(proc->code4frame - proc->frame) < (LenienceFrames)) { proc->hitOnTime = true; } } 
+	else if ((proc->timer - proc->frame) < LenienceFrames) { proc->hitOnTime = true; }
 	
 }
 
@@ -177,14 +190,9 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	int side = proc->side; 
 	int x = 12 * 8; 
 	int y =  5 * 8;
-	struct BattleUnit* active_bunit = gpEkrBattleUnitLeft; 
-	struct BattleUnit* opp_bunit = gpEkrBattleUnitRight; 
-	if (!side) { 
-		active_bunit = gpEkrBattleUnitRight; 
-		opp_bunit = gpEkrBattleUnitLeft;
-	} 
-	proc->active_bunit = active_bunit; 
-	proc->opp_bunit = opp_bunit; 
+
+	struct BattleUnit* active_bunit = proc->active_bunit; 
+	struct BattleUnit* opp_bunit = proc->opp_bunit; 
 	int hitTime = HitNow(proc, HpProc); 
 	if (hitTime) { // 2 frames 
 		if (!proc->loadedImg) {
@@ -294,7 +302,20 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 		gBanimDoneFlag[1] = true; 
 		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
+		
+		
+		// now stop us from dying 
+		side = 1 ^ side; 
+		id = (gEfxHpLutOff[side] * 2) + (side);
+		hp = GetEfxHp(id); 
+		//hp = gEfxHpLut[proc->roundId - 1]; 
+		active_bunit->unit.curHP = hp; 
+		
 	} 
+	
+
+	
+	
 }
 
 void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round, int percent) { 
