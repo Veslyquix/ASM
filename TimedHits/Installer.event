@@ -25,6 +25,8 @@ LenienceFrames: // on either side, so within 5 frames before or after
 WORD 10 
 AlwaysWork: 
 WORD 0
+NumberOfRandomButtons:
+WORD 2 
 
 ALIGN 4 
 Press_Image:

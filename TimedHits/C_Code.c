@@ -21,6 +21,7 @@ typedef struct {
 	u8 code4frame;
 	u8 codefframe;
 	u8 roundEnd;
+	u16 buttonsToPress; 
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc* proc);
 const struct ProcCmd TimedHitsProcCmd[] =
@@ -62,6 +63,7 @@ void InitVariables(TimedHitsProc* proc) {
 	proc->opp_bunit = NULL; 
 	proc->frame = 0; 
 	proc->roundEnd = true; 
+	proc->buttonsToPress = 0; 
 	proc->code4frame = 0xff;
 	proc->codefframe = 0xff;
 
@@ -197,9 +199,69 @@ int HitNow(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc) {
 	if (HpProc->pre != HpProc->cur) { return false; } 
 	return EkrEfxIsUnitHittedNow(proc->side);
 } 
-int PressedSpecificKeys(TimedHitsProc* proc, u32 keys) { 
 
-	return (keys & A_BUTTON); 
+
+/*
+#define A_BUTTON        0x0001
+#define B_BUTTON        0x0002
+#define SELECT_BUTTON   0x0004
+#define START_BUTTON    0x0008
+#define DPAD_RIGHT      0x0010
+#define DPAD_LEFT       0x0020
+#define DPAD_UP         0x0040
+#define DPAD_DOWN       0x0080
+*/
+extern int NumberOfRandomButtons; 
+int GetButtonsToPress(TimedHitsProc* proc) { 
+	int keys = proc->buttonsToPress;
+	if (!keys) { 
+		u8 KeysList[] = { A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN }; 
+		int button = 0; 
+		int num = 0; 
+		int oppDir = 0; 
+		int size = 5; // -1 since we count from 0  
+		for (int i = 0; i < NumberOfRandomButtons; ++i) { 
+			num = NextRN_N(size); 
+			button = KeysList[num];
+			
+			// remove the opposite direction from the pool 
+			if (button & 0xF0) { // some dpad 
+				if (button == DPAD_RIGHT) { oppDir = DPAD_LEFT; } 
+				if (button == DPAD_LEFT) { oppDir = DPAD_RIGHT; } 
+				if (button == DPAD_UP) { oppDir = DPAD_DOWN; } 
+				if (button == DPAD_DOWN) { oppDir = DPAD_UP; } 
+				for (int c = 0; c <= size; ++c) { 
+					if (KeysList[c] == oppDir) { 
+						KeysList[c] = KeysList[size]; 
+						size--; 
+						break; 
+					} 
+				}
+			}
+			
+			
+			keys |= button; 
+		}
+		proc->buttonsToPress = keys; 
+	}
+	return keys; 
+} 
+
+const u8 RomKeysList[] = { A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN }; 
+int CountKeysPressed(u32 keys) { 
+	int c = 0; 
+	for (int i = 0; i < 5; ++i) { 
+		if (keys & RomKeysList[c]) { c++; } 
+	} 
+	return c; 
+
+} 
+
+int PressedSpecificKeys(TimedHitsProc* proc, u32 keys) { 
+	int reqKeys = GetButtonsToPress(proc); 
+	int count = CountKeysPressed(reqKeys); 
+	if (ABS(count - CountKeysPressed(keys)) > 1) { return false; } // you pressed more than 1 extra key. Shame on you. 
+	return (keys & reqKeys); 
 } 
 void SaveInputFrame(TimedHitsProc* proc, u32 keys) { 
 	struct Anim* anim = proc->anim; 
@@ -236,7 +298,7 @@ int DidWeHitOnTime(TimedHitsProc* proc) {
 }
 
 void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) { 
-
+	int keys = GetButtonsToPress(proc); 
 
 
 	//ApplyPalettes(gPal_Press_Image, 15+16, 0x10); // always pal 15 
@@ -245,11 +307,24 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 	x += 32; 
 	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput2, oam2); 
 	y += 16; x -= 36; 
-	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_A_Button, oam2); 
-	x += 18; 
-	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_B_Button, oam2); 
-	x += 18; 
-	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Left_Button, oam2); 
+	if (keys & A_BUTTON) { 
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_A_Button, oam2); x += 18; 
+	}
+	if (keys & B_BUTTON) { 
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_B_Button, oam2); x += 18; 
+	}
+	if (keys & DPAD_LEFT) { 
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Left_Button, oam2); x += 18; 
+	}
+	if (keys & DPAD_RIGHT) { 
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Right_Button, oam2); x += 18; 
+	}
+	if (keys & DPAD_UP) { 
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Up_Button, oam2); x += 18; 
+	}
+	if (keys & DPAD_DOWN) { 
+		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Down_Button, oam2); x += 18; 
+	}
 
 
 
@@ -304,9 +379,9 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 		if (proc->timer < 10) { proc->frame = 0; } // 10 frames after hitting where it's okay to have A held down 
 		else {
 			SaveInputFrame(proc, keys); 
-			if (!proc->roundEnd) { 
+		} 
+		if (!proc->roundEnd) { 
 			DrawButtonsToPress(proc, x, y, 15); 
-			} 
 		} 
 		
 	}
