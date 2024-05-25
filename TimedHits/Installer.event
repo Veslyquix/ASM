@@ -4,6 +4,8 @@
 #endif 
 #include "TimedHits.lyn.event" 
 #include "C_Code.lyn.event" 
+#define BATTLE_ANIMATION_NUMBERS
+#include "AnimNumbers/AnimNumbers.event"
 
 PUSH 
 ORG 0x599f4
@@ -15,6 +17,8 @@ jumpToHack(InitCurrentAnimForTimedHitsProc)
 POP 
 
 ALIGN 4 
+UsingSkillSys:
+WORD 1 
 BonusDamagePercent:
 WORD 400
 ReducedDamagePercent:

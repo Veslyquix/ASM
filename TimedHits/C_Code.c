@@ -3,12 +3,23 @@
 #include "C_Code.h" // headers 
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
+
+struct SkillSysBattleHit { 
+    /* 00:18 */ unsigned attributes : 19;
+    /* 19:23 */ unsigned info       : 5;
+    /* 24:31 */ signed   hpChange   : 8;
+	u8 skillID; 
+	s8 cappedDmg; 
+	s16 overDmg; 
+};
+
 typedef struct {
     /* 00 */ PROC_HEADER;
 	struct Anim* anim; 
+	struct Anim* anim2; 
 	int timer; 
 	int timer2; 
-	struct BattleHit* currentRound;
+	struct SkillSysBattleHit* currentRound;
 	struct BattleUnit* active_bunit;
 	struct BattleUnit* opp_bunit;
 	u8 hitOnTime; 
@@ -32,12 +43,20 @@ const struct ProcCmd TimedHitsProcCmd[] =
 	PROC_REPEAT(LoopTimedHitsProc), 
     PROC_END,
 };
+typedef struct { 
+	PROC_HEADER; 
+	u8 digits; //   +0x29, byte. Number of digits.
+	s16 damage; //   +0x2A, short. Damage/heal value.
+	u8 subjectId; //   +0x2C, byte. AISSubjectId. 0 if left, 1 if right.		
+} BANIM_NumsProc; 
 extern const struct ProcCmd* gProcScr_efxHPBar; 
+extern const struct ProcCmd BAN_Proc_DelayDigits[]; 
 extern const int AlwaysWork; 
 extern const int MinFramesToDisplayGfx; 
 extern const int LenienceFrames; 
 extern const int BonusDamagePercent; 
 extern const int ReducedDamagePercent; 
+extern const int UsingSkillSys; 
 extern void* Press_Image; 
 extern void* BattleStar; 
 extern void* A_Button; 
@@ -48,10 +67,16 @@ extern void* Up_Button;
 extern void* Down_Button; 
 //extern u16 gPal_Press_Image[];
 //extern u16 gPal_BattleStar[];
+// r0: AIS.
+// r1: 0 if OverDamage or OverHeal (recipient). 1 otherwise.
+// r2: X of previous damage display. 0 if there is none.
+// r3: Digitcount of previous damage display. 0 if there is none.
+extern int BAN_DisplayDamage(struct Anim* anim, int overdamage, int x, int prevDigitCount, int roundId); 
 extern struct KeyStatusBuffer sKeyStatusBuffer; // 2024C78
 
 void InitVariables(TimedHitsProc* proc) { 
 	proc->anim = NULL; 
+	proc->anim2 = NULL; 
 	proc->broke = false; 
 	proc->roundId = 0; 
 	proc->timer = 0; 
@@ -79,7 +104,7 @@ void StartTimedHitsProc(void) {
 	} 
 
 } 
-extern struct BattleHit* GetCurrentRound(int roundID); 
+extern struct SkillSysBattleHit* GetCurrentRound(int roundID); 
 extern s16 GetAnimRoundType(struct Anim * anim);
 void SetCurrentAnimInProc(struct Anim* anim) { 
 	TimedHitsProc* proc; 
@@ -89,9 +114,9 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	proc->roundEnd = false; 
 	proc->timer2 = timer2; 
 	proc->anim = anim; 
-	struct Anim* anim2 = GetAnimAnotherSide(anim); 
+	proc->anim2 = GetAnimAnotherSide(anim); 
 	//proc->roundId = anim->nextRoundId-1; 
-	proc->roundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId-1 : anim2->nextRoundId-1; 
+	proc->roundId = anim->nextRoundId > proc->anim2->nextRoundId ? anim->nextRoundId-1 : proc->anim2->nextRoundId-1; 
 	proc->currentRound = GetCurrentRound(proc->roundId); 
 	proc->side = GetAnimPosition(anim) ^ 1; 
 	proc->active_bunit = gpEkrBattleUnitLeft; 
@@ -116,10 +141,10 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 }
 
 
-void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round);
-void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round, int percent);
-void AdjustDamageWithGetter(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round);
-void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round, int hp); 
+void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct SkillSysBattleHit* round);
+void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int percent);
+void AdjustDamageWithGetter(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round);
+void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp); 
 
 const u16 sSprite_HitInput[] = {
     1, // number of entries below (each entry has 3 lines) 
@@ -183,15 +208,14 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	if (!proc->anim) { return; } 
 	  
 	struct ProcEkrBattle* battleProc = gpProcEkrBattle; 
-	struct Anim* anim1 = proc->anim; 
-	if (battleProc) { anim1 = battleProc->anim; } 
-	else { return; } 
-	struct Anim* anim2 = GetAnimAnotherSide(anim1);
-	if (!anim2) { return; } 
+	//struct Anim* anim1 = proc->anim; 
+	if (!battleProc) { return; } 
+	if (!proc->anim2) { return; } 
 	
 	proc->timer++;
 	proc->timer2++;
-	struct BattleHit* currentRound = proc->currentRound; 
+
+	struct SkillSysBattleHit* currentRound = proc->currentRound; 
 	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!currentRound->hpChange)) { return; } 
 	if (proc->EkrEfxIsUnitHittedNowFrames != 0xFF) { 
 		proc->EkrEfxIsUnitHittedNowFrames++; 
@@ -343,7 +367,7 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 } 
 
 
-void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct BattleHit* round) { 
+void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct SkillSysBattleHit* round) { 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
 	int side = proc->side; 
 	int x = 12 * 8; 
@@ -362,6 +386,8 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 				AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round); 
 			} 
 		} 
+		int x2 = BAN_DisplayDamage(proc->anim2, 0, 0, 0, proc->roundId); 
+		x2 = BAN_DisplayDamage(proc->anim, 1, proc->anim->xPosition, x2, proc->roundId);  
 		// kill off enemies for adjusted rounds if a timed hit was done previously 
 		if (!proc->adjustedDmg) {
 			CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
@@ -409,25 +435,35 @@ int GetDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bun
 	return GetDefaultDamagePercent(active_bunit, opp_bunit); 
 } 
 
-void AdjustAllRounds(int id, int damage) { 
+void AdjustAllRounds(int id, int difference, int damage) { 
 	int hp;
 	for (int i = id; i < 22; i += 2) {
 		hp = gEfxHpLut[i]; 
 		if (hp == 0xffff) { break; }
-		if (damage < 0) { hp += damage; if (hp > 0) { gEfxHpLut[i] = hp; } else { gEfxHpLut[i] = 0; } }
-		else if (hp >= damage) { gEfxHpLut[i] -= damage; }
+		if (difference < 0) { hp += difference; if (hp > 0) { gEfxHpLut[i] = hp; } else { gEfxHpLut[i] = 0; } }
+		else if (hp >= difference) { gEfxHpLut[i] -= difference; }
 		else { gEfxHpLut[i] = 0; }
 		
 	}
+	//BANIM_NumsProc* banim_proc = Proc_Find((void*)&BAN_Proc_DelayDigits); 
+	//if (banim_proc) { 
+	//	damage = -39; 
+	//	banim_proc->digits = 2;
+	//	if (damage > 9) { banim_proc->digits = 2; } 
+	//	if (damage > 99) { banim_proc->digits = 3; } 
+	//	if (damage < (-9)) { banim_proc->digits = 2; } 
+	//	if (damage < (-99)) { banim_proc->digits = 3; }
+	//	banim_proc->damage = damage; 
+	//} 
 }
 
 extern s16 gEfxHpLutOff[]; // 203e152 B gEfxHpLutOff
 
-void AdjustDamageWithGetter(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round) { 
+void AdjustDamageWithGetter(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round) { 
 	AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, GetDamagePercent(active_bunit, opp_bunit)); 
 } 
 
-void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round, int hp) { 
+void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
 	int side = proc->side; 
 	//asm("mov r11, r11");
 	//int damage = (round->hpChange * percent) / 100; 
@@ -451,7 +487,7 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 		//gEkrBattleEndFlag = true; // immediately ends without waiting for anything 
 		//NewEkrbattleending(); // crashes 
 		proc->anim->nextRoundId = 8; // seems to work for now see GetAnimNextRoundType
-		GetAnimAnotherSide(proc->anim)->nextRoundId = 8; 
+		proc->anim2->nextRoundId = 8; 
 
 		gBanimDoneFlag[0] = true; // stop follow ups / counters 
 		gBanimDoneFlag[1] = true; 
@@ -473,7 +509,7 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 	
 }
 
-void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round, int percent) { 
+void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int percent) { 
 	//if (!HpProc->post) { return; } 
 	
 	int side = proc->side; 
@@ -492,7 +528,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		//if (hp < 0) { damage -= ABS(hp); } 
 		HpProc->post -= damage;
 		opp_bunit->unit.curHP -= damage; 
-		round->hpChange += damage; // used by Huichelaar's banim numbers 
+		round->hpChange += damage; 
+		if (UsingSkillSys) { round->overDmg -= damage; } // used by Huichelaar's banim numbers 
 	} 
 	else if (round->hpChange != hp) { 
 		
@@ -500,7 +537,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		hp += damage; 
 		HpProc->post += damage;
 		opp_bunit->unit.curHP += damage; 
-		round->hpChange -= damage; // used by Huichelaar's banim numbers 
+		round->hpChange -= damage; 
+		if (UsingSkillSys) { round->overDmg += damage; } // used by Huichelaar's banim numbers 
 		damage = 0 - damage;
 		
 	} 
@@ -511,6 +549,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 			HpProc->post = 0;
 			opp_bunit->unit.curHP = 0; 
 			round->hpChange += damage; 
+			if (UsingSkillSys) { round->overDmg -= damage; } 
 			damage = 0 - damage;
 		
 		} 
@@ -520,13 +559,13 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 			HpProc->post += 1;
 			opp_bunit->unit.curHP += 1; 
 			round->hpChange -= 1; 
+			if (UsingSkillSys) { round->overDmg += 1; } 
 			damage = 0 - damage;
 		} 
 	
 	
 	} 
-	AdjustAllRounds(id, damage);
-	
+	AdjustAllRounds(id, damage, round->hpChange);
 	if (hp < 0) { hp = 0; } 
 	CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp); 
 	//return;
