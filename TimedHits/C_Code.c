@@ -128,7 +128,7 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	proc->timer++;
 	proc->timer2++;
 	struct BattleHit* currentRound = proc->currentRound; 
-	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!currentRound->damage)) { return; } 
+	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!currentRound->hpChange)) { return; } 
 	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 } 
@@ -322,7 +322,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		opp_bunit->unit.curHP -= damage; 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 
 	} 
-	else { 
+	else if (round->hpChange != hp) { 
+		
 		damage = round->hpChange - damage; 
 		hp += damage; 
 		HpProc->post += damage;
@@ -330,6 +331,27 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		round->hpChange -= damage; // used by Huichelaar's banim numbers 
 		damage = 0 - damage;
 		
+	} 
+	else if (round->hpChange == hp) { 
+		if (hp == 1) { // deal lethal anyway 
+			hp = 0; 
+			damage = 1; 
+			HpProc->post = 0;
+			opp_bunit->unit.curHP = 0; 
+			round->hpChange += damage; 
+			damage = 0 - damage;
+		
+		} 
+		else { // leave alive with 1 hp 
+			hp = 1; 
+			damage = round->hpChange - 1; 
+			HpProc->post += 1;
+			opp_bunit->unit.curHP += 1; 
+			round->hpChange -= 1; 
+			damage = 0 - damage;
+		} 
+	
+	
 	} 
 	AdjustAllRounds(id, damage);
 	
