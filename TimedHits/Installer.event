@@ -28,11 +28,13 @@ WORD 25
 LenienceFrames: // on either side, so within 10 frames before or after 
 WORD 10 
 AlwaysWork: 
-WORD 1
+WORD 0
 NumberOfRandomButtons:
-WORD 2
+WORD 1
 AlwaysA:
-WORD 1 // true if 1, false if 0  
+WORD 0 // true if 1, false if 0  
+ForceAnimsOn:
+WORD 1 
 
 ALIGN 4 
 Press_Image:

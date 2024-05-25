@@ -327,7 +327,12 @@ void SaveIfWeHitOnTime(TimedHitsProc* proc) {
 	
 }
 
+int CheatCodeOn(void) { 
+	return (gPlaySt.unk1F & 0x80); // 202BD0F
+} 
+
 int DidWeHitOnTime(TimedHitsProc* proc) {
+	if (CheatCodeOn()) { return true; } 
 	if (AlwaysWork) { return true; } 
 	return proc->hitOnTime;
 }
@@ -583,5 +588,39 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 
 	
 } 
+
+extern int ForceAnimsOn; 
+enum PlaySt_AnimConfType {
+    PLAY_ANIMCONF_ON = 0,
+    PLAY_ANIMCONF_OFF = 1,
+    PLAY_ANIMCONF_SOLO_ANIM = 2,
+    PLAY_ANIMCONF_ON_UNIQUE_BG = 3,
+};
+int GetSoloAnimPreconfType(struct Unit* unit);
+int GetBattleAnimPreconfType(void) {
+	int result = gPlaySt.config.animationType; 
+	if (!CheatCodeOn()) { 
+		if (ForceAnimsOn) { if (result == 2) { return 2; } else { return 1; } } 
+	}
+    // If not solo anim, return global type
+    if (gPlaySt.config.animationType != PLAY_ANIMCONF_SOLO_ANIM)
+        return result;
+
+    // If both units are players, use actor solo anim type
+    if (UNIT_FACTION(&gBattleActor.unit) == FACTION_BLUE)
+        if (UNIT_FACTION(&gBattleTarget.unit) == FACTION_BLUE)
+            return GetSoloAnimPreconfType(&gBattleActor.unit);
+
+    // If neither are players, return 1
+    if (UNIT_FACTION(&gBattleActor.unit) != FACTION_BLUE)
+        if (UNIT_FACTION(&gBattleTarget.unit) != FACTION_BLUE)
+            return PLAY_ANIMCONF_OFF;
+
+    // Return solo anim type for the one that is a player unit
+    if (UNIT_FACTION(&gBattleActor.unit) == FACTION_BLUE)
+        return GetSoloAnimPreconfType(&gBattleActor.unit);
+    else
+        return GetSoloAnimPreconfType(&gBattleTarget.unit);
+}
 
 
