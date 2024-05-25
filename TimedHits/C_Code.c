@@ -77,7 +77,7 @@ void StartTimedHitsProc(void) {
 	} 
 
 } 
-
+extern int GetDamage(struct BattleHit* round); 
 extern struct BattleHit* GetCurrentRound(int roundID); 
 extern s16 GetAnimRoundType(struct Anim * anim);
 void SetCurrentAnimInProc(struct Anim* anim) { 
@@ -88,7 +88,9 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	proc->roundEnd = false; 
 	proc->timer2 = timer2; 
 	proc->anim = anim; 
-	proc->roundId = anim->nextRoundId-1; 
+	struct Anim* anim2 = GetAnimAnotherSide(anim); 
+	//proc->roundId = anim->nextRoundId-1; 
+	proc->roundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId-1 : anim2->nextRoundId-1; 
 	proc->currentRound = GetCurrentRound(proc->roundId); 
 	proc->side = GetAnimPosition(anim) ^ 1; 
 	proc->active_bunit = gpEkrBattleUnitLeft; 
@@ -189,7 +191,7 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	proc->timer++;
 	proc->timer2++;
 	struct BattleHit* currentRound = proc->currentRound; 
-	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!currentRound->hpChange)) { return; } 
+	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!GetDamage(currentRound))) { return; } 
 	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 } 
@@ -212,7 +214,9 @@ int HitNow(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc) {
 #define DPAD_DOWN       0x0080
 */
 extern int NumberOfRandomButtons; 
+extern int AlwaysA; 
 int GetButtonsToPress(TimedHitsProc* proc) { 
+	if (AlwaysA) { return A_BUTTON; } 
 	int keys = proc->buttonsToPress;
 	if (!keys) { 
 		u8 KeysList[] = { A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN }; 
@@ -358,7 +362,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	}
 	//if ((proc->timer2 < MinFramesToDisplayGfx) || EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
 	if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
-		
+		//BreakOnce(proc); 
 		if (DidWeHitOnTime(proc)) { 
 			//int clock = GetGameClock(); // proc->timer; 
 			int clock = proc->timer2; 
@@ -471,8 +475,9 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 	int hp = GetEfxHp(id); // + round->hpChange; 
 	if (!hp) { return; } 
 	if (hp == 0xFFFF) { return; } 
-	
-	int damage = (round->hpChange * percent) / 100; 
+	//asm("mov r11, r11");
+	int damage = GetDamage(round); 
+	//int damage = (round->hpChange * percent) / 100; 
 	//asm("mov r11, r11");
 	if (damage > round->hpChange) { 
 		hp -= damage;

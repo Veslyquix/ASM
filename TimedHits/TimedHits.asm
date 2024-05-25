@@ -52,6 +52,13 @@ bx lr
 .ltorg 
 
 
+.global GetDamage
+.type GetDamage, %function 
+GetDamage:
+ldrb r0, [r0, #3] 
+mov r11, r11 
+bx lr 
+.ltorg 
 
 
 

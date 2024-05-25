@@ -21,12 +21,14 @@ ReducedDamagePercent:
 WORD 50 
 MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting 
 WORD 25
-LenienceFrames: // on either side, so within 5 frames before or after 
+LenienceFrames: // on either side, so within 10 frames before or after 
 WORD 10 
 AlwaysWork: 
-WORD 0
+WORD 1
 NumberOfRandomButtons:
-WORD 2 
+WORD 2
+AlwaysA:
+WORD 1 // true if 1, false if 0  
 
 ALIGN 4 
 Press_Image:
