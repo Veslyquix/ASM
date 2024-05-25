@@ -34,10 +34,16 @@ extern const int MinFramesToDisplayGfx;
 extern const int LenienceFrames; 
 extern const int BonusDamagePercent; 
 extern const int ReducedDamagePercent; 
-extern void* Press_A_Image; 
+extern void* Press_Image; 
 extern void* BattleStar; 
-extern u16 gPal_Press_A_Image[];
-extern u16 gPal_BattleStar[];
+extern void* A_Button; 
+extern void* B_Button; 
+extern void* Left_Button; 
+extern void* Right_Button; 
+extern void* Up_Button; 
+extern void* Down_Button; 
+//extern u16 gPal_Press_Image[];
+//extern u16 gPal_BattleStar[];
 extern struct KeyStatusBuffer sKeyStatusBuffer; // 2024C78
 
 void InitVariables(TimedHitsProc* proc) { 
@@ -197,7 +203,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	if (hitTime) { // 2 frames 
 		if (!proc->loadedImg) {
 			proc->timer2 = 0; 
-			Copy2dChr(&Press_A_Image, (void*)0x06012000, 8, 4);
+			Copy2dChr(&Press_Image, (void*)0x06012000, 8, 4);
 			Copy2dChr(&BattleStar, (void*)0x06012100, 2, 2);
 			proc->loadedImg = true;
 		}
@@ -228,7 +234,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
 		}
 		else { 
-		//ApplyPalettes(gPal_Press_A_Image, 14+16, 0x10);
+		//ApplyPalettes(gPal_Press_Image, 14+16, 0x10);
 		int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
 		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
 		}

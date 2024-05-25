@@ -27,8 +27,8 @@ AlwaysWork:
 WORD 0
 
 ALIGN 4 
-Press_A_Image:
-#incbin "images/Press_A.dmp" 
+Press_Image:
+#incbin "images/Press.dmp" 
 ALIGN 4 
 gPal_Press_A_Image:
 #incbin "images/Press_A_pal.dmp" 
@@ -38,7 +38,24 @@ BattleStar:
 ALIGN 4 
 gPal_BattleStar:
 #incbin "images/BattleStar_pal.dmp" 
-
+ALIGN 4 
+A_Button:
+#incbin "images/A_Button.dmp"
+ALIGN 4 
+B_Button:
+#incbin "images/B_Button.dmp"
+ALIGN 4 
+Left_Button:
+#incbin "images/Left_Button.dmp"
+ALIGN 4 
+Right_Button:
+#incbin "images/Right_Button.dmp"
+ALIGN 4 
+Up_Button:
+#incbin "images/Up_Button.dmp"
+ALIGN 4 
+Down_Button:
+#incbin "images/Down_Button.dmp"
 
 
 
