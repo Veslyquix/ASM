@@ -128,6 +128,7 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	proc->timer++;
 	proc->timer2++;
 	struct BattleHit* currentRound = proc->currentRound; 
+	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!currentRound->damage)) { return; } 
 	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 } 
