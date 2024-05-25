@@ -21,6 +21,6 @@ SET_FUNC Div, __divsi3
 SET_FUNC Mod, __modsi3
 SET_DATA gEfxHpLutOff, 0x203e152
 
-
+SET_DATA gProcScr_efxHPBar, 0x8052354
 SET_DATA classTablePoin, 0x8017AB8 
 

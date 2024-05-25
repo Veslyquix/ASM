@@ -21,6 +21,7 @@ typedef struct {
 	u8 code4frame;
 	u8 codefframe;
 	u8 roundEnd;
+	u8 EkrEfxIsUnitHittedNowFrames;
 	u16 buttonsToPress; 
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc* proc);
@@ -31,6 +32,7 @@ const struct ProcCmd TimedHitsProcCmd[] =
 	PROC_REPEAT(LoopTimedHitsProc), 
     PROC_END,
 };
+extern const struct ProcCmd* gProcScr_efxHPBar; 
 extern const int AlwaysWork; 
 extern const int MinFramesToDisplayGfx; 
 extern const int LenienceFrames; 
@@ -66,7 +68,7 @@ void InitVariables(TimedHitsProc* proc) {
 	proc->buttonsToPress = 0; 
 	proc->code4frame = 0xff;
 	proc->codefframe = 0xff;
-
+	proc->EkrEfxIsUnitHittedNowFrames = 0xff; 
 } 
 
 void StartTimedHitsProc(void) { 
@@ -77,7 +79,6 @@ void StartTimedHitsProc(void) {
 	} 
 
 } 
-extern int GetDamage(struct BattleHit* round); 
 extern struct BattleHit* GetCurrentRound(int roundID); 
 extern s16 GetAnimRoundType(struct Anim * anim);
 void SetCurrentAnimInProc(struct Anim* anim) { 
@@ -191,15 +192,21 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	proc->timer++;
 	proc->timer2++;
 	struct BattleHit* currentRound = proc->currentRound; 
-	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!GetDamage(currentRound))) { return; } 
-	struct ProcEfxHPBar* HpProc = Proc_Find(ProcScr_efxHPBar); 
+	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!currentRound->hpChange)) { return; } 
+	if (proc->EkrEfxIsUnitHittedNowFrames != 0xFF) { 
+		proc->EkrEfxIsUnitHittedNowFrames++; 
+	} 
+	else if (EkrEfxIsUnitHittedNow(proc->side)) { proc->EkrEfxIsUnitHittedNowFrames = 0; } 
+	struct ProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBar); 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 } 
 
 int HitNow(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc) {
-	if (!HpProc) { return false; } 
-	if (HpProc->pre != HpProc->cur) { return false; } 
-	return EkrEfxIsUnitHittedNow(proc->side);
+	
+	if (!HpProc) { return false; } // 
+	//if (HpProc->pre != HpProc->cur) { return false; } 
+	if (proc->EkrEfxIsUnitHittedNowFrames) { return false; } 
+	return true;
 } 
 
 
@@ -345,7 +352,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	struct BattleUnit* active_bunit = proc->active_bunit; 
 	struct BattleUnit* opp_bunit = proc->opp_bunit; 
 	int hitTime = HitNow(proc, HpProc); 
-	if (hitTime) { // 2 frames 
+	if (hitTime) { // 1 frame 
 		SaveInputFrame(proc, keys); 
 		SaveIfWeHitOnTime(proc);
 
@@ -468,17 +475,13 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 
 void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct BattleHit* round, int percent) { 
 	//if (!HpProc->post) { return; } 
+	
 	int side = proc->side; 
-	//asm("mov r11, r11");
-	//int damage = (round->hpChange * percent) / 100; 
 	int id = (gEfxHpLutOff[side] * 2) + (side);
 	int hp = GetEfxHp(id); // + round->hpChange; 
 	if (!hp) { return; } 
 	if (hp == 0xFFFF) { return; } 
-	//asm("mov r11, r11");
-	int damage = GetDamage(round); 
-	//int damage = (round->hpChange * percent) / 100; 
-	//asm("mov r11, r11");
+	int damage = (round->hpChange * percent) / 100; 
 	if (damage > round->hpChange) { 
 		hp -= damage;
 		damage -= round->hpChange; 
@@ -487,7 +490,6 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		//hp = HpProc->post; 
 		//hp -= damage;
 		//if (hp < 0) { damage -= ABS(hp); } 
-		//asm("mov r11, r11");
 		HpProc->post -= damage;
 		opp_bunit->unit.curHP -= damage; 
 		round->hpChange += damage; // used by Huichelaar's banim numbers 
