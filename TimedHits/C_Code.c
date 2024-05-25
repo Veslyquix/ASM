@@ -159,7 +159,7 @@ void SaveInputFrame(TimedHitsProc* proc, u32 keys) {
 	}
 }  
 void SaveIfWeHitOnTime(TimedHitsProc* proc) {
-	if (ABS(proc->code4frame - proc->frame) < (LenienceFrames/2)) { 
+	if (ABS(proc->code4frame - proc->frame) < (LenienceFrames)) { 
 	//if ((proc->timer - proc->frame) < LenienceFrames) { 
 		proc->hitOnTime = true; 
 	} 
@@ -289,7 +289,8 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 		proc->anim->nextRoundId = 8; // seems to work for now see GetAnimNextRoundType
 		GetAnimAnotherSide(proc->anim)->nextRoundId = 8; 
 
-		gBanimDoneFlag[side ^ 1] = true; 
+		gBanimDoneFlag[0] = true; // stop follow ups / counters 
+		gBanimDoneFlag[1] = true; 
 		//gBanimDoneFlag[1] = true; // doesn't stop the counter attack 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 	} 
