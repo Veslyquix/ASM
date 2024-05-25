@@ -128,8 +128,8 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange)) { return; } 
 	if (!proc->loadedImg) {
 		proc->timer2 = 0; 
-		Copy2dChr(&Press_Image, (void*)0x06012000, 8, 2);
-		Copy2dChr(&BattleStar, (void*)0x06012100, 2, 2); // 0x108 
+		Copy2dChr(&Press_Image, (void*)0x06012980, 6, 2);
+		Copy2dChr(&BattleStar, (void*)0x06012a40, 2, 2); // 0x108 
 		Copy2dChr(&A_Button, (void*)0x06012800, 2, 2); // 0x140
 		Copy2dChr(&B_Button, (void*)0x06012840, 2, 2); // 0x142 
 		Copy2dChr(&Left_Button, (void*)0x06012880, 2, 2); // 0x144
@@ -162,19 +162,19 @@ const u16 sSprite_PressInput[] = {
     1,
     OAM0_SHAPE_32x16, 
 	OAM1_SIZE_32x16, 
-	OAM2_CHR(0x0100) // tile number 
+	OAM2_CHR(0x014c) // tile number 
 };
 const u16 sSprite_PressInput2[] = {
     1,
     OAM0_SHAPE_16x16, 
 	OAM1_SIZE_16x16, 
-	OAM2_CHR(0x0104) // tile number 
+	OAM2_CHR(0x0150) // tile number 
 };
 const u16 sSprite_Star[] = {
     1,
     OAM0_SHAPE_16x16, 
 	OAM1_SIZE_16x16, 
-	OAM2_CHR(0x0108) // tile number 
+	OAM2_CHR(0x0152) // tile number 
 };
 const u16 sSprite_A_Button[] = {
     1, OAM0_SHAPE_16x16, OAM1_SIZE_16x16, OAM2_CHR(0x0140) // tile number 
@@ -499,7 +499,8 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 		
-		
+		// killing an enemy before your follow up attack will make you hit them extra times and they're already dead 
+		// as a result, your own hp gets lowered here : 
 		// now stop us from dying 
 		side = 1 ^ side; 
 		id = (gEfxHpLutOff[side] * 2) + (side);
