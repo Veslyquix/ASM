@@ -20,17 +20,17 @@ ALIGN 4
 UsingSkillSys:
 WORD 1 
 BonusDamagePercent:
-WORD 400
+WORD 150
 ReducedDamagePercent:
 WORD 50 
 MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting 
 WORD 25
 LenienceFrames: // on either side, so within 10 frames before or after 
-WORD 10 
+WORD 15
 AlwaysWork: 
 WORD 0
 NumberOfRandomButtons:
-WORD 1
+WORD 2
 AlwaysA:
 WORD 0 // true if 1, false if 0  
 ForceAnimsOn:
