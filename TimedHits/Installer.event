@@ -43,6 +43,8 @@ BlockingEnabled:
 WORD 1 
 BlockingCanPreventLethal: // will leave you at 1 hp if you correctly block unless you're already at 1 hp 
 WORD 1
+DisplayPress:
+WORD 1 
 ChangePaletteWhenButtonIsPressed:
 WORD 1 
 TimedHitsDifficultyRam:

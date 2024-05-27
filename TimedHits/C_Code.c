@@ -61,6 +61,7 @@ extern const int UsingSkillSys;
 extern const int DisabledFlag; 
 extern const int BlockingEnabled; 
 extern const int BlockingCanPreventLethal; 
+extern const int DisplayPress; 
 extern const int ChangePaletteWhenButtonIsPressed; 
 extern void* Press_Image; 
 extern void* BattleStar; 
@@ -386,6 +387,7 @@ int DidWeHitOnTime(TimedHitsProc* proc) {
 }
 
 void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) { 
+	if (!DisplayPress) { return; } 
 	int keys = GetButtonsToPress(proc); 
 
 	if (ChangePaletteWhenButtonIsPressed && proc->frame) { palID = 14; } 
