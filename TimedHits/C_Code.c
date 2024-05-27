@@ -56,7 +56,12 @@ extern const int MinFramesToDisplayGfx;
 extern const int LenienceFrames; 
 extern const int BonusDamagePercent; 
 extern const int ReducedDamagePercent; 
+extern const int FailedHitDamagePercent; 
 extern const int UsingSkillSys; 
+extern const int DisabledFlag; 
+extern const int BlockingEnabled; 
+extern const int BlockingCanPreventLethal; 
+extern const int ChangePaletteWhenButtonIsPressed; 
 extern void* Press_Image; 
 extern void* BattleStar; 
 extern void* A_Button; 
@@ -67,6 +72,15 @@ extern void* Up_Button;
 extern void* Down_Button; 
 //extern u16 gPal_Press_Image[];
 //extern u16 gPal_BattleStar[];
+
+
+struct TimedHitsDifficultyStruct { 
+	u8 difficulty : 3; 
+	u8 padding : 4; 
+	u8 cheats : 1; 
+}; 
+extern struct TimedHitsDifficultyStruct* TimedHitsDifficultyRam; 
+
 // r0: AIS.
 // r1: 0 if OverDamage or OverHeal (recipient). 1 otherwise.
 // r2: X of previous damage display. 0 if there is none.
@@ -74,13 +88,17 @@ extern void* Down_Button;
 extern int BAN_DisplayDamage(struct Anim* anim, int overdamage, int x, int prevDigitCount, int roundId); 
 extern struct KeyStatusBuffer sKeyStatusBuffer; // 2024C78
 
+int AreTimedHitsEnabled(void) { 
+	return !CheckFlag(DisabledFlag); 
+}
+
 void InitVariables(TimedHitsProc* proc) { 
 	proc->anim = NULL; 
 	proc->anim2 = NULL; 
 	proc->broke = false; 
 	proc->roundId = 0; 
 	proc->timer = 0; 
-	proc->timer2 = 99; 
+	proc->timer2 = 0xFF; 
 	proc->hitOnTime = false; 
 	proc->adjustedDmg = false;
 	proc->loadedImg = false; // reload after each round 
@@ -125,9 +143,8 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 		proc->active_bunit = gpEkrBattleUnitRight; 
 		proc->opp_bunit = gpEkrBattleUnitLeft;
 	} 
-	if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange)) { return; } 
 	if (!proc->loadedImg) {
-		proc->timer2 = 0; 
+		proc->timer2 = 0xFF; 
 		Copy2dChr(&Press_Image, (void*)0x06012980, 6, 2);
 		Copy2dChr(&BattleStar, (void*)0x06012a40, 2, 2); // 0x108 
 		Copy2dChr(&A_Button, (void*)0x06012800, 2, 2); // 0x140
@@ -140,11 +157,32 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	}
 }
 
+struct NewProcEfxHPBar {
+    PROC_HEADER;
 
-void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct SkillSysBattleHit* round);
-void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int percent);
-void AdjustDamageWithGetter(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round);
-void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp); 
+    /* 29 */ u8 death;
+    /* 2A */ u8 _pad_2A[0x2C - 0x2A];
+    /* 2C */ s16 pos;
+    /* 2E */ s16 cur;
+	/* 30 */ s16 curHpAtkrSS; 
+    /* 32 */ u8 _pad_30[0x48 - 0x32];
+    /* 48 */ s16 diff;
+	/* 4a */ s16 idk1; 
+    /* 4C */ s16 pre;
+	/* 4e */ s16 idk2; 
+    /* 50 */ s16 post;
+	/* 52 */ s16 postHpAtkrSS;  
+    /* 54 */ int timer;
+    /* 58 */ int finished;
+    /* 5C */ struct Anim * anim5C;
+    /* 60 */ struct Anim * anim60;
+    /* 64 */ struct Anim * anim64;
+};
+
+void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct NewProcEfxHPBar* HpProc, struct SkillSysBattleHit* round);
+void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int percent);
+void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int success);
+void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp); 
 
 const u16 sSprite_HitInput[] = {
     1, // number of entries below (each entry has 3 lines) 
@@ -204,6 +242,14 @@ void BreakOnce(TimedHitsProc* proc) {
 	asm("mov r11, r11");
 } 
 
+int HitNow(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc) {
+	
+	if (!HpProc) { return false; } // 
+	//if (HpProc->pre != HpProc->cur) { return false; } 
+	if (proc->EkrEfxIsUnitHittedNowFrames) { return false; } 
+	return true;
+} 
+
 void LoopTimedHitsProc(TimedHitsProc* proc) { 
 	if (!proc->anim) { return; } 
 	  
@@ -213,25 +259,25 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	if (!proc->anim2) { return; } 
 	
 	proc->timer++;
-	proc->timer2++;
+	if (proc->timer2 != 0xFF) { proc->timer2++; } 
 
 	struct SkillSysBattleHit* currentRound = proc->currentRound; 
-	if ((currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!currentRound->hpChange)) { return; } 
+	
 	if (proc->EkrEfxIsUnitHittedNowFrames != 0xFF) { 
 		proc->EkrEfxIsUnitHittedNowFrames++; 
 	} 
 	else if (EkrEfxIsUnitHittedNow(proc->side)) { proc->EkrEfxIsUnitHittedNowFrames = 0; } 
-	struct ProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBar); 
+	// or if MissNow, set proc->EkrEfxIsUnitHittedNowFrames = 0; 
+	// this would allow the star to appear for misses 
+	struct NewProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBar); 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
+	if (HitNow(proc, HpProc)) { 
+		int x = BAN_DisplayDamage(proc->anim2, 0, 0, 0, proc->roundId); 
+		x = BAN_DisplayDamage(proc->anim, 1, proc->anim->xPosition, x, proc->roundId);  
+	}
+	
 } 
 
-int HitNow(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc) {
-	
-	if (!HpProc) { return false; } // 
-	//if (HpProc->pre != HpProc->cur) { return false; } 
-	if (proc->EkrEfxIsUnitHittedNowFrames) { return false; } 
-	return true;
-} 
 
 
 /*
@@ -255,7 +301,10 @@ int GetButtonsToPress(TimedHitsProc* proc) {
 		int num = 0; 
 		int oppDir = 0; 
 		int size = 5; // -1 since we count from 0  
-		for (int i = 0; i < NumberOfRandomButtons; ++i) { 
+		int numberOfRandomButtons = NumberOfRandomButtons; 
+		if (!numberOfRandomButtons) { numberOfRandomButtons = TimedHitsDifficultyRam->difficulty; } 
+		if (!numberOfRandomButtons) { numberOfRandomButtons = 1; }
+		for (int i = 0; i < numberOfRandomButtons; ++i) { 
 			num = NextRN_N(size); 
 			button = KeysList[num];
 			
@@ -318,12 +367,11 @@ void SaveInputFrame(TimedHitsProc* proc, u32 keys) {
 	}
 }  
 void SaveIfWeHitOnTime(TimedHitsProc* proc) {
-	int num = proc->codefframe; 
-	if (num != 0xFF) { 
-		if (ABS(num - proc->frame) < (LenienceFrames)) { proc->hitOnTime = true; }
-	}
-	else if (proc->code4frame != 0xFF) { if (ABS(proc->code4frame - proc->frame) < (LenienceFrames)) { proc->hitOnTime = true; } } 
-	else if ((proc->timer - proc->frame) < LenienceFrames) { proc->hitOnTime = true; }
+	if (proc->frame) { 
+		if (proc->codefframe != 0xFF) { if (ABS(proc->codefframe - proc->frame) < (LenienceFrames)) { proc->hitOnTime = true; } }
+		else if (proc->code4frame != 0xFF) { if (ABS(proc->code4frame - proc->frame) < (LenienceFrames)) { proc->hitOnTime = true; } } 
+		if ((proc->timer - proc->frame) < LenienceFrames) { proc->hitOnTime = true; } 
+	} 
 	
 }
 
@@ -340,13 +388,19 @@ int DidWeHitOnTime(TimedHitsProc* proc) {
 void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) { 
 	int keys = GetButtonsToPress(proc); 
 
-
+	if (ChangePaletteWhenButtonIsPressed && proc->frame) { palID = 14; } 
 	//ApplyPalettes(gPal_Press_Image, 15+16, 0x10); // always pal 15 
 	int oam2 = OAM2_PAL(palID) | OAM2_LAYER(0); //OAM2_CHR(0);
 	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput, oam2); 
 	x += 32; 
 	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput2, oam2); 
 	y += 16; x -= 36; 
+	
+	int count = CountKeysPressed(keys); 
+	if (count == 1) { x += 24; } // centering 
+	if (count == 2) { x += 16; } 
+	if (count == 3) { x += 8; } 
+	
 	if (keys & A_BUTTON) { 
 		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_A_Button, oam2); x += 18; 
 	}
@@ -372,44 +426,58 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 } 
 
 
-void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct ProcEfxHPBar* HpProc, struct SkillSysBattleHit* round) { 
+void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct NewProcEfxHPBar* HpProc, struct SkillSysBattleHit* round) { 
+	if (!AreTimedHitsEnabled()) { return; } 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
 	int side = proc->side; 
-	int x = 12 * 8; 
-	int y =  5 * 8;
-	x = x+((side)*4*8);
+	//int x = 12 * 8; 
+	int y =  3 * 8;
+	int x = proc->anim2->xPosition; 
 	struct BattleUnit* active_bunit = proc->active_bunit; 
 	struct BattleUnit* opp_bunit = proc->opp_bunit; 
-	int hitTime = HitNow(proc, HpProc); 
+	int hitTime = !proc->EkrEfxIsUnitHittedNowFrames; 
 	if (hitTime) { // 1 frame 
+		//BreakOnce(proc); 
+		if (proc->timer2 == 0xFF) { proc->timer2 = 0; }  
 		SaveInputFrame(proc, keys); 
 		SaveIfWeHitOnTime(proc);
-
-		if (DidWeHitOnTime(proc)) { 
-			if (!proc->adjustedDmg) { 
+		if (!proc->adjustedDmg) { 
+			if (DidWeHitOnTime(proc)) { 
+				BreakOnce(proc); 
 				proc->adjustedDmg = true; 
-				AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round); 
+				AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round, true); 
 			} 
-		} 
-		int x2 = BAN_DisplayDamage(proc->anim2, 0, 0, 0, proc->roundId); 
-		x2 = BAN_DisplayDamage(proc->anim, 1, proc->anim->xPosition, x2, proc->roundId);  
-		// kill off enemies for adjusted rounds if a timed hit was done previously 
-		if (!proc->adjustedDmg) {
+			else { 
+				proc->adjustedDmg = true; 
+				AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round, false); 
+			} 
+
+		// kill off enemies for adjusted rounds in case a timed hit was done previously 
+
 			CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
 		}
 	}
 	//if ((proc->timer2 < MinFramesToDisplayGfx) || EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
+	//asm("mov r11, r11");
 	if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
-		//BreakOnce(proc); 
+	//asm("mov r11, r11");
+	
 		if (DidWeHitOnTime(proc)) { 
+			//BreakOnce(proc); 
+			//asm("mov r11, r11");
 			//int clock = GetGameClock(); // proc->timer; 
 			int clock = proc->timer2; 
 			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
 			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
 			x += Mod(clock, 8) >> 1; 
+			y = 8*6;
 			y -= clock; 
+			//y = 32; 
 			//if (y < 40) { y = 40; } 
-			PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_Star, oam2); 
+			if (((y > (-16)) && (y < (161)))) { 
+				PutSprite(0, OAM1_X(x + 0x200), OAM0_Y(y), sSprite_Star, oam2); 
+			}
+			
 		}
 		else if (proc->timer2 < 20) { 
 			DrawButtonsToPress(proc, x, y, 14); 
@@ -418,7 +486,8 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 
 	} 
 	else { 
-		if (proc->timer < 10) { proc->frame = 0; } // 10 frames after hitting where it's okay to have A held down 
+		if (proc->timer < 1) { proc->frame = 0; } // 10 frames after hitting where it's okay to have A held down 
+		//if (1 == 0) { proc->frame = 0; } // 10 frames after hitting where it's okay to have A held down 
 		else {
 			SaveInputFrame(proc, keys); 
 		} 
@@ -431,13 +500,23 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 
 } 
 
-int GetDefaultDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit) { 
-	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { return ReducedDamagePercent; } 
-	return BonusDamagePercent; 
+int GetDefaultDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int success) { 
+
+	if (success) { 
+		if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { 
+			if (BlockingEnabled) { return ReducedDamagePercent; }
+			else { return 100; } 
+		} 
+		return BonusDamagePercent; 
+	} 
+	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { 
+		return 100; 
+	} 
+	return FailedHitDamagePercent; 
 } 
-int GetDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit) { 
+int GetDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int success) { 
 	// add more unique cases here 
-	return GetDefaultDamagePercent(active_bunit, opp_bunit); 
+	return GetDefaultDamagePercent(active_bunit, opp_bunit, success); 
 } 
 
 void AdjustAllRounds(int id, int difference, int damage) { 
@@ -464,11 +543,14 @@ void AdjustAllRounds(int id, int difference, int damage) {
 
 extern s16 gEfxHpLutOff[]; // 203e152 B gEfxHpLutOff
 
-void AdjustDamageWithGetter(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round) { 
-	AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, GetDamagePercent(active_bunit, opp_bunit)); 
+void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int success) { 
+	int percent = GetDamagePercent(active_bunit, opp_bunit, success);
+	if (percent != 100) { 
+		AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);
+	}	
 } 
 
-void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
+void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
 	int side = proc->side; 
 	//asm("mov r11, r11");
 	//int damage = (round->hpChange * percent) / 100; 
@@ -481,7 +563,9 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 		//damage = opp_bunit->unit.curHP; //HpProc->post; 
 		//round->hpChange = hp; // used by Huichelaar's banim numbers 
 		opp_bunit->unit.curHP = 0; 
-		HpProc->post = 0; 
+		if (UsingSkillSys) { HpProc->post = 0; } 
+		else { HpProc->post = 0; HpProc->postHpAtkrSS = 0; } 
+		
 		proc->code4frame = 0xff;
 		//gEkrGaugeHp[side ^ 1] = round->hpChange;
 		
@@ -515,15 +599,17 @@ void CheckForDeath(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct Batt
 	
 }
 
-void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int percent) { 
+void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int percent) { 
 	//if (!HpProc->post) { return; } 
-	
+	if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange)) { return; } 
 	int side = proc->side; 
 	int id = (gEfxHpLutOff[side] * 2) + (side);
 	int hp = GetEfxHp(id); // + round->hpChange; 
 	if (!hp) { return; } 
 	if (hp == 0xFFFF) { return; } 
 	int damage = (round->hpChange * percent) / 100; 
+	if (!damage) { damage = 1; } 
+	int post; 
 	if (damage > round->hpChange) { 
 		hp -= damage;
 		damage -= round->hpChange; 
@@ -531,45 +617,75 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct ProcEfxHPBar* HpProc, str
 		if (hp < 0) { damage -= ABS(hp); } 
 		//hp = HpProc->post; 
 		//hp -= damage;
-		//if (hp < 0) { damage -= ABS(hp); } 
-		HpProc->post -= damage;
+		//if (hp < 0) { damage -= ABS(hp); }  
+		if (UsingSkillSys) { // uggggh 
+			HpProc->post -= damage;
+		}
+		else { 
+			post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
+			post -= damage; 
+			HpProc->postHpAtkrSS = post; 
+			HpProc->post = post>>16; 
+		} 
 		opp_bunit->unit.curHP -= damage; 
 		round->hpChange += damage; 
-		if (UsingSkillSys) { round->overDmg -= damage; } // used by Huichelaar's banim numbers 
+		if (UsingSkillSys == 2) { round->overDmg -= damage; } // used by Huichelaar's banim numbers 
 	} 
 	else if (round->hpChange != hp) { 
-		
 		damage = round->hpChange - damage; 
 		hp += damage; 
-		HpProc->post += damage;
+		if (UsingSkillSys) { // uggggh 
+			HpProc->post += damage;
+		}
+		else { 
+			post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
+			post += damage; 
+			HpProc->postHpAtkrSS = post; 
+			HpProc->post = post>>16; 
+		} 
 		opp_bunit->unit.curHP += damage; 
 		round->hpChange -= damage; 
-		if (UsingSkillSys) { round->overDmg += damage; } // used by Huichelaar's banim numbers 
+		if (UsingSkillSys == 2) { round->overDmg += damage; } // used by Huichelaar's banim numbers 
 		damage = 0 - damage;
 		
 	} 
 	else if (round->hpChange == hp) { 
-		if (hp == 1) { // deal lethal anyway 
+		if ((hp == 1)) { // deal lethal anyway 
 			hp = 0; 
 			damage = 1; 
-			HpProc->post = 0;
+			if (UsingSkillSys) { // uggggh 
+				HpProc->post = 0;
+			}
+			else { 
+				post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
+				post = 0; 
+				HpProc->postHpAtkrSS = post; 
+				HpProc->post = post>>16; 
+			} 
 			opp_bunit->unit.curHP = 0; 
 			round->hpChange += damage; 
-			if (UsingSkillSys) { round->overDmg -= damage; } 
+			if (UsingSkillSys == 2) { round->overDmg -= damage; } 
 			damage = 0 - damage;
 		
 		} 
-		else { // leave alive with 1 hp 
+		else if (BlockingCanPreventLethal) { // leave alive with 1 hp 
 			hp = 1; 
 			damage = round->hpChange - 1; 
+			if (UsingSkillSys) { // uggggh 
+				HpProc->post += 1;
+			}
+			else { 
+				post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
+				post += 1; 
+				HpProc->postHpAtkrSS = post; 
+				HpProc->post = post>>16; 
+			} 
 			HpProc->post += 1;
 			opp_bunit->unit.curHP += 1; 
 			round->hpChange -= 1; 
-			if (UsingSkillSys) { round->overDmg += 1; } 
+			if (UsingSkillSys == 2) { round->overDmg += 1; } 
 			damage = 0 - damage;
 		} 
-	
-	
 	} 
 	AdjustAllRounds(id, damage, round->hpChange);
 	if (hp < 0) { hp = 0; } 

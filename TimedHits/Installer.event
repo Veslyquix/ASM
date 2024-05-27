@@ -18,23 +18,36 @@ POP
 
 ALIGN 4 
 UsingSkillSys:
-WORD 1 
+WORD 2 // 2 is newer, 1 is older, 0 is not at all 
 BonusDamagePercent:
-WORD 150
+WORD 100
 ReducedDamagePercent:
 WORD 50 
-MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting 
+FailedHitDamagePercent: // always hits at least 1 dmg 
+WORD 0 
+MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting / end of animation 
 WORD 25
-LenienceFrames: // on either side, so within 10 frames before or after 
-WORD 15
+LenienceFrames: // on either side, so within x frames before or after 
+WORD 555
 AlwaysWork: 
 WORD 0
 NumberOfRandomButtons:
-WORD 2
+WORD 0 // will use TimedHitsDifficultyRam with minimum 1 
 AlwaysA:
 WORD 0 // true if 1, false if 0  
 ForceAnimsOn:
 WORD 1 
+DisabledFlag:
+WORD 0xED
+BlockingEnabled:
+WORD 1 
+BlockingCanPreventLethal: // will leave you at 1 hp if you correctly block unless you're already at 1 hp 
+WORD 1
+ChangePaletteWhenButtonIsPressed:
+WORD 1 
+TimedHitsDifficultyRam:
+WORD 0x202BD0F // uses 1 byte if NumberOfRandomButtons is 0 
+
 
 ALIGN 4 
 Press_Image:
