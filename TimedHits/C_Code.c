@@ -128,6 +128,7 @@ extern s16 GetAnimRoundType(struct Anim * anim);
 void SetCurrentAnimInProc(struct Anim* anim) { 
 	TimedHitsProc* proc; 
 	proc = Proc_Find(TimedHitsProcCmd); 
+	if (!proc) { return; } 
 	int timer2 = proc->timer2; 
 	InitVariables(proc); 
 	proc->roundEnd = false; 

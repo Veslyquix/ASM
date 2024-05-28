@@ -36,6 +36,7 @@ ldr r3, =0x805967d
 bx r3 
 Exit2: 
 ldr r3, =0x80596cd
+bx r3 
 .ltorg 
 
 @ skillsys changes the size of rounds, so we use this function instead of gBattleHitArray[]
