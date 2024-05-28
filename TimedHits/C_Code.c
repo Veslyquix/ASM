@@ -443,13 +443,11 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	struct BattleUnit* opp_bunit = proc->opp_bunit; 
 	int hitTime = !proc->EkrEfxIsUnitHittedNowFrames; 
 	if (hitTime) { // 1 frame 
-		//BreakOnce(proc); 
 		if (proc->timer2 == 0xFF) { proc->timer2 = 0; }  
 		SaveInputFrame(proc, keys); 
 		SaveIfWeHitOnTime(proc);
 		if (!proc->adjustedDmg) { 
 			if (DidWeHitOnTime(proc)) { 
-				BreakOnce(proc); 
 				proc->adjustedDmg = true; 
 				AdjustDamageWithGetter(proc, HpProc, active_bunit, opp_bunit, round, true); 
 			} 
@@ -460,17 +458,13 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 
 		// kill off enemies for adjusted rounds in case a timed hit was done previously 
 
-			CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
+			//CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, (-1)); 
 		}
 	}
 	//if ((proc->timer2 < MinFramesToDisplayGfx) || EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
-	//asm("mov r11, r11");
 	if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
-	//asm("mov r11, r11");
-	
 		if (DidWeHitOnTime(proc)) { 
 			//BreakOnce(proc); 
-			//asm("mov r11, r11");
 			//int clock = GetGameClock(); // proc->timer; 
 			int clock = proc->timer2; 
 			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
@@ -553,7 +547,6 @@ void AdjustCurrentRound(int id, int difference, int damage) {
 
 
 void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* some_bunit, int newHp, int side) { 
-	//asm("mov r11, r11"); 
 	if (newHp < 0) { newHp = 0; } 
 	int hp = gEkrGaugeHp[side];
 	some_bunit->unit.curHP = newHp; 
@@ -601,7 +594,7 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 		
-		BattleApplyExpGains();  // update exp 
+		
         //PidStatsRecordBattleRes(); // this is called in BattleGenerateRealInternal
 		// if we call it here, it will add to BWL an extra time, but it will know that we actually KO'd an enemy 
 		
@@ -614,13 +607,12 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		UpdateHP(proc, HpProc, opp_bunit, hp, side); 
 		
 	} 
-	else { 
-		BattleApplyExpGains();
+	//else { 
 		//UpdateHP(proc, HpProc, opp_bunit, hp, side); 
-	} 
+	//} 
 	
-
-	
+	//BreakOnce(proc); 
+	BattleApplyExpGains();  // update exp 
 	
 }
 extern s16 gEkrGaugeDmg[2];
@@ -630,7 +622,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if (round->hpChange <= 0) { return; } // healing 
 	int side = proc->side; 
 	int hp = gEkrGaugeHp[proc->side];
-	if (!hp) { return; } 
+	if (!hp) { CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp); return; } 
 	if (hp == 0xFFFF) { return; } 
 	int oldDamage = round->hpChange;  
 	if (gEkrGaugeDmg[side ^ 1] > oldDamage) { oldDamage = gEkrGaugeDmg[side ^ 1]; } 
@@ -663,7 +655,6 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	} 
 	else if (oldDamage != hp) { 
 		BreakOnce(proc);
-		asm("mov r8, r8"); 
 		newDamage = oldDamage - newDamage; 
 		hp += newDamage; 
 		if (UsingSkillSys) { // uggggh 
@@ -683,7 +674,6 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	} 
 	else if (oldDamage == hp) { 
 		BreakOnce(proc);
-		asm("mov r9, r9"); 
 		if ((hp == 1)) { // deal lethal anyway 
 			hp = 0; 
 			newDamage = 1; 
