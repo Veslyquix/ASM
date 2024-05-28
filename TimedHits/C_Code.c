@@ -435,7 +435,7 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct NewProcEfxHPBar* HpProc, struct SkillSysBattleHit* round) { 
 	if (!AreTimedHitsEnabled()) { return; } 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
-	int side = proc->side; 
+	//int side = proc->side; 
 	//int x = 12 * 8; 
 	int y =  3 * 8;
 	int x = proc->anim2->xPosition; 
@@ -539,22 +539,50 @@ void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc,
 	}	
 } 
 
+void AdjustCurrentRound(int id, int difference, int damage) { 
+	int hp;
+	for (int i = id; i < 22; i += 2) {
+		hp = gEfxHpLut[i]; 
+		if (hp == 0xffff) { break; }
+		if (difference < 0) { hp += difference; if (hp > 0) { gEfxHpLut[i] = hp; } else { gEfxHpLut[i] = 0; } }
+		else if (hp >= difference) { gEfxHpLut[i] -= difference; }
+		else { gEfxHpLut[i] = 0; }
+		
+	}
+}
+
+
+void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* some_bunit, int newHp, int side) { 
+	//asm("mov r11, r11"); 
+	if (newHp < 0) { newHp = 0; } 
+	int hp = gEkrGaugeHp[side];
+	some_bunit->unit.curHP = newHp; 
+	if (hp == newHp) { return; } 
+	int diff = newHp - hp; 
+	
+	if (proc->side == side) { 
+		if (UsingSkillSys) { // uggggh 
+			HpProc->cur = hp; 
+			HpProc->post = newHp;
+		}
+		else { 
+			HpProc->postHpAtkrSS = newHp; 
+			HpProc->post = newHp>>16; 
+			HpProc->cur = hp>>16; 
+			HpProc->curHpAtkrSS = hp; 
+		}  
+		
+		proc->currentRound->hpChange = diff; 
+		if (UsingSkillSys == 2) { proc->currentRound->overDmg = diff; } // used by Huichelaar's banim numbers 
+	}
+}
+
 void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
 	int side = proc->side; 
-	//asm("mov r11, r11");
-	//int damage = (round->hpChange * percent) / 100; 
-	int id = (gEfxHpLutOff[side] * 2) + (side);
-	if (hp < 0) { hp = GetEfxHp(id) - round->hpChange; } // + round->hpChange; 
+	if (hp < 0) { return; hp = gEkrGaugeHp[side]; } 
 	if (hp <= 0) { // they are dead 
 		hp = 0; 
-		BreakOnce(proc); 
-		//asm("mov r11, r11"); 
-		//gEkrGaugeHp[side] += damage;
-		//damage = opp_bunit->unit.curHP; //HpProc->post; 
-		//round->hpChange = hp; // used by Huichelaar's banim numbers 
-		opp_bunit->unit.curHP = 0; 
-		if (UsingSkillSys) { HpProc->post = 0; } 
-		else { HpProc->post = 0; HpProc->postHpAtkrSS = 0; } 
+		UpdateHP(proc, HpProc, opp_bunit, hp, side); 
 		
 		proc->code4frame = 0xff;
 		//gEkrGaugeHp[side ^ 1] = round->hpChange;
@@ -582,11 +610,13 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		// as a result, your own hp gets lowered here : 
 		// now stop us from dying 
 		side = 1 ^ side; 
-		id = (gEfxHpLutOff[side] * 2) + (side);
-		hp = GetEfxHp(id); 
-		//hp = gEfxHpLut[proc->roundId - 1]; 
-		active_bunit->unit.curHP = hp; 
+		hp = gEkrGaugeHp[side];
+		UpdateHP(proc, HpProc, opp_bunit, hp, side); 
 		
+	} 
+	else { 
+		BattleApplyExpGains();
+		//UpdateHP(proc, HpProc, opp_bunit, hp, side); 
 	} 
 	
 
@@ -599,7 +629,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange)) { return; } 
 	if (round->hpChange <= 0) { return; } // healing 
 	int side = proc->side; 
-	int hp = gEkrGaugeHp[side];
+	int hp = gEkrGaugeHp[proc->side];
 	if (!hp) { return; } 
 	if (hp == 0xFFFF) { return; } 
 	int oldDamage = round->hpChange;  
@@ -608,6 +638,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	int newDamage = (oldDamage * percent) / 100; 
 	if (!newDamage) { newDamage = 1; } 
 	int post; 
+	
+	/*
 	if (newDamage > oldDamage) { 
 		hp -= newDamage;
 		newDamage -= oldDamage; 
@@ -626,7 +658,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 			HpProc->post = post>>16; 
 		} 
 		opp_bunit->unit.curHP -= newDamage; 
-		oldDamage += newDamage; 
+		round->hpChange += newDamage; 
 		if (UsingSkillSys == 2) { round->overDmg -= newDamage; } // used by Huichelaar's banim numbers 
 	} 
 	else if (oldDamage != hp) { 
@@ -644,7 +676,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 			HpProc->post = post>>16; 
 		} 
 		opp_bunit->unit.curHP += newDamage; 
-		oldDamage -= newDamage; 
+		round->hpChange -= newDamage; 
 		if (UsingSkillSys == 2) { round->overDmg += newDamage; } // used by Huichelaar's banim numbers 
 		newDamage = 0 - newDamage;
 		
@@ -665,7 +697,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 				HpProc->post = post>>16; 
 			} 
 			opp_bunit->unit.curHP = 0; 
-			oldDamage += newDamage; 
+			round->hpChange += newDamage; 
 			if (UsingSkillSys == 2) { round->overDmg -= newDamage; } 
 			newDamage = 0 - newDamage;
 		
@@ -684,12 +716,17 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 			} 
 			HpProc->post += 1;
 			opp_bunit->unit.curHP += 1; 
-			oldDamage -= 1; 
+			round->hpChange -= 1; 
 			if (UsingSkillSys == 2) { round->overDmg += 1; } 
 			newDamage = 0 - newDamage;
 		} 
 	} 
-	if (hp < 0) { hp = 0; } 
+	*/ 
+	
+	UpdateHP(proc, HpProc, opp_bunit, gEkrGaugeHp[proc->side] - newDamage, side); 
+	
+	
+
 	CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp); 
 	//return;
 	//damage -= round->hpChange; // damage is -5 
@@ -706,6 +743,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 
 	
 } 
+
 
 extern int ForceAnimsOn; 
 enum PlaySt_AnimConfType {
