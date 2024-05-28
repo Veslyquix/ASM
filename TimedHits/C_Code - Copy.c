@@ -435,7 +435,7 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct NewProcEfxHPBar* HpProc, struct SkillSysBattleHit* round) { 
 	if (!AreTimedHitsEnabled()) { return; } 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
-	int side = proc->side; 
+	//int side = proc->side; 
 	//int x = 12 * 8; 
 	int y =  3 * 8;
 	int x = proc->anim2->xPosition; 
@@ -541,13 +541,10 @@ void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc,
 
 void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
 	int side = proc->side; 
-	//asm("mov r11, r11");
-	//int damage = (round->hpChange * percent) / 100; 
-	int id = (gEfxHpLutOff[side] * 2) + (side);
-	if (hp < 0) { hp = GetEfxHp(id) - round->hpChange; } // + round->hpChange; 
+	if (hp < 0) { hp = gEkrGaugeHp[side]; } 
 	if (hp <= 0) { // they are dead 
 		hp = 0; 
-		BreakOnce(proc); 
+		//BreakOnce(proc); 
 		//asm("mov r11, r11"); 
 		//gEkrGaugeHp[side] += damage;
 		//damage = opp_bunit->unit.curHP; //HpProc->post; 
@@ -582,12 +579,16 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		// as a result, your own hp gets lowered here : 
 		// now stop us from dying 
 		side = 1 ^ side; 
-		id = (gEfxHpLutOff[side] * 2) + (side);
-		hp = GetEfxHp(id); 
+		hp = gEkrGaugeHp[side];
 		//hp = gEfxHpLut[proc->roundId - 1]; 
 		active_bunit->unit.curHP = hp; 
 		
 	} 
+	//else { 
+	//	opp_bunit->unit.curHP = gEkrGaugeHp[side];
+	//	if (UsingSkillSys) { HpProc->post = hp; } 
+	//	else { HpProc->post = hp; HpProc->postHpAtkrSS = hp; } 
+	//} 
 	
 
 	
