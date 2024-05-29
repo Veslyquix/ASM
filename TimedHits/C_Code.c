@@ -18,10 +18,10 @@ typedef struct {
 	struct Anim* anim; 
 	struct Anim* anim2; 
 	int timer; 
-	int timer2; 
 	struct SkillSysBattleHit* currentRound;
 	struct BattleUnit* active_bunit;
 	struct BattleUnit* opp_bunit;
+	u8 timer2;  
 	u8 hitOnTime; 
 	u8 roundId; 
 	u8 adjustedDmg; 
@@ -134,10 +134,8 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	TimedHitsProc* proc; 
 	proc = Proc_Find(TimedHitsProcCmd); 
 	if (!proc) { return; } 
-	int timer2 = proc->timer2; 
 	InitVariables(proc); 
 	proc->roundEnd = false; 
-	proc->timer2 = timer2; 
 	proc->anim = anim; 
 	proc->anim2 = GetAnimAnotherSide(anim); 
 	proc->roundId = anim->nextRoundId-1; 
@@ -152,7 +150,6 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 		proc->opp_bunit = gpEkrBattleUnitLeft;
 	} 
 	if (!proc->loadedImg) {
-		proc->timer2 = 0xFF; 
 		Copy2dChr(&Press_Image, (void*)0x06012980, 6, 2);
 		Copy2dChr(&BattleStar, (void*)0x06012a40, 2, 2); // 0x108 
 		Copy2dChr(&A_Button, (void*)0x06012800, 2, 2); // 0x140
@@ -280,7 +277,6 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	struct NewProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBar); 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 	if (HitNow(proc, HpProc)) { 
-		//asm("mov r11, r11"); 
 		int x = DisplayDamage2(proc->anim2, 0, 0, 0, proc->roundId); 
 		x = DisplayDamage2(proc->anim, 1, proc->anim->xPosition, x, proc->roundId);  
 	}
@@ -435,7 +431,7 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 
 } 
 
-
+const u8 xPos[] = { 0, 0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 1, 1, 1 }; 
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct NewProcEfxHPBar* HpProc, struct SkillSysBattleHit* round) { 
 	if (!AreTimedHitsEnabled()) { return; } 
 	if (round->hpChange < 0) { return; } // healing 
@@ -448,6 +444,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	struct BattleUnit* opp_bunit = proc->opp_bunit; 
 	int hitTime = !proc->EkrEfxIsUnitHittedNowFrames; 
 	if (hitTime) { // 1 frame 
+		//BreakOnce(proc); 
 		if (proc->timer2 == 0xFF) { proc->timer2 = 0; }  
 		SaveInputFrame(proc, keys); 
 		SaveIfWeHitOnTime(proc);
@@ -467,20 +464,21 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 		}
 	}
 	//if ((proc->timer2 < MinFramesToDisplayGfx) || EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
-	if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF)) { 
+	if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) || (proc->timer2 != 0xFF)) { 
 		if (DidWeHitOnTime(proc)) { 
 			//BreakOnce(proc); 
+			//asm("mov r11, r11"); 
 			//int clock = GetGameClock(); // proc->timer; 
 			int clock = proc->timer2; 
 			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
 			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
-			x += Mod(clock, 8) >> 1; 
+			x += xPos[Mod(clock, sizeof(xPos)+1)]; 
 			y = 8*6;
 			y -= clock; 
-			//y = 32; 
-			//if (y < 40) { y = 40; } 
 			if (((y > (-16)) && (y < (161)))) { 
+				if (!gBanimDoneFlag[proc->side]) { // doesn't seem to matter ? 
 				PutSprite(0, OAM1_X(x + 0x200), OAM0_Y(y), sSprite_Star, oam2); 
+				} 
 			}
 			
 		}
@@ -572,7 +570,7 @@ void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct Battle
 			HpProc->curHpAtkrSS = hp; 
 		}  
 		
-		proc->currentRound->hpChange = diff; 
+		proc->currentRound->hpChange = ABS(diff); 
 		if (UsingSkillSys == 2) { proc->currentRound->overDmg = diff; } // used by Huichelaar's banim numbers 
 	}
 }
@@ -610,22 +608,15 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		nextRound->hpChange = 0; 
 		
 		// stop future animations from occurring 
-		u16* animRound = &GetAnimRoundData()[proc->roundId]; 
+		u16* animRound = &GetAnimRoundData()[0]; 
 		for (int i = proc->roundId; i < 32; ++i) { 
 			if (animRound[i] == 0xFFFF) { break; } 
 			animRound[i] = 0xFFFF; 
 		} 
-		//GetAnimRoundData()[proc->roundId + 1] = 0xFFFF; 
-		//GetAnimRoundData()[proc->roundId + 2] = 0xFFFF; 
-		
-		// gAnimRoundData
 		
         //PidStatsRecordBattleRes(); // this is called in BattleGenerateRealInternal
 		// if we call it here, it will add to BWL an extra time, but it will know that we actually KO'd an enemy 
 		
-		
-		// killing an enemy before your follow up attack will make you hit them extra times and they're already dead 
-		// as a result, your own hp gets lowered here : 
 		// now stop us from dying 
 		side = 1 ^ side; 
 		hp = gEkrGaugeHp[side];
@@ -659,105 +650,13 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	int newHp = hp - newDamage; 
 	if (newHp <= 0) { newHp = 0; if (((hp - oldDamage) > 0) && !BlockingCanPreventLethal) { newHp = hp - oldDamage; } }
 	if (!BlockingEnabled && (newDamage < oldDamage) && (UNIT_FACTION(&opp_bunit->unit) == FACTION_BLUE)) { newHp = hp - oldDamage; } 
-	/*
-	if (newDamage > oldDamage) { 
-		hp -= newDamage;
-		newDamage -= oldDamage; 
-		 
-		if (hp < 0) { newDamage -= ABS(hp); } 
-		//hp = HpProc->post; 
-		//hp -= newDamage;
-		//if (hp < 0) { newDamage -= ABS(hp); }  
-		if (UsingSkillSys) { // uggggh 
-			HpProc->post -= newDamage;
-		}
-		else { 
-			post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
-			post -= newDamage; 
-			HpProc->postHpAtkrSS = post; 
-			HpProc->post = post>>16; 
-		} 
-		opp_bunit->unit.curHP -= newDamage; 
-		round->hpChange += newDamage; 
-		if (UsingSkillSys == 2) { round->overDmg -= newDamage; } // used by Huichelaar's banim numbers 
-	} 
-	else if (oldDamage != hp) { 
-		BreakOnce(proc);
-		newDamage = oldDamage - newDamage; 
-		hp += newDamage; 
-		if (UsingSkillSys) { // uggggh 
-			HpProc->post += newDamage;
-		}
-		else { 
-			post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
-			post += newDamage; 
-			HpProc->postHpAtkrSS = post; 
-			HpProc->post = post>>16; 
-		} 
-		opp_bunit->unit.curHP += newDamage; 
-		round->hpChange -= newDamage; 
-		if (UsingSkillSys == 2) { round->overDmg += newDamage; } // used by Huichelaar's banim numbers 
-		newDamage = 0 - newDamage;
-		
-	} 
-	else if (oldDamage == hp) { 
-		BreakOnce(proc);
-		if ((hp == 1)) { // deal lethal anyway 
-			hp = 0; 
-			newDamage = 1; 
-			if (UsingSkillSys) { // uggggh 
-				HpProc->post = 0;
-			}
-			else { 
-				post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
-				post = 0; 
-				HpProc->postHpAtkrSS = post; 
-				HpProc->post = post>>16; 
-			} 
-			opp_bunit->unit.curHP = 0; 
-			round->hpChange += newDamage; 
-			if (UsingSkillSys == 2) { round->overDmg -= newDamage; } 
-			newDamage = 0 - newDamage;
-		
-		} 
-		else if (BlockingCanPreventLethal) { // leave alive with 1 hp 
-			hp = 1; 
-			newDamage = oldDamage - 1; 
-			if (UsingSkillSys) { // uggggh 
-				HpProc->post += 1;
-			}
-			else { 
-				post = HpProc->postHpAtkrSS; // we only need the lower 16 bits anyway 
-				post += 1; 
-				HpProc->postHpAtkrSS = post; 
-				HpProc->post = post>>16; 
-			} 
-			HpProc->post += 1;
-			opp_bunit->unit.curHP += 1; 
-			round->hpChange -= 1; 
-			if (UsingSkillSys == 2) { round->overDmg += 1; } 
-			newDamage = 0 - newDamage;
-		} 
-	} 
-	*/ 
+
 	
 	UpdateHP(proc, HpProc, opp_bunit, newHp, side); 
 	
 	
 
 	CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, newHp); 
-	//return;
-	//damage -= round->hpChange; // damage is -5 
-	//int hp = opp_bunit->unit.curHP - damage;
-	//hp = gEkrGaugeHp[side] - hp; 
-
-	//if (hp > 80) { asm("mov r11, r11"); } 
-	//asm("mov r11, r11"); 
-	//if (damage < 0) { hp += ABS(damage); } 
-	//else { hp -= damage; }
-	//damage = damage - round->hpChange; 
-	//hp -= (damage); 
-	//hp = HpProc->pre - hp; 
 
 	
 } 
