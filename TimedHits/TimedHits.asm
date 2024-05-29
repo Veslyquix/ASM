@@ -7,10 +7,11 @@ CallStartTimedHitsProc:
 push  {r14}
 
 bl StartTimedHitsProc
-
-ldr r0, =0x8C00008
+ldr r0, =0x8059BD8
+ldr r0, [r0]
 mov r10, r0 
-ldr r1, =0x201fb1c 
+ldr r1, =0x8059BDC
+ldr r1, [r1]
 mov r0, #0 
 str r0, [r1, #4] 
 str r0, [r1] 
