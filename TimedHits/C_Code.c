@@ -572,12 +572,14 @@ void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct Battle
 
 void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
 	int side = proc->side; 
-	if (hp < 0) { return; hp = gEkrGaugeHp[side]; } 
+	//BattleUnwind(); 
+	if (hp < 0) { hp = gEkrGaugeHp[side]; } 
 	if (hp <= 0) { // they are dead 
 		hp = 0; 
 		UpdateHP(proc, HpProc, opp_bunit, hp, side); 
 		
 		proc->code4frame = 0xff;
+		 
 		//gEkrGaugeHp[side ^ 1] = round->hpChange;
 		
 		//gEkrGaugeHp[side ^ 1] = 22;//+= damage;
@@ -586,8 +588,8 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		//gpProcEkrBattle->end = true; // does nothing visible
 		//gEkrBattleEndFlag = true; // immediately ends without waiting for anything 
 		//NewEkrbattleending(); // crashes sometimes 
-		proc->anim->nextRoundId = 8; // seems to mostly work for now? see GetAnimNextRoundType
-		proc->anim2->nextRoundId = 8; 
+		proc->anim->nextRoundId = 0; // seems to mostly work for now? see GetAnimNextRoundType
+		proc->anim2->nextRoundId = 0; 
 
 		gBanimDoneFlag[0] = true; // stop counterattacks ?
 		gBanimDoneFlag[1] = true; // [201fb04..201fb07]!! - nothing else is writing to it. good. 
@@ -604,11 +606,11 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		// now stop us from dying 
 		side = 1 ^ side; 
 		hp = gEkrGaugeHp[side];
-		UpdateHP(proc, HpProc, opp_bunit, hp, side); 
+		UpdateHP(proc, HpProc, active_bunit, hp, side); 
 		
 	} 
 	//else { 
-		//UpdateHP(proc, HpProc, opp_bunit, hp, side); 
+	//	UpdateHP(proc, HpProc, opp_bunit, hp, side); // update hp is called before CheckForDeath already 
 	//} 
 	
 	//BreakOnce(proc); 
@@ -629,8 +631,9 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	// in case the round would've killed, use whichever is higher (displayed damage vs round damage) 
 	int newDamage = (oldDamage * percent) / 100; 
 	if (!newDamage) { newDamage = 1; } 
-	int post; 
-	
+	int newHp = hp - newDamage; 
+	if (newHp <= 0) { newHp = 0; if (((hp - oldDamage) > 0) && !BlockingCanPreventLethal) { newHp = hp - oldDamage; } }
+	if (!BlockingEnabled && (newDamage < oldDamage) && (UNIT_FACTION(&opp_bunit->unit) == FACTION_BLUE)) { newHp = hp - oldDamage; } 
 	/*
 	if (newDamage > oldDamage) { 
 		hp -= newDamage;
@@ -713,11 +716,11 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	} 
 	*/ 
 	
-	UpdateHP(proc, HpProc, opp_bunit, gEkrGaugeHp[proc->side] - newDamage, side); 
+	UpdateHP(proc, HpProc, opp_bunit, newHp, side); 
 	
 	
 
-	CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp); 
+	CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, newHp); 
 	//return;
 	//damage -= round->hpChange; // damage is -5 
 	//int hp = opp_bunit->unit.curHP - damage;
