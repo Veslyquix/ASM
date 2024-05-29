@@ -20,7 +20,7 @@ ALIGN 4
 UsingSkillSys:
 WORD 2 // 2 is newer, 1 is before 2022ish, 0 is not at all 
 BonusDamagePercent:
-WORD 200
+WORD 150
 ReducedDamagePercent:
 WORD 50 
 FailedHitDamagePercent: // always hits at least 1 dmg 

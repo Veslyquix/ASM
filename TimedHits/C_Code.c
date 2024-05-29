@@ -260,8 +260,10 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	  
 	struct ProcEkrBattle* battleProc = gpProcEkrBattle; 
 	//struct Anim* anim1 = proc->anim; 
-	if (!battleProc) { return; } 
-	if (!proc->anim2) { return; } 
+	if (!battleProc) { return; } // 0 after suspend until battle start 
+	if (!proc->anim2) { return; }
+	if (gEkrBattleEndFlag) { return; } // 0 after suspend until battle done
+	
 	
 	proc->timer++;
 	if (proc->timer2 != 0xFF) { proc->timer2++; } 
@@ -402,8 +404,6 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 	x += 32; 
 	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput2, oam2); 
 	y += 16; x -= 36; 
-	
-	BreakOnce(proc); 
 	int count = CountKeysPressed(keys); 
 	
 	if (count == 1) { x += 16; } // centering 
@@ -472,7 +472,6 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) || (proc->timer2 != 0xFF)) { 
 		if (DidWeHitOnTime(proc)) { 
 			//BreakOnce(proc); 
-			//asm("mov r11, r11"); 
 			//int clock = GetGameClock(); // proc->timer; 
 			int clock = proc->timer2; 
 			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
