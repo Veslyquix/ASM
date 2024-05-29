@@ -595,8 +595,8 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		//gpProcEkrBattle->end = true; // does nothing visible
 		//gEkrBattleEndFlag = true; // immediately ends without waiting for anything 
 		//NewEkrbattleending(); // crashes sometimes 
-		proc->anim->nextRoundId = 0; // seems to mostly work for now? see GetAnimNextRoundType
-		proc->anim2->nextRoundId = 0; 
+		//proc->anim->nextRoundId = 0; // seems to mostly work for now? see GetAnimNextRoundType
+		//proc->anim2->nextRoundId = 0; 
 
 		//gBanimDoneFlag[0] = true; // stop counterattacks ?
 		//gBanimDoneFlag[1] = true; // [201fb04..201fb07]!! - nothing else is writing to it. good. 
@@ -644,6 +644,9 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if (hp == 0xFFFF) { return; } 
 	int oldDamage = round->hpChange;  
 	if (gEkrGaugeDmg[side ^ 1] > oldDamage) { oldDamage = gEkrGaugeDmg[side ^ 1]; } 
+	if (UsingSkillSys == 2) { oldDamage = ABS(round->overDmg); } 
+	
+	
 	// in case the round would've killed, use whichever is higher (displayed damage vs round damage) 
 	int newDamage = (oldDamage * percent) / 100; 
 	if (!newDamage) { newDamage = 1; } 
