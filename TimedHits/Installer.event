@@ -32,7 +32,7 @@ WORD 555
 AlwaysWork: 
 WORD 0
 NumberOfRandomButtons:
-WORD 3 // will use TimedHitsDifficultyRam with minimum 1 
+WORD 1 // if 0, will use TimedHitsDifficultyRam with minimum 1 
 AlwaysA:
 WORD 1 // true if 1, false if 0  
 ForceAnimsOn:
