@@ -87,10 +87,13 @@ extern struct TimedHitsDifficultyStruct* TimedHitsDifficultyRam;
 // r1: 0 if OverDamage or OverHeal (recipient). 1 otherwise.
 // r2: X of previous damage display. 0 if there is none.
 // r3: Digitcount of previous damage display. 0 if there is none.
-extern int BAN_DisplayDamage(struct Anim* anim, int overdamage, int x, int prevDigitCount, int roundId); 
+extern int DisplayDamage2(struct Anim* anim, int overdamage, int x, int prevDigitCount, int roundId); 
 extern struct KeyStatusBuffer sKeyStatusBuffer; // 2024C78
 
 int AreTimedHitsEnabled(void) { 
+	if (gBattleStats.config & (BATTLE_CONFIG_PROMOTION | BATTLE_CONFIG_ARENA | BATTLE_CONFIG_REFRESH | BATTLE_CONFIG_MAPANIMS | BATTLE_CONFIG_PROMOTION_PREP | BATTLE_CONFIG_DANCERING)) { 
+		return false; 
+	} 	
 	if (TimedHitsDifficultyRam->off) { return false; } 
 	return !CheckFlag(DisabledFlag); 
 }
@@ -277,8 +280,9 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	struct NewProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBar); 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 	if (HitNow(proc, HpProc)) { 
-		int x = BAN_DisplayDamage(proc->anim2, 0, 0, 0, proc->roundId); 
-		x = BAN_DisplayDamage(proc->anim, 1, proc->anim->xPosition, x, proc->roundId);  
+		//asm("mov r11, r11"); 
+		int x = DisplayDamage2(proc->anim2, 0, 0, 0, proc->roundId); 
+		x = DisplayDamage2(proc->anim, 1, proc->anim->xPosition, x, proc->roundId);  
 	}
 	
 } 
@@ -434,6 +438,7 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct NewProcEfxHPBar* HpProc, struct SkillSysBattleHit* round) { 
 	if (!AreTimedHitsEnabled()) { return; } 
+	if (round->hpChange < 0) { return; } // healing 
 	u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys; 
 	//int side = proc->side; 
 	//int x = 12 * 8; 

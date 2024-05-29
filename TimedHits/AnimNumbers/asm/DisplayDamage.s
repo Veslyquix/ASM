@@ -8,6 +8,9 @@
 @   Digitcount of new damage display.
 .thumb
 
+.global DisplayDamage2
+.type DisplayDamage2, %function 
+DisplayDamage2: 
 push  {r4-r7, r14}
 sub   sp, #0x8
 mov   r4, r0
@@ -15,6 +18,19 @@ mov   r5, r1
 str   r2, [sp]
 str   r3, [sp, #0x4]
 ldr r6, [sp, #4*7] @ roundId 
+b Start 
+
+.global BAN_DisplayDamage
+.type BAN_DisplayDamage, %function 
+BAN_DisplayDamage: 
+push  {r4-r7, r14}
+sub   sp, #0x8
+mov   r4, r0
+mov   r5, r1
+str   r2, [sp]
+str   r3, [sp, #0x4]
+mov r6, #0x7e
+Start: 
 
 ldr   r0, =BATTLE_ANIMATION_NUMBERS_FLAG
 lsl   r0, #0x5
@@ -39,7 +55,10 @@ bne   End
   
   sub   r0, #0x1
   
+  cmp r6, #0x7e 
+  beq Skip 
   mov r0, r6 @ roundId 
+  Skip:
   
   ldr   r1, =0x802b90a      @ &BattleBufferWidth.
   ldrb  r1, [r1]
