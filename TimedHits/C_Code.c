@@ -563,15 +563,14 @@ void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct Battle
 	int diff = newHp - hp; 
 	
 	if (proc->side == side) { 
+		HpProc->cur = hp; 
 		if (UsingSkillSys) { // uggggh 
-			HpProc->cur = hp; 
 			HpProc->post = newHp;
+			
 		}
 		else { 
-			HpProc->postHpAtkrSS = newHp; 
-			HpProc->post = newHp>>16; 
-			HpProc->cur = hp>>16; 
-			HpProc->curHpAtkrSS = hp; 
+			HpProc->postHpAtkrSS = newHp>>16; 
+			HpProc->post = newHp; 
 		}  
 		
 		proc->currentRound->hpChange = ABS(diff); 
@@ -655,9 +654,9 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	int newDamage = (oldDamage * percent) / 100; 
 	if (!newDamage) { newDamage = 1; } 
 	int newHp = hp - newDamage; 
-	if (newHp <= 0) { newHp = 0; if (((hp - oldDamage) > 0) && !BlockingCanPreventLethal) { newHp = hp - oldDamage; } }
+	if (newHp <= 0) { if (((hp - oldDamage) > 0) && !BlockingCanPreventLethal) { newHp = hp - oldDamage; } }
 	if (!BlockingEnabled && (newDamage < oldDamage) && (UNIT_FACTION(&opp_bunit->unit) == FACTION_BLUE)) { newHp = hp - oldDamage; } 
-
+	if (newHp <= 0) { newHp = 0; } 
 	
 	UpdateHP(proc, HpProc, opp_bunit, newHp, side); 
 	
