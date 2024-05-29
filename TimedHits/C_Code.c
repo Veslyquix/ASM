@@ -529,15 +529,17 @@ int GetDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bun
 	return GetDefaultDamagePercent(active_bunit, opp_bunit, success); 
 } 
 
-extern s16 gEfxHpLutOff[]; // 203e152 B gEfxHpLutOff
+
 
 void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int success) { 
 	int percent = GetDamagePercent(active_bunit, opp_bunit, success);
 	if (percent != 100) { 
 		AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);
 	}	
-} 
+}
 
+// skillsys repoints gEfxHpLut. This function is no longer used 
+extern s16 gEfxHpLutOff[]; // 203e152 B gEfxHpLutOff
 void AdjustCurrentRound(int id, int difference, int damage) { 
 	int hp;
 	for (int i = id; i < 22; i += 2) {
@@ -575,6 +577,8 @@ void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct Battle
 	}
 }
 
+extern s16 gBanimExpGain[2];
+extern u16* GetAnimRoundData(void); // skillsys repoints gAnimRoundData 
 void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
 	int side = proc->side; 
 	//BattleUnwind(); 
@@ -596,11 +600,25 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		proc->anim->nextRoundId = 0; // seems to mostly work for now? see GetAnimNextRoundType
 		proc->anim2->nextRoundId = 0; 
 
-		gBanimDoneFlag[0] = true; // stop counterattacks ?
-		gBanimDoneFlag[1] = true; // [201fb04..201fb07]!! - nothing else is writing to it. good. 
+		//gBanimDoneFlag[0] = true; // stop counterattacks ?
+		//gBanimDoneFlag[1] = true; // [201fb04..201fb07]!! - nothing else is writing to it. good. 
 
 		round->info |= BATTLE_HIT_INFO_FINISHES | BATTLE_HIT_INFO_KILLS_TARGET | BATTLE_HIT_INFO_END; 
 		
+		struct SkillSysBattleHit* nextRound = GetCurrentRound(proc->roundId + 1); 
+		nextRound->info = BATTLE_HIT_INFO_END; 
+		nextRound->hpChange = 0; 
+		
+		// stop future animations from occurring 
+		u16* animRound = &GetAnimRoundData()[proc->roundId]; 
+		for (int i = proc->roundId; i < 32; ++i) { 
+			if (animRound[i] == 0xFFFF) { break; } 
+			animRound[i] = 0xFFFF; 
+		} 
+		//GetAnimRoundData()[proc->roundId + 1] = 0xFFFF; 
+		//GetAnimRoundData()[proc->roundId + 2] = 0xFFFF; 
+		
+		// gAnimRoundData
 		
         //PidStatsRecordBattleRes(); // this is called in BattleGenerateRealInternal
 		// if we call it here, it will add to BWL an extra time, but it will know that we actually KO'd an enemy 
@@ -620,6 +638,8 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 	
 	//BreakOnce(proc); 
 	BattleApplyExpGains();  // update exp 
+	gBanimExpGain[0] = gpEkrBattleUnitLeft->expGain; 
+	gBanimExpGain[1] = gpEkrBattleUnitRight->expGain; 
 	
 }
 extern s16 gEkrGaugeDmg[2];

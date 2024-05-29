@@ -24,4 +24,4 @@ SET_DATA gEfxHpLutOff, 0x203e152
 SET_DATA gEkrGaugeDmg, 0x203e1bc
 SET_DATA gProcScr_efxHPBar, 0x8052354
 SET_DATA classTablePoin, 0x8017AB8 
-
+SET_DATA gBanimExpGain, 0x203e1c8

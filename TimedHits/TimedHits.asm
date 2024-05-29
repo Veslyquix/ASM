@@ -52,8 +52,13 @@ add   r0, r1          @ Current round in battle buffer.
 bx lr 
 .ltorg 
 
-
-
+.global GetAnimRoundData
+.type GetAnimRoundData, %function 
+GetAnimRoundData: 
+ldr r0, =0x8058248
+ldr r0, [r0] 
+bx lr 
+.ltorg 
 
 
 
