@@ -339,8 +339,8 @@ int GetButtonsToPress(TimedHitsProc* proc) {
 const u8 RomKeysList[] = { A_BUTTON, B_BUTTON, DPAD_RIGHT, DPAD_LEFT, DPAD_UP, DPAD_DOWN }; 
 int CountKeysPressed(u32 keys) { 
 	int c = 0; 
-	for (int i = 0; i < 5; ++i) { 
-		if (keys & RomKeysList[c]) { c++; } 
+	for (int i = 0; i < 6; ++i) { 
+		if (keys & RomKeysList[i]) { c++; } 
 	} 
 	return c; 
 
@@ -350,7 +350,8 @@ int PressedSpecificKeys(TimedHitsProc* proc, u32 keys) {
 	int reqKeys = GetButtonsToPress(proc); 
 	int count = CountKeysPressed(reqKeys); 
 	if (ABS(count - CountKeysPressed(keys)) > 1) { return false; } // you pressed more than 1 extra key. Shame on you. 
-	return (keys & reqKeys); 
+	reqKeys &= ~keys; // only 0 if we hit all the correct keys (and possibly 1 extra) 
+	return (!reqKeys); 
 } 
 void SaveInputFrame(TimedHitsProc* proc, u32 keys) { 
 	struct Anim* anim = proc->anim; 
@@ -402,10 +403,12 @@ void DrawButtonsToPress(TimedHitsProc* proc, int x, int y, int palID) {
 	PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_PressInput2, oam2); 
 	y += 16; x -= 36; 
 	
+	BreakOnce(proc); 
 	int count = CountKeysPressed(keys); 
-	if (count == 1) { x += 24; } // centering 
-	if (count == 2) { x += 16; } 
-	if (count == 3) { x += 8; } 
+	
+	if (count == 1) { x += 16; } // centering 
+	if (count == 2) { x += 8; } 
+	if (count == 3) { x += 0; } 
 	
 	if (keys & A_BUTTON) { 
 		PutSprite(2, OAM1_X(x + 0x200), OAM0_Y(y + 0x100), sSprite_A_Button, oam2); x += 18; 
@@ -440,6 +443,8 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 	//int x = 12 * 8; 
 	int y =  3 * 8;
 	int x = proc->anim2->xPosition; 
+	if (x > 119) { x -= 40; } 
+	else if (x > 40) { x -= 20; } 
 	struct BattleUnit* active_bunit = proc->active_bunit; 
 	struct BattleUnit* opp_bunit = proc->opp_bunit; 
 	int hitTime = !proc->EkrEfxIsUnitHittedNowFrames; 

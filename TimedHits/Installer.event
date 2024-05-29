@@ -18,7 +18,7 @@ POP
 
 ALIGN 4 
 UsingSkillSys:
-WORD 2 // 2 is newer, 1 is older, 0 is not at all 
+WORD 2 // 2 is newer, 1 is before 2022ish, 0 is not at all 
 BonusDamagePercent:
 WORD 200
 ReducedDamagePercent:
@@ -32,9 +32,9 @@ WORD 555
 AlwaysWork: 
 WORD 0
 NumberOfRandomButtons:
-WORD 0 // will use TimedHitsDifficultyRam with minimum 1 
+WORD 3 // will use TimedHitsDifficultyRam with minimum 1 
 AlwaysA:
-WORD 0 // true if 1, false if 0  
+WORD 1 // true if 1, false if 0  
 ForceAnimsOn:
 WORD 1 
 DisabledFlag:
