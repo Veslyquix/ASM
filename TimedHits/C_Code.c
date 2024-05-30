@@ -187,7 +187,7 @@ struct NewProcEfxHPBar {
 void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct NewProcEfxHPBar* HpProc, struct SkillSysBattleHit* round);
 void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int percent);
 void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int success);
-void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp); 
+void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp, int newDamage); 
 
 const u16 sSprite_HitInput[] = {
     1, // number of entries below (each entry has 3 lines) 
@@ -477,6 +477,7 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 			//ApplyPalettes(gPal_BattleStar, 14+16, 0x10);
 			int oam2 = OAM2_PAL(14) | OAM2_LAYER(0); //OAM2_CHR(0);
 			x += xPos[Mod(clock, sizeof(xPos)+1)]; 
+			x += 16; 
 			y = 8*6;
 			y -= clock; 
 			if (((y > (-16)) && (y < (161)))) { 
@@ -555,12 +556,13 @@ void AdjustCurrentRound(int id, int difference, int damage) {
 }
 
 
-void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* some_bunit, int newHp, int side) { 
+void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* some_bunit, int newHp, int side, int newDamage) { 
 	if (newHp < 0) { newHp = 0; } 
 	int hp = gEkrGaugeHp[side];
 	some_bunit->unit.curHP = newHp; 
 	if (hp == newHp) { return; } 
 	int diff = newHp - hp; 
+	if (newDamage) { diff = 0 - newDamage; }
 	
 	if (proc->side == side) { 
 		HpProc->cur = hp; 
@@ -580,13 +582,13 @@ void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct Battle
 
 extern s16 gBanimExpGain[2];
 extern u16* GetAnimRoundData(void); // skillsys repoints gAnimRoundData 
-void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp) { 
+void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int hp, int newDamage) { 
 	int side = proc->side; 
 	//BattleUnwind(); 
 	if (hp < 0) { hp = gEkrGaugeHp[side]; } 
 	if (hp <= 0) { // they are dead 
 		hp = 0; 
-		UpdateHP(proc, HpProc, opp_bunit, hp, side); 
+		UpdateHP(proc, HpProc, opp_bunit, hp, side, newDamage); 
 		
 		proc->code4frame = 0xff;
 		 
@@ -623,7 +625,7 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		// now stop us from dying 
 		side = 1 ^ side; 
 		hp = gEkrGaugeHp[side];
-		UpdateHP(proc, HpProc, active_bunit, hp, side); 
+		UpdateHP(proc, HpProc, active_bunit, hp, side, 0); 
 		
 	} 
 	//else { 
@@ -643,7 +645,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if (round->hpChange <= 0) { return; } // healing 
 	int side = proc->side; 
 	int hp = gEkrGaugeHp[proc->side];
-	if (!hp) { CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp); return; } 
+	if (!hp) { CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp, 0); return; } 
 	if (hp == 0xFFFF) { return; } 
 	int oldDamage = round->hpChange;  
 	if (gEkrGaugeDmg[side ^ 1] > oldDamage) { oldDamage = gEkrGaugeDmg[side ^ 1]; } 
@@ -654,15 +656,20 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	int newDamage = (oldDamage * percent) / 100; 
 	if (!newDamage) { newDamage = 1; } 
 	int newHp = hp - newDamage; 
-	if (newHp <= 0) { if (((hp - oldDamage) > 0) && !BlockingCanPreventLethal) { newHp = hp - oldDamage; } }
-	if (!BlockingEnabled && (newDamage < oldDamage) && (UNIT_FACTION(&opp_bunit->unit) == FACTION_BLUE)) { newHp = hp - oldDamage; } 
+	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { 
+		//if (newDamage < oldDamage) { 
+			//if (newHp <= 0) { if (((hp - oldDamage) > 0) && !BlockingCanPreventLethal) { newHp = hp - oldDamage; } }
+			if ((hp - oldDamage) <= 0) { if (!BlockingCanPreventLethal) { newHp = hp - oldDamage; newDamage = oldDamage; } }
+			if (!BlockingEnabled) { newHp = hp - oldDamage; newDamage = oldDamage; } 
+		//} 
+	}
 	if (newHp <= 0) { newHp = 0; } 
 	
-	UpdateHP(proc, HpProc, opp_bunit, newHp, side); 
+	UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); 
 	
 	
 
-	CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, newHp); 
+	CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, newHp, newDamage); 
 
 	
 } 

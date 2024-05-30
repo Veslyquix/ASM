@@ -70,7 +70,7 @@ bne   End
 
 ldr r0, =UsingSkillSys
 ldr r0, [r0] 
-cmp r0, #2 
+cmp r0, #2
 beq UseSkillSysGetter
 bl GetDamage_NonSkillSys
 b Continue 
@@ -236,6 +236,8 @@ GetRealDamage:
 
 @Get the value of DMG written in the center of the battle screen.
 GetDisplayDamage:
+mov r0, #0 
+bx lr 
   push {lr}
 
   mov   r0, r4
