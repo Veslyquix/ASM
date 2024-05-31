@@ -19,6 +19,8 @@ POP
 ALIGN 4 
 UsingSkillSys:
 WORD 2 // 2 is newer, 1 is before 2022ish, 0 is not at all 
+ProcSkillsStackWithTimedHits:
+WORD 1 
 BonusDamagePercent:
 WORD 150
 ReducedDamagePercent:

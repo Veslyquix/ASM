@@ -59,6 +59,7 @@ extern const int BonusDamagePercent;
 extern const int ReducedDamagePercent; 
 extern const int FailedHitDamagePercent; 
 extern const int UsingSkillSys; 
+extern const int ProcSkillsStackWithTimedHits; 
 extern const int DisabledFlag; 
 extern const int BlockingEnabled; 
 extern const int BlockingCanPreventLethal; 
@@ -632,9 +633,10 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		UpdateHP(proc, HpProc, active_bunit, hp, side, 0); 
 		
 	} 
-	//else { 
-	//	UpdateHP(proc, HpProc, opp_bunit, hp, side); // update hp is called before CheckForDeath already 
-	//} 
+	else { 
+		HpProc->death = false; 
+		//UpdateHP(proc, HpProc, opp_bunit, hp, side); // update hp is called before CheckForDeath already 
+	} 
 	
 	//BreakOnce(proc); 
 	BattleApplyExpGains();  // update exp 
@@ -669,7 +671,13 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	}
 	if (newHp <= 0) { newHp = 0; } 
 	
-	UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); 
+
+	if (UsingSkillSys && (!ProcSkillsStackWithTimedHits) && (proc->currentRound->skillID)) { 
+		// only update hp if no skill proc'd ? 
+		newDamage = oldDamage; 
+		newHp = hp - oldDamage; 
+	} 
+	else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
 	
 	
 
