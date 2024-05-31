@@ -23,9 +23,10 @@ SHORT $b570 $1c04 $f007 $ff30
     ORG 0x52A0C
     jumpToHack(BAN_HookHeal)
     ORG 0x525E8
-    jumpToHack(BAN_HookNosferatu1)
+    //jumpToHack(BAN_HookNosferatu1)
+	SHORT $B570 $1C04 $490C $6808 // - Vesly revert to vanilla 
     ORG 0x527A4
-    jumpToHack(BAN_HookNosferatu2)
+    jumpToHack(BAN_HookNosferatu2) // shows up later 
     
     // Kill existing DamageMoji procs.
     ORG 0x552D0

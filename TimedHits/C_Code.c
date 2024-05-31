@@ -50,6 +50,7 @@ typedef struct {
 	u8 subjectId; //   +0x2C, byte. AISSubjectId. 0 if left, 1 if right.		
 } BANIM_NumsProc; 
 extern const struct ProcCmd* gProcScr_efxHPBar; 
+extern const struct ProcCmd* gProcScr_efxHPBarResire; 
 extern const struct ProcCmd BAN_Proc_DelayDigits[]; 
 extern const int AlwaysWork; 
 extern const int MinFramesToDisplayGfx; 
@@ -276,7 +277,8 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	else if (EkrEfxIsUnitHittedNow(proc->side)) { proc->EkrEfxIsUnitHittedNowFrames = 0; } 
 	// or if MissNow, set proc->EkrEfxIsUnitHittedNowFrames = 0; 
 	// this would allow the star to appear for misses 
-	struct NewProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBar); 
+	struct NewProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBarResire); 
+	if (!HpProc) { HpProc = Proc_Find(gProcScr_efxHPBar); } 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
 	if (HitNow(proc, HpProc)) { 
 		int x = DisplayDamage2(proc->anim2, 0, 0, 0, proc->roundId); 
@@ -625,6 +627,8 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		// now stop us from dying 
 		side = 1 ^ side; 
 		hp = gEkrGaugeHp[side];
+		if (round->attributes & BATTLE_HIT_ATTR_HPSTEAL) { hp += newDamage; } 
+		//if (UsingSkillSys == 2) { if (HpProc->postHpAtkrSS > hp) { hp = HpProc->post; } } 
 		UpdateHP(proc, HpProc, active_bunit, hp, side, 0); 
 		
 	} 
