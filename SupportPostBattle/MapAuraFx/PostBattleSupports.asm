@@ -258,10 +258,14 @@ PostBattleSupports.addPlayer:
     ldsb    r1, [r3, r1]
     strb    r1, [r2]
     
+	ldr r3, =ShowRallyFX
+	ldr r3, [r3] 
+	cmp r3, #0 
+	beq SkipAuraFX
         ldr     r3, =StartSupportAuraFX
         bl      BXR3
 
-
+	SkipAuraFX: 
 	ldr r0, =SomeEvent 
 	mov r1, #3 
 	blh EventEngine 
