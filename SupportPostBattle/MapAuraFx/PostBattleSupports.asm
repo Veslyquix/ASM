@@ -142,7 +142,7 @@ StartSupportAuraFX:
 .type PostBattleSupports, %function
 
 PostBattleSupports:
-    push    {r14}
+    push    {r7, r14}
 
     @First clear out old buffer data
     ldr     r2, =gSupportAuraDisplayArray
@@ -239,6 +239,7 @@ PostBattleSupports.list:
     bl      PopulateSupportIncreaseList
     cmp     r0, #0
     beq     PostBattleSupports.end
+	mov r7, r0
     
     @now add this unit to the gSupportAuraDisplayArray too
     mov     r3, r4
@@ -259,7 +260,8 @@ PostBattleSupports.addPlayer:
     
         ldr     r3, =StartSupportAuraFX
         bl      BXR3
-		
+
+
 	ldr r0, =SomeEvent 
 	mov r1, #3 
 	blh EventEngine 
@@ -274,6 +276,7 @@ PostBattleSupports.addPlayer:
 
 
 PostBattleSupports.end:
+	pop {r7} 
     pop     {r0}
     bx      r0
     
@@ -401,7 +404,7 @@ GetUnitDistance:
     .ltorg
 
 
-
+	.equ MemorySlot, 0x30004B8 
 @params: r0=unit1, r1=support index, r2=buffer_position
 MarkForSupportIncrease:
     push    {r4-r7, lr}
@@ -414,7 +417,7 @@ MarkForSupportIncrease:
     blh     GetUnitSupportingUnit
     cmp     r0, #0
     beq     InvalidSupportIndex
-    mov     r3, r0          @partner unit
+    mov     r7, r0          @partner unit
     ldr     r2, [r4, #0x0]
     ldrb    r2, [r2, #0x4]  @acting unit's ID
     mov     r1, #0x0
@@ -422,7 +425,7 @@ MarkForSupportIncrease:
         
         GetReciprocatedSupportIndex:
         add     r1, #0x1
-        ldr     r0, [r3, #0x0]      @partner's support data
+        ldr     r0, [r7, #0x0]      @partner's support data
         ldr     r0, [r0, #0x2C]
         cmp     r0, #0x0            @out of support partners?
         beq     InvalidSupportIndex
@@ -431,7 +434,7 @@ MarkForSupportIncrease:
         cmp     r0, r2
         bne     GetReciprocatedSupportIndex
         
-        mov     r0, r3					@partner unit (r1 will still have index)
+        mov     r0, r7					@partner unit (r1 will still have index)
         blh     AddSupportPoints
         
         mov     r0, r4					@unit
@@ -457,6 +460,18 @@ MarkForSupportIncrease:
     add     r2, r6
     strb    r0, [r2]
     mov     r0, #1
+	
+	ldr r3, =MemorySlot 
+	add r3, #4*0x0B 
+	ldrb r0, [r7, #0x10]
+	strh r0, [r3, #0]
+	ldrb r0, [r7, #0x11]
+	strh r0, [r3, #2]	
+	ldr r0, =SupportHeartEvent 
+	mov r1, #3 
+	blh EventEngine
+	
+	mov r0, #1 
     
     MarkForSupportIncrease.end:
     pop     {r4-r7}

@@ -28,6 +28,16 @@ EmoticonSlotB(2) // heart
 NoFade 
 ENDA 
 
+ALIGN 4 
+SupportHeartEvent: 
+//CHECK_COORDS (-1) // active unit coords 
+//SADD sB sC s0 
+//SDEQUEUE 
+EmoticonSlotB(2) // heart 
+//STAL 28 
+NoFade 
+ENDA 
+
 
 
 
