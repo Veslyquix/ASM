@@ -33,7 +33,9 @@ FOG:
 #include "DroppableItem.lyn.event"
 WORD StealableItemCache
 WORD False // Not using DangerRadius 
-WORD 0x865 
+WORD 0x65|0x800 // Stealable 
+WORD 0x65|0x800 // Danger radius icon 
+WORD 0x69|0x800 // Droppable 
 ALIGN 4
 NewGraphic:
 #incbin "SystemIcon.dmp" 

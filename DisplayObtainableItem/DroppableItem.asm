@@ -22,8 +22,8 @@
 .equ xMask2,						0x1FF
 .equ yMask2,						0xFF
 .equ IconID_Stealable, 				UsingDangerRadius+4
-.equ IconID,						0x865 @ Also sets priority to 2.
-.equ IconID2,						0x869 @ Also sets priority to 2.
+.equ IconID_DangerRadius, 			IconID_Stealable+4
+.equ IconID_Droppable, 				IconID_DangerRadius+4
 .equ UsingDangerRadius, StealableItemCache+4
 push	{r2, r4, r14}
 
@@ -71,7 +71,7 @@ bhi		Drop
 		ldr		r2, =yMask2
 		and		r1 ,r2			@ Y &= #0xFF  ...this mask zeroing it.
 		ldr		r2, =OAMTable
-		ldr		r3, =IconID		@ Icon location and priority=2.
+		ldr		r3, IconID_DangerRadius		@ Icon location and priority=2.
 		ldr		r5, =CallARM_PushToSecondaryOAM
 		bl		GOTO_R5
 
@@ -118,7 +118,7 @@ bhi		Return
 		ldr		r2, =yMask2
 		and		r1 ,r2			@ Y &= #0xFF  ...this mask zeroing it.
 		ldr		r2, =OAMTable
-		ldr		r3, =IconID2		@ Icon location and priority=2.
+		ldr		r3, IconID_Droppable		@ Icon location and priority=2.
 		ldr		r5, =CallARM_PushToSecondaryOAM
 		bl		GOTO_R5
 		b Return @ don't draw stealable item icon if they have a droppable item 
