@@ -681,7 +681,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 		newDamage = oldDamage; 
 		newHp = hp - oldDamage; 
 	} 
-	else { if (percent != 100) { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } } 
+	//else { if (percent != 100) { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } } 
+	else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
 	
 	
 
