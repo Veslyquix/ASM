@@ -105,7 +105,7 @@ void InitVariables(TimedHitsProc* proc) {
 	proc->anim = NULL; 
 	proc->anim2 = NULL; 
 	proc->broke = false; 
-	proc->roundId = 0; 
+	proc->roundId = 0xFF; 
 	proc->timer = 0; 
 	proc->timer2 = 0xFF; 
 	proc->hitOnTime = false; 
@@ -128,6 +128,7 @@ void StartTimedHitsProc(void) {
 	proc = Proc_Find(TimedHitsProcCmd); 
 	if (!proc) { 
 		proc = Proc_Start(TimedHitsProcCmd, (void*)3); 
+		InitVariables(proc); 
 	} 
 
 } 
@@ -137,11 +138,13 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	TimedHitsProc* proc; 
 	proc = Proc_Find(TimedHitsProcCmd); 
 	if (!proc) { return; } 
+	int roundId = anim->nextRoundId-1; 
+	if (proc->roundId == roundId) { return; } 	
 	InitVariables(proc); 
 	proc->roundEnd = false; 
 	proc->anim = anim; 
 	proc->anim2 = GetAnimAnotherSide(anim); 
-	proc->roundId = anim->nextRoundId-1; 
+	proc->roundId = roundId; 
 	//proc->roundId = anim->nextRoundId > proc->anim2->nextRoundId ? anim->nextRoundId-1 : proc->anim2->nextRoundId-1; 
 	
 	proc->currentRound = GetCurrentRound(proc->roundId); 
@@ -282,6 +285,7 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	struct NewProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBarResire); 
 	if (!HpProc) { HpProc = Proc_Find(gProcScr_efxHPBar); } 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
+	
 	if (HitNow(proc, HpProc)) { 
 		int x = DisplayDamage2(proc->anim2, 0, 0, 0, proc->roundId); 
 		x = DisplayDamage2(proc->anim, 1, proc->anim->xPosition, x, proc->roundId);  
