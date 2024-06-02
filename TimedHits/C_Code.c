@@ -544,9 +544,7 @@ int GetDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bun
 
 void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int success) { 
 	int percent = GetDamagePercent(active_bunit, opp_bunit, success);
-	if (percent != 100) { 
-		AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);
-	}	
+	AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);	
 }
 
 // skillsys repoints gEfxHpLut. This function is no longer used 
@@ -683,7 +681,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 		newDamage = oldDamage; 
 		newHp = hp - oldDamage; 
 	} 
-	else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
+	else { if (percent != 100) { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } } 
 	
 	
 
