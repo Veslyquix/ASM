@@ -23,6 +23,10 @@ ProcSkillsStackWithTimedHits:
 WORD 1 
 BonusDamagePercent:
 WORD 150
+BonusDamageRounding:
+//WORD 0 // Floor down 
+WORD 50 // Roundup if 0.5 or higher 
+//WORD 99 // Round up if 0.01 or higher 
 ReducedDamagePercent:
 WORD 50 
 FailedHitDamagePercent: // always hits at least 1 dmg 
