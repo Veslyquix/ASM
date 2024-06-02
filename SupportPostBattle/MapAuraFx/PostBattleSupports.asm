@@ -46,6 +46,7 @@
 .equ Defender, 0x203A56C
 .equ CurrentUnit, 0x3004E50
 	.equ EventEngine, 0x800D07C
+.equ CanUnitSupportNow, 0x8028310
 	
 .type HookForSupportFx, %function
 .global HookForSupportFx
@@ -143,7 +144,8 @@ StartSupportAuraFX:
 
 PostBattleSupports:
     push    {r7, r14}
-
+	mov r7, r8 
+	push {r7} 
     @First clear out old buffer data
     ldr     r2, =gSupportAuraDisplayArray
 
@@ -239,7 +241,7 @@ PostBattleSupports.list:
     bl      PopulateSupportIncreaseList
     cmp     r0, #0
     beq     PostBattleSupports.end
-	mov r7, r0
+	mov r8, r0
     
     @now add this unit to the gSupportAuraDisplayArray too
     mov     r3, r4
@@ -252,6 +254,7 @@ PostBattleSupports.list:
         mov     r3, r5
     
 PostBattleSupports.addPlayer:
+	mov r7, r3 @ atkr or dfdr 
     ldr     r2, =gSupportAuraDisplayArray
     add     r2, r0
     mov     r1, #0xB            @allegiance
@@ -266,9 +269,16 @@ PostBattleSupports.addPlayer:
         bl      BXR3
 
 	SkipAuraFX: 
-	ldr r0, =SomeEvent 
-	mov r1, #3 
-	blh EventEngine 
+	mov r0, r8 
+	ldr r2, =HeartEmoticonLink
+	cmp r0, #0xFF 
+	bne NormalHeart2 
+	ldr r2, =GoldHeartEmoticonLink
+	NormalHeart2: 
+	ldrb r0, [r7, #0x10] @ x 
+	ldrb r1, [r7, #0x11] @ y 
+	ldr r2, [r2] 
+	bl Show_map_emotion_params
 
         ldr	    r0, =#0x800D07C		@event engine thingy
         ldr     r1, =Event_WaitForSupportFx
@@ -280,6 +290,8 @@ PostBattleSupports.addPlayer:
 
 
 PostBattleSupports.end:
+	pop {r7} 
+	mov r8, r7 
 	pop {r7} 
     pop     {r0}
     bx      r0
@@ -331,7 +343,9 @@ PopulateSupportIncreaseList:
                 mov     r0, r4
                 mov     r1, r5
                 bl      GetUnitDistance
-                cmp     r0, #0x3
+				ldr r1, =SupportDistanceLink
+				ldr r1, [r1] 
+                cmp     r0, r1
                 ble     SupportedUnits.add
                     b       SupportedUnits.next
 
@@ -415,6 +429,8 @@ MarkForSupportIncrease:
     mov     r4, r0			@r4=unit
     mov     r5, r1			@r5=support index
     mov     r6, r2			@r6=buffer_position
+	mov r7, r8 
+	push {r7} 
 
     mov     r0, r4
     mov     r1, r5
@@ -437,7 +453,7 @@ MarkForSupportIncrease:
             ldrb    r0, [r0, #0x0]
         cmp     r0, r2
         bne     GetReciprocatedSupportIndex
-        
+        mov r8, r1 @ index 
         mov     r0, r7					@partner unit (r1 will still have index)
         blh     AddSupportPoints
         
@@ -465,26 +481,102 @@ MarkForSupportIncrease:
     strb    r0, [r2]
     mov     r0, #1
 	
-	ldr r3, =MemorySlot 
-	add r3, #4*0x0B 
-	ldrb r0, [r7, #0x10]
-	strh r0, [r3, #0]
-	ldrb r0, [r7, #0x11]
-	strh r0, [r3, #2]	
-	ldr r0, =SupportHeartEvent 
-	mov r1, #3 
-	blh EventEngine
-	
+	mov r0, r7 
+	mov r1, r8 @ support index 
+	blh CanUnitSupportNow
+	mov r2, r6 @ buffer position 
+	mov r6, r0 
+	@ if r6 is 0: could the actor now support with anyone else ? 
+	cmp r6, #0 
+	mov r0, r4 
+	mov r1, r5 @ support index 
+	bl CouldActorSupportSomeoneElseNow
+	cmp r0, #0 
+	beq NormalHearts 
 	mov r0, #1 
-    
+	b MarkForSupportIncrease.end
+	
+	NormalHearts: 
+	ldr r2, =HeartEmoticonLink
+	cmp r6, #0 
+	beq NormalHeart
+	ldr r2, =GoldHeartEmoticonLink
+	NormalHeart: 
+	ldr r2, [r2] 
+	ldrb r0, [r7, #0x10] @ x 
+	ldrb r1, [r7, #0x11] @ y 
+	bl Show_map_emotion_params
+	mov r0, #1 
+    cmp r6, #0 
+	beq MarkForSupportIncrease.end
+	mov r0, #0xFF @ do not display any more hearts 
+
     MarkForSupportIncrease.end:
+	pop {r7} 
+	mov r8, r7 
     pop     {r4-r7}
     pop     {r1}
     bx      r1
 
     .align
     .ltorg
-    
+
+CouldActorSupportSomeoneElseNow: 
+mov r11, r11 
+push {r4-r7, lr} 
+mov r4, r0 @ unit 
+mov r6, r1 @ index to ignore 
+mov r7, r2 @ r2 buffer position 
+
+ldr r0, [r4, #0x30] 
+ldr r1, [r4, #0x34] 
+ldr r2, [r4, #0x38] 
+push {r0-r2} 
+mov r7, r6
+AnotherLoop: 
+add r7, #1 
+cmp r7, #7
+bge BreakAnotherLoop 
+mov r0, r4 
+mov r1, r7 
+blh AddSupportPoints
+b AnotherLoop 
+BreakAnotherLoop: 
+
+
+mov r7, #0 @ false 
+mov r0, r4 @ unit 
+blh 0x80281c8 @ GetUnitSupporterCount
+mov r5, r0 
+SomeLoop: 
+sub r5, #1 
+cmp r5, #0 
+blt BreakLoop 
+cmp r5, r6 
+beq SomeLoop 
+mov r0, r4 @ unit 
+mov r1, r5 @ id 
+blh CanUnitSupportNow 
+mov r7, r0 
+cmp r0, #0 
+bne BreakLoop 
+b SomeLoop 
+
+BreakLoop: 
+pop {r1-r3} 
+str r1, [r4, #0x30] 
+str r2, [r4, #0x34] 
+str r3, [r4, #0x38] 
+
+
+
+mov r0, r7 @ true/false 
+
+pop {r4-r7} 
+pop {r1} 
+bx r1 
+.ltorg 
+	
 @args: r0=actor, r1=target
 ApplyBonusFromHeal:
     push {r4-r6, lr}
@@ -560,6 +652,8 @@ ForEachSupportPartner.lop:
     mov     r2, r7
     bl      BXR3
     add     r4, #1
+	cmp r0, #0xFF 
+	beq ForEachSupportPartner.specialCase
     cmp     r0, #0
     beq     ForEachSupportPartner.lop
     add     r7, #1
@@ -567,10 +661,11 @@ ForEachSupportPartner.lop:
     
 ForEachSupportPartner.end:
     mov     r0, r7
+ForEachSupportPartner.specialCase:
     pop     {r4-r7}
     pop     {r1}
     bx      r1
-    
+
 @args: r0=func, r1=extra arg1 (current unit), r2=extra arg2 (multiplier)
 ForEachAuraDisplayUnit:
     push    {r4-r7, lr}

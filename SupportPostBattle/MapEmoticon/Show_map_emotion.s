@@ -13,6 +13,12 @@
 .thumb
 	push	{r4,r5,r6,r7 , lr}
 
+GetCoord:
+	ldr r3, =0x030004E4       @FE8U (MemorySlot0B 主に座標が読みこまれるのに利用されます )
+	ldrh r5, [r3,#0x0]        @X
+	ldrh r6, [r3,#0x2]        @Y
+
+
 	ldr  r4, [r0, #0x38]      @イベント命令にアクセスらしい [r0,#0x38] でイベント命令が書いてあるアドレスの場所へ
 	ldrb r0, [r4, #0x0]       @引数0 [FLAG]
 
@@ -24,7 +30,7 @@
 @	cmp  r0,#0xF
 @	beq  GetUnitInfoByCurrent
 	cmp  r0,#0xB
-	beq  GetCoord
+	beq  Show 
 
 	ldrb r0, [r4, #0x2]       @引数1 [UNIT]
 	b   GetUnitInfo
@@ -47,11 +53,6 @@ GetUnitInfo:
 	ldrb r5, [r0,#0x10]       @X
 	ldrb r6, [r0,#0x11]       @Y
 	b    Show
-
-GetCoord:
-	ldr r0, =0x030004E4       @FE8U (MemorySlot0B 主に座標が読みこまれるのに利用されます )
-	ldrh r5, [r0,#0x0]        @X
-	ldrh r6, [r0,#0x2]        @Y
 
 Show:
 	lsl  r5, #0x04            @map.x * 16

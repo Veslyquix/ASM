@@ -20,11 +20,22 @@
 
 #define Emoticon(Graphic, GivenCoord) "SVAL sB GivenCoord; BYTE $4B $0D $00 Graphic;  POIN Show_map_emotion_Install|1"
 
-
+ALIGN 4 
+HeartEmoticonLink: 
+WORD 2 
+GoldHeartEmoticonLink:
+WORD 21
 
 ALIGN 4
 Show_map_emotion_Install:
 #incbin "Show_map_emotion.dmp"
+POIN Show_map_emotion_Table
+
+ALIGN 4
+PUSH; ORG CurrentOffset+1; 
+Show_map_emotion_params:
+POP 
+#incbin "Show_map_emotion_by_params.dmp"
 POIN Show_map_emotion_Table
 
 ALIGN 4
@@ -102,6 +113,9 @@ emotion19_openball:
 emotion20_monsterface:
 #incbin "png/monsterface.dmp"	//HINT=BIN
 
+emotion21_goldheart:
+#incbin "png/21_goldheart_kenpuku.dmp"	//HINT=BIN
+
 
 
 #define AP_Address_We_are_using 0x089A8EF8
@@ -129,7 +143,7 @@ POIN emotion17_beer; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHO
 POIN emotion18_pokeball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
 POIN emotion19_openball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x00 0x00
 POIN emotion20_monsterface; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-
+POIN emotion21_goldheart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
 
 
 

@@ -20,28 +20,12 @@ callHackNew(HookForSupportFx)
 POP
 
 ALIGN 4 
+SupportDistanceLink:
+WORD 3 
+
+ALIGN 4 
 ShowRallyFX:
 WORD 0
-
-ALIGN 4 
-SomeEvent: 
-CHECK_COORDS (-1) // active unit coords 
-SADD sB sC s0 
-EmoticonSlotB(2) // heart 
-STAL 0x28 
-NoFade 
-ENDA 
-
-ALIGN 4 
-SupportHeartEvent: 
-//CHECK_COORDS (-1) // active unit coords 
-//SADD sB sC s0 
-//SDEQUEUE 
-EmoticonSlotB(2) // heart 
-//STAL 28 
-NoFade 
-ENDA 
-
 
 
 
