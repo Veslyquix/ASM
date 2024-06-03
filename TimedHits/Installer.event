@@ -22,15 +22,15 @@ WORD 2 // 2 is newer, 1 is before 2022ish, 0 is not at all
 ProcSkillsStackWithTimedHits:
 WORD 1 
 BonusDamagePercent:
-WORD 150
+WORD 100
 BonusDamageRounding:
-//WORD 0 // Floor down 
-WORD 50 // Roundup if 0.5 or higher 
+WORD 0 // Floor down 
+//WORD 50 // Roundup if 0.5 or higher 
 //WORD 99 // Round up if 0.01 or higher 
 ReducedDamagePercent:
 WORD 50 
 FailedHitDamagePercent: // always hits at least 1 dmg 
-WORD 0 
+WORD 50 
 MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting / end of animation 
 WORD 25
 LenienceFrames: // on either side, so within x frames before or after 
@@ -38,9 +38,9 @@ WORD 555
 AlwaysWork: 
 WORD 0
 NumberOfRandomButtons:
-WORD 1 // if 0, will use TimedHitsDifficultyRam with minimum 1 
+WORD 0 // if 0, will use TimedHitsDifficultyRam with minimum 1 
 AlwaysA:
-WORD 1 // true if 1, false if 0  
+WORD 0 // true if 1, false if 0  
 ForceAnimsOn:
 WORD 0 
 DisabledFlag:
