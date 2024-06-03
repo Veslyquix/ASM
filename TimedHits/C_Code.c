@@ -56,6 +56,7 @@ extern const int AlwaysWork;
 extern const int MinFramesToDisplayGfx; 
 extern const int LenienceFrames; 
 extern const int BonusDamagePercent; 
+extern const int BonusDamageRounding; 
 extern const int ReducedDamagePercent; 
 extern const int FailedHitDamagePercent; 
 extern const int UsingSkillSys; 
@@ -104,7 +105,7 @@ void InitVariables(TimedHitsProc* proc) {
 	proc->anim = NULL; 
 	proc->anim2 = NULL; 
 	proc->broke = false; 
-	proc->roundId = 0; 
+	proc->roundId = 0xFF; 
 	proc->timer = 0; 
 	proc->timer2 = 0xFF; 
 	proc->hitOnTime = false; 
@@ -127,6 +128,7 @@ void StartTimedHitsProc(void) {
 	proc = Proc_Find(TimedHitsProcCmd); 
 	if (!proc) { 
 		proc = Proc_Start(TimedHitsProcCmd, (void*)3); 
+		InitVariables(proc); 
 	} 
 
 } 
@@ -136,11 +138,13 @@ void SetCurrentAnimInProc(struct Anim* anim) {
 	TimedHitsProc* proc; 
 	proc = Proc_Find(TimedHitsProcCmd); 
 	if (!proc) { return; } 
+	int roundId = anim->nextRoundId-1; 
+	if (proc->roundId == roundId) { return; } 	
 	InitVariables(proc); 
 	proc->roundEnd = false; 
 	proc->anim = anim; 
 	proc->anim2 = GetAnimAnotherSide(anim); 
-	proc->roundId = anim->nextRoundId-1; 
+	proc->roundId = roundId; 
 	//proc->roundId = anim->nextRoundId > proc->anim2->nextRoundId ? anim->nextRoundId-1 : proc->anim2->nextRoundId-1; 
 	
 	proc->currentRound = GetCurrentRound(proc->roundId); 
@@ -281,6 +285,7 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	struct NewProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBarResire); 
 	if (!HpProc) { HpProc = Proc_Find(gProcScr_efxHPBar); } 
 	DoStuffIfHit(proc, battleProc, HpProc, currentRound); 
+	
 	if (HitNow(proc, HpProc)) { 
 		int x = DisplayDamage2(proc->anim2, 0, 0, 0, proc->roundId); 
 		x = DisplayDamage2(proc->anim, 1, proc->anim->xPosition, x, proc->roundId);  
@@ -539,9 +544,7 @@ int GetDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bun
 
 void AdjustDamageWithGetter(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, struct SkillSysBattleHit* round, int success) { 
 	int percent = GetDamagePercent(active_bunit, opp_bunit, success);
-	if (percent != 100) { 
-		AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);
-	}	
+	AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);	
 }
 
 // skillsys repoints gEfxHpLut. This function is no longer used 
@@ -659,7 +662,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	
 	
 	// in case the round would've killed, use whichever is higher (displayed damage vs round damage) 
-	int newDamage = (oldDamage * percent) / 100; 
+	int newDamage = ((oldDamage * percent)) / 100; 
+	if (newDamage >= oldDamage) { newDamage = ((oldDamage * percent) + BonusDamageRounding) / 100; } 
 	if (!newDamage) { newDamage = 1; } 
 	int newHp = hp - newDamage; 
 	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { 
@@ -677,6 +681,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 		newDamage = oldDamage; 
 		newHp = hp - oldDamage; 
 	} 
+	//else { if (percent != 100) { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } } 
 	else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
 	
 	
