@@ -29,6 +29,8 @@ WORD 0 // Floor down
 //WORD 99 // Round up if 0.01 or higher 
 ReducedDamagePercent:
 WORD 50 
+ReducedDamageRounding:
+WORD 0 
 FailedHitDamagePercent: // always hits at least 1 dmg 
 WORD 50 
 MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting / end of animation 
