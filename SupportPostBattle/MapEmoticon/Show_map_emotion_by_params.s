@@ -70,7 +70,9 @@ Show:
 	sub  r6, r1               @Y - CameraY
 
 	mov r0, r4 
-	lsl  r0,r0, #0x4          @構造体のサイズを掛け算して、位置を特定.
+	mov r1, #20 @ 20 bytes per 
+	mul r0, r1 
+	@lsl  r0,r0, #0x4          @構造体のサイズを掛け算して、位置を特定.
 
 	ldr  r4, Table
 	add  r4, r0
@@ -84,8 +86,26 @@ Show:
 	blh 0x0800927c                @FE8U TCS_New Creates a new TCS TCS Pointer r0=Source ROMTCS, r1=OAM Index? idk
 
 	mov r7 ,r0
-	mov r0, #0x8c
-	lsl r0 ,r0 ,#0x5
+	ldrh r0, [r4, #14] 
+	cmp r0, #1 
+	beq DontSetNewPalette 
+	mov r1, #16
+	add r1, r0 
+	lsl r1, #5 @ * 0x20 
+	mov r2, #0x1 
+	lsl r2, #5 @ * 0x20 
+	ldr r0, [r4, #16] 
+	cmp r0, #0 
+	beq DontSetNewPalette 
+	blh 0x8000db8 @ copy to pal buffer 
+	
+	
+	@ ApplyPalettes(gPal_Press_Image, 15+16, 0x10);
+	DontSetNewPalette:
+	ldrh r0, [r4, #14] @ pal id 
+	ldr r1, =0x180 
+	lsl r0, #12 
+	orr r0, r1 
 	strh r0, [r7, #0x22]
 	mov r0 ,r7
 	mov r1, #0x0

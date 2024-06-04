@@ -1,5 +1,4 @@
-#ifndef HAX_MAP_AURA_FX
-#define HAX_MAP_AURA_FX
+
 
 // Utility providing an interface for displaying cool aura on units
 // hack by Stan.
@@ -11,12 +10,12 @@ Event_WaitForSupportFx:
     ENDA
 ALIGN 4
 
-SupportFX_SimpleDelay:
-    PROC_YIELD
-    PROC_CALL_ROUTINE(SupportFX_SimpleDelay_Start)
-    PROC_END
+//SupportFX_SimpleDelay:
+//    PROC_YIELD
+//    PROC_CALL_ROUTINE(SupportFX_SimpleDelay_Start)
+//    PROC_END
 
-#include "Src/MapAuraFxUpdate.lyn.event"
+//#include "Src/MapAuraFxUpdate.lyn.event"
 #include "PostBattleSupports.lyn.event"
 
 ALIGN 4
@@ -24,4 +23,3 @@ ALIGN 4
 gSupportEffectPalette:
 #incbin "support_fx.pal"
 
-#endif // HAX_MAP_AURA_FX

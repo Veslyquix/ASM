@@ -35,7 +35,7 @@ ALIGN 4
 PUSH; ORG CurrentOffset+1; 
 Show_map_emotion_params:
 POP 
-#incbin "Show_map_emotion_by_params.dmp"
+#include "Show_map_emotion_by_params.lyn.event"
 POIN Show_map_emotion_Table
 
 ALIGN 4
@@ -116,34 +116,41 @@ emotion20_monsterface:
 emotion21_goldheart:
 #incbin "png/21_goldheart_kenpuku.dmp"	//HINT=BIN
 
+emotion22_goldheart:
+#incbin "png/22_goldheart_kenpuku.dmp"	//HINT=BIN
 
+ALIGN 4 
+goldHeartPalette:
+#incbin "png/22_goldheart_kenpuku_pal.dmp"
 
 #define AP_Address_We_are_using 0x089A8EF8
 
 ALIGN 4
 Show_map_emotion_Table:
-WORD 0x089ADD4C 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00   //0=!?}?[?N??
-POIN emotion01_umm; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion02_heart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion03_nazo; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion04_cold_sweat; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion05_failed; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion06_hatena; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion07_inspiration; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion08_lucky; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion09_tenten; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion10_zzz; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion11_waiwai; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion12_age; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion13_sage; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion14_blush; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion15_gaan; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion16_dollmark; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion17_beer; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion18_pokeball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion19_openball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x00 0x00
-POIN emotion20_monsterface; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
-POIN emotion21_goldheart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x00
+WORD 0x089ADD4C 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0    //0=!?}?[?N??
+POIN emotion01_umm; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+//POIN emotion22_goldheart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x0 0x0A; POIN goldHeartPalette
+POIN emotion02_heart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x0 0x01; POIN 0
+POIN emotion03_nazo; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion04_cold_sweat; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion05_failed; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion06_hatena; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion07_inspiration; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion08_lucky; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion09_tenten; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion10_zzz; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion11_waiwai; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion12_age; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion13_sage; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion14_blush; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion15_gaan; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion16_dollmark; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion17_beer; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion18_pokeball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion19_openball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x00 0x01; POIN 0
+POIN emotion20_monsterface; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
+POIN emotion21_goldheart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x0 0x01; POIN 0
+POIN emotion22_goldheart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x0 0x0A; POIN goldHeartPalette
 
 
 

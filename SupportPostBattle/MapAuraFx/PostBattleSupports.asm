@@ -77,67 +77,67 @@ pop {r3}
 bx r3 
 .ltorg 
 
-	.type   StartSupportAuraFX, function
-	.global StartSupportAuraFX
-	.type   SupportFX_SimpleDelay_Start, function
-	.global SupportFX_SimpleDelay_Start
-
-SupportFX_SimpleDelay_Start:
-	push {lr}
-
-	@ Set [proc+2C] to 0
-	@ It will be our clock
-	@mov r1, #0
-	@str r1, [r0, #0x2C]
-
-	@ start map aura fx
-
-	ldr r3, =StartMapAuraFx
-	bl  BXR3
-
-	@ add units to aura fx
-
-	ldr r3, =ForEachAuraDisplayUnit
-	ldr r0, =AddMapAuraFxUnit @ arg r0 = function
-	@ unused                  @ arg r1 = user argument
-    add r3, #1
-
-	bl BXR3
-
-	ldr  r0, =gChapterData+0x41
-	ldrb r0, [r0]
-
-	lsl r0, r0, #0x1E
-	blt SkipSoundEffect
-
-        ldr r3, =m4aSongNumStart
-        mov r0, #170 @ arg r0 = sound ID (some kind of staff sound?)
-        bl BXR3
-
-    SkipSoundEffect:
-	@ if 2 or more different rallies, use generic palette
-	ldr r0, =gSupportEffectPalette
-	ldr r3, =SetMapAuraFxPalette
-
-	@ implied @ arg r0 = palette
-
-	bl BXR3
-
-	pop {r1}
-	bx r1
-
-.align
-.ltorg
-
-StartSupportAuraFX:
-	ldr     r3, =StartProcBlocking
-
-	ldr     r0, =SupportFX_SimpleDelay @ arg r0 = proc scr
-	mov     r1, #3           @ arg r1 = parent
-    bx      r3
-
-.align
-.ltorg
+@	.type   StartSupportAuraFX, function
+@	.global StartSupportAuraFX
+@	.type   SupportFX_SimpleDelay_Start, function
+@	.global SupportFX_SimpleDelay_Start
+@
+@SupportFX_SimpleDelay_Start:
+@	push {lr}
+@
+@	@ Set [proc+2C] to 0
+@	@ It will be our clock
+@	@mov r1, #0
+@	@str r1, [r0, #0x2C]
+@
+@	@ start map aura fx
+@
+@	ldr r3, =StartMapAuraFx
+@	bl  BXR3
+@
+@	@ add units to aura fx
+@
+@	ldr r3, =ForEachAuraDisplayUnit
+@	ldr r0, =AddMapAuraFxUnit @ arg r0 = function
+@	@ unused                  @ arg r1 = user argument
+@    add r3, #1
+@
+@	bl BXR3
+@
+@	ldr  r0, =gChapterData+0x41
+@	ldrb r0, [r0]
+@
+@	lsl r0, r0, #0x1E
+@	blt SkipSoundEffect
+@
+@        ldr r3, =m4aSongNumStart
+@        mov r0, #170 @ arg r0 = sound ID (some kind of staff sound?)
+@        bl BXR3
+@
+@    SkipSoundEffect:
+@	@ if 2 or more different rallies, use generic palette
+@	ldr r0, =gSupportEffectPalette
+@	ldr r3, =SetMapAuraFxPalette
+@
+@	@ implied @ arg r0 = palette
+@
+@	bl BXR3
+@
+@	pop {r1}
+@	bx r1
+@
+@.align
+@.ltorg
+@
+@StartSupportAuraFX:
+@	ldr     r3, =StartProcBlocking
+@
+@	ldr     r0, =SupportFX_SimpleDelay @ arg r0 = proc scr
+@	mov     r1, #3           @ arg r1 = parent
+@    bx      r3
+@
+@.align
+@.ltorg
 
 .global PostBattleSupports
 .type PostBattleSupports, %function
@@ -261,12 +261,12 @@ PostBattleSupports.addPlayer:
     ldsb    r1, [r3, r1]
     strb    r1, [r2]
     
-	ldr r3, =ShowRallyFX
-	ldr r3, [r3] 
-	cmp r3, #0 
-	beq SkipAuraFX
-        ldr     r3, =StartSupportAuraFX
-        bl      BXR3
+	@ldr r3, =ShowRallyFX
+	@ldr r3, [r3] 
+	@cmp r3, #0 
+	@beq SkipAuraFX
+   @    ldr     r3, =StartSupportAuraFX
+   @    bl      BXR3
 
 	SkipAuraFX: 
 	mov r0, r8 
@@ -521,8 +521,7 @@ MarkForSupportIncrease:
     .align
     .ltorg
 
-CouldActorSupportSomeoneElseNow: 
-mov r11, r11 
+CouldActorSupportSomeoneElseNow:  
 push {r4-r7, lr} 
 mov r4, r0 @ unit 
 mov r6, r1 @ index to ignore 

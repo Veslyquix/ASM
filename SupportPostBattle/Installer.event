@@ -1,6 +1,6 @@
 #include "EAstdlib.event"
-#include "Extensions/Hack Installation.txt" 
-#include "Extensions/ProcDefinitions.txt" 
+//#include "Extensions/Hack Installation.txt" 
+//#include "Extensions/ProcDefinitions.txt" 
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
@@ -22,10 +22,6 @@ POP
 ALIGN 4 
 SupportDistanceLink:
 WORD 3 
-
-ALIGN 4 
-ShowRallyFX:
-WORD 0
 
 
 
