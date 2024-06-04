@@ -68,6 +68,7 @@ extern const int BlockingEnabled;
 extern const int BlockingCanPreventLethal; 
 extern const int DisplayPress; 
 extern const int ChangePaletteWhenButtonIsPressed; 
+extern const u8 SkillExceptionsTable[];
 extern void* Press_Image; 
 extern void* BattleStar; 
 extern void* A_Button; 
@@ -679,13 +680,14 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if (newHp <= 0) { newHp = 0; } 
 	
 
-	if (UsingSkillSys && (!ProcSkillsStackWithTimedHits) && (proc->currentRound->skillID)) { 
+	if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) && (proc->currentRound->skillID)) { 
 		// only update hp if no skill proc'd ? 
 		newDamage = oldDamage; 
 		newHp = hp - oldDamage; 
 	} 
 	//else { if (percent != 100) { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } } 
-	else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
+	//else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
+	UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); 
 	
 	
 

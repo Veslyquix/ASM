@@ -60,6 +60,13 @@ WORD 1
 TimedHitsDifficultyRam:
 WORD 0x202BD0F // uses 1 byte if NumberOfRandomButtons is 0 
 
+SkillExceptionsTable:
+FILL 256 
+#define NoSkill(ID) "PUSH; ORG SkillExceptionsTable+ID; BYTE 1; POP"
+// skills that won't stack with timed hits
+//NoSkill(VengeanceID)
+//NoSkill(AstraID)
+//NoSkill(EnrageID) // unknown if works 
 
 ALIGN 4 
 Press_Image:
