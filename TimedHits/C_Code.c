@@ -57,7 +57,9 @@ extern const int MinFramesToDisplayGfx;
 extern const int LenienceFrames; 
 extern const int BonusDamagePercent; 
 extern const int BonusDamageRounding; 
+extern const int ReducedDamageRounding; 
 extern const int ReducedDamagePercent; 
+extern const int ReducedDamageSubtract; 
 extern const int FailedHitDamagePercent; 
 extern const int UsingSkillSys; 
 extern const int ProcSkillsStackWithTimedHits; 
@@ -66,6 +68,7 @@ extern const int BlockingEnabled;
 extern const int BlockingCanPreventLethal; 
 extern const int DisplayPress; 
 extern const int ChangePaletteWhenButtonIsPressed; 
+extern const u8 SkillExceptionsTable[];
 extern void* Press_Image; 
 extern void* BattleStar; 
 extern void* A_Button; 
@@ -664,7 +667,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	// in case the round would've killed, use whichever is higher (displayed damage vs round damage) 
 	int newDamage = ((oldDamage * percent)) / 100; 
 	if (newDamage >= oldDamage) { newDamage = ((oldDamage * percent) + BonusDamageRounding) / 100; } 
-	if (!newDamage) { newDamage = 1; } 
+	else { newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100; } 
+	if (newDamage <= 0) { newDamage = 1; } 
 	int newHp = hp - newDamage; 
 	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { 
 		//if (newDamage < oldDamage) { 
@@ -676,13 +680,14 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if (newHp <= 0) { newHp = 0; } 
 	
 
-	if (UsingSkillSys && (!ProcSkillsStackWithTimedHits) && (proc->currentRound->skillID)) { 
+	if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) && (proc->currentRound->skillID)) { 
 		// only update hp if no skill proc'd ? 
 		newDamage = oldDamage; 
 		newHp = hp - oldDamage; 
 	} 
 	//else { if (percent != 100) { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } } 
-	else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
+	//else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } 
+	UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); 
 	
 	
 
