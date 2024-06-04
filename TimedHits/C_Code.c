@@ -59,6 +59,7 @@ extern const int BonusDamagePercent;
 extern const int BonusDamageRounding; 
 extern const int ReducedDamageRounding; 
 extern const int ReducedDamagePercent; 
+extern const int ReducedDamageSubtract; 
 extern const int FailedHitDamagePercent; 
 extern const int UsingSkillSys; 
 extern const int ProcSkillsStackWithTimedHits; 
@@ -665,8 +666,8 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	// in case the round would've killed, use whichever is higher (displayed damage vs round damage) 
 	int newDamage = ((oldDamage * percent)) / 100; 
 	if (newDamage >= oldDamage) { newDamage = ((oldDamage * percent) + BonusDamageRounding) / 100; } 
-	else { newDamage = ((oldDamage * percent) + ReducedDamageRounding) / 100; } 
-	if (!newDamage) { newDamage = 1; } 
+	else { newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100; } 
+	if (newDamage <= 0) { newDamage = 1; } 
 	int newHp = hp - newDamage; 
 	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { 
 		//if (newDamage < oldDamage) { 
