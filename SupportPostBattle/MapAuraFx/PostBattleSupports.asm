@@ -48,6 +48,24 @@
 	.equ EventEngine, 0x800D07C
 .equ CanUnitSupportNow, 0x8028310
 	
+	
+.type HookForSupportRate, %function 
+.global HookForSupportRate 
+HookForSupportRate:
+push {lr} 
+add r0, #0xe 
+add r0, r1 
+ldrb r6, [r0] 
+ldr r3, =SupportRate 
+ldr r3, [r3] 
+mul r6, r3 
+mov r0, r2 
+add r0, #0x32 
+add r7, r0, r1 
+pop {r3} 
+bx r3 
+.ltorg 
+	
 .type HookForSupportFx, %function
 .global HookForSupportFx
 HookForSupportFx: 

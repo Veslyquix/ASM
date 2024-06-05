@@ -16,13 +16,18 @@ ORG $153c6            //This makes support points increase at the start of playe
 ORG $37754 
 callHackNew(HookForSupportFx)
 
-
+ORG $2829C 
+callHackNew(HookForSupportRate)
 POP
 
 ALIGN 4 
 SupportDistanceLink:
 WORD 3 
 
+ALIGN 4 
+SupportRate:
+//WORD 1 // Normal rate (slower than usual, as killing enemies together is less frequent than ending turns together) 
+WORD 3 // Killing an enemy is worth 2x ended turns beside each other  
 
 
 
