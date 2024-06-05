@@ -22,10 +22,10 @@ WORD 2 // 2 is newer, 1 is before 2022ish, 0 is not at all
 ProcSkillsStackWithTimedHits:
 WORD 1 
 BonusDamagePercent:
-WORD 100
+WORD 120
 BonusDamageRounding:
-WORD 0 // Floor down 
-//WORD 50 // Roundup if 0.5 or higher 
+//WORD 0 // Floor down 
+WORD 50 // Roundup if 0.5 or higher 
 //WORD 99 // Round up if 0.01 or higher 
 ReducedDamagePercent:
 WORD 50 
@@ -64,9 +64,9 @@ SkillExceptionsTable:
 FILL 256 
 #define NoSkill(ID) "PUSH; ORG SkillExceptionsTable+ID; BYTE 1; POP"
 // skills that won't stack with timed hits
-//NoSkill(VengeanceID)
-//NoSkill(AstraID)
-//NoSkill(EnrageID) // unknown if works 
+NoSkill(VengeanceID)
+NoSkill(AstraID)
+NoSkill(EnrageID) // unknown if works 
 
 ALIGN 4 
 Press_Image:
