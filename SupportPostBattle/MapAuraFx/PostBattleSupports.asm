@@ -195,11 +195,6 @@ PostBattleSupports.ActorIsBlue:
     cmp	    r0, r1		@check if same character
     bne	    PostBattleSupports.end
 
-    @Check if used a staff.
-    ldrb    r0, [r6, #0x11]
-    cmp     r0, #0x3
-    bne     PostBattleSupports.notStaff
-
     CheckTargetAllegiance:		@r5 = target
     mov     r1, #0xB				@allegiance
     ldsb    r1, [r5, r1]
@@ -207,7 +202,16 @@ PostBattleSupports.ActorIsBlue:
     and     r0, r1
     cmp     r0, #0x0
     bne     PostBattleSupports.notStaff
+	
+    @Check if used a staff.
+    ldrb    r0, [r6, #0x11]
+    cmp     r0, #0x3
+    beq     PostBattleSupports.Staff
+	cmp r0, #4 @ dance / play 
+	beq PostBattleSupports.MiscAction 
+	b PostBattleSupports.notStaff
 
+	PostBattleSupports.Staff: 
     @now we know we are a blue unit who used a staff on a blue unit
         @ldrb    r0, [r6, #0x6] @itemID
         ldr     r3, =gBattleActor
@@ -219,6 +223,7 @@ PostBattleSupports.ActorIsBlue:
         cmp     r0, #0x2
         bne     PostBattleSupports.end
 
+	PostBattleSupports.MiscAction: 
         mov     r0, r4
         mov     r1, r5
         bl      ApplyBonusFromHeal
@@ -626,15 +631,6 @@ ApplyBonusFromHeal:
                         mov r1, r6
                         mov r2, #0
                         bl MarkForSupportIncrease
-                        mov r5, r0
-                        
-                        @ now double the bonus
-                        mov r0, r4
-                        mov r1, r6
-                        mov r2, #0
-                        bl MarkForSupportIncrease
-                        
-                        mov r0, r5
                         b StaffBonus.end
                         
         StaffBonus.next:
