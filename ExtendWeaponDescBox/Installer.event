@@ -14,6 +14,8 @@
 //#define gProc_ChapterMenuStatus $A73C0C	//{J}
 #define gProc_PrepSomethingUnknown $A1898C 
 #define gProc_PrepSomethingUnknown2 $A18944 // backup 
+#define gProc_PrepScreenPickUnitsMenu $A18E8C
+#define gProc_BG3HSlide $A006E4
 
 ALIGN 4 
 ProcExceptionsList:
@@ -22,7 +24,11 @@ POIN gProc_PrepSomethingUnknown
 POIN gProc_PrepSomethingUnknown2 
 WORD 0 // Terminator 
 
-
+ALIGN 4
+InitItemDescVramDoubleProcExceptionsList:
+//if both procs are active, don't allocate additional vram
+POIN gProc_PrepScreenPickUnitsMenu gProc_BG3HSlide
+WORD 0 //Terminator
 
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
@@ -33,6 +39,7 @@ ALIGN 4
 InitItemDescVram: 
 #incbin "InitItemDescVram.dmp" 
 POIN ProcExceptionsList
+POIN InitItemDescVramDoubleProcExceptionsList
 
 ALIGN 4 
 InitProcTextHandles:
