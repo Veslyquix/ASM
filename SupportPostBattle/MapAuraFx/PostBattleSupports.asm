@@ -433,6 +433,18 @@ PopulateSupportIncreaseList:
             and     r0, r1
             cmp     r0, #0x0
             bne     SupportedUnits.next
+			
+				mov r0, #0x30 
+				ldrb r0, [r5, r0] @ status 
+				mov r1, #0xF 
+				and r0, r1 
+				cmp r0, #2 @ sleep 
+				beq SupportedUnits.next
+				cmp r0, #4 @ berserk 
+				beq SupportedUnits.next 
+				cmp r0, #13 @ petrify 
+				beq SupportedUnits.next
+			
                 mov     r0, r4
                 mov     r1, r5
                 bl      GetUnitDistance
