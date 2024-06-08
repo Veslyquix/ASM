@@ -56,9 +56,49 @@ push {lr}
 add r0, #0xe 
 add r0, r1 
 ldrb r6, [r0] 
-ldr r3, =SupportRate 
+
+ldr r3, =ActionStruct 
+ldrb r3, [r3, #0x11] 
+cmp r3, #2 @ attacked 
+beq SupportRate_Attacked 
+cmp r3, #3 @ staff 
+beq SupportRate_Staff 
+cmp r3, #4 @ dance 
+beq SupportRate_Dance 
+b SupportRateDefault 
+
+SupportRate_Staff: 
+ldr r3, =SupportRateStaff 
 ldr r3, [r3] 
 mul r6, r3 
+b SupportRateDefault 
+
+SupportRate_Dance: 
+ldr r3, =SupportRateDance
+ldr r3, [r3] 
+mul r6, r3 
+b SupportRateDefault 
+
+SupportRate_Attacked: 
+ldr r3, =gBattleActor 
+ldrb r0, [r3, #0x13] @ curr hp 
+cmp r0, #0 
+beq SupportRate_KOd 
+ldr r3, =Defender 
+ldrb r0, [r3, #0x13] @ curr hp 
+cmp r0, #0 
+beq SupportRate_KOd 
+ldr r3, =SupportRateDmg 
+ldr r3, [r3] 
+mul r6, r3 
+b SupportRateDefault 
+SupportRate_KOd: 
+ldr r3, =SupportRateKill 
+ldr r3, [r3] 
+mul r6, r3 
+b SupportRateDefault 
+
+SupportRateDefault: 
 mov r0, r2 
 add r0, #0x32 
 add r7, r0, r1 
@@ -189,6 +229,16 @@ PostBattleSupports.ActorIsBlue:
     ldrb    r0, [r4, #0x13]
     cmp     r0, #0x00
     beq     PostBattleSupports.end
+	mov r0, #0x30 
+	ldrb r0, [r4, r0] @ status 
+	mov r1, #0xF 
+	and r0, r1 
+	cmp r0, #2 @ sleep 
+	beq PostBattleSupports.end
+	cmp r0, #4 @ berserk 
+	beq PostBattleSupports.end 
+	cmp r0, #13 @ petrify 
+	beq PostBattleSupports.end
 
     ldrb 	r0, [r6,#0x0C]	@allegiance byte of the current character taking action
     ldrb	r1, [r4,#0x0B]	@allegiance byte of the character we are checking
@@ -239,14 +289,30 @@ PostBattleSupports.defender:
     and     r0, r1
     cmp     r0, #0x0
     bne     PostBattleSupports.end
+	
+	mov r0, #0x30 
+	ldrb r0, [r5, r0] @ status 
+	mov r1, #0xF 
+	and r0, r1 
+	cmp r0, #2 @ sleep 
+	beq PostBattleSupports.end
+	cmp r0, #4 @ berserk 
+	beq PostBattleSupports.end 
+	cmp r0, #13 @ petrify 
+	beq PostBattleSupports.end
 
     @if we're here, it means the enemy has attacked the player. Switch the structs.
     ldrb    r0, [r6, #0x11]
     cmp     r0, #0x2				@combat
     bne     PostBattleSupports.end
+	ldr r0, =SupportRateDmg 
+	ldr r0, [r0] 
+	cmp r0, #0 
+	bne ChipDmgSupportDfdr 
     ldrb    r0, [r4, #0x13]		@enemy HP
     cmp     r0, #0x0
     bne     PostBattleSupports.end		@if not dead, no bonus
+	ChipDmgSupportDfdr: 
     mov     r0, r5
     b       PostBattleSupports.list
 
@@ -254,10 +320,14 @@ PostBattleSupports.notStaff:
     ldrb    r0, [r6, #0x11]
     cmp     r0, #0x2				@combat
     bne     PostBattleSupports.end
+	ldr r0, =SupportRateDmg 
+	ldr r0, [r0] 
+	cmp r0, #0 
+	bne ChipDmgSupportAtkr 
     ldrb    r0, [r5, #0x13]		@enemy HP
     cmp     r0, #0x0
     bne     PostBattleSupports.end		@if not dead, no bonus
-
+	ChipDmgSupportAtkr: 
     mov     r0, r4					@r4 = this unit
     
 PostBattleSupports.list:
