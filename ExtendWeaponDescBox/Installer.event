@@ -111,6 +111,7 @@ BYTE (5)<<4
 //ORG $898A4 // default: used by shop, stat screen, send item to supply, itemMenu, and trading on map 
 //WORD 0x6012000 // 13000 vanilla
 
+// dunno why 7743 commented this out - probably unnecessary with the trade fix? - Vesly 2024 
 ORG $2D2EA		//{U}
 //ORG $2D222		//{J}
 					// mov r1, #0x90 
@@ -144,6 +145,7 @@ ORG $354D8		//{U}
 //ORG $353E0		//{J}
 SHORT 0x42C0 // 4240 vanilla 
 
+// 7743 did this fix by directly editing the oam table in rom instead of replacing the poin as I did 
 ORG $354D4 // from 0x803547C called by 356BC Procs BottomHelpText CallASM
 POIN SomeNewOAMTable
 
