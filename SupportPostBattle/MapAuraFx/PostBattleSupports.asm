@@ -111,8 +111,8 @@ bx r3
 HookForSupportFx: 
 push {r4-r7, lr} 
 mov r7, r0 @ current unit hp 
-ldr	r4, =CurrentUnit
-ldrb	r0, [r4,#0x1A]	@allegiance byte
+ldr	r4, =Attacker
+ldrb r0, [r4, #0xB] @allegiance byte
 blh	GetCharPtr	@given allegiance byte, gives pointer to character data in ram
 mov	r4, r0		@move current unit (potential attacker) to r4
 ldr	r5, =Defender
