@@ -129,8 +129,8 @@ beq AltExit
 ldr r1, [r4, #4] 
 ldr r0, [r4, #0] 
 ldr r0, [r0, #0x28] 
-@ldr r1, [r1, #0x28] 
-@orr r0, r1
+ldr r1, [r1, #0x28] 
+orr r0, r1
 mov r2, r4 
 
 pop {r4-r7} 

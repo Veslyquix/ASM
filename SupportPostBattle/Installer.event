@@ -15,6 +15,7 @@ ORG $153c6            //This makes support points increase at the start of playe
 
 ORG $37750 
 callHackNew(HookForSupportFx)
+SHORT $46C0 $46C0
 
 ORG $2829C 
 callHackNew(HookForSupportRate)
