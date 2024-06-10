@@ -557,6 +557,13 @@ MarkForSupportIncrease:
     mov     r6, r2			@r6=buffer_position
 	mov r7, r8 
 	push {r7} 
+	mov r0, #0x32 
+	add r0, r4 
+	ldrb r0, [r0, r1] 
+	ldr r1, =0x8028244 
+	ldrb r1, [r1] 
+	cmp r0, r1 
+	bge InvalidSupportIndex
 
     mov     r0, r4
     mov     r1, r5
