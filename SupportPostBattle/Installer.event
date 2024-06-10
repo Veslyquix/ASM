@@ -23,8 +23,6 @@ POP
 ALIGN 4 
 SupportDistanceLink:
 WORD 3 
-
-ALIGN 4 
 SupportRateKill:
 WORD 2 // Killing an enemy is worth 2x ended turns beside each other  
 SupportRateCombat:
@@ -33,6 +31,7 @@ SupportRateStaff:
 WORD 2 
 SupportRateDance:
 WORD 2 
-
+PlayerPhaseOnly:
+WORD 1 // true if 1, false if 0 
 
 

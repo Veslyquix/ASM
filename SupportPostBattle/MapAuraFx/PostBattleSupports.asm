@@ -296,6 +296,10 @@ PostBattleSupports.ActorIsBlue:
         b       PostBattleSupports.addPlayer
 
 PostBattleSupports.defender:
+	ldr r1, =PlayerPhaseOnly 
+	ldr r1, [r1] 
+	cmp r1, #1 
+	beq PostBattleSupports.end
     mov     r1, #0xB				@allegiance
     ldsb    r1, [r5, r1]
     mov     r0, #0xC0				@if npc or enemy, don't apply
