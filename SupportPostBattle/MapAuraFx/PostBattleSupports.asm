@@ -88,7 +88,7 @@ ldr r3, =Defender
 ldrb r0, [r3, #0x13] @ curr hp 
 cmp r0, #0 
 beq SupportRate_KOd 
-ldr r3, =SupportRateDmg 
+ldr r3, =SupportRateCombat 
 ldr r3, [r3] 
 mul r6, r3 
 b SupportRateDefault 
@@ -237,6 +237,8 @@ PostBattleSupports.ActorIsBlue:
 	beq PostBattleSupports.end
 	cmp r0, #4 @ berserk 
 	beq PostBattleSupports.end 
+	cmp r0, #11 @ petrify 
+	beq PostBattleSupports.end
 	cmp r0, #13 @ petrify 
 	beq PostBattleSupports.end
 
@@ -298,6 +300,8 @@ PostBattleSupports.defender:
 	beq PostBattleSupports.end
 	cmp r0, #4 @ berserk 
 	beq PostBattleSupports.end 
+	cmp r0, #11 @ petrify 
+	beq PostBattleSupports.end
 	cmp r0, #13 @ petrify 
 	beq PostBattleSupports.end
 
@@ -305,7 +309,7 @@ PostBattleSupports.defender:
     ldrb    r0, [r6, #0x11]
     cmp     r0, #0x2				@combat
     bne     PostBattleSupports.end
-	ldr r0, =SupportRateDmg 
+	ldr r0, =SupportRateCombat 
 	ldr r0, [r0] 
 	cmp r0, #0 
 	bne ChipDmgSupportDfdr 
@@ -320,7 +324,7 @@ PostBattleSupports.notStaff:
     ldrb    r0, [r6, #0x11]
     cmp     r0, #0x2				@combat
     bne     PostBattleSupports.end
-	ldr r0, =SupportRateDmg 
+	ldr r0, =SupportRateCombat 
 	ldr r0, [r0] 
 	cmp r0, #0 
 	bne ChipDmgSupportAtkr 
@@ -442,6 +446,8 @@ PopulateSupportIncreaseList:
 				beq SupportedUnits.next
 				cmp r0, #4 @ berserk 
 				beq SupportedUnits.next 
+				cmp r0, #11 @ petrify 
+				beq SupportedUnits.next
 				cmp r0, #13 @ petrify 
 				beq SupportedUnits.next
 			

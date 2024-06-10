@@ -26,10 +26,8 @@ WORD 3
 
 ALIGN 4 
 SupportRateKill:
-//WORD 1 // Normal rate (slower than usual, as killing enemies together is less frequent than ending turns together) 
-WORD 3 // Killing an enemy is worth 3x ended turns beside each other  
-
-SupportRateDmg:
+WORD 2 // Killing an enemy is worth 2x ended turns beside each other  
+SupportRateCombat:
 WORD 1 
 SupportRateStaff:
 WORD 2 
