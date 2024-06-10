@@ -110,7 +110,7 @@ bx r3
 .global HookForSupportFx
 HookForSupportFx: 
 push {r4-r7, lr} 
-
+mov r7, r0 @ current unit hp 
 ldr	r4, =CurrentUnit
 ldrb	r0, [r4,#0x1A]	@allegiance byte
 blh	GetCharPtr	@given allegiance byte, gives pointer to character data in ram
@@ -123,15 +123,26 @@ ldr	r6, =ActionStruct
 
 bl PostBattleSupports 
 
-ldr r0, [r4] 
-ldr r1, [r4, #4] 
-ldr r0, [r0, #0x28] 
-ldr r1, [r1, #0x28] 
-orr r0, r1
+cmp r7, #0 
+beq AltExit 
 
+ldr r1, [r4, #4] 
+ldr r0, [r4, #0] 
+ldr r0, [r0, #0x28] 
+@ldr r1, [r1, #0x28] 
+@orr r0, r1
+mov r2, r4 
 
 pop {r4-r7} 
 pop {r3} 
+bx r3 
+.ltorg 
+
+AltExit: 
+pop {r4-r7} 
+pop {r3} 
+mov r0, #1 
+ldr r3, =0x80377c1 
 bx r3 
 .ltorg 
 
