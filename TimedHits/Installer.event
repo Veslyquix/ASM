@@ -34,14 +34,14 @@ WORD 0
 ReducedDamageSubtract:
 WORD 0 
 FailedHitDamagePercent: // always hits at least 1 dmg 
-WORD 50 
+WORD 80 
 MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting / end of animation 
 WORD 25
 LenienceFrames: // on either side, so within x frames before or after 
 WORD 555
 AlwaysWork: 
 WORD 0
-NumberOfRandomButtons:
+NumberOfRandomButtons: // (half as many for non-magic) 
 WORD 0 // if 0, will use TimedHitsDifficultyRam with minimum 1 
 AlwaysA:
 WORD 0 // true if 1, false if 0  
@@ -59,6 +59,11 @@ ChangePaletteWhenButtonIsPressed:
 WORD 1 
 TimedHitsDifficultyRam:
 WORD 0x202BD0F // uses 1 byte if NumberOfRandomButtons is 0 
+DifficultyThreshold:
+WORD 3 // At least 3 buttons generally required (half as many for non-magic) 
+DifficultyBonusPercent:
+WORD 10 // +10% more damage if on hard mode 
+
 
 #ifndef VengeanceID 
 	#define VengeanceID 255 

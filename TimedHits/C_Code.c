@@ -307,6 +307,13 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 #define DPAD_UP         0x0040
 #define DPAD_DOWN       0x0080
 */
+int IsNotMagicAnimation(TimedHitsProc* proc) { 
+	int wepType = GetItemType(proc->active_bunit->weaponBefore); 
+	if (wepType == 5) { return false; } 
+	if (wepType == 6) { return false; } 
+	if (wepType == 7) { return false; } 
+	return true; 
+} 
 extern int NumberOfRandomButtons; 
 extern int AlwaysA; 
 int GetButtonsToPress(TimedHitsProc* proc) { 
@@ -320,7 +327,9 @@ int GetButtonsToPress(TimedHitsProc* proc) {
 		int size = 5; // -1 since we count from 0  
 		int numberOfRandomButtons = NumberOfRandomButtons; 
 		if (!numberOfRandomButtons) { numberOfRandomButtons = TimedHitsDifficultyRam->difficulty; } 
+		if (IsNotMagicAnimation(proc)) { numberOfRandomButtons = numberOfRandomButtons / 2; } 
 		if (!numberOfRandomButtons) { numberOfRandomButtons = 1; }
+		
 		for (int i = 0; i < numberOfRandomButtons; ++i) { 
 			num = NextRN_N(size); 
 			button = KeysList[num];
@@ -523,6 +532,8 @@ void DoStuffIfHit(TimedHitsProc* proc, struct ProcEkrBattle* battleProc, struct 
 
 } 
 
+extern int DifficultyThreshold; 
+extern int DifficultyBonusPercent; 
 int GetDefaultDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* opp_bunit, int success) { 
 
 	if (success) { 
@@ -530,6 +541,9 @@ int GetDefaultDamagePercent(struct BattleUnit* active_bunit, struct BattleUnit* 
 			if (BlockingEnabled) { return ReducedDamagePercent; }
 			else { return 100; } 
 		} 
+		if (!TimedHitsDifficultyRam->alwaysA) { 
+			if ((TimedHitsDifficultyRam->difficulty >= DifficultyThreshold) || (NumberOfRandomButtons >= DifficultyThreshold)) { return BonusDamagePercent + DifficultyBonusPercent; } 
+		}
 		return BonusDamagePercent; 
 	} 
 	if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED) { 
