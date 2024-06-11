@@ -60,6 +60,17 @@ WORD 1
 TimedHitsDifficultyRam:
 WORD 0x202BD0F // uses 1 byte if NumberOfRandomButtons is 0 
 
+#ifndef VengeanceID 
+	#define VengeanceID 255 
+#endif 
+#ifndef AstraID 
+	#define AstraID 255 
+#endif 
+#ifndef EnrageID 
+	#define EnrageID 255 
+#endif 
+
+
 SkillExceptionsTable:
 FILL 256 
 #define NoSkill(ID) "PUSH; ORG SkillExceptionsTable+ID; BYTE 1; POP"
