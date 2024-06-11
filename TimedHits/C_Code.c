@@ -271,8 +271,7 @@ void LoopTimedHitsProc(TimedHitsProc* proc) {
 	//struct Anim* anim1 = proc->anim; 
 	if (!battleProc) { return; } // 0 after suspend until battle start 
 	if (!proc->anim2) { return; }
-	if (gEkrBattleEndFlag) { return; } // 0 after suspend until battle done
-	
+	if (gEkrBattleEndFlag) { Proc_End(proc); return; } // 0 after suspend until battle done
 	
 	proc->timer++;
 	if (proc->timer2 != 0xFF) { proc->timer2++; } 
