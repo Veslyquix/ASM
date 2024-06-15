@@ -1,0 +1,46 @@
+
+#ifndef callHackNew 
+	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+#endif 
+
+#include "asm.lyn.event" 
+
+PUSH 
+ORG $2b610 
+callHackNew(ContagiousStatus)
+POP 
+
+ALIGN 4 
+ContagiousStatusTable: // inflicts target when statused unit hits the target 
+WORD 0 0 0 0 
+ALIGN 4 
+SuperContagiousStatusTable: // inflicts user when target has a status 
+WORD 0 0 0 0 
+
+#define ContagiousStatusEntry(id) "PUSH; ORG ContagiousStatusTable + id; BYTE id; POP" 
+#define SuperContagiousStatusEntry(id) "PUSH; ORG SuperContagiousStatusTable + id; BYTE id; POP" 
+
+/*
+#define NoStatusID 0
+#define PoisonStatusID 1
+#define SleepStatusID 2
+#define SilenceStatusID 3
+#define BerserkStatusID 4
+#define AtkRingStatusID 5
+#define DefRingStatusID 6
+#define CritRingStatusID 7
+#define AvoRingStatusID 8
+#define SickStatusID 9
+#define PetrifyStatusID 13
+*/ 
+
+
+ContagiousStatusEntry(1) // Poison 
+ContagiousStatusEntry(4) // Berserk 
+SuperContagiousStatusEntry(2) // Sleep - hitting a sleeping enemy will make you fall asleep too  
+
+
+
+
+
+
