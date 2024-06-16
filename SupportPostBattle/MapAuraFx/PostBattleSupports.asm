@@ -686,6 +686,15 @@ cmp r5, #0
 blt BreakLoop 
 cmp r5, r6 
 beq SomeLoop 
+
+mov r0, r4 @ unit 
+mov r1, r5 @ id 
+blh 0x80281f4 @ GetUnitSupporterUnit 
+mov r1, r4 @ unit 
+bl AreUnitsWithinSupportDistance
+cmp r0, #0 
+beq SomeLoop 
+
 mov r0, r4 @ unit 
 mov r1, r5 @ id 
 blh CanUnitSupportNow 
@@ -707,6 +716,36 @@ mov r0, r7 @ true/false
 pop {r4-r7} 
 pop {r1} 
 bx r1 
+.ltorg 
+
+AreUnitsWithinSupportDistance:
+@ r0 unitA r1 unitB 
+ldrb r3, [r1, #0x10] @ xx 
+ldrb r2, [r1, #0x11] @ yy 
+ldrb r1, [r0, #0x10] @ xx 
+ldrb r0, [r0, #0x11] @ yy 
+sub r1, r3 
+sub r0, r2 
+@ Take coordinates'
+@ absolute values.				
+asr r3, r0, #31
+add r0, r0, r3
+eor r0, r3
+
+asr r3, r1, #31
+add r1, r1, r3
+eor r1, r3
+
+add r0, r1 
+ldr r1, =SupportDistanceLink 
+ldr r1, [r1] 
+cmp r0, r1 
+ble WithinSupportDistance
+mov r0, #0 
+bx lr 
+WithinSupportDistance: 
+mov r0, #1 
+bx lr 
 .ltorg 
 	
 @args: r0=actor, r1=target
