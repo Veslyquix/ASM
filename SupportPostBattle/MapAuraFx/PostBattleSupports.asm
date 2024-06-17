@@ -468,11 +468,9 @@ PopulateSupportIncreaseList:
 			
                 mov     r0, r4
                 mov     r1, r5
-                bl      GetUnitDistance
-				ldr r1, =SupportDistanceLink
-				ldr r1, [r1] 
-                cmp     r0, r1
-                ble     SupportedUnits.add
+                bl      AreUnitsWithinSupportDistance
+                cmp     r0, #1
+                beq     SupportedUnits.add
                     b       SupportedUnits.next
 
             SupportedUnits.add:
