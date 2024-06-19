@@ -619,6 +619,7 @@ MarkForSupportIncrease:
 	mov r6, r0 
 	@ if r6 is 0: could the actor now support with anyone else ? 
 	cmp r6, #0 
+	bne GoldHeart 
 	mov r0, r4 
 	mov r1, r5 @ support index 
 	bl CouldActorSupportSomeoneElseNow
@@ -631,6 +632,7 @@ MarkForSupportIncrease:
 	ldr r2, =HeartEmoticonLink
 	cmp r6, #0 
 	beq NormalHeart
+	GoldHeart: 
 	ldr r2, =GoldHeartEmoticonLink
 	NormalHeart: 
 	ldr r2, [r2] 
@@ -656,7 +658,7 @@ CouldActorSupportSomeoneElseNow:
 push {r4-r7, lr} 
 mov r4, r0 @ unit 
 mov r6, r1 @ index to ignore 
-mov r7, r2 @ r2 buffer position 
+
 
 ldr r0, [r4, #0x30] 
 ldr r1, [r4, #0x34] 
