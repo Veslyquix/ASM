@@ -97,6 +97,13 @@ ldr r2, =0x1000E @ undeployed, dead, escaped, acted (if they took a real action 
 tst r1, r2 
 bne DoNotAggro 
 
+mov r1, #0x30 
+ldrb r1, [r7, r1] @ status 
+mov r2, #0xF 
+and r1, r2 
+cmp r1, #4 @ berserk 
+beq DoNotAggro 
+
 @add unit to the AI list so enemies act twice
 ldr    r2,=0x203AA03
 ldrb    r1, [r0,#0x0B]    @allegiance byte of the character we are checking
