@@ -674,6 +674,7 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if (hp == 0xFFFF) { return; } 
 	int oldDamage = round->hpChange;  
 	if (gEkrGaugeDmg[side ^ 1] > oldDamage) { oldDamage = gEkrGaugeDmg[side ^ 1]; } 
+	if (proc->currentRound->attributes & BATTLE_HIT_ATTR_CRIT) { oldDamage = oldDamage * 3; } 
 	if (UsingSkillSys == 2) { oldDamage = ABS(round->overDmg); } 
 	
 	
