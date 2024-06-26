@@ -673,7 +673,14 @@ void AdjustDamageByPercent(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, 
 	if (!hp) { CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp, 0); return; } 
 	if (hp == 0xFFFF) { return; } 
 	int oldDamage = round->hpChange;  
-	if (gEkrGaugeDmg[side ^ 1] > oldDamage) { oldDamage = gEkrGaugeDmg[side ^ 1]; if (proc->currentRound->attributes & BATTLE_HIT_ATTR_CRIT) { oldDamage = oldDamage * 3; } } 
+	if (proc->currentRound->attributes & BATTLE_HIT_ATTR_CRIT) { 
+		if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage) { 
+			oldDamage = gEkrGaugeDmg[side ^ 1]; 
+			oldDamage = oldDamage * 3; 
+		} 
+	}
+	else if (gEkrGaugeDmg[side ^ 1] > oldDamage) { oldDamage = gEkrGaugeDmg[side ^ 1]; } 
+	
 	if (UsingSkillSys == 2) { oldDamage = ABS(round->overDmg); } 
 	
 	
