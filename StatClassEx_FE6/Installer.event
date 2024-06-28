@@ -17,6 +17,13 @@ PUSH
 
 #ifdef _FE6_ 
 
+// This part is specifically for the translation patch! 
+ORG $2DBFB4 // kill the really old stat expansion patch 
+SHORT $4770 // bx lr 
+ORG $2DBFCE 
+BYTE $FF // & stat cap when suspending with above patch 
+
+
 ORG $6ee80 // stat screen something 
 #ifndef VeslyBuildfile 
 BYTE statCap 
@@ -51,11 +58,6 @@ BYTE statCap
 // 8076448 luck see https://github.com/FireEmblemUniverse/fireemblem8u/blob/f0bec31eddc7b563295fe71dd580c598b8400645/src/unitlistscreen.c#L2275
 
 // ?? fe8 9C0B4 DrawPrepScreenItemUseStatBars
-
-
-
-ORG $2DBFCE 
-BYTE $FF // & stat cap when suspending 
 
 
 
