@@ -1,0 +1,12 @@
+
+#include "EndBattleIfBroken.lyn.event" 
+#include "C_Code.lyn.event" 
+
+ALIGN 4 
+MaxNumberOfFrames:
+WORD 600 
+
+PUSH 
+ORG 0x59A00
+jumpToHack(CallStartEndBrokenBattleProc)
+POP 
