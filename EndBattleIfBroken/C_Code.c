@@ -6,27 +6,6 @@ int Mod(int a, int b) PUREFUNC;
 extern const struct ProcCmd gProcScr_Talk[];
 extern const struct ProcCmd* gProcScr_efxHPBar; 
 extern const struct ProcCmd* gProcScr_efxHPBarResire; 
-struct NewProcEfxHPBar {
-    PROC_HEADER;
-
-    /* 29 */ u8 death;
-    /* 2A */ u8 _pad_2A[0x2C - 0x2A];
-    /* 2C */ s16 pos;
-    /* 2E */ s16 cur;
-	/* 30 */ s16 curHpAtkrSS; 
-    /* 32 */ u8 _pad_30[0x48 - 0x32];
-    /* 48 */ s16 diff;
-	/* 4a */ s16 diffHpAtkrSS; 
-    /* 4C */ s16 pre;
-	/* 4e */ s16 preHpAtkrSS; 
-    /* 50 */ s16 post;
-	/* 52 */ s16 postHpAtkrSS;  
-    /* 54 */ int timer;
-    /* 58 */ int finished;
-    /* 5C */ struct Anim * anim5C;
-    /* 60 */ struct Anim * anim60;
-    /* 64 */ struct Anim * anim64;
-};
 
 extern int MaxNumberOfFrames;
 
@@ -34,6 +13,7 @@ typedef struct {
     /* 00 */ PROC_HEADER;
 	int timer;
     int hpBarTimer; 
+    int roundId; 
 } EndBrokenBattleProc;
 void LoopEndBrokenBattleProc(EndBrokenBattleProc* proc);
 const struct ProcCmd EndBrokenBattleProcCmd[] =
@@ -52,6 +32,7 @@ void StartEndBrokenBattleProc(void) {
 	} 
     proc->timer = 0; 
     proc->hpBarTimer = 0; 
+    proc->roundId = 0xFF;
 } 
 
 int HitNow(EndBrokenBattleProc* proc, struct ProcEfxHPBar* HpProc) {
@@ -83,6 +64,12 @@ void EndBattle(EndBrokenBattleProc* proc) {
 void LoopEndBrokenBattleProc(EndBrokenBattleProc* proc) { 
     if (Proc_Find(gProcScr_Talk)) { return; } // wait for battle / death quotes 
     proc->timer++; 
+    struct Anim *anim, *anim2;
+    anim = gAnims[GetAnimPosition(anim) * 2];
+    anim2 = gAnims[GetAnimPosition(anim) * 2 + 1];
+    int roundId = proc->roundId; 
+    proc->roundId = anim->nextRoundId > anim2->nextRoundId ? anim->nextRoundId-1 : anim2->nextRoundId-1; 
+    if (roundId != proc->roundId) { proc->timer = 0; proc->hpBarTimer = 0; } 
     struct ProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBarResire); 
 	if (!HpProc) { HpProc = Proc_Find(gProcScr_efxHPBar); } 
     if (HitNow(proc, HpProc)) { 
