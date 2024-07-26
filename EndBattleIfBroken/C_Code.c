@@ -59,33 +59,11 @@ int HitNow(EndBrokenBattleProc* proc, struct ProcEfxHPBar* HpProc) {
 	return true;
 } 
 
-extern u16* GetAnimRoundData(void); // skillsys repoints gAnimRoundData 
-struct SkillSysBattleHit { 
-    /* 00:18 */ unsigned attributes : 19;
-    /* 19:23 */ unsigned info       : 5;
-    /* 24:31 */ signed   hpChange   : 8;
-	u8 skillID; 
-	s8 cappedDmg; 
-	s16 overDmg; 
-};
-extern struct SkillSysBattleHit* GetCurrentRound(int roundID); 
 
 void EndBattle(EndBrokenBattleProc* proc) { 
     Proc_End(proc); 
 
-    // struct SkillSysBattleHit* nextRound;
-    // for (int i = 0; i < 8; ++i) { 
-        // nextRound = GetCurrentRound(i); 
-        // nextRound->info = BATTLE_HIT_INFO_FINISHES |BATTLE_HIT_INFO_END; 
-    // //nextRound->hpChange = 0; 
-    // } 
-    
-    // // stop future animations from occurring 
-    // u16* animRound = &GetAnimRoundData()[0]; 
-    // for (int i = 0; i < 32; ++i) { 
-        // if (animRound[i] == 0xFFFF) { break; } 
-        // animRound[i] = 0xFFFF; 
-    // } 
+
     struct Anim * anim;
     gEkrBattleEndFlag = true; // immediately ends without waiting for anything 
 
