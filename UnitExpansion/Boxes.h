@@ -46,6 +46,7 @@ struct __attribute__((packed)) BoxUnit {
 	u32 lvl : 6; 
 	u32 escaped : 1; 
 	u32 departed : 1; 
+    u32 dead : 1; 
 	u32 exp : 7; 
 	u32 mag : 6; 
 	u32 str : 6; 
@@ -53,12 +54,12 @@ struct __attribute__((packed)) BoxUnit {
 	u32 spd : 6; 
 	u32 def : 6; 
 	u32 res : 6; 
-	u32 luk : 6; // 156 or 19 / #0x14 bytes per unit to be saved = 97 units or 69 without approximating 
+	u32 luk : 6; // 16x or 21 / #0x15 bytes per unit to be saved = 92 units or 69 without approximating 
 	// 60 bits are saved by approximating supports / wexp 
 };
 #endif 
 
-
+struct BoxUnit* GetCharIDFromBox(int index); 
 extern struct Unit unit[62]; // gGenericBuffer 0x2020188
 extern struct BoxUnit bunit[100]; 
 

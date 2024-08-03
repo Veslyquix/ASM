@@ -283,12 +283,19 @@ void MakePrepUnitList()
     int i; 
 	int cur = CountAndUndeployTempUnits();
     struct Unit *unit;
+    struct BoxUnit* bunit2;
     for (i = 1; i < 64; i++) {
         unit = GetUnit(i);
 
         if (!UNIT_IS_VALID(unit))
             continue;
-
+        
+		#ifndef POKEMBLEM_VERSION 
+		bunit2 = GetCharIDFromBox(unit->pCharacterData->number); // avoid duplicate char IDs 
+		if (bunit2) { 
+			continue; 
+		}
+		#endif 
         if (IsUnitInCurrentRoster(unit)) {
             NewRegisterPrepUnitList(cur, unit);
             cur++;

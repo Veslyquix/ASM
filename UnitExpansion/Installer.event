@@ -15,7 +15,7 @@ WORD 0xEB
 
 // Take over link arena SRAM 
 #define EXPAND_PARTY_MAX 
-// Allows for 97 extra units instead of 51 extra units to be saved. 
+// Allows for 92 extra units instead of 48 extra units to be saved. 
 
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1); PROTECT CURRENTOFFSET-12 CURRENTOFFSET-1"
@@ -90,15 +90,15 @@ WORD 45 // Units past this will be moved to PC box when saving
 ALIGN 4 
 BoxCapacity: 
 #ifdef EXPAND_PARTY_MAX 
-WORD 97 
+WORD 92
 #endif 
 #ifndef EXPAND_PARTY_MAX 
-WORD 51 
+WORD 48 
 #endif 
 
 ALIGN 4 
 BoxBufferCapacity:
-WORD 114 // 0x2028 bytes / 0x48 unit struct size = #0x72 / #114 units 
+WORD 93 // 0x2028 bytes / 0x48 unit struct size = #0x72 / #114 units 
 
 
 // 73A0 

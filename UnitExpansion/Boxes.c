@@ -69,10 +69,10 @@ struct BoxUnit* GetTakenBoxSlot(int slot, int index) {
 } 
 
 #ifndef POKEMBLEM_VERSION 
-struct BoxUnit* GetCharIDFromBox(int slot, int index) { 
+struct BoxUnit* GetCharIDFromBox(int index) { 
 	struct BoxUnit* boxUnitSaved = (void*)&bunit[0]; 
 	for (int i = 0; i < BoxCapacity; i++) { 
-		if (boxUnitSaved[i].classID && boxUnitSaved[i].classID != 0xFF) { 
+		if (boxUnitSaved[i].classID && (boxUnitSaved[i].classID != 0xFF)) { 
 			if (boxUnitSaved[i].unitID == index) { 
 				return &boxUnitSaved[i]; 
 			} 
@@ -80,7 +80,8 @@ struct BoxUnit* GetCharIDFromBox(int slot, int index) {
 		
 	} 
 	return NULL; 
-} 
+} // 2021928 something 78563412 
+
 
 
 void EnsureUnitInPartyASMC(void) { 
@@ -93,7 +94,7 @@ void EnsureUnitInPartyASMC(void) {
 
 int EnsureUnitInParty(int slot, int charID) { 
 	(*ReadSramFast)((void*)PC_GetSaveAddressBySlot(slot), (void*)&bunit[0], sizeof(*bunit)*BoxCapacity); // use the generic buffer instead of reading directly from SRAM 
-	struct BoxUnit* boxUnitSaved = GetCharIDFromBox(slot, charID);
+	struct BoxUnit* boxUnitSaved = GetCharIDFromBox(charID);
 	int result = false; 
 	struct Unit* newUnit; 
 	int deploymentID = 0; 
@@ -329,11 +330,11 @@ void PackUnitsIntoBox(int slot) {
 		}
 		
 		#ifndef POKEMBLEM_VERSION 
-		bunit2 = GetCharIDFromBox(slot, unit2->pCharacterData->number); // avoid duplicate char IDs in case EnsureUnitInParty has been used. 
+		bunit2 = GetCharIDFromBox(unit2->pCharacterData->number); // avoid duplicate char IDs in case EnsureUnitInParty has been used. 
 		if (bunit2) { 
 			PackUnitIntoBox((void*)bunit2, unit2); 
 			ClearUnit(unit2); 
-			return; 
+			continue; 
 		}
 		#endif 
 		
@@ -745,6 +746,7 @@ int UnpackFlooredSupportEXP(int value) {
 	
 	if (SendItemsToConvoy(unit)) { // if convoy is full, do not deposit unit into pc box 
 		boxRam->escaped = ((unit->state & US_BIT16) != 0);
+		boxRam->dead = ((unit->state & US_DEAD) != 0);
 		boxRam->departed = ((unit->state & (1<<24)) != 0);
 		boxRam->unitID = unit->pCharacterData->number; 
 		boxRam->classID = unit->pClassData->number; 
@@ -847,7 +849,7 @@ struct Unit* UnpackUnitFromBox(struct BoxUnit* boxRam, struct Unit* unit) {
 		unit->pMapSpriteHandle = 0; 
 		unit->xPos = 63; 
 		unit->yPos = 63; 
-		unit->state = US_NOT_DEPLOYED | US_HIDDEN | ((boxRam->escaped!=0)<<16) | ((boxRam->departed!=0)<<24) | ((boxRam->metis!=0)<<13); // 0x10009 Escaped, Undeployed, Hidden 
+		unit->state = US_NOT_DEPLOYED | US_HIDDEN | ((boxRam->dead!=0)<<2) | ((boxRam->escaped!=0)<<16) | ((boxRam->departed!=0)<<24) | ((boxRam->metis!=0)<<13); // 0x10009 Escaped, Undeployed, Hidden 
 		unit->index = 0; //GetFreeDeploymentID(); // maybe important 
 		
 		
