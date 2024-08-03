@@ -18,6 +18,7 @@ typedef struct {
 	/* 30 */ u8 digit; 
 } SeedMenuProc;
 
+void DrawEverything(SeedMenuProc* proc); 
 static void SeedMenuLoop(SeedMenuProc* proc); 
 const struct ProcCmd SeedMenuProcCmd[] =
 {
@@ -26,6 +27,8 @@ const struct ProcCmd SeedMenuProcCmd[] =
 	PROC_CALL(StartFadeFromBlack), 
 
     PROC_YIELD,
+    PROC_CALL(StartGreenText),
+    PROC_CALL(DrawEverything),
 	PROC_REPEAT(SeedMenuLoop), 
 
     PROC_CALL(UnlockGame),
@@ -68,8 +71,7 @@ static int GetMaxDigits(int number) {
 
 extern void ChapterStatus_SetupFont(ProcPtr proc); 
 static void DrawSeedMenu(SeedMenuProc* proc) { 
-
-	
+	//ClearBg0Bg1();
 
 	//struct Text handle;
 	//InitText(&handle, 10);
@@ -99,72 +101,74 @@ int CountTextIDLines(int textID);
 char *GetStrNextLine(char *str); 
 
 void StartNumberEntry(ProcPtr parent) { 
-	ClearBg0Bg1();
 	//EnableBgSyncByIndex(0);
 	SeedMenuProc* proc; 
 	if (parent) { proc = (SeedMenuProc*)Proc_StartBlocking((ProcPtr)&SeedMenuProcCmd, parent); } 
 	else { proc = (SeedMenuProc*)Proc_Start((ProcPtr)&SeedMenuProcCmd, PROC_TREE_3); } 
-	if (proc) { 
-		#ifdef POKEMBLEM_VERSION 
-		proc->seed = *StartTimeSeedRamLabel; 
-		#else 
-		proc->seed = gEventSlots[1]; // initial seed 
-		#endif 
-		while (proc->seed > gEventSlots[3]) { proc->seed = proc->seed / 2; } // s3 as max 
-		while (proc->seed < 0) { proc->seed = (proc->seed * 2)+1; } 
-		if (proc->seed < gEventSlots[2]) { proc->seed = gEventSlots[2]; } // s2 as min 
-		proc->digit = 0; 
-		//ResetText();
-		ResetTextFont();
-		SetTextFontGlyphs(0);
-//		ChapterStatus_SetupFont((void*)proc);
 
-		BG_Fill(gBG0TilemapBuffer, 0);
-		BG_EnableSyncByMask(BG0_SYNC_BIT);
-		ResetTextFont();
-		SetTextFontGlyphs(0);
-		SetTextFont(0);
-		
-		
-		#ifdef HARDCODE_TEXT
-		char* string = "Game Seed"; 
-		PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(12,1), TEXT_COLOR_SYSTEM_GREEN, 0, (GetStringTextLen(string)+8)/8, string);
-		string = "Match with a friend for the"; 
-		PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(8,4), TEXT_COLOR_SYSTEM_WHITE, 0, (GetStringTextLen(string)+8)/8, string);
-		string = "same randomizer settings.";
-		PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(8,6), TEXT_COLOR_SYSTEM_WHITE, 2, (GetStringTextLen(string)+8)/8, string);
-		#endif 
-		
-		//struct Text th[5] = NULL; 
-		int lines, x, y, bg; 
-		int textID[2]; 
-		textID[0] = gEventSlots[5]; 
-		textID[1] = gEventSlots[6]; 
-		
-		lines = CountTextIDLines(gEventSlots[5]); 
-		x = 8; 
-		y = 4; 
-		bg = 0; 
-		InitMultiline(0, lines, x, y, bg, TEXT_COLOR_SYSTEM_WHITE, gEventSlots[5]); // these functions do nothing if no text ID 
-		InitMultiline(3, 3, x, y+10, bg, TEXT_COLOR_SYSTEM_WHITE, gEventSlots[6]); 
-		PrepareMultiline(0, gEventSlots[5]); 
-		PrepareMultiline(3, gEventSlots[6]); 
-		DrawMultiline(0, lines, x, y, bg);
-		lines = CountTextIDLines(gEventSlots[6]); 
-		DrawMultiline(3, lines, x, y+10, bg);
-		if (gEventSlots[4]) { 
-			char* string = GetStringFromIndex(gEventSlots[4]); 
-			PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(12,1), TEXT_COLOR_SYSTEM_GREEN, 0, (GetStringTextLen(string)+8)/8, string);
-		} 
-		DrawSeedMenu(proc);
-		
-		//BG_EnableSyncByMask(BG0_SYNC_BIT);
-		StartGreenText(proc); 
-		
-	} 
 	
 } 
 
+
+void DrawEverything(SeedMenuProc* proc) { 
+    #ifdef POKEMBLEM_VERSION 
+    proc->seed = *StartTimeSeedRamLabel; 
+    #else 
+    proc->seed = gEventSlots[1]; // initial seed 
+    #endif 
+    while (proc->seed > gEventSlots[3]) { proc->seed = proc->seed / 2; } // s3 as max 
+    while (proc->seed < 0) { proc->seed = (proc->seed * 2)+1; } 
+    if (proc->seed < gEventSlots[2]) { proc->seed = gEventSlots[2]; } // s2 as min 
+    proc->digit = 0; 
+    //ResetText();
+    ResetTextFont();
+    SetTextFontGlyphs(0);
+//		ChapterStatus_SetupFont((void*)proc);
+
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    ResetTextFont();
+    SetTextFontGlyphs(0);
+    SetTextFont(0);
+    ClearBg0Bg1();
+    
+    #ifdef HARDCODE_TEXT
+    char* string = "Game Seed"; 
+    PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(12,1), TEXT_COLOR_SYSTEM_GREEN, 0, (GetStringTextLen(string)+8)/8, string);
+    string = "Match with a friend for the"; 
+    PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(8,4), TEXT_COLOR_SYSTEM_WHITE, 0, (GetStringTextLen(string)+8)/8, string);
+    string = "same randomizer settings.";
+    PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(8,6), TEXT_COLOR_SYSTEM_WHITE, 2, (GetStringTextLen(string)+8)/8, string);
+    #endif 
+    
+    //struct Text th[5] = NULL; 
+    int lines, x, y, bg; 
+    int textID[2]; 
+    textID[0] = gEventSlots[5]; 
+    textID[1] = gEventSlots[6]; 
+    lines = CountTextIDLines(gEventSlots[5]); 
+    x = 8; 
+    y = 4; 
+    bg = 0; 
+    InitMultiline(0, lines, x, y, bg, TEXT_COLOR_SYSTEM_WHITE, gEventSlots[5]); // these functions do nothing if no text ID 
+    InitMultiline(3, 3, x, y+10, bg, TEXT_COLOR_SYSTEM_WHITE, gEventSlots[6]); 
+    PrepareMultiline(0, gEventSlots[5]); 
+    PrepareMultiline(3, gEventSlots[6]); 
+    DrawMultiline(0, lines, x, y, bg);
+    lines = CountTextIDLines(gEventSlots[6]); 
+    DrawMultiline(3, lines, x, y+10, bg);
+    if (gEventSlots[4]) { 
+        char* string = GetStringFromIndex(gEventSlots[4]); 
+        PutDrawText(NULL, gBG0TilemapBuffer + TILEMAP_INDEX(12,1), TEXT_COLOR_SYSTEM_GREEN, 0, (GetStringTextLen(string)+8)/8, string);
+    } 
+    DrawSeedMenu(proc);
+    
+    //BG_EnableSyncByMask(BG0_SYNC_BIT|BG0_SYNC_BIT);
+    //while (1) { asm("mov r11, r11"); } 
+    //BG_EnableSyncByMask(BG0_SYNC_BIT);
+    
+    
+} 
 
 void InitMultiline(struct Text th[], int lines, int x, int y, int bg, int color, int textID)
 {
@@ -192,12 +196,12 @@ void InitMultiline(struct Text th[], int lines, int x, int y, int bg, int color,
 		Text_SetColor(&th[i], color);
 		if (width > max_width) { max_width = width; } 
 		str = GetStrNextLine(str); 
-		if (!str) break; 
+		if (!*str) break; 
+        
+        str++; // start of next line 
 		
 	}
 	
-	
-	//asm("mov r11, r11"); 
     TileMap_FillRect(
         TILEMAP_LOCATED(bg_table[bg], x, y),
         max_width+x, height+y, 0);
@@ -213,21 +217,20 @@ int CountStrLines(char *str) {
 }
 int CountTextIDLines(int textID) {
 	if (!textID) return 0; 
-	char *str = GetStringFromIndex(textID);
-	return CountStrLines(str); 
+	int result = CountStrLines(GetStringFromIndex(textID));
+	return result; 
 }
 char *GetStrNextLine(char *str) // char *GetStringLineEnd(char *str);
 {
     char c = *str;
+    if (!c) { return str; } 
+    str++; // in case we're already at the end of the current line 
+    c = *str;
     while (c > 1) {
         str++;
         c = *str;
     }
-	if (str) { 
-		str++; 
-		return str;
-	} 
-	return NULL; 
+    return str; 
 }
 
 void PrepareMultiline(struct Text th[], int textID)

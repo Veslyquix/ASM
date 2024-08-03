@@ -1,16 +1,27 @@
+#include "EAstdlib.event"
+
 
 ALIGN 4 
 #include "NumberEntry.lyn.event" 
 
+#define GameSeedText 0x505 
+#define GameSeedDesc 0x506 
+#define GameSeedDesc2 0x507
+
 ALIGN 4 
 ExampleEvent:
+SVAL s2 0x35 
+CALL 0x89EE2E8 
 SVAL s1 12345 // initial value of number
 SVAL s2 15 // min 
 SVAL s3 123469 // max 
 SVAL s4 GameSeedText // text id like 0x505 - Title 
 SVAL s5 GameSeedDesc // text id like 0x505 - line 1-3 
 SVAL s6 GameSeedDesc2 // text id like 0x505 - line 4-6 
-ASMC StartSeedMenu2
+ASMC StartNumberEntry
+// do something with the result here 
+FADI 16 // when done 
+CLEAN 
 NoFade 
 ENDA 
 
