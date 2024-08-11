@@ -35,7 +35,7 @@ void StartEndBrokenBattleProc(void) {
     proc->roundId = 0xFF;
 } 
 
-int HitNow(EndBrokenBattleProc* proc, struct ProcEfxHPBar* HpProc) {
+int HitNowBrokenBattle(EndBrokenBattleProc* proc, struct ProcEfxHPBar* HpProc) {
 	if (!HpProc) { return false; } 
 	return true;
 } 
@@ -55,14 +55,20 @@ void EndBattle(EndBrokenBattleProc* proc) {
     anim = gAnims[0];
     if (anim)
         EndEfxStatusUnits(anim);
-
-    Proc_End(Proc_Find(ProcScr_efxWeaponIcon)); 
-    Proc_End(Proc_Find(ProcScr_efxHPBarColorChange)); 
+    
+    ProcPtr otherProc = Proc_Find(ProcScr_efxWeaponIcon);
+    if (otherProc) { Proc_End(otherProc); }  
+    
+    otherProc = Proc_Find(ProcScr_efxHPBarColorChange); 
+    if (otherProc) { Proc_End(otherProc); }  
+    
     DeleteEach6C_efxStatusUnit();
 } 
 
 void LoopEndBrokenBattleProc(EndBrokenBattleProc* proc) { 
     if (Proc_Find(gProcScr_Talk)) { return; } // wait for battle / death quotes 
+    if (Proc_Find(ProcScr_EkrLevelup)) { return; } 
+    if (Proc_Find(ProcScr_PromoMain)) { return; } 
     proc->timer++; 
     struct Anim *anim, *anim2;
     anim = gAnims[GetAnimPosition(anim) * 2];
@@ -72,7 +78,7 @@ void LoopEndBrokenBattleProc(EndBrokenBattleProc* proc) {
     if (roundId != proc->roundId) { proc->timer = 0; proc->hpBarTimer = 0; } 
     struct ProcEfxHPBar* HpProc = Proc_Find(gProcScr_efxHPBarResire); 
 	if (!HpProc) { HpProc = Proc_Find(gProcScr_efxHPBar); } 
-    if (HitNow(proc, HpProc)) { 
+    if (HitNowBrokenBattle(proc, HpProc)) { 
         if (proc->timer > 1) { proc->hpBarTimer = 0; } 
         proc->timer = 0; 
         proc->hpBarTimer++; 
