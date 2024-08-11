@@ -12,7 +12,9 @@ typedef struct {
     u8 actionID; 
     struct Unit* unit; 
 } DebuggerProc;
+void RestartDebuggerMenu(DebuggerProc* proc); 
 void LoopDebuggerProc(DebuggerProc* proc);
+void PickupUnitIdle(DebuggerProc* proc); 
 void SetupUnitFunc(void); 
 int PromoAction(DebuggerProc* proc);
 int ArenaAction(DebuggerProc* proc); 
@@ -24,8 +26,10 @@ void CallPlayerPhase_FinishAction(DebuggerProc* proc);
 int PlayerPhase_PrepareActionBasic(DebuggerProc* proc);
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc* proc);
 
-#define LoopLabel 0 
-#define UnitActionLabel 1 
+#define RestartLabel 0 
+#define LoopLabel 1 
+#define UnitActionLabel 2 
+#define PickupUnitLabel 3
 #define EndLabel 99 
 #define PostActionLabel 10 
 
@@ -36,7 +40,9 @@ const struct ProcCmd DebuggerProcCmd[] =
 {
 	PROC_NAME("DebuggerProcName"), 
     PROC_YIELD,
-    PROC_LABEL(LoopLabel), // loop indefinitely 
+    PROC_LABEL(RestartLabel), // Menu 
+    PROC_CALL(RestartDebuggerMenu), 
+    PROC_LABEL(LoopLabel), // Loop indefinitely 
 	PROC_REPEAT(LoopDebuggerProc), 
     
     PROC_LABEL(UnitActionLabel), 
@@ -52,11 +58,43 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_CALL(CallPlayerPhase_FinishAction),
     PROC_GOTO(EndLabel), 
     
+    PROC_LABEL(PickupUnitLabel), 
+    PROC_CALL(StartPlayerPhaseSideWindows),
+    PROC_CALL(ResetUnitSpriteHover),
+    PROC_REPEAT(PickupUnitIdle), 
+    
     PROC_LABEL(EndLabel), 
     
     PROC_CALL(ClearActiveUnitStuff),
     PROC_END,
 };
+
+void PickupUnitIdle(DebuggerProc* proc) { 
+    HandlePlayerCursorMovement();
+    if (gKeyStatusPtr->newKeys & A_BUTTON) { 
+        gActionData.xMove = gBmSt.playerCursor.x; 
+        gActionData.yMove = gBmSt.playerCursor.y; 
+        PlayerPhase_ApplyUnitMovementWithoutMenu(proc); 
+        ClearActiveUnitStuff(proc); 
+        PlaySoundEffect(0x6B);
+        Proc_Goto(proc, RestartLabel);
+        return; 
+    } 
+    
+    if (gKeyStatusPtr->newKeys & B_BUTTON) { 
+        gActionData.xMove = gActiveUnitMoveOrigin.x; 
+        gActionData.yMove = gActiveUnitMoveOrigin.y; 
+        PlayerPhase_ApplyUnitMovementWithoutMenu(proc); 
+        ClearActiveUnitStuff(proc); 
+        PlaySoundEffect(0x6B);
+        Proc_Goto(proc, RestartLabel); 
+        return; 
+    } 
+    PutMapCursor(
+        gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y,
+        IsUnitSpriteHoverEnabledAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y) ? 3 : 0);
+    
+}
 
 void ClearActiveUnitStuff(DebuggerProc* proc) { 
     MU_EndAll(); 
@@ -146,7 +184,13 @@ u8 StartArenaNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
-
+u8 PickupUnitNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+    //SetupUnitFunc(); 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, PickupUnitLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
 
 
 int ShouldStartDebugger(void) { 
@@ -164,17 +208,23 @@ void SetupUnitFunc(void) {
     UnitBeginAction(gActiveUnit); 
 }
 
+u8 CanActiveUnitPromote(const struct MenuItemDef* def, int number) { 
+    int classNumber = gActiveUnit->pClassData->number; 
+    if (!gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) { 
+        return 2; // greyed out 
+    } 
+            
+    return 1; 
+} 
 
+u8 CallArenaIsUnitAllowed(const struct MenuItemDef* def, int number) { 
+    return ArenaIsUnitAllowed(gActiveUnit); 
+} 
 
 const struct MenuItemDef gMapMenuItems[] = {
-    //{"　部隊", 0x69A, 0x6DF, 0, 0x6e, MenuAlwaysEnabled, 0, MapMenu_UnitCommand, 0, 0, 0}, // Unit >
-    {"　状況", 0x690, 0x6E0, 0, 0x6f, MenuAlwaysEnabled, 0, StartPromotionNow, 0, 0, 0}, // Status >
-    {"　辞書", 0x69C, 0x6E5, 4, 0x74, MapMenu_IsGuideCommandAvailable, MapMenu_GuideCommandDraw, StartArenaNow}, // Guide
-    {"　戦績", 0x69E, 0x6E3, 0, 0x70, MapMenu_IsRecordsCommandAvailable, 0, MapMenu_RecordsCommand, 0, 0, 0}, // Records
-    {"　設定", 0x69B, 0x6E1, 0, 0x71, MenuAlwaysEnabled, 0, MapMenu_OptionsCommand, 0, 0, 0}, // Options
-    {"　退却", 0x69D, 0x6E2, 0, 0x72, MapMenu_IsRetreatCommandAvailable, 0, MapMenu_RetreatCommand, 0, 0, 0}, // Retreat
-    {"　中断", 0x69F, 0x6E4, 0, 0x73, MapMenu_IsSuspendCommandAvailable, 0, MapMenu_SuspendCommand, 0, 0, 0}, // Suspend
-    {"　終了", 0x6A0, 0x6E6, 0, 0x78, MenuAlwaysEnabled, 0, CommandEffectEndPlayerPhase, 0, 0, 0}, // End Phase
+    {"　戦績", 0xB03, 0x6E3, 0, 0x70, MenuAlwaysEnabled, 0, PickupUnitNow, 0, 0, 0}, 
+    {"　状況", 0xB04, 0x6E0, 0, 0x6f, CanActiveUnitPromote, 0, StartPromotionNow, 0, 0, 0},
+    {"　辞書", 0xB07, 0x6E5, 4, 0x74, CallArenaIsUnitAllowed, 0, StartArenaNow}, 
     MenuItemsEnd
 };
 
@@ -224,16 +274,30 @@ void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainId
     if (!ShouldStartDebugger()) { return; } 
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
     if (!unit) { return; } 
-    UnitBeginActionInit(unit); 
+    
 	DebuggerProc* proc; 
 	proc = Proc_Find(DebuggerProcCmd); 
 	if (!proc) { 
 		//proc = Proc_Start(DebuggerProcCmd, (void*)3); 
 		proc = Proc_StartBlocking(DebuggerProcCmd, playerPhaseProc); 
 	} 
+    RestartDebuggerMenu(proc);
+    Proc_Goto(proc, LoopLabel); 
+    Proc_Goto(playerPhaseProc, 9); // wait for menu? 
+}
+void MakeMoveunitForAnyActiveUnit(void) {
+    if (!MU_Exists()) {
+        MU_Create(gActiveUnit);
+        HideUnitSprite(gActiveUnit);
+    }
+    MU_SetDefaultFacing_Auto();
+}
+
+void RestartDebuggerMenu(DebuggerProc* proc) { 
+    struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
+    if (!unit) { Proc_Goto(proc, EndLabel); } 
+    UnitBeginActionInit(unit); 
     proc->timer = 0; 
-    proc->hpBarTimer = 0; 
-    proc->roundId = 0xFF;
     proc->unit = unit; 
     proc->actionID = 0; 
 
@@ -248,8 +312,8 @@ void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainId
     //gBmMapUnit[gActiveUnit->yPos][gActiveUnit->xPos] = 0;
     gActiveUnit->state |= US_HIDDEN;
     HideUnitSprite(gActiveUnit);
-    MakeMoveunitForActiveUnit(); 
-    Proc_Goto(playerPhaseProc, 9); // wait for menu? 
+    MakeMoveunitForAnyActiveUnit(); 
+    
     gBmSt.gameStateBits &= ~(BM_FLAG_0 | BM_FLAG_1);
     gBmSt.gameStateBits &= ~BM_FLAG_3;
     PutMapCursor(
@@ -260,6 +324,8 @@ void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainId
     
     
 } 
+
+
 
 
 void LoopDebuggerProc(DebuggerProc* proc) { 

@@ -5,6 +5,25 @@
 #include "Hooks.lyn.event" 
 #include "C_Code.lyn.event" 
 
+#ifndef SetText 
+    #define SetText(textID, offset) "PUSH; ORG (TextTable+4*textID); POIN (offset | 0x80000000); POP" 
+#endif 
+SetText(0xB03, PickupText)
+SetText(0xB04, PromoteText)
+SetText(0xB07, ArenaText)
+
+ALIGN 4
+PickupText:
+String(" Pickup")
+BYTE 0
+ALIGN 4
+PromoteText:
+String(" Promote")
+BYTE 0
+ALIGN 4
+ArenaText:
+String(" Arena")
+BYTE 0
 
 PUSH 
 ORG 0x1ca0c
