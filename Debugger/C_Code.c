@@ -25,6 +25,7 @@ void PlayerPhase_FinishActionNoCanto(ProcPtr proc);
 void CallPlayerPhase_FinishAction(DebuggerProc* proc);
 int PlayerPhase_PrepareActionBasic(DebuggerProc* proc);
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc* proc);
+u8 CanActiveUnitPromote(void);
 
 #define RestartLabel 0 
 #define LoopLabel 1 
@@ -98,7 +99,9 @@ void PickupUnitIdle(DebuggerProc* proc) {
 
 void ClearActiveUnitStuff(DebuggerProc* proc) { 
     MU_EndAll(); 
-    gActiveUnit->state = gActiveUnit->state & ~(US_UNSELECTABLE|US_CANTOING); 
+    if (UNIT_FACTION(gActiveUnit) == gPlaySt.faction) { // if turn of the actor, refresh 
+        gActiveUnit->state = gActiveUnit->state & ~(US_UNSELECTABLE|US_CANTOING); 
+    } 
     ClearActiveUnit(gActiveUnit); 
     EnsureCameraOntoPosition(proc, gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
     SetCursorMapPosition(gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
@@ -154,6 +157,7 @@ int UnitActionFunc(DebuggerProc* proc) {
         break; } 
         default: 
     } 
+    proc->actionID = 0; 
     return 0; 
 } 
 
@@ -169,6 +173,7 @@ int ArenaAction(DebuggerProc* proc) {
 } 
 u8 StartPromotionNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     //SetupUnitFunc(); 
+    if (CanActiveUnitPromote() != 1) { return MENU_ACT_SKIPCURSOR | MENU_ACT_SND6B; } 
 	DebuggerProc* proc; 
 	proc = Proc_Find(DebuggerProcCmd); 
     proc->actionID = ActionID_Promo; 
@@ -207,8 +212,8 @@ void SetupUnitFunc(void) {
     gActionData.unitActionType = 1; 
     UnitBeginAction(gActiveUnit); 
 }
-
-u8 CanActiveUnitPromote(const struct MenuItemDef* def, int number) { 
+u8 CanActiveUnitPromote(void) { 
+    if (UNIT_FACTION(gActiveUnit) != gPlaySt.faction) { return 2; } 
     int classNumber = gActiveUnit->pClassData->number; 
     if (!gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) { 
         return 2; // greyed out 
@@ -216,15 +221,29 @@ u8 CanActiveUnitPromote(const struct MenuItemDef* def, int number) {
             
     return 1; 
 } 
+u8 CanActiveUnitPromoteMenu(const struct MenuItemDef* def, int number) { 
+    return CanActiveUnitPromote(); 
+} 
+
 
 u8 CallArenaIsUnitAllowed(const struct MenuItemDef* def, int number) { 
     return ArenaIsUnitAllowed(gActiveUnit); 
 } 
 
+u8 CallCallEndEvent(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+    //SetupUnitFunc(); 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, EndLabel);
+    CallEndEvent(); 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 const struct MenuItemDef gMapMenuItems[] = {
     {"　戦績", 0xB03, 0x6E3, 0, 0x70, MenuAlwaysEnabled, 0, PickupUnitNow, 0, 0, 0}, 
-    {"　状況", 0xB04, 0x6E0, 0, 0x6f, CanActiveUnitPromote, 0, StartPromotionNow, 0, 0, 0},
+    {"　状況", 0xB04, 0x6E0, 0, 0x6f, CanActiveUnitPromoteMenu, 0, StartPromotionNow, 0, 0, 0},
     {"　辞書", 0xB07, 0x6E5, 4, 0x74, CallArenaIsUnitAllowed, 0, StartArenaNow}, 
+    {"　辞書", 0xB08, 0x6E5, 4, 0x74, MenuAlwaysEnabled, 0, CallCallEndEvent}, 
     MenuItemsEnd
 };
 

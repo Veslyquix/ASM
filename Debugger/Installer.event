@@ -11,6 +11,7 @@
 SetText(0xB03, PickupText)
 SetText(0xB04, PromoteText)
 SetText(0xB07, ArenaText)
+SetText(0xB08, ClearChText)
 
 ALIGN 4
 PickupText:
@@ -23,6 +24,10 @@ BYTE 0
 ALIGN 4
 ArenaText:
 String(" Arena")
+BYTE 0
+ALIGN 4
+ClearChText:
+String(" Clear Ch.")
 BYTE 0
 
 PUSH 
