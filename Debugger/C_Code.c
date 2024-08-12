@@ -89,16 +89,10 @@ const struct ProcCmd DebuggerProcCmd[] =
 
 void EditMapIdle(DebuggerProc* proc) { 
     HandlePlayerCursorMovement();
-    int x = gBmSt.playerCursorDisplay.x; 
-    int y = gBmSt.playerCursorDisplay.y; 
+    int x = gBmSt.playerCursor.x; 
+    int y = gBmSt.playerCursor.y; 
     if (gKeyStatusPtr->newKeys & A_BUTTON) { // see https://github.com/FireEmblemUniverse/fireemblem8u/blob/a608c6c4b6bc0cdf15f14292c99657cae73f6bdb/src/bmmap.c#L271
-        u16** rows = gBmMapBaseTiles;
-        u16*  itBuffer = (u16*)(gBmMapBaseTiles + gBmMapSize.y);
-        rows[y] = itBuffer;
-        itBuffer += gBmMapSize.x * (y+1);
-        
         gBmMapBaseTiles[y][x] = proc->tileID << 2;
-        //gBmMapBaseTiles[(y * (gBmMapSize.x - 1)) + (gBmMapSize.y)][x] = proc->tileID << 2;
         RefreshTerrainBmMap();
         UpdateRoofedUnits();
         RenderBmMap();
@@ -114,7 +108,7 @@ void EditMapIdle(DebuggerProc* proc) {
         Proc_Goto(proc, RestartLabel); 
         return; 
     } 
-    PutMapCursor(x, y, IsUnitSpriteHoverEnabledAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y) ? 3 : 0);
+    PutMapCursor(gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y, IsUnitSpriteHoverEnabledAt(x, y) ? 3 : 0);
 }
 
 
