@@ -302,11 +302,11 @@ int PlayerPhase_PrepareActionBasic(DebuggerProc* proc) {
     cameraReturn = EnsureCameraOntoPosition(
         proc, GetUnit(gActionData.subjectIndex)->xPos, GetUnit(gActionData.subjectIndex)->yPos);
     cameraReturn ^= 1;
-    if ((gActionData.unitActionType != UNIT_ACTION_WAIT) && !gBmSt.just_resumed)
-    {
-        gActionData.suspendPointType = SUSPEND_POINT_DURINGACTION;
-        WriteSuspendSave(SAVE_ID_SUSPEND);
-    }
+    //if ((gActionData.unitActionType != UNIT_ACTION_WAIT) && !gBmSt.just_resumed)
+    //{
+    //    gActionData.suspendPointType = SUSPEND_POINT_DURINGACTION;
+    //    WriteSuspendSave(SAVE_ID_SUSPEND);
+    //}
 
     return cameraReturn;
 
