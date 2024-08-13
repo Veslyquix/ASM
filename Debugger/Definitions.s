@@ -17,6 +17,8 @@ SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
 
 SET_FUNC SetBlendConfig, 0x8001ea1
+SET_DATA gProcScr_TerrainDisplay, 0x8a018ac
+SET_DATA sTilesetConfig, 0x2030b8c
 SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC Div, __divsi3
 SET_FUNC Mod, __modsi3

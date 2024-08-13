@@ -4,12 +4,17 @@
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
 
+#define xTilesAmount 15
+#define favTilesAmount 15
+
 typedef struct {
     /* 00 */ PROC_HEADER;
 	int timer;
     int tileID; 
     u8 actionID; 
     struct Unit* unit; 
+    u16 xTiles[15]; 
+    u16 favTiles[15]; 
 } DebuggerProc;
 void RestartDebuggerMenu(DebuggerProc* proc); 
 void LoopDebuggerProc(DebuggerProc* proc);
@@ -26,15 +31,23 @@ int PlayerPhase_PrepareActionBasic(DebuggerProc* proc);
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc* proc);
 void EditMapIdle(DebuggerProc* proc); 
 void StartPlayerPhaseTerrainWindow(); 
+void ChooseTileInit(DebuggerProc* proc);
+void ChooseTileIdle(DebuggerProc* proc);
+void RenderTilesetRowOnBg2(DebuggerProc* proc);
+void DisplayTilesetTile(DebuggerProc* proc, u16* bg, int xTileMap, int yTileMap, int xBmMap, int yBmMap);
+void EditMapInit(DebuggerProc* proc);
+void InitProc(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
-#define RestartLabel 0 
-#define LoopLabel 1 
-#define UnitActionLabel 2 
-#define PickupUnitLabel 3
-#define EditMapLabel 4
-#define EditTerrainLabel 5
-#define EditTrapLabel 6
+#define InitProcLabel 0
+#define RestartLabel 1
+#define LoopLabel 2
+#define UnitActionLabel 3 
+#define PickupUnitLabel 4
+#define ChooseTileLabel 5
+#define EditMapLabel 6
+#define EditTerrainLabel 7
+#define EditTrapLabel 8
 #define EndLabel 99 
 #define PostActionLabel 10 
 
@@ -44,9 +57,11 @@ u8 CanActiveUnitPromote(void);
 const struct ProcCmd DebuggerProcCmd[] =
 {
 	PROC_NAME("DebuggerProcName"), 
-    
-    PROC_LABEL(RestartLabel), // Menu 
     PROC_YIELD,
+    PROC_LABEL(InitProcLabel), 
+    PROC_CALL(InitProc), 
+    PROC_LABEL(RestartLabel), // Menu 
+    
     PROC_CALL(EndPlayerPhaseSideWindows), 
     PROC_SLEEP(1),
     PROC_WHILE(DoesBMXFADEExist),
@@ -70,13 +85,17 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_GOTO(EndLabel), 
     
     PROC_LABEL(PickupUnitLabel), // Pickup 
-    PROC_CALL(StartPlayerPhaseSideWindows),
+    PROC_CALL(StartPlayerPhaseTerrainWindow),
     PROC_CALL(ResetUnitSpriteHover),
     PROC_REPEAT(PickupUnitIdle), 
     PROC_GOTO(EndLabel), 
     
+    PROC_LABEL(ChooseTileLabel), // Tile select 
+    PROC_CALL(ChooseTileInit), 
+    PROC_REPEAT(ChooseTileIdle), 
+    
     PROC_LABEL(EditMapLabel), // Map
-    PROC_CALL(StartPlayerPhaseTerrainWindow), 
+    PROC_CALL(EditMapInit), 
     PROC_REPEAT(EditMapIdle), 
     
     
@@ -86,7 +105,110 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_END,
 };
 
+void ChooseTileInit(DebuggerProc* proc) { // if need to load gfx 
+    EndPlayerPhaseSideWindows(); 
+    RenderTilesetRowOnBg2(proc); 
+    return; 
+}
 
+void OffsetTileset(DebuggerProc* proc, int amount) { 
+    int newVal = 0; 
+    if (amount < 0) { 
+        for (int i = 0; i < xTilesAmount; ++i) { 
+            newVal = proc->xTiles[i] & 0x3FF; 
+            proc->xTiles[i] = (newVal - ABS(amount)) & 0x3FF; 
+        } 
+    
+    } 
+    else { 
+        for (int i = 0; i < xTilesAmount; ++i) { 
+            newVal = proc->xTiles[i] & 0x3FF; 
+            proc->xTiles[i] = (newVal + amount) & 0x3FF; 
+        } 
+    } 
+    RenderTilesetRowOnBg2(proc);
+}
+
+// bg0 text, bg1 menu bgs, bg2 blank, bg3 map 
+void ChooseTileIdle(DebuggerProc* proc) { 
+    int x = 7; 
+    int y = 9; 
+    u16 keys = gKeyStatusPtr->newKeys | gKeyStatusPtr->repeatedKeys; 
+    if (keys & A_BUTTON) {
+        proc->tileID = proc->xTiles[7]; 
+        Proc_Goto(proc, EditMapLabel); 
+    }
+    if (keys & A_BUTTON) {
+        Proc_Goto(proc, EditMapLabel); 
+    }
+    if (keys & DPAD_LEFT) {
+        OffsetTileset(proc, -1); 
+    }
+    if (keys & DPAD_RIGHT) {
+        OffsetTileset(proc, 1); 
+    }
+    if (keys & DPAD_UP) {
+        OffsetTileset(proc, -16); 
+    }
+    if (keys & DPAD_DOWN) {
+        OffsetTileset(proc, 16); 
+    }
+
+    PutMapCursor(x << 4, y << 4, 0);
+
+
+}
+
+extern u16 sTilesetConfig[]; 
+void RenderTilesetRowOnBg2(DebuggerProc* proc) {
+    int ix, iy;
+    //RegisterBlankTile(0x400); 
+    //BG_Fill(gBG0TilemapBuffer, 0);
+    //BG_Fill(gBG1TilemapBuffer, 0);
+    //SetBackgroundTileDataOffset(2, 0);
+    //BG_Fill(gBG2TilemapBuffer, 0);
+    //
+    //BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
+    
+    RenderBmMapOnBg2(); 
+    
+    SetBackgroundTileDataOffset(2, 0x8000);
+
+    gBmSt.mapRenderOrigin.x = gBmSt.camera.x >> 4;
+    gBmSt.mapRenderOrigin.y = gBmSt.camera.y >> 4;
+
+    for (iy = (10 - 1); iy >= 9; --iy) // 9 so only bottom row 
+        for (ix = (15 - 1); ix >= 0; --ix)
+            DisplayTilesetTile(proc, gBG2TilemapBuffer, ix, iy,
+                (short) gBmSt.mapRenderOrigin.x + ix, (short) gBmSt.mapRenderOrigin.y + iy);
+
+    BG_EnableSyncByMask(1 << 2);
+    BG_SetPosition(2, 0, 0);
+}
+
+void DisplayTilesetTile(DebuggerProc* proc, u16* bg, int xTileMap, int yTileMap, int xBmMap, int yBmMap) {
+    u16* out = bg + yTileMap * 0x40 + xTileMap * 2; // TODO: BG_LOCATED_TILE?
+    //u16* tile = sTilesetConfig + gBmMapBaseTiles[yBmMap][xBmMap];
+    
+    u16* tile = sTilesetConfig + (proc->xTiles[xTileMap] << 2);
+
+    // TODO: palette id constants
+    u16 base = gBmMapFog[yBmMap][xBmMap] ? (6 << 12) : (11 << 12);
+
+    out[0x00 + 0] = base + *tile++;
+    out[0x00 + 1] = base + *tile++;
+    out[0x20 + 0] = base + *tile++;
+    out[0x20 + 1] = base + *tile++;
+}
+
+void EditMapInit(DebuggerProc* proc) { 
+    SetBackgroundTileDataOffset(2, 0);
+    BG_Fill(gBG2TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
+    StartPlayerPhaseTerrainWindow(); 
+} 
+
+extern const struct ProcCmd gProcScr_TerrainDisplay[]; 
 void EditMapIdle(DebuggerProc* proc) { 
     HandlePlayerCursorMovement();
     int x = gBmSt.playerCursor.x; 
@@ -96,6 +218,9 @@ void EditMapIdle(DebuggerProc* proc) {
         RefreshTerrainBmMap();
         UpdateRoofedUnits();
         RenderBmMap();
+        ProcPtr terrainDispProc = Proc_Find(gProcScr_TerrainDisplay); 
+        Proc_Goto(terrainDispProc, 0); // new terrain 
+        //PlaySoundEffect(0x6A);
         return; 
     } 
     
@@ -108,6 +233,11 @@ void EditMapIdle(DebuggerProc* proc) {
         Proc_Goto(proc, RestartLabel); 
         return; 
     } 
+    if (gKeyStatusPtr->newKeys & (R_BUTTON | START_BUTTON)) {
+        PlaySoundEffect(0x6A);
+        Proc_Goto(proc, ChooseTileLabel); 
+        return; 
+    }
     PutMapCursor(gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y, IsUnitSpriteHoverEnabledAt(x, y) ? 3 : 0);
 }
 
@@ -242,7 +372,7 @@ u8 EditMapNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     //SetupUnitFunc(); 
 	DebuggerProc* proc; 
 	proc = Proc_Find(DebuggerProcCmd); 
-    Proc_Goto(proc, EditMapLabel);
+    Proc_Goto(proc, ChooseTileLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
@@ -293,7 +423,7 @@ const struct MenuItemDef gMapMenuItems[] = {
     {"　状況", 0xB04, 0x6E0, 0, 0x6f, CanActiveUnitPromoteMenu, 0, StartPromotionNow, 0, 0, 0},
     {"　辞書", 0xB07, 0x6E5, 0, 0x74, CallArenaIsUnitAllowed, 0, StartArenaNow}, 
     {"　辞書", 0xB08, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, CallEndEventNow}, 
-    {"　辞書", 0xB08, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditMapNow}, 
+    {"　辞書", 0xB09, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditMapNow}, 
     MenuItemsEnd
 };
 
@@ -361,6 +491,14 @@ void MakeMoveunitForAnyActiveUnit(void) {
     }
     MU_SetDefaultFacing_Auto();
 }
+void InitProc(DebuggerProc* proc) { 
+    proc->timer = 0; 
+    proc->actionID = 0; 
+    proc->tileID = 1; 
+    for (int i = 0; i < xTilesAmount; ++i) { 
+        proc->xTiles[i] = i; 
+    } 
+}
 
 void RestartDebuggerMenu(DebuggerProc* proc) { 
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
@@ -368,10 +506,7 @@ void RestartDebuggerMenu(DebuggerProc* proc) {
     ProcPtr playerPhaseProc = Proc_Find(gProcScr_PlayerPhase); 
     Proc_Goto(playerPhaseProc, 9); // wait for menu? 
     UnitBeginActionInit(unit); 
-    proc->timer = 0; 
     proc->unit = unit; 
-    proc->actionID = 0; 
-    proc->tileID = 1; 
 
     gPlaySt.xCursor = gBmSt.playerCursor.x;
     gPlaySt.yCursor = gBmSt.playerCursor.y;
