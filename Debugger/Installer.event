@@ -13,6 +13,8 @@ SetText(0xB04, PromoteText)
 SetText(0xB07, ArenaText)
 SetText(0xB08, ClearChText)
 SetText(0xB09, EditMapText)
+SetText(0xB0A, EditStatsText)
+SetText(0xB0B, EditItemsText)
 
 ALIGN 4
 PickupText:
@@ -33,6 +35,14 @@ BYTE 0
 ALIGN 4
 EditMapText:
 String(" Edit Map")
+BYTE 0
+ALIGN 4
+EditStatsText:
+String(" Stats")
+BYTE 0
+ALIGN 4
+EditItemsText:
+String(" Items")
 BYTE 0
 
 PUSH 

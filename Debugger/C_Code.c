@@ -9,9 +9,12 @@ int Mod(int a, int b) PUREFUNC;
 
 typedef struct {
     /* 00 */ PROC_HEADER;
-	int timer;
-    int tileID; 
+    s16 tileID; 
+    s8 editing; 
     u8 actionID; 
+    s8 id;
+    s8 digit;
+    s8 tmp[8];
     struct Unit* unit; 
     u16 xTiles[15]; 
     u16 favTiles[15]; 
@@ -37,6 +40,10 @@ void RenderTilesetRowOnBg2(DebuggerProc* proc);
 void DisplayTilesetTile(DebuggerProc* proc, u16* bg, int xTileMap, int yTileMap, int xBmMap, int yBmMap);
 void EditMapInit(DebuggerProc* proc);
 void InitProc(DebuggerProc* proc);
+void EditStatsInit(DebuggerProc* proc);
+void EditStatsIdle(DebuggerProc* proc);
+void EditItemsInit(DebuggerProc* proc);
+void EditItemsIdle(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -48,6 +55,8 @@ u8 CanActiveUnitPromote(void);
 #define EditMapLabel 6
 #define EditTerrainLabel 7
 #define EditTrapLabel 8
+#define EditStatsLabel 9
+#define EditItemsLabel 9
 #define EndLabel 99 
 #define PostActionLabel 10 
 
@@ -97,13 +106,275 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_LABEL(EditMapLabel), // Map
     PROC_CALL(EditMapInit), 
     PROC_REPEAT(EditMapIdle), 
+    PROC_GOTO(EndLabel), 
     
+    PROC_LABEL(EditStatsLabel), // Stats 
+    PROC_CALL(EditStatsInit), 
+    PROC_REPEAT(EditStatsIdle), 
+    PROC_GOTO(EndLabel), 
+
+    PROC_LABEL(EditItemsLabel), // Items 
+    PROC_CALL(EditItemsInit), 
+    PROC_REPEAT(EditItemsIdle), 
+    PROC_GOTO(EndLabel), 
     
     PROC_LABEL(EndLabel), 
     
     PROC_CALL(ClearActiveUnitStuff),
     PROC_END,
 };
+
+//const char* UnitStats
+#define NumberOfOptions 8 
+#define START_X 19
+#define Y_HAND 2
+#define NUMBER_X 17
+typedef const struct {
+  u32 x;
+  u32 y;
+} LocationTable;
+LocationTable CursorLocationTable[] = {
+  //{(NUMBER_X*8) - (0 * 8) - 4, Y_HAND*8},
+  {(START_X*8) - (1 * 8) + 4, Y_HAND*8},
+  {(START_X*8) - (2 * 8) + 4, Y_HAND*8},
+  {(START_X*8) - (3 * 8) + 4, Y_HAND*8},
+  {(START_X*8) - (4 * 8) + 4, Y_HAND*8},
+  {(START_X*8) - (5 * 8) + 4, Y_HAND*8},
+  {(START_X*8) - (6 * 8) + 4, Y_HAND*8}, 
+  {(START_X*8) - (7 * 8) + 4, Y_HAND*8}, 
+  {(START_X*8) - (8 * 8) + 4, Y_HAND*8}, 
+};
+
+const u32 DigitDecimalTable[] = { 
+1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000
+}; 
+
+static int GetMaxDigits(int number) { 
+
+	int result = 1; 
+	while (number > DigitDecimalTable[result]) { result++; } 
+	//result++; // table is 0 indexed, but we count digits from 1 
+	if (result > 9) { result = 9; } 
+	return result; 
+
+} 
+
+#define StatWidth 3
+void RedrawUnitStatsMenu(DebuggerProc* proc); 
+void EditStatsInit(DebuggerProc* proc) { 
+    ResetTextFont();
+    SetTextFontGlyphs(0);
+//		ChapterStatus_SetupFont((void*)proc);
+
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    ResetTextFont();
+    SetTextFontGlyphs(0);
+    SetTextFont(0);
+    ClearBg0Bg1(); 
+    struct Unit* unit = proc->unit; 
+    proc->tmp[0] = unit->maxHP; 
+    proc->tmp[1] = unit->pow; 
+    proc->tmp[2] = unit->skl; 
+    proc->tmp[3] = unit->spd; 
+    proc->tmp[4] = unit->def; 
+    proc->tmp[5] = unit->res; 
+    proc->tmp[6] = unit->lck; 
+    proc->tmp[7] = unit->_u3A; 
+    ResetText();
+    
+    int x = NUMBER_X - StatWidth - 1; 
+    int y = Y_HAND - 1; 
+    int w = StatWidth + (START_X - NUMBER_X) + 3; 
+    int h = (NumberOfOptions * 2) + 2; 
+    
+    DrawUiFrame(
+        BG_GetMapBuffer(1), // back BG
+        x, y, w, h,
+        TILEREF(0, 0), 0); // style as 0 ? 
+
+    //ClearUiFrame(
+    //    BG_GetMapBuffer(1), // front BG 
+    //    x, y, w, h);
+    
+    struct Text* th = gStatScreen.text;
+    
+    for (int i = 0; i < 15; ++i) { 
+        InitText(&th[i], StatWidth);
+    } 
+    int c = 0; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4E9)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4FE)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4EC)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4ED)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4EF)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4F0)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4EE)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndex(0x4FF)); c++; 
+    RedrawUnitStatsMenu(proc);
+}
+
+void RedrawUnitStatsMenu(DebuggerProc* proc) { 
+	TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfOptions, 0);
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+    //ResetText();
+    int c = 0; 
+    struct Text* th = gStatScreen.text;
+
+    
+    c = 0; 
+    int x = NUMBER_X - StatWidth; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+
+
+    for (int i = 0; i < NumberOfOptions; ++i) { 
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+    } 
+
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+}
+
+
+const u16 sSprite_VertHand[] = {
+    1,
+    0x0002, 0x4000, 0x0006
+};
+const u8 sHandVOffsetLookup[] = {
+    0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 3, 3,
+    4, 4, 4, 4, 4, 4, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1,
+};
+extern int sPrevHandClockFrame; 
+extern struct Vec2 sPrevHandScreenPosition; 
+extern int sPrevHandClockFrame; 
+static void DisplayVertUiHand(int x, int y)
+{
+    if ((GetGameClock() - 1) == sPrevHandClockFrame)
+    {
+        x = (x + sPrevHandScreenPosition.x) >> 1;
+        y = (y + sPrevHandScreenPosition.y) >> 1;
+    }
+
+    sPrevHandScreenPosition.x = x;
+    sPrevHandScreenPosition.y = y;
+    sPrevHandClockFrame = GetGameClock();
+
+    y += (sHandVOffsetLookup[Mod(GetGameClock(), ARRAY_COUNT(sHandVOffsetLookup))] - 14);
+    PutSprite(2, x, y, sSprite_VertHand, 0);
+}
+
+const s8 StatCapLookup[] = { 
+    99, 63, 63, 63, 63, 63, 63, 63, 
+}; 
+
+void SaveStats(DebuggerProc* proc) { 
+
+    struct Unit* unit = proc->unit; 
+    int hpDiff = proc->tmp[0] - unit->maxHP; 
+    unit->maxHP = proc->tmp[0]; 
+    if (hpDiff > 0) { unit->curHP += hpDiff; } 
+    unit->pow = proc->tmp[1]; 
+    unit->skl = proc->tmp[2]; 
+    unit->spd = proc->tmp[3]; 
+    unit->def = proc->tmp[4]; 
+    unit->res = proc->tmp[5]; 
+    unit->lck = proc->tmp[6]; 
+    unit->_u3A = proc->tmp[7]; 
+
+
+
+} 
+
+extern struct KeyStatusBuffer sKeyStatusBuffer;
+void EditStatsIdle(DebuggerProc* proc) { 
+    
+	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
+	u16 keys = sKeyStatusBuffer.repeatedKeys; 
+    if (keys & B_BUTTON) { //press B to not save stats 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update stats and continue 
+        SaveStats(proc); 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if (proc->editing) { 
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
+        int max = StatCapLookup[proc->id]; 
+        int min = 0; 
+        int max_digits = GetMaxDigits(max); 
+        
+        if (keys & DPAD_RIGHT) {
+          if (proc->digit > 0) { proc->digit--; }
+          else { proc->digit = max_digits - 1; proc->editing = false; } 
+          RedrawUnitStatsMenu(proc);
+        }
+        if (keys & DPAD_LEFT) {
+          if (proc->digit < (max_digits-1)) { proc->digit++; }
+          else { proc->digit = 0; proc->editing = false; } 
+          RedrawUnitStatsMenu(proc);
+        }
+        
+        if (keys & DPAD_UP) {
+            if (proc->tmp[proc->id] == max) { proc->tmp[proc->id] = min; } 
+            else { 
+                proc->tmp[proc->id] += DigitDecimalTable[proc->digit]; 
+                if (proc->tmp[proc->id] > max) { proc->tmp[proc->id] = max; } 
+            } 
+            RedrawUnitStatsMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            
+            if (proc->tmp[proc->id] == min) { proc->tmp[proc->id] = max; } 
+            else { 
+                proc->tmp[proc->id] -= DigitDecimalTable[proc->digit]; 
+                if (proc->tmp[proc->id] < min) { proc->tmp[proc->id] = min; } 
+            } 
+            
+            RedrawUnitStatsMenu(proc); 
+        }
+    }
+    else { 
+        DisplayUiHand(CursorLocationTable[0].x - ((StatWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (keys & DPAD_RIGHT) {
+            proc->digit = 1; 
+          proc->editing = true; 
+        }
+        if (keys & DPAD_LEFT) {
+          proc->digit = 0; 
+          proc->editing = true; 
+        }
+        
+        if (keys & DPAD_UP) {
+            proc->id--; 
+            if (proc->id < 0) { proc->id = NumberOfOptions - 1; } 
+            RedrawUnitStatsMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            proc->id++; 
+            if (proc->id >= NumberOfOptions) { proc->id = 0; } 
+            
+            RedrawUnitStatsMenu(proc); 
+        }
+    } 
+} 
+
+
+void EditItemsInit(DebuggerProc* proc) { 
+    return; 
+}
+void EditItemsIdle(DebuggerProc* proc) { 
+    return; 
+}
+
 
 void ChooseTileInit(DebuggerProc* proc) { // if need to load gfx 
     EndPlayerPhaseSideWindows(); 
@@ -138,7 +409,7 @@ void ChooseTileIdle(DebuggerProc* proc) {
         proc->tileID = proc->xTiles[7]; 
         Proc_Goto(proc, EditMapLabel); 
     }
-    if (keys & A_BUTTON) {
+    if (keys & B_BUTTON) {
         Proc_Goto(proc, EditMapLabel); 
     }
     if (keys & DPAD_LEFT) {
@@ -376,6 +647,19 @@ u8 EditMapNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 EditStatsNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, EditStatsLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+u8 EditItemsNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, EditItemsLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 
 int ShouldStartDebugger(void) { 
     return true; 
@@ -424,6 +708,8 @@ const struct MenuItemDef gMapMenuItems[] = {
     {"　辞書", 0xB07, 0x6E5, 0, 0x74, CallArenaIsUnitAllowed, 0, StartArenaNow}, 
     {"　辞書", 0xB08, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, CallEndEventNow}, 
     {"　辞書", 0xB09, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditMapNow}, 
+    {"　辞書", 0xB0A, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditStatsNow}, 
+    {"　辞書", 0xB0B, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditItemsNow}, 
     MenuItemsEnd
 };
 
@@ -492,9 +778,10 @@ void MakeMoveunitForAnyActiveUnit(void) {
     MU_SetDefaultFacing_Auto();
 }
 void InitProc(DebuggerProc* proc) { 
-    proc->timer = 0; 
+    proc->editing = false; 
     proc->actionID = 0; 
     proc->tileID = 1; 
+    proc->id = 0; 
     for (int i = 0; i < xTilesAmount; ++i) { 
         proc->xTiles[i] = i; 
     } 
