@@ -6,17 +6,18 @@ int Mod(int a, int b) PUREFUNC;
 
 #define xTilesAmount 15
 #define favTilesAmount 15
+#define tmpSize 15
 
 typedef struct {
     /* 00 */ PROC_HEADER;
     s16 tileID; 
+    u16 lastTileHovered; 
     s8 editing; 
     u8 actionID; 
     s8 id;
     s8 digit;
-    s8 tmp[8];
+    u16 tmp[tmpSize];
     struct Unit* unit; 
-    u16 xTiles[15]; 
     u16 favTiles[15]; 
 } DebuggerProc;
 void RestartDebuggerMenu(DebuggerProc* proc); 
@@ -378,27 +379,37 @@ void EditItemsIdle(DebuggerProc* proc) {
 
 void ChooseTileInit(DebuggerProc* proc) { // if need to load gfx 
     EndPlayerPhaseSideWindows(); 
+    int lastTile = proc->lastTileHovered;
+    for (int i = 0; i < xTilesAmount; ++i) { 
+        proc->tmp[i] = (lastTile + i) & 0x3FF; 
+    } 
     RenderTilesetRowOnBg2(proc); 
-    return; 
 }
 
 void OffsetTileset(DebuggerProc* proc, int amount) { 
     int newVal = 0; 
     if (amount < 0) { 
         for (int i = 0; i < xTilesAmount; ++i) { 
-            newVal = proc->xTiles[i] & 0x3FF; 
-            proc->xTiles[i] = (newVal - ABS(amount)) & 0x3FF; 
+            newVal = proc->tmp[i] & 0x3FF; 
+            proc->tmp[i] = (newVal - ABS(amount)) & 0x3FF; 
         } 
     
     } 
     else { 
         for (int i = 0; i < xTilesAmount; ++i) { 
-            newVal = proc->xTiles[i] & 0x3FF; 
-            proc->xTiles[i] = (newVal + amount) & 0x3FF; 
+            newVal = proc->tmp[i] & 0x3FF; 
+            proc->tmp[i] = (newVal + amount) & 0x3FF; 
         } 
     } 
+    proc->lastTileHovered = proc->tmp[0]; 
     RenderTilesetRowOnBg2(proc);
 }
+
+void ClearTilesetRow(DebuggerProc* proc) { 
+    SetBackgroundTileDataOffset(2, 0);
+    BG_Fill(gBG2TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
+} 
 
 // bg0 text, bg1 menu bgs, bg2 blank, bg3 map 
 void ChooseTileIdle(DebuggerProc* proc) { 
@@ -406,11 +417,17 @@ void ChooseTileIdle(DebuggerProc* proc) {
     int y = 9; 
     u16 keys = gKeyStatusPtr->newKeys | gKeyStatusPtr->repeatedKeys; 
     if (keys & A_BUTTON) {
-        proc->tileID = proc->xTiles[7]; 
+        proc->tileID = proc->tmp[7]; 
         Proc_Goto(proc, EditMapLabel); 
     }
     if (keys & B_BUTTON) {
-        Proc_Goto(proc, EditMapLabel); 
+        gActionData.xMove = gActiveUnitMoveOrigin.x; 
+        gActionData.yMove = gActiveUnitMoveOrigin.y; 
+        PlayerPhase_ApplyUnitMovementWithoutMenu(proc); 
+        ClearActiveUnitStuff(proc); 
+        ClearTilesetRow(proc); 
+        PlaySoundEffect(0x6B);
+        Proc_Goto(proc, RestartLabel); 
     }
     if (keys & DPAD_LEFT) {
         OffsetTileset(proc, -1); 
@@ -461,7 +478,7 @@ void DisplayTilesetTile(DebuggerProc* proc, u16* bg, int xTileMap, int yTileMap,
     u16* out = bg + yTileMap * 0x40 + xTileMap * 2; // TODO: BG_LOCATED_TILE?
     //u16* tile = sTilesetConfig + gBmMapBaseTiles[yBmMap][xBmMap];
     
-    u16* tile = sTilesetConfig + (proc->xTiles[xTileMap] << 2);
+    u16* tile = sTilesetConfig + (proc->tmp[xTileMap] << 2);
 
     // TODO: palette id constants
     u16 base = gBmMapFog[yBmMap][xBmMap] ? (6 << 12) : (11 << 12);
@@ -473,9 +490,7 @@ void DisplayTilesetTile(DebuggerProc* proc, u16* bg, int xTileMap, int yTileMap,
 }
 
 void EditMapInit(DebuggerProc* proc) { 
-    SetBackgroundTileDataOffset(2, 0);
-    BG_Fill(gBG2TilemapBuffer, 0);
-    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
+    ClearTilesetRow(proc); 
     StartPlayerPhaseTerrainWindow(); 
 } 
 
@@ -496,12 +511,8 @@ void EditMapIdle(DebuggerProc* proc) {
     } 
     
     if (gKeyStatusPtr->newKeys & B_BUTTON) { 
-        gActionData.xMove = gActiveUnitMoveOrigin.x; 
-        gActionData.yMove = gActiveUnitMoveOrigin.y; 
-        PlayerPhase_ApplyUnitMovementWithoutMenu(proc); 
-        ClearActiveUnitStuff(proc); 
-        PlaySoundEffect(0x6B);
-        Proc_Goto(proc, RestartLabel); 
+        PlaySoundEffect(0x6A);
+        Proc_Goto(proc, ChooseTileLabel); 
         return; 
     } 
     if (gKeyStatusPtr->newKeys & (R_BUTTON | START_BUTTON)) {
@@ -782,8 +793,9 @@ void InitProc(DebuggerProc* proc) {
     proc->actionID = 0; 
     proc->tileID = 1; 
     proc->id = 0; 
-    for (int i = 0; i < xTilesAmount; ++i) { 
-        proc->xTiles[i] = i; 
+    proc->lastTileHovered = 0; 
+    for (int i = 0; i < tmpSize; ++i) { 
+        proc->tmp[i] = 0; 
     } 
 }
 
