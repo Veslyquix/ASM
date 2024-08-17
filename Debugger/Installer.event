@@ -5,16 +5,53 @@
 #include "Hooks.lyn.event" 
 #include "C_Code.lyn.event" 
 
-#ifndef SetText 
-    #define SetText(textID, offset) "PUSH; ORG (TextTable+4*textID); POIN (offset | 0x80000000); POP" 
+
+PUSH 
+ORG 0x1ca0c
+callHackNew(CallDebuggerProc)
+POP 
+
+#ifndef UNIT_MENU_DEFINITIONS
+    #define MenuCommand(name,description,colour,usability,effect) "WORD $80d7d94; SHORT name description; BYTE colour $4e; SHORT 0; POIN usability|1; WORD 0; POIN effect|1; WORD 0 0 0"
+    #define MenuCommand(name,description,colour,usability,effect, unknown1, unknown2) "WORD $80d7d94; SHORT name description; BYTE colour $4e; SHORT 0; POIN usability|1; WORD 0; POIN effect|1; POIN 0 unknown1|1 unknown2|1"
+
+    #define NormalText 0x0
+    #define GrayText 0x1
+    #define BlueText 0x2
+    #define OrangeText 0x3
+    #define GreenText 0x4
+    #define BlackText 0x5
+
+    #define MenuAlwaysEnabled 0x804f449
+    #define MenuNeverEnabled  0x804f451 
 #endif 
-SetText(0xB03, PickupText)
-SetText(0xB04, PromoteText)
-SetText(0xB07, ArenaText)
-SetText(0xB08, ClearChText)
-SetText(0xB09, EditMapText)
-SetText(0xB0A, EditStatsText)
-SetText(0xB0B, EditItemsText)
+
+
+
+ALIGN 4 
+gDebuggerMenuText: 
+FILL(256 * 4) 
+
+#define Counter 0 
+#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; PUSH; ORG gDebuggerMenuText + (((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItems) / 9); POIN NameLabel; POP"
+//#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; "
+    
+
+ALIGN 4 
+gDebuggerMenuItems: 
+MenuCommand(PickupText, 0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, PickupUnitNow)
+MenuCommand(PromoteText, 0, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
+MenuCommand(ArenaText, 0,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
+MenuCommand(ClearChText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
+MenuCommand(EditMapText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
+MenuCommand(EditStatsText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
+MenuCommand(EditItemsText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
+#ifdef DEBUG_SKILL_EDIT_INCLUDED 
+MenuCommand(EditSkillsText,0, OrangeText, $04F449, SkillDebugCommand_OnSelect)
+#endif 
+
+WORD 0 0 0 0 0 0 0 0 0 // terminator 
+
 
 ALIGN 4
 PickupText:
@@ -44,8 +81,9 @@ ALIGN 4
 EditItemsText:
 String(" Items")
 BYTE 0
+ALIGN 4
+EditSkillsText:
+String(" Skills")
+BYTE 0
 
-PUSH 
-ORG 0x1ca0c
-callHackNew(CallDebuggerProc)
-POP 
+

@@ -50,7 +50,7 @@ u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
 #define RestartLabel 1
-#define LoopLabel 2
+#define PostActionLabel 2 // ClassChgMenuSelOnPressB 80CDC15 has Proc_Goto(proc, 2) in it, so we make this post action label 2 
 #define UnitActionLabel 3 
 #define PickupUnitLabel 4
 #define ChooseTileLabel 5
@@ -59,8 +59,8 @@ u8 CanActiveUnitPromote(void);
 #define EditTrapLabel 8
 #define EditStatsLabel 9
 #define EditItemsLabel 10
+#define LoopLabel 11
 #define EndLabel 99 
-#define PostActionLabel 11 
 
 #define ActionID_Promo 1 
 #define ActionID_Arena 2 
@@ -913,7 +913,24 @@ u8 CallEndEventNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
-const struct MenuItemDef gMapMenuItems[] = {
+
+extern const struct MenuItemDef gDebuggerMenuItems[]; 
+extern const char* gDebuggerMenuText[]; 
+int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem) { 
+    if (menuItem->availability == MENU_DISABLED) {
+        Text_SetColor(&menuItem->text, 1);
+    }
+    Text_DrawString(&menuItem->text, gDebuggerMenuText[menuItem->itemNumber]);
+
+    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+
+    return 0;
+
+
+} 
+
+
+const struct MenuItemDef gMapMenuItems2[] = {
     {"　戦績", 0xB03, 0x6E3, 0, 0x70, MenuAlwaysEnabled, 0, PickupUnitNow, 0, 0, 0}, 
     {"　状況", 0xB04, 0x6E0, 0, 0x6f, CanActiveUnitPromoteMenu, 0, StartPromotionNow, 0, 0, 0},
     {"　辞書", 0xB07, 0x6E5, 0, 0x74, CallArenaIsUnitAllowed, 0, StartArenaNow}, 
@@ -935,7 +952,7 @@ u8 MenuCancelSelectResumePlayerPhase(struct MenuProc* menu, struct MenuItemProc*
 const struct MenuDef gDebuggerMenuDef = {
     {1, 2, 7, 0},
     0,
-    gMapMenuItems,
+    gDebuggerMenuItems,
     0, 0, 0,
     MenuCancelSelectResumePlayerPhase,
     MenuAutoHelpBoxSelect,
