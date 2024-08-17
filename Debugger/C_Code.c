@@ -929,6 +929,70 @@ int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
 
 } 
 
+extern char sMsgString[0x1000];
+void HelpBoxIntroDrawTexts(struct ProcHelpBoxIntro * proc)
+{
+    struct HelpBoxScrollProc * otherProc;
+    int textSpeed;
+
+    SetTextFont(&gHelpBoxSt.font);
+
+    SetTextFontGlyphs(1);
+
+    Text_SetColor(&gHelpBoxSt.text[0], 6);
+    Text_SetColor(&gHelpBoxSt.text[1], 6);
+    Text_SetColor(&gHelpBoxSt.text[2], 6);
+
+    SetTextFont(0);
+
+    Proc_EndEach(gProcScr_HelpBoxTextScroll);
+
+    otherProc = Proc_Start(gProcScr_HelpBoxTextScroll, PROC_TREE_3);
+    otherProc->font = &gHelpBoxSt.font;
+
+    otherProc->texts[0] = &gHelpBoxSt.text[0];
+    otherProc->texts[1] = &gHelpBoxSt.text[1];
+    otherProc->texts[2] = &gHelpBoxSt.text[2];
+
+    otherProc->pretext_lines = proc->pretext_lines;
+
+    // TODO: Unknown? Seems pointless, but needed for match
+    GetStringFromIndex(proc->msg);
+    const char* a = (const char*) " asdf"; 
+    for (int i = 0; i < 50; ++i) { 
+        sMsgString[i] = a[i];
+        if (!a[i]) { 
+        break; }  
+    } 
+    SetMsgTerminator(sMsgString);
+
+    otherProc->string = StringInsertSpecialPrefixByCtrl();
+    otherProc->chars_per_step = 1;
+    otherProc->step = 0;
+
+    textSpeed = gPlaySt.config.textSpeed;
+    switch (gPlaySt.config.textSpeed) {
+    case 0: /* default speed */
+        otherProc->speed = 2;
+        break;
+
+    case 1: /* slow */
+        otherProc->speed = textSpeed;
+        break;
+
+    case 2: /* fast */
+        otherProc->speed = 1;
+        otherProc->chars_per_step = textSpeed;
+        break;
+
+    case 3: /* draw all at once */
+        otherProc->speed = 0;
+        otherProc->chars_per_step = 0x7f;
+        break;
+    }
+}
+
+
 void StartHelpBoxString(int x, int y, const char* string)
 {
     sMutableHbi.adjUp    = NULL;
