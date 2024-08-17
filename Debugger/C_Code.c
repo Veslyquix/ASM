@@ -168,7 +168,7 @@ typedef const struct {
   u32 x;
   u32 y;
 } LocationTable;
-LocationTable CursorLocationTable[] = {
+static LocationTable CursorLocationTable[] = {
   //{(NUMBER_X*8) - (0 * 8) - 4, Y_HAND*8},
   {(START_X*8) - (1 * 8) + 4, Y_HAND*8},
   {(START_X*8) - (2 * 8) + 4, Y_HAND*8},
@@ -180,7 +180,7 @@ LocationTable CursorLocationTable[] = {
   {(START_X*8) - (8 * 8) + 4, Y_HAND*8}, 
 };
 
-const u32 DigitDecimalTable[] = { 
+static const u32 DigitDecimalTable[] = { 
 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000
 }; 
 
@@ -284,11 +284,11 @@ void RedrawUnitStatsMenu(DebuggerProc* proc) {
 }
 
 
-const u16 sSprite_VertHand[] = {
+static const u16 sSprite_VertHand[] = {
     1,
     0x0002, 0x4000, 0x0006
 };
-const u8 sHandVOffsetLookup[] = {
+static const u8 sHandVOffsetLookup[] = {
     0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 3, 3, 3, 3,
     4, 4, 4, 4, 4, 4, 4, 3, 3, 2, 2, 2, 1, 1, 1, 1,
 };
@@ -1038,7 +1038,7 @@ u8 MenuCancelSelectResumePlayerPhase(struct MenuProc* menu, struct MenuItemProc*
 
 u8 DebuggerHelpBox(struct MenuProc* menu, struct MenuItemProc* item); 
 const struct MenuDef gDebuggerMenuDef = {
-    {1, 2, 7, 0},
+    {1, 1, 7, 0},
     0,
     gDebuggerMenuItems,
     0, 0, 0,

@@ -21,13 +21,10 @@ POP
     #define OrangeText 0x3
     #define GreenText 0x4
     #define BlackText 0x5
-
-    #define MenuAlwaysEnabled 0x804f449
-    #define MenuNeverEnabled  0x804f451 
 #endif 
 
-
-
+#define MenuAlwaysEnabled 0x804f449
+#define MenuNeverEnabled  0x804f451 
 ALIGN 4 
 gDebuggerMenuText: 
 FILL(256 * 4) 
@@ -48,7 +45,7 @@ MenuCommand(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, Debugger
 MenuCommand(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
 MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
-MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449, SkillDebugCommand_OnSelect)
+//MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)
 #endif 
 
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
