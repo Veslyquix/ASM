@@ -33,57 +33,72 @@ gDebuggerMenuText:
 FILL(256 * 4) 
 
 #define Counter 0 
-#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; PUSH; ORG gDebuggerMenuText + (2 * ((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItems) / 9); POIN NameLabel NameLabel; POP"
+#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; PUSH; ORG gDebuggerMenuText + (2 * ((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItems) / 9); POIN NameLabel DescLabel; POP"
 //#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; "
     
 
 ALIGN 4 
 gDebuggerMenuItems: 
-MenuCommand(PickupText, 0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, PickupUnitNow)
-MenuCommand(PromoteText, 0, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
-MenuCommand(ArenaText, 0,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
-MenuCommand(ClearChText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
-MenuCommand(EditMapText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
-MenuCommand(EditStatsText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
-MenuCommand(EditItemsText,0, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
+MenuCommand(PickupText, PickupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, PickupUnitNow)
+MenuCommand(PromoteText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
+MenuCommand(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
+MenuCommand(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
+MenuCommand(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
+MenuCommand(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
+MenuCommand(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
-MenuCommand(EditSkillsText,0, OrangeText, $04F449, SkillDebugCommand_OnSelect)
+MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449, SkillDebugCommand_OnSelect)
 #endif 
 
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
 
+#define NL "BYTE 0x1" 
+#define EndText "BYTE 0x0" 
 
-ALIGN 4
 PickupText:
-String(" Pickup")
-BYTE 0
-ALIGN 4
-PromoteText:
-String(" Promote")
-BYTE 0
-ALIGN 4
-ArenaText:
-String(" Arena")
-BYTE 0
-ALIGN 4
-ClearChText:
-String(" Clear Ch.")
-BYTE 0
-ALIGN 4
-EditMapText:
-String(" Edit Map")
-BYTE 0
-ALIGN 4
-EditStatsText:
-String(" Stats")
-BYTE 0
-ALIGN 4
-EditItemsText:
-String(" Items")
-BYTE 0
-ALIGN 4
-EditSkillsText:
-String(" Skills")
-BYTE 0
+    String(" Pickup"); EndText 
+PickupDesc:
+    String("Pickup a unit and"); NL
+    String("place them anywhere."); EndText 
 
+PromoteText:
+    String(" Promote"); EndText 
+PromoteDesc:
+    String("Promote the unit"); NL
+    String("into an advanced"); NL 
+    String("class."); EndText 
+    
+ArenaText:
+    String(" Arena"); EndText 
+ArenaDesc: 
+    String("Enter the arena"); NL
+    String("and fight for glory."); EndText 
+
+ClearChText:
+    String(" Clear Ch."); EndText 
+ClearChDesc:
+    String("Clear the current"); NL
+    String("chapter."); EndText 
+
+EditMapText:
+    String(" Edit Map"); EndText 
+EditMapDesc:
+    String("Edit tiles on the"); NL
+    String("map with the tileset."); EndText 
+
+EditStatsText:
+    String(" Stats"); EndText 
+EditStatsDesc:
+    String("Edit a unit's stats."); EndText
+
+EditItemsText:
+    String(" Items"); EndText 
+EditItemsDesc:
+    String("Edit a unit's items."); EndText
+
+EditSkillsText:
+    String(" Skills"); EndText 
+EditSkillsDesc:
+    String("Edit a unit's"); NL
+    String("learned skills."); EndText 
 
