@@ -16,10 +16,27 @@ typedef struct {
     u8 actionID; 
     s8 id;
     s8 digit;
+    u8 godMode; 
     u16 tmp[tmpSize];
     struct Unit* unit; 
-    u16 favTiles[15]; 
 } DebuggerProc;
+
+void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) { 
+    dst->tileID = src->tileID; 
+    dst->lastTileHovered = src->lastTileHovered; 
+    dst->editing = src->editing; 
+    dst->actionID = src->actionID; 
+    dst->id = src->id; 
+    dst->digit = src->digit; 
+    dst->godMode = src->godMode; 
+    for (int i = 0; i < tmpSize; ++i) { 
+        dst->tmp[i] = src->tmp[i]; 
+    }
+    dst->unit = src->unit; 
+} 
+
+
+
 void RestartDebuggerMenu(DebuggerProc* proc); 
 void LoopDebuggerProc(DebuggerProc* proc);
 void PickupUnitIdle(DebuggerProc* proc); 
@@ -65,12 +82,26 @@ u8 CanActiveUnitPromote(void);
 #define ActionID_Promo 1 
 #define ActionID_Arena 2 
 
+const struct ProcCmd DebuggerProcCmdIdler[] =
+{
+    PROC_NAME("DebuggerProcIdler"), 
+    PROC_YIELD,
+    PROC_REPEAT(LoopDebuggerProc), 
+    PROC_END, 
+}; 
+void SaveProcVarsToIdler(DebuggerProc* proc) { 
+    //asm("mov r11, r11"); 
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    CopyProcVariables(procIdler, proc); 
+    Proc_End(proc); 
+} 
+
 const struct ProcCmd DebuggerProcCmd[] =
 {
 	PROC_NAME("DebuggerProcName"), 
     PROC_YIELD,
     PROC_LABEL(InitProcLabel), 
-    PROC_CALL(InitProc), 
+    //PROC_CALL(InitProc), 
     PROC_LABEL(RestartLabel), // Menu 
     
     PROC_CALL(EndPlayerPhaseSideWindows), 
@@ -123,6 +154,7 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_LABEL(EndLabel), 
     
     PROC_CALL(ClearActiveUnitStuff),
+    PROC_CALL(SaveProcVarsToIdler),
     PROC_END,
 };
 
@@ -842,6 +874,63 @@ u8 StartArenaNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 StartGodmodeNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+    //SetupUnitFunc(); 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    proc->actionID = 0; 
+    Proc_Goto(proc, RestartLabel); // 0xb7 
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    if (procIdler->godMode) { 
+        procIdler->godMode = false; 
+        proc->godMode = false; 
+    } 
+    else { 
+        procIdler->godMode = true; 
+        proc->godMode = true; 
+    } 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+void ComputeBattleUnitEffectiveStats(struct BattleUnit* attacker, struct BattleUnit* defender) {
+    ComputeBattleUnitEffectiveHitRate(attacker, defender);
+    ComputeBattleUnitEffectiveCritRate(attacker, defender);
+    ComputeBattleUnitSilencerRate(attacker, defender);
+    ComputeBattleUnitSpecialWeaponStats(attacker, defender);
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmdIdler); 
+    if (!proc) { return; } 
+    #define MaxStat 99 
+    if (proc->godMode) { 
+        struct BattleUnit* bunitA = attacker; 
+        struct BattleUnit* bunitB = defender; 
+        if (UNIT_FACTION(&attacker->unit) == FACTION_RED) { 
+            bunitA = defender; bunitB = attacker; 
+        } 
+        bunitA->battleAttack = bunitB->unit.maxHP;
+        bunitA->battleDefense = MaxStat;
+        bunitA->battleSpeed = MaxStat;
+        bunitA->battleHitRate = MaxStat*2;
+        bunitA->battleAvoidRate = MaxStat;
+        bunitA->battleEffectiveHitRate = 100;
+        bunitA->battleCritRate = MaxStat*2;
+        bunitA->battleDodgeRate = 100;
+        bunitA->battleEffectiveCritRate = 100;
+
+        bunitB->hpInitial = 1; 
+        bunitB->battleAttack = 0;
+        bunitB->battleDefense = 0;
+        bunitB->battleSpeed = 0;
+        bunitB->battleHitRate = 0;
+        bunitB->battleAvoidRate = 0;
+        bunitB->battleEffectiveHitRate = 0;
+        bunitB->battleCritRate = 0;
+        bunitB->battleDodgeRate = 0;
+        bunitB->battleEffectiveCritRate = 0;
+    }
+    
+}
+
 u8 PickupUnitNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     //SetupUnitFunc(); 
 	DebuggerProc* proc; 
@@ -921,25 +1010,23 @@ int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
         Text_SetColor(&menuItem->text, 1);
     }
     Text_DrawString(&menuItem->text, gDebuggerMenuText[menuItem->itemNumber * 2]);
-
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
-
     return 0;
-
-
 } 
-
-
-const struct MenuItemDef gMapMenuItems2[] = {
-    {"　戦績", 0xB03, 0x6E3, 0, 0x70, MenuAlwaysEnabled, 0, PickupUnitNow, 0, 0, 0}, 
-    {"　状況", 0xB04, 0x6E0, 0, 0x6f, CanActiveUnitPromoteMenu, 0, StartPromotionNow, 0, 0, 0},
-    {"　辞書", 0xB07, 0x6E5, 0, 0x74, CallArenaIsUnitAllowed, 0, StartArenaNow}, 
-    {"　辞書", 0xB08, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, CallEndEventNow}, 
-    {"　辞書", 0xB09, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditMapNow}, 
-    {"　辞書", 0xB0A, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditStatsNow}, 
-    {"　辞書", 0xB0B, 0x6E5, 0, 0x74, MenuAlwaysEnabled, 0, EditItemsNow}, 
-    MenuItemsEnd
-};
+int GodmodeDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem) { 
+    if (menuItem->availability == MENU_DISABLED) {
+        Text_SetColor(&menuItem->text, 1);
+    }
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    if (procIdler->godMode) { 
+        Text_DrawString(&menuItem->text, " ON");
+    } 
+    else { 
+        Text_DrawString(&menuItem->text, gDebuggerMenuText[menuItem->itemNumber * 2]);
+    } 
+    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    return 0;
+} 
 
 u8 MenuCancelSelectResumePlayerPhase(struct MenuProc* menu, struct MenuItemProc* item)
 {
@@ -989,11 +1076,20 @@ void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainId
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
     if (!unit) { return; } 
     
-	DebuggerProc* proc; 
-	proc = Proc_Find(DebuggerProcCmd); 
+    
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    if (!procIdler) { 
+        procIdler = Proc_Start(DebuggerProcCmdIdler, (void*)3);
+        InitProc(procIdler); 
+    } 
+    
+	DebuggerProc* proc = Proc_Find(DebuggerProcCmd); 
 	if (!proc) { 
-		//proc = Proc_Start(DebuggerProcCmd, (void*)3); 
+		//proc = Proc_Start(DebuggerProcCmd, (void*)3);
+        //ProcPtr playerPhaseProc = Proc_Find(gProcScr_PlayerPhase); 
 		proc = Proc_StartBlocking(DebuggerProcCmd, playerPhaseProc); 
+        InitProc(proc); 
+        CopyProcVariables(proc, procIdler); 
 	} 
     //RestartDebuggerMenu(proc);
     //Proc_Goto(proc, RestartLabel); 
@@ -1009,6 +1105,7 @@ void MakeMoveunitForAnyActiveUnit(void) {
 void InitProc(DebuggerProc* proc) { 
     proc->editing = false; 
     proc->actionID = 0; 
+    proc->godMode = 0; 
     proc->tileID = 1; 
     proc->id = 0; 
     proc->lastTileHovered = 0; 
@@ -1024,7 +1121,14 @@ void RestartDebuggerMenu(DebuggerProc* proc) {
     Proc_Goto(playerPhaseProc, 9); // wait for menu? 
     UnitBeginActionInit(unit); 
     proc->unit = unit; 
-
+    proc->actionID = 0; 
+    proc->editing = false; 
+    proc->actionID = 0; 
+    proc->id = 0; 
+    for (int i = 0; i < tmpSize; ++i) { 
+        proc->tmp[i] = 0; 
+    } 
+    
     gPlaySt.xCursor = gBmSt.playerCursor.x;
     gPlaySt.yCursor = gBmSt.playerCursor.y;
     //MU_EndAll();

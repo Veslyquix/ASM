@@ -46,6 +46,7 @@ MenuCommand(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenu
 MenuCommand(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
 MenuCommand(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
 MenuCommand(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
+MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
 MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449, SkillDebugCommand_OnSelect)
 #endif 
@@ -101,4 +102,10 @@ EditSkillsText:
 EditSkillsDesc:
     String("Edit a unit's"); NL
     String("learned skills."); EndText 
+
+GodmodeText:
+    String(" Godmode"); EndText 
+GodmodeDesc:
+    String("Make your units"); NL
+    String("win every battle."); EndText 
 
