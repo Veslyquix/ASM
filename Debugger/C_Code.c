@@ -920,7 +920,7 @@ int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     if (menuItem->availability == MENU_DISABLED) {
         Text_SetColor(&menuItem->text, 1);
     }
-    Text_DrawString(&menuItem->text, gDebuggerMenuText[menuItem->itemNumber]);
+    Text_DrawString(&menuItem->text, gDebuggerMenuText[menuItem->itemNumber * 2]);
 
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
 
@@ -929,6 +929,77 @@ int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
 
 } 
 
+void StartHelpBoxString(int x, int y, const char* string)
+{
+    sMutableHbi.adjUp    = NULL;
+    sMutableHbi.adjDown  = NULL;
+    sMutableHbi.adjLeft  = NULL;
+    sMutableHbi.adjRight = NULL;
+
+    sMutableHbi.xDisplay = x;
+    sMutableHbi.yDisplay = y;
+    sMutableHbi.mid      = 0x505; // default text ID 
+
+    sMutableHbi.redirect = NULL;
+    sMutableHbi.populate = NULL;
+
+    sHbOrigin.x = 0;
+    sHbOrigin.y = 0;
+    
+    const struct HelpBoxInfo* info = &sMutableHbi; 
+    struct HelpBoxProc* proc;
+    int wContent, hContent;
+
+    proc = (void*) Proc_Find(gProcScr_HelpBox);
+
+    if (!proc)
+    {
+        proc = (void*) Proc_Start(gProcScr_HelpBox, PROC_TREE_3);
+
+        proc->unk52 = false;
+
+        SetHelpBoxInitPosition(proc, info->xDisplay, info->yDisplay);
+        ResetHelpBoxInitSize(proc);
+    }
+    else
+    {
+        proc->xBoxInit = proc->xBox;
+        proc->yBoxInit = proc->yBox;
+
+        proc->wBoxInit = proc->wBox;
+        proc->hBoxInit = proc->hBox;
+    }
+
+    proc->info = info;
+
+    proc->timer    = 0;
+    proc->timerMax = 12;
+
+    proc->item = 0;
+    proc->mid = info->mid;
+
+    if (proc->info->populate)
+        proc->info->populate(proc);
+
+    SetTextFontGlyphs(1);
+    GetStringTextBox(string, &wContent, &hContent);
+    SetTextFontGlyphs(0);
+
+    ApplyHelpBoxContentSize(proc, wContent, hContent);
+    ApplyHelpBoxPosition(proc, info->xDisplay, info->yDisplay);
+
+    ClearHelpBoxText();
+    StartHelpBoxTextInit(proc->item, proc->mid);
+
+    sLastHbi = info;
+}
+
+
+u8 DebuggerHelpBox(struct MenuProc* menu, struct MenuItemProc* item)
+{
+    StartHelpBoxString(item->xTile*8, item->yTile*8, gDebuggerMenuText[(item->itemNumber * 2) + 1]);
+    return 0; 
+}
 
 const struct MenuItemDef gMapMenuItems2[] = {
     {"　戦績", 0xB03, 0x6E3, 0, 0x70, MenuAlwaysEnabled, 0, PickupUnitNow, 0, 0, 0}, 
@@ -956,7 +1027,7 @@ const struct MenuDef gDebuggerMenuDef = {
     0, 0, 0,
     MenuCancelSelectResumePlayerPhase,
     MenuAutoHelpBoxSelect,
-    MenuStdHelpBox
+    DebuggerHelpBox
 };
 
 void UnitBeginActionInit(struct Unit* unit) {

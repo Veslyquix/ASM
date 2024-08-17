@@ -33,7 +33,7 @@ gDebuggerMenuText:
 FILL(256 * 4) 
 
 #define Counter 0 
-#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; PUSH; ORG gDebuggerMenuText + (((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItems) / 9); POIN NameLabel; POP"
+#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; PUSH; ORG gDebuggerMenuText + (2 * ((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItems) / 9); POIN NameLabel NameLabel; POP"
 //#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; "
     
 
