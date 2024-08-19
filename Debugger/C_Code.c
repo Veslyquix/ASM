@@ -975,10 +975,13 @@ void SetupUnitFunc(void) {
     gActionData.unitActionType = 1; 
     UnitBeginAction(gActiveUnit); 
 }
+
+extern int GetPromoTable(int classNumber, int aOrB);
 u8 CanActiveUnitPromote(void) { 
     if (UNIT_FACTION(gActiveUnit) != gPlaySt.faction) { return 2; } 
+    //u8 promoTable[][2] = *ggPromoJidLut; 
     int classNumber = gActiveUnit->pClassData->number; 
-    if (!gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) { 
+    if (!GetPromoTable(classNumber, 0) && !GetPromoTable(classNumber, 1)) { // gPromoJidLut[classNumber][0]; 
         return 2; // greyed out 
     } 
             
