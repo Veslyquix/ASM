@@ -10,7 +10,7 @@ endif
 # Including devkitARM tool definitions
 include $(DEVKITARM)/base_tools
 # defining path of lyn
-LYN := "C:/devkitPro/lyn.exe"
+LYN := "C:/devkitPro/lyn.exe" -longcalls
 
 # setting up compilation flags
 ARCH   := -mcpu=arm7tdmi -mthumb -mthumb-interwork

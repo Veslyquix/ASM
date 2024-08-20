@@ -65,6 +65,7 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 ALIGN 4 
 gDebuggerMenuItemsPage2: // must be immediately after gDebuggerMenuItems 
 MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
+MenuCommand1(EditMiscText,EditMiscDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMiscNow)
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
 //MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)
@@ -131,7 +132,7 @@ EditSkillsDesc:
     String("learned skills."); EndText 
 
 GodmodeText:
-    String(" Godmode"); EndText 
+    String(" Godmode off"); EndText 
 GodmodeDesc:
     String("Make your units"); NL
     String("win every battle."); EndText 
@@ -148,4 +149,10 @@ PageDesc:
     String("Swap pages in"); NL
     String("this debugger."); EndText 
 
+
+EditMiscText:
+    String(" Misc"); EndText 
+EditMiscDesc:
+    String("Edit unit's ID, class,"); NL
+    String("bonuses, and more."); EndText 
 

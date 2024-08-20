@@ -66,6 +66,8 @@ void EditStatsInit(DebuggerProc* proc);
 void EditStatsIdle(DebuggerProc* proc);
 void EditItemsInit(DebuggerProc* proc);
 void EditItemsIdle(DebuggerProc* proc);
+void EditMiscInit(DebuggerProc* proc);
+void EditMiscIdle(DebuggerProc* proc);
 void RedrawItemMenu(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
@@ -80,7 +82,8 @@ u8 CanActiveUnitPromote(void);
 #define EditTrapLabel 8
 #define EditStatsLabel 9
 #define EditItemsLabel 10
-#define LoopLabel 11
+#define EditMiscLabel 11
+#define LoopLabel 12
 #define EndLabel 99 
 
 #define ActionID_Promo 1 
@@ -153,6 +156,11 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_LABEL(EditItemsLabel), // Items 
     PROC_CALL(EditItemsInit), 
     PROC_REPEAT(EditItemsIdle), 
+    PROC_GOTO(EndLabel), 
+    
+    PROC_LABEL(EditMiscLabel), // Items 
+    PROC_CALL(EditMiscInit), 
+    PROC_REPEAT(EditMiscIdle), 
     PROC_GOTO(EndLabel), 
     
     PROC_LABEL(EndLabel), 
@@ -612,6 +620,244 @@ void EditItemsIdle(DebuggerProc* proc) {
     } 
 } 
 
+#define NumberOfMisc 7 
+#define MiscNameWidth 8 
+ 
+void SaveMisc(DebuggerProc* proc) { 
+
+    struct Unit* unit = proc->unit; 
+    unit->pCharacterData = GetCharacterData(proc->tmp[0]); 
+    unit->pClassData = GetClassData(proc->tmp[1]); 
+    unit->level = proc->tmp[2]; 
+    unit->exp = proc->tmp[3] & 0xFF; 
+    unit->conBonus = proc->tmp[4]; 
+    unit->movBonus = proc->tmp[5]; 
+    if (UNIT_MOV(unit) > 15) { unit->movBonus = 15 - UNIT_MOV_BASE(unit); } 
+    unit->statusIndex = proc->tmp[6] & 0xF;
+    if (unit->statusIndex) { unit->statusDuration = 5; } 
+
+}  
+
+void RedrawMiscMenu(DebuggerProc* proc); 
+void EditMiscInit(DebuggerProc* proc) { 
+    SomeMenuInit(proc); 
+    LoadIconPalettes(4);
+    struct Unit* unit = proc->unit; 
+    for (int i = 0; i < NumberOfMisc; ++i) { 
+        proc->tmp[i] = 0; 
+    }
+    proc->tmp[0] = unit->pCharacterData->number; 
+    proc->tmp[1] = unit->pClassData->number; 
+    proc->tmp[2] = unit->level; 
+    proc->tmp[3] = unit->exp; 
+    proc->tmp[4] = unit->conBonus; 
+    proc->tmp[5] = unit->movBonus; 
+    proc->tmp[6] = unit->statusIndex; 
+    
+    
+    int x = NUMBER_X - MiscNameWidth - 3; 
+    int y = Y_HAND - 1; 
+    int w = MiscNameWidth + (START_X - NUMBER_X) + 8; 
+    int h = (NumberOfMisc * 2) + 2; 
+    
+    DrawUiFrame(
+        BG_GetMapBuffer(1), // back BG
+        x, y, w, h,
+        TILEREF(0, 0), 0); // style as 0 ? 
+
+    struct Text* th = gStatScreen.text;
+    
+    for (int i = 0; i < NumberOfMisc; ++i) { 
+        InitText(&th[i], MiscNameWidth);
+    } 
+
+
+    RedrawMiscMenu(proc);
+}
+  
+extern int sStatusNameTextIdLookup[];
+void RedrawMiscMenu(DebuggerProc* proc) { 
+	//TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfMisc, 0);
+    BG_Fill(gBG0TilemapBuffer, 0); 
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+    ResetIconGraphics();
+    //ResetText();
+    //struct Unit* unit = proc->unit; 
+    struct Text* th = gStatScreen.text;
+    int i = 0; 
+    for (i = 0; i < NumberOfMisc; ++i) { 
+        ClearText(&th[i]); 
+    } 
+    
+    
+    i = 0; 
+    
+    Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(proc->tmp[0])->nameTextId)); i++; 
+    Text_DrawString(&th[i], GetStringFromIndex(GetClassData(proc->tmp[1])->nameTextId)); i++; 
+    Text_DrawString(&th[i], "Level"); i++; 
+    Text_DrawString(&th[i], "Exp"); i++; 
+    Text_DrawString(&th[i], "Bonus Con"); i++; 
+    Text_DrawString(&th[i], "Bonus Mov"); i++; 
+    if (!proc->tmp[6]) { 
+        Text_DrawString(&th[i], "Status"); i++; 
+    } 
+    else { 
+        
+        Text_DrawString(&th[i], GetStringFromIndex(sStatusNameTextIdLookup[proc->tmp[6]])); i++; 
+    } 
+    
+    int x = NUMBER_X - (MiscNameWidth); 
+    for (i = 0; i < NumberOfMisc; ++i) { 
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
+    } 
+    for (i = 0; i < NumberOfMisc; ++i) { 
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+    } 
+    
+    //for (i = 0; i < NumberOfMisc; ++i) { // uses 
+    //    if (proc->tmp[i]) { n = (proc->tmp[i] & 0xFF00) >> 8; } else { n = 0; } 
+    //    PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 3, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, n); 
+    //} 
+
+
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+}
+
+int GetMiscMin(int id) { 
+    int result = 0; 
+    switch (id) { 
+        case 0: { result = 1; break; } // unitID
+        case 1: { result = 1; break; } // classID 
+        case 2: { result = 1; break; } // level
+        case 3: { result = -1; break; } // exp  
+        case 4: { result = 0; break; } // + con 
+        case 5: { result = 0; break; } // + mov  
+        case 6: { result = 0; break; } // status  
+        default: 
+    } 
+    return result; 
+} 
+int GetMiscMax(int id) { 
+    int result = 0; 
+    switch (id) { 
+        case 0: { result = 255; break; } // unitID
+        case 1: { result = 127; break; } // classID 
+        case 2: { result = 255; break; } // level
+        case 3: { result = 100; break; } // exp  
+        case 4: { result = 15; break; } // + con 
+        case 5: { result = 15; break; } // + mov  
+        case 6: { result = 15; break; } // status  
+        default: 
+    } 
+    return result; 
+} 
+
+
+
+
+/*
+int GetNextMisc(int val, int id, int min, int max) { 
+    int result = 0; 
+    switch (id) { 
+        case 0: { result = 255; break; } // unitID
+        case 1: { result = 127; break; } // classID 
+        case 2: { result = 255; break; } // level
+        case 3: { result = 100; break; } // exp  
+        case 4: { result = 15; break; } // + con 
+        case 5: { result = 15; break; } // + mov  
+        case 6: { result = 15; break; } // status  
+        default: 
+    } 
+    return result; 
+
+
+
+} 
+
+int GetPrevMisc(int val, int id, int min, int max) { 
+
+
+
+} 
+*/ 
+
+void EditMiscIdle(DebuggerProc* proc) { 
+	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
+	u16 keys = sKeyStatusBuffer.repeatedKeys; 
+    if (keys & B_BUTTON) { //press B to not save stats 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update stats and continue 
+        SaveMisc(proc); 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if (proc->editing) { 
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
+        int max = GetMiscMax(proc->id); 
+        int min = GetMiscMin(proc->id); 
+        int max_digits = GetMaxDigits(max); 
+        int val = 0; 
+        
+        if (keys & DPAD_RIGHT) {
+          if (proc->digit > 0) { proc->digit--; }
+          else { proc->digit = max_digits - 1; proc->editing = false; } 
+          RedrawMiscMenu(proc);
+        }
+        if (keys & DPAD_LEFT) {
+          if (proc->digit < (max_digits-1)) { proc->digit++; }
+          else { proc->digit = 0; proc->editing = false; } 
+          RedrawMiscMenu(proc);
+        }
+        
+        if (keys & DPAD_UP) {
+            if ((proc->tmp[proc->id]) == max) { proc->tmp[proc->id] = min; } 
+            else { 
+                proc->tmp[proc->id] += DigitDecimalTable[proc->digit]; 
+                if ((proc->tmp[proc->id]) > max) { proc->tmp[proc->id] = max; } 
+            } 
+            //proc->tmp[proc->id] = GetPrevMisc(proc->tmp[proc->id], proc->id, min, max); 
+            RedrawMiscMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            if ((proc->tmp[proc->id]) == min) { proc->tmp[proc->id] = max; } 
+            else { 
+                val = (proc->tmp[proc->id]) - DigitDecimalTable[proc->digit]; 
+                if (val < min) { proc->tmp[proc->id] = min; } 
+                else { proc->tmp[proc->id] = val; } 
+            } 
+            //proc->tmp[proc->id] = GetNextMisc(proc->tmp[proc->id], proc->id, min, max); 
+            RedrawMiscMenu(proc); 
+        }
+    }
+    else { 
+        DisplayUiHand(CursorLocationTable[0].x - ((MiscNameWidth + 4) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (keys & DPAD_RIGHT) {
+            proc->digit = 1; 
+          proc->editing = true; 
+        }
+        if (keys & DPAD_LEFT) {
+          proc->digit = 0; 
+          proc->editing = true; 
+        }
+        
+        if (keys & DPAD_UP) {
+            proc->id--; 
+            if (proc->id < 0) { proc->id = NumberOfMisc - 1; } 
+            RedrawMiscMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            proc->id++; 
+            if (proc->id >= NumberOfMisc) { proc->id = 0; } 
+            
+            RedrawMiscMenu(proc); 
+        }
+    } 
+} 
+
+
 
 void ChooseTileInit(DebuggerProc* proc) { // if need to load gfx 
     EndPlayerPhaseSideWindows(); 
@@ -995,6 +1241,12 @@ u8 EditItemsNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     Proc_Goto(proc, EditItemsLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
+u8 EditMiscNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, EditMiscLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
 
 extern int DebuggerTurnedOff_Flag; 
 int ShouldStartDebugger(void) { 
@@ -1088,7 +1340,7 @@ int GodmodeDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     }
     DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
     if (procIdler->godMode) { 
-        Text_DrawString(&menuItem->text, " ON");
+        Text_DrawString(&menuItem->text, " Godmode on");
     } 
     else { 
         Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
