@@ -5,6 +5,10 @@
 #include "Hooks.lyn.event" 
 #include "C_Code.lyn.event" 
 
+ALIGN 4 
+DebuggerTurnedOff_Flag:
+WORD 0xEC // if this flag is on, the debugger is off 
+
 
 PUSH 
 ORG 0x1ca0c
@@ -43,6 +47,12 @@ MenuCommand(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenu
 MenuCommand(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
 MenuCommand(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
 MenuCommand(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
+MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
+MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
+MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
+MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
+MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
+MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
 MenuCommand(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
 //MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)

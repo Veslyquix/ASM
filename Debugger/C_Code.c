@@ -960,8 +960,9 @@ u8 EditItemsNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
-
+extern int DebuggerTurnedOff_Flag; 
 int ShouldStartDebugger(void) { 
+    if (CheckFlag(DebuggerTurnedOff_Flag)) { return false; } 
     return true; 
 } 
 
@@ -1041,7 +1042,7 @@ u8 MenuCancelSelectResumePlayerPhase(struct MenuProc* menu, struct MenuItemProc*
 
 u8 DebuggerHelpBox(struct MenuProc* menu, struct MenuItemProc* item); 
 const struct MenuDef gDebuggerMenuDef = {
-    {1, 1, 7, 0},
+    {1, 0, 7, 0}, // { s8 x, y, w, h; };
     0,
     gDebuggerMenuItems,
     0, 0, 0,
@@ -1530,4 +1531,346 @@ u8 DebuggerHelpBox(struct MenuProc* menu, struct MenuItemProc* item)
     StartHelpBoxString(item->xTile*8, item->yTile*8, gDebuggerMenuText[(item->itemNumber * 2) + 1]);
     return 0; 
 }
+
+
+struct NewMenuProc
+{
+    /* 00 */ PROC_HEADER;
+
+    /* 2C */ struct MenuRect rect;
+    /* 30 */ const struct MenuDef* def;
+
+    ///* 34 */ struct MenuItemProc* menuItems[MENU_ITEM_MAX];
+    u8 menuItemsID[44]; 
+
+    /* 60 */ u8 itemCount;
+    /* 61 */ u8 itemCurrent;
+    /* 62 */ u8 itemPrevious;
+    /* 63 */ u8 state;
+
+    /* 64 */ u8 backBg : 2;
+    /* 64 */ u8 frontBg : 2;
+
+    /* 66 */ u16 tileref;
+    /* 68 */ u16 unk68;
+};
+
+struct NewMenuItemProc
+{
+    /* 00 */ PROC_HEADER;
+
+    /* 2A */ short xTile;
+    /* 2C */ short yTile;
+
+    /* 30 */ const struct MenuItemDef* def;
+
+    /* 34 */ struct Text text;
+
+    /* 3C */ s8 itemNumber;
+    /* 3D */ u8 availability;
+    /* 3E */ u8 menuItemID; // added 
+};
+
+
+struct NewMenuProc* StartMenuCore(
+    const struct MenuDef* def,
+    struct MenuRect rect,
+    int backBg,
+    int tileref,
+    int frontBg,
+    int unk,
+    ProcPtr parent)
+{
+    struct NewMenuProc* proc;
+    int i, itemCount;
+
+    int xTileInner = rect.x + 1;
+    int yTileInner = rect.y + 1;
+
+    BG_SetPosition(frontBg, 0, 0);
+    BG_SetPosition(backBg, 0, 0);
+
+    PlaySoundEffect(0x68); /* TODO: song ids! */
+
+    if (parent)
+    {
+        proc = Proc_StartBlocking(sProc_Menu, parent);
+        proc->state = 0;
+    }
+    else
+    {
+        LockGame();
+
+        proc = Proc_Start(sProc_Menu, PROC_TREE_3);
+        proc->state = MENU_STATE_GAMELOCKING;
+    }
+
+    if (rect.h < 0)
+        proc->state |= MENU_STATE_NOTSHOWN;
+
+    for (i = 0, itemCount = 0; def->menuItems[i].isAvailable; ++i)
+    {
+        int availability = OverriddenMenuAvailability(&def->menuItems[i], i);
+
+        if (!availability)
+            availability = def->menuItems[i].isAvailable(&def->menuItems[i], i);
+
+        if (availability != MENU_NOTSHOWN)
+        {
+            struct MenuItemProc* item = Proc_Start(sProc_MenuItem, proc);
+            //proc->menuItems[itemCount++] = item;
+
+            item->def = &def->menuItems[i];
+            item->itemNumber = i;
+            item->availability = availability;
+
+            item->xTile = xTileInner;
+            item->yTile = yTileInner;
+
+            if (!(proc->state & MENU_STATE_NOTSHOWN))
+                InitText(&item->text, rect.w - 1);
+
+            yTileInner += 2;
+        }
+    }
+
+    proc->def = def;
+    proc->rect = rect;
+    proc->itemCount = itemCount;
+    proc->itemCurrent = 0;
+    proc->itemPrevious = -1;
+
+    if (rect.y + rect.h < yTileInner)
+        proc->rect.h = yTileInner + 1 - rect.y;
+
+    proc->backBg  = backBg & 3;
+    proc->tileref = tileref;
+    proc->frontBg = frontBg & 3;
+    proc->unk68   = unk;
+
+    gKeyStatusPtr->newKeys = 0;
+
+    return proc;
+}
+
+struct MenuItemProc* GetMenuItemProcByID(int id) { 
+
+
+
+} 
+
+struct Proc* EndMenu(struct MenuProc* proc)
+{
+    //struct MenuItemProc* item = proc->menuItems[proc->itemCurrent];
+    struct MenuItemProc* item = GetMenuItemProcByID(proc->itemCurrent);
+
+    proc->state |= MENU_STATE_ENDING;
+
+    if (item->def->onSwitchOut)
+        item->def->onSwitchOut(proc, item);
+
+    if (proc->def->onEnd)
+        proc->def->onEnd(proc);
+
+    if (proc->state & MENU_STATE_GAMELOCKING)
+        UnlockGame();
+
+    Proc_End(proc);
+
+    BG_SetPosition(proc->frontBg, 0, 0);
+    BG_SetPosition(proc->backBg, 0, 0);
+
+    return proc->proc_parent;
+}
+
+void Menu_OnInit(struct MenuProc* proc)
+{
+    if (proc->def->onInit)
+        proc->def->onInit(proc);
+
+    struct MenuItemProc* item; 
+    item = GetMenuItemProcByID(proc->itemCurrent); 
+    if (item->def->onSwitchIn)
+        item->def->onSwitchIn(proc, item);
+}
+
+void RedrawMenu(struct MenuProc* proc)
+{
+    int i;
+
+    if (proc->state & MENU_STATE_NOTSHOWN)
+        return;
+
+    DrawUiFrame(
+        BG_GetMapBuffer(proc->backBg),
+        proc->rect.x, proc->rect.y, proc->rect.w, proc->rect.h,
+        proc->tileref, proc->def->style);
+
+    ClearUiFrame(
+        BG_GetMapBuffer(proc->frontBg),
+        proc->rect.x, proc->rect.y, proc->rect.w, proc->rect.h);
+
+    for (i = 0; i < proc->itemCount; ++i)
+    {
+        //struct MenuItemProc* item = proc->menuItems[i];
+        struct MenuItemProc* item = GetMenuItemProcByID(i);
+
+        if (item->def->onDraw)
+        {
+            item->def->onDraw(proc, item);
+            continue;
+        }
+
+        if (item->def->color)
+            Text_SetColor(&item->text, item->def->color);
+
+        if (item->availability == MENU_DISABLED)
+            Text_SetColor(&item->text, TEXT_COLOR_SYSTEM_GRAY);
+
+        if (!item->def->nameMsgId)
+            Text_DrawString(&item->text, item->def->name);
+        else
+            Text_DrawString(&item->text, GetStringFromIndex(item->def->nameMsgId));
+
+        PutText(
+            &item->text,
+            TILEMAP_LOCATED(BG_GetMapBuffer(proc->frontBg), item->xTile, item->yTile));
+    }
+
+    DrawMenuItemHover(proc, proc->itemCurrent, TRUE);
+    SyncMenuBgs(proc);
+}
+
+void DrawMenuItemHover(struct MenuProc* proc, int item, s8 boolHover)
+{
+    int x, y, w;
+
+    if (proc->state & MENU_STATE_FLAT)
+        return;
+
+    x = proc->rect.x + 1;
+    y = GetMenuItemProcByID(item)->yTile;
+    w = proc->rect.w - 2;
+
+    switch (boolHover)
+    {
+
+    case TRUE:
+        DrawUiItemHoverExt(proc->backBg, proc->tileref, x, y, w);
+        break;
+
+    case FALSE:
+        ClearUiItemHoverExt(proc->backBg, proc->tileref, x, y, w);
+        break;
+
+    }
+}
+
+void ProcessMenuDpadInput(struct MenuProc* proc)
+{
+    proc->itemPrevious = proc->itemCurrent;
+
+    // Handle Up keyin
+
+    if (gKeyStatusPtr->repeatedKeys & DPAD_UP)
+    {
+        if (proc->itemCurrent == 0)
+        {
+            if (gKeyStatusPtr->repeatedKeys != gKeyStatusPtr->newKeys)
+                return;
+
+            proc->itemCurrent = proc->itemCount;
+        }
+
+        proc->itemCurrent--;
+    }
+
+    // Handle down keyin
+
+    if (gKeyStatusPtr->repeatedKeys & DPAD_DOWN)
+    {
+        if (proc->itemCurrent == (proc->itemCount - 1))
+        {
+            if (gKeyStatusPtr->repeatedKeys != gKeyStatusPtr->newKeys)
+                return;
+
+            proc->itemCurrent = -1;
+        }
+
+        proc->itemCurrent++;
+    }
+
+    // Update hover display
+
+    if (proc->itemPrevious != proc->itemCurrent)
+    {
+        DrawMenuItemHover(proc, proc->itemPrevious, FALSE);
+        DrawMenuItemHover(proc, proc->itemCurrent, TRUE);
+
+        PlaySoundEffect(0x66); // TODO: song ids!
+    }
+
+    // Call def's switch in/out funcs
+
+    if (HasMenuChangedItem(proc))
+    {
+        if (proc->menuItems[proc->itemPrevious]->def->onSwitchOut)
+            proc->menuItems[proc->itemPrevious]->def->onSwitchOut(proc, proc->menuItems[proc->itemPrevious]);
+
+        if (proc->menuItems[proc->itemCurrent]->def->onSwitchIn)
+            proc->menuItems[proc->itemCurrent]->def->onSwitchIn(proc, proc->menuItems[proc->itemCurrent]);
+    }
+}
+
+int ProcessMenuSelectInput(struct MenuProc* proc)
+{
+    int result = 0;
+
+    struct MenuItemProc* item = proc->menuItems[proc->itemCurrent];
+    const struct MenuItemDef* itemDef = item->def;
+
+    if (itemDef->onIdle)
+        result = itemDef->onIdle(proc, item);
+
+    if (gKeyStatusPtr->newKeys & A_BUTTON)
+    {
+        // A Button press
+
+        result = OverriddenMenuSelected(proc, item);
+
+        if ((result == 0xFF) && itemDef->onSelected)
+            result = itemDef->onSelected(proc, item);
+    }
+    else if (gKeyStatusPtr->newKeys & B_BUTTON)
+    {
+        // B Button press
+
+        if (proc->def->onBPress)
+            result = proc->def->onBPress(proc, item);
+    }
+    else if (gKeyStatusPtr->newKeys & R_BUTTON)
+    {
+        // R Button press
+
+        if (proc->def->onRPress)
+            proc->def->onRPress(proc);
+    }
+
+    return result;
+}
+
+void GetMenuCursorPosition(struct MenuProc* proc, int* xResult, int* yResult)
+{
+    *xResult = proc->menuItems[proc->itemCurrent]->xTile*8;
+    *yResult = proc->menuItems[proc->itemCurrent]->yTile*8;
+
+    if (proc->def->style != 0)
+        *xResult -= 4;
+}
+
+
+
+
+
+
 
