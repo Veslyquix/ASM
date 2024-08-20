@@ -14,21 +14,25 @@ typedef struct {
     u16 lastTileHovered; 
     s8 editing; 
     u8 actionID; 
-    s8 id;
+    s8 id; // used by our custom menus 
     s8 digit;
     u8 godMode; 
+    u8 page; 
+    s8 mainID; // by the main debugger menu 
     u16 tmp[tmpSize];
     struct Unit* unit; 
 } DebuggerProc;
 
 void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) { 
     dst->tileID = src->tileID; 
+    dst->mainID = src->mainID; 
     dst->lastTileHovered = src->lastTileHovered; 
     dst->editing = src->editing; 
     dst->actionID = src->actionID; 
     dst->id = src->id; 
     dst->digit = src->digit; 
     dst->godMode = src->godMode; 
+    dst->page = src->page; 
     for (int i = 0; i < tmpSize; ++i) { 
         dst->tmp[i] = src->tmp[i]; 
     }
@@ -36,7 +40,7 @@ void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) {
 } 
 
 
-
+extern int NumberOfPages; 
 void RestartDebuggerMenu(DebuggerProc* proc); 
 void LoopDebuggerProc(DebuggerProc* proc);
 void PickupUnitIdle(DebuggerProc* proc); 
@@ -892,6 +896,38 @@ u8 StartGodmodeNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 ControlAiNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+    //SetupUnitFunc(); 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    proc->actionID = 0; 
+    Proc_Goto(proc, RestartLabel); // 0xb7 
+    //DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    if (gPlaySt.config.debugControlRed) { 
+        gPlaySt.config.debugControlRed = 0; 
+    } 
+    else { 
+        gPlaySt.config.debugControlRed = 2; 
+    } 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+u8 PageIncrementNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+    //SetupUnitFunc(); 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    proc->actionID = 0; 
+    Proc_Goto(proc, RestartLabel); // 0xb7 
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    proc->page++; 
+    if (proc->page > (NumberOfPages-1)) { 
+        proc->page = 0; 
+    } 
+    procIdler->page = proc->page; 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+
 void ComputeBattleUnitEffectiveStats(struct BattleUnit* attacker, struct BattleUnit* defender) {
     ComputeBattleUnitEffectiveHitRate(attacker, defender);
     ComputeBattleUnitEffectiveCritRate(attacker, defender);
@@ -1008,12 +1044,27 @@ u8 CallEndEventNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
 
 
 extern const struct MenuItemDef gDebuggerMenuItems[]; 
+extern const struct MenuItemDef gDebuggerMenuItemsPage2[]; 
 extern char* gDebuggerMenuText[]; 
+
+char* GetDebuggerMenuText(DebuggerProc* procIdler, int index) { 
+    //index += procIdler->page * NumberOfOptions; 
+    int page1_total = 
+    index += procIdler->page * NumberOfOptions; 
+    return gDebuggerMenuText[index * 2]; 
+} 
+char* GetDebuggerMenuDesc(DebuggerProc* procIdler, int index) { 
+    index += procIdler->page * NumberOfOptions; 
+    return gDebuggerMenuText[(index * 2) + 1]; 
+} 
+
 int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem) { 
     if (menuItem->availability == MENU_DISABLED) {
         Text_SetColor(&menuItem->text, 1);
     }
-    Text_DrawString(&menuItem->text, gDebuggerMenuText[menuItem->itemNumber * 2]);
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    
+    Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 } 
@@ -1026,11 +1077,90 @@ int GodmodeDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem) {
         Text_DrawString(&menuItem->text, " ON");
     } 
     else { 
-        Text_DrawString(&menuItem->text, gDebuggerMenuText[menuItem->itemNumber * 2]);
+        Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
     } 
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 } 
+
+
+int ControlAiDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem) { 
+    if (menuItem->availability == MENU_DISABLED) {
+        Text_SetColor(&menuItem->text, 1);
+    }
+    //DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    if (gPlaySt.config.debugControlRed) { 
+        Text_DrawString(&menuItem->text, " AI is off");
+    } 
+    else { 
+        DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+        Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
+    } 
+    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    return 0;
+} 
+
+void PageMenuItemDrawSprites(struct MenuProc* menu) { 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    int chr = 0x289;
+    int x = menu->menuItems[menu->itemCount - 1]->xTile * 8; 
+    int y = menu->menuItems[menu->itemCount - 1]->yTile * 8; 
+
+    
+    // page amt
+    PutSprite(2, x + 17, y,
+        gObject_8x8, TILEREF(chr, STATSCREEN_OBJPAL_4) + OAM2_LAYER(3) + NumberOfPages);
+
+    // '/'
+    PutSprite(2, x + 15, y,
+        gObject_8x8, TILEREF(chr, STATSCREEN_OBJPAL_4) + OAM2_LAYER(3));
+
+    // page num
+    PutSprite(2, x + 13, y,
+        gObject_8x8, TILEREF(chr, STATSCREEN_OBJPAL_4) + OAM2_LAYER(3) + proc->page + 1);
+
+} 
+
+
+int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem) { 
+    if (menuItem->availability == MENU_DISABLED) {
+        Text_SetColor(&menuItem->text, 1);
+    }
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
+    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    //PageMenuItemDrawSprites(menuItem); 
+    return 0; 
+}
+
+u8 PageIdler(struct MenuProc* menu, struct MenuItemProc* command) { 
+    u16 keys = gKeyStatusPtr->repeatedKeys; 
+    PageMenuItemDrawSprites(menu); 
+    if (!keys) { return MENU_ITEM_NONE; } 
+	DebuggerProc* proc = Proc_Find(DebuggerProcCmd); 
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    int page = proc->page; 
+    if (keys & DPAD_LEFT) { 
+        page--; 
+    }
+    if (keys & DPAD_RIGHT) { 
+        page++; 
+    } 
+    if (proc->page != page) { 
+        if (page < 0) { page = NumberOfPages-1; } 
+        if (page >= NumberOfPages) { page = 0; } 
+        proc->page = page; 
+        procIdler->page = page; 
+        Proc_Goto(proc, RestartLabel); 
+        return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
+    } 
+    return MENU_ITEM_NONE;
+    
+    
+
+} 
+
 
 u8 MenuCancelSelectResumePlayerPhase(struct MenuProc* menu, struct MenuItemProc* item)
 {
@@ -1042,7 +1172,7 @@ u8 MenuCancelSelectResumePlayerPhase(struct MenuProc* menu, struct MenuItemProc*
 
 u8 DebuggerHelpBox(struct MenuProc* menu, struct MenuItemProc* item); 
 const struct MenuDef gDebuggerMenuDef = {
-    {1, 0, 7, 0}, // { s8 x, y, w, h; };
+    {1, 0, 9, 0}, // { s8 x, y, w, h; };
     0,
     gDebuggerMenuItems,
     0, 0, 0,
@@ -1050,6 +1180,18 @@ const struct MenuDef gDebuggerMenuDef = {
     MenuAutoHelpBoxSelect,
     DebuggerHelpBox
 };
+
+
+const struct MenuDef gDebuggerMenuDefPage2 = {
+    {1, 0, 9, 0}, // { s8 x, y, w, h; };
+    0,
+    gDebuggerMenuItemsPage2,
+    0, 0, 0,
+    MenuCancelSelectResumePlayerPhase,
+    MenuAutoHelpBoxSelect,
+    DebuggerHelpBox
+};
+
 
 void UnitBeginActionInit(struct Unit* unit) {
     gActiveUnit = unit;
@@ -1107,6 +1249,7 @@ void MakeMoveunitForAnyActiveUnit(void) {
     MU_SetDefaultFacing_Auto();
 }
 void InitProc(DebuggerProc* proc) { 
+    proc->page = 0; 
     proc->editing = false; 
     proc->actionID = 0; 
     proc->godMode = 0; 
@@ -1118,9 +1261,35 @@ void InitProc(DebuggerProc* proc) {
     } 
 }
 
+//! FE8U = 0x08015450
+void BmMain_StartPhase(ProcPtr proc)
+{
+    int phaseControl = gPlaySt.faction;
+    if (gPlaySt.faction == FACTION_RED) { if (gPlaySt.config.debugControlRed) { phaseControl = FACTION_BLUE; } } 
+    if (gPlaySt.faction == FACTION_GREEN) { if (gPlaySt.config.debugControlGreen) { phaseControl = FACTION_BLUE; } } 
+    switch (phaseControl) {
+    case FACTION_BLUE:
+        Proc_StartBlocking(gProcScr_PlayerPhase, proc);
+        break;
+
+    case FACTION_RED:
+        Proc_StartBlocking(gProcScr_CpPhase, proc);
+        break;
+
+    case FACTION_GREEN:
+        Proc_StartBlocking(gProcScr_CpPhase, proc);
+        break;
+    }
+
+    Proc_Break(proc);
+}
+
+
 void RestartDebuggerMenu(DebuggerProc* proc) { 
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
     if (!unit) { Proc_Goto(proc, EndLabel); return; } 
+    EndAllMenus();
+    ResetText();
     ProcPtr playerPhaseProc = Proc_Find(gProcScr_PlayerPhase); 
     Proc_Goto(playerPhaseProc, 9); // wait for menu? 
     UnitBeginActionInit(unit); 
@@ -1150,7 +1319,17 @@ void RestartDebuggerMenu(DebuggerProc* proc) {
     PutMapCursor(
         gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y,
         IsUnitSpriteHoverEnabledAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y) ? 3 : 0);
-    StartOrphanMenuAdjusted(&gDebuggerMenuDef, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15);
+    
+    struct MenuProc* menu = NULL; 
+    switch (proc->page) { 
+        case 0: { menu = StartOrphanMenuAdjusted(&gDebuggerMenuDef, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15); break; } 
+        case 1: { menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage2, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15); break; } 
+        default: 
+    }
+    if (menu) { 
+        //menu->itemCurrent = proc->mainID; 
+    } 
+    
     //RefreshBMapGraphics(); // should not happen on the same frame as starting a menu, or black boxes occur 
     // perhaps they both use the generic buffer 
     
@@ -1526,9 +1705,11 @@ void StartHelpBoxString(int x, int y, char* string)
 }
 
 
+
 u8 DebuggerHelpBox(struct MenuProc* menu, struct MenuItemProc* item)
 {
-    StartHelpBoxString(item->xTile*8, item->yTile*8, gDebuggerMenuText[(item->itemNumber * 2) + 1]);
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    StartHelpBoxString(item->xTile*8, item->yTile*8, GetDebuggerMenuDesc(procIdler, item->itemNumber));
     return 0; 
 }
 
