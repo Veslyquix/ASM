@@ -40,7 +40,11 @@ FILL(256 * 4)
     
 ALIGN 4 
 NumberOfPages:
-WORD 2 
+WORD 3
+
+ggDebuggerMenuItems:
+POIN gDebuggerMenuItems gDebuggerMenuItemsPage2 gDebuggerMenuItemsPage3 
+WORD 0 
 
 ALIGN 4 
 gDebuggerMenuItems: 
@@ -60,6 +64,14 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 
 ALIGN 4 
 gDebuggerMenuItemsPage2: // must be immediately after gDebuggerMenuItems 
+MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
+MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
+#ifdef DEBUG_SKILL_EDIT_INCLUDED 
+//MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)
+#endif 
+WORD 0 0 0 0 0 0 0 0 0 // terminator 
+ALIGN 4 
+gDebuggerMenuItemsPage3: // must be immediately after gDebuggerMenuItemsPage2 
 MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 

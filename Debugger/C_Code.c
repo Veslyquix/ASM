@@ -1043,18 +1043,32 @@ u8 CallEndEventNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
 }
 
 
+
 extern const struct MenuItemDef gDebuggerMenuItems[]; 
 extern const struct MenuItemDef gDebuggerMenuItemsPage2[]; 
+extern const struct MenuItemDef gDebuggerMenuItemsPage3[]; 
 extern char* gDebuggerMenuText[]; 
+
+extern const struct MenuItemDef* ggDebuggerMenuItems[]; 
+
+int CountDebuggerMenuItems(int page) { 
+    int result = 0; 
+    for (int i = 0; i < page; ++i) { 
+        for (int c = 0; c < 255; ++c) { 
+            if (!ggDebuggerMenuItems[i][c].name) { break; } 
+            result++; 
+        } 
+    } 
+    return result + page; // avoid the word 0 terminator offset  
+} 
 
 char* GetDebuggerMenuText(DebuggerProc* procIdler, int index) { 
     //index += procIdler->page * NumberOfOptions; 
-    int page1_total = 
-    index += procIdler->page * NumberOfOptions; 
+    index += CountDebuggerMenuItems(procIdler->page); 
     return gDebuggerMenuText[index * 2]; 
 } 
 char* GetDebuggerMenuDesc(DebuggerProc* procIdler, int index) { 
-    index += procIdler->page * NumberOfOptions; 
+    index += CountDebuggerMenuItems(procIdler->page); 
     return gDebuggerMenuText[(index * 2) + 1]; 
 } 
 
@@ -1104,21 +1118,13 @@ void PageMenuItemDrawSprites(struct MenuProc* menu) {
 	DebuggerProc* proc; 
 	proc = Proc_Find(DebuggerProcCmd); 
     int chr = 0x289;
-    int x = menu->menuItems[menu->itemCount - 1]->xTile * 8; 
-    int y = menu->menuItems[menu->itemCount - 1]->yTile * 8; 
+    int x = (menu->menuItems[menu->itemCount - 1]->xTile * 8) + 6 + (8*3); 
+    int y = (menu->menuItems[menu->itemCount - 1]->yTile * 8) + 4; 
 
     
-    // page amt
-    PutSprite(2, x + 17, y,
-        gObject_8x8, TILEREF(chr, STATSCREEN_OBJPAL_4) + OAM2_LAYER(3) + NumberOfPages);
-
-    // '/'
-    PutSprite(2, x + 15, y,
-        gObject_8x8, TILEREF(chr, STATSCREEN_OBJPAL_4) + OAM2_LAYER(3));
-
-    // page num
-    PutSprite(2, x + 13, y,
-        gObject_8x8, TILEREF(chr, STATSCREEN_OBJPAL_4) + OAM2_LAYER(3) + proc->page + 1);
+    PutSprite(0, x, y, gObject_8x8, TILEREF(chr, 4) + OAM2_LAYER(0) + proc->page + 1); x+=8; 
+    PutSprite(0, x, y, gObject_8x8, TILEREF(chr, 4) + OAM2_LAYER(0)); x+=8; 
+    PutSprite(0, x, y, gObject_8x8, TILEREF(chr, 4) + OAM2_LAYER(0) + NumberOfPages); x+=8; 
 
 } 
 
@@ -1140,6 +1146,8 @@ u8 PageIdler(struct MenuProc* menu, struct MenuItemProc* command) {
     if (!keys) { return MENU_ITEM_NONE; } 
 	DebuggerProc* proc = Proc_Find(DebuggerProcCmd); 
     DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    proc->mainID = menu->itemCurrent; 
+    procIdler->mainID = menu->itemCurrent; 
     int page = proc->page; 
     if (keys & DPAD_LEFT) { 
         page--; 
@@ -1186,6 +1194,15 @@ const struct MenuDef gDebuggerMenuDefPage2 = {
     {1, 0, 9, 0}, // { s8 x, y, w, h; };
     0,
     gDebuggerMenuItemsPage2,
+    0, 0, 0,
+    MenuCancelSelectResumePlayerPhase,
+    MenuAutoHelpBoxSelect,
+    DebuggerHelpBox
+};
+const struct MenuDef gDebuggerMenuDefPage3 = {
+    {1, 0, 9, 0}, // { s8 x, y, w, h; };
+    0,
+    gDebuggerMenuItemsPage3,
     0, 0, 0,
     MenuCancelSelectResumePlayerPhase,
     MenuAutoHelpBoxSelect,
@@ -1249,6 +1266,7 @@ void MakeMoveunitForAnyActiveUnit(void) {
     MU_SetDefaultFacing_Auto();
 }
 void InitProc(DebuggerProc* proc) { 
+    proc->mainID = 0; 
     proc->page = 0; 
     proc->editing = false; 
     proc->actionID = 0; 
@@ -1324,12 +1342,19 @@ void RestartDebuggerMenu(DebuggerProc* proc) {
     switch (proc->page) { 
         case 0: { menu = StartOrphanMenuAdjusted(&gDebuggerMenuDef, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15); break; } 
         case 1: { menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage2, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15); break; } 
+        case 2: { menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage3, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15); break; } 
         default: 
     }
     if (menu) { 
-        //menu->itemCurrent = proc->mainID; 
+        menu->itemCurrent = proc->mainID; 
+        int count = menu->itemCount - 1; 
+        if (menu->itemCurrent >= count) { menu->itemCurrent = count; } 
     } 
     
+    //UnpackUiFramePalette(3);
+    Decompress(
+        gUnknown_08A02274, (void*)(VRAM + 0x10000 + 0x240 * 0x20));
+
     //RefreshBMapGraphics(); // should not happen on the same frame as starting a menu, or black boxes occur 
     // perhaps they both use the generic buffer 
     
