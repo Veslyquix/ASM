@@ -506,7 +506,7 @@ void RedrawItemMenu(DebuggerProc* proc) {
 
 }
 
-
+static int GetMaxItems(void); 
 void EditItemsIdle(DebuggerProc* proc) { 
 	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
 	u16 keys = sKeyStatusBuffer.repeatedKeys; 
@@ -522,7 +522,7 @@ void EditItemsIdle(DebuggerProc* proc) {
     if (proc->editing) { 
         if (proc->editing == 1) { 
             DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
-            int max = 0xBB; 
+            int max = GetMaxItems(); 
             int min = 1; 
             int max_digits = GetMaxDigits(max); 
             int val = 0; 
@@ -560,7 +560,7 @@ void EditItemsIdle(DebuggerProc* proc) {
         }
         else { 
             DisplayVertUiHand(CursorLocationTable[proc->digit].x + (3 * 8), (Y_HAND + (proc->id * 2)) * 8); 	
-            int max = 63 << 8; 
+            int max = 255 << 8; // skill scrolls
             int min = 1 << 8; 
             int max_digits = GetMaxDigits(max >> 8); 
             
@@ -655,9 +655,9 @@ void EditMiscInit(DebuggerProc* proc) {
     proc->tmp[6] = unit->statusIndex; 
     
     
-    int x = NUMBER_X - MiscNameWidth - 3; 
+    int x = NUMBER_X - MiscNameWidth - 1; 
     int y = Y_HAND - 1; 
-    int w = MiscNameWidth + (START_X - NUMBER_X) + 8; 
+    int w = MiscNameWidth + (START_X - NUMBER_X) + 5; 
     int h = (NumberOfMisc * 2) + 2; 
     
     DrawUiFrame(
@@ -738,11 +738,36 @@ int GetMiscMin(int id) {
     } 
     return result; 
 } 
+
+static int GetMaxItems(void) {  
+	const struct ItemData* table = GetItemData(1); 
+	for (int i = 1; i < 255; i++) { 
+		if (table->number != i) { table--; break; } 
+		table++; 
+	} 
+	if (c > 255) { c = 255; } 
+	if (c < 1) { c = 1; } 
+	return table->number; 
+} 
+
+static int GetMaxClasses(void) { 
+	const struct ClassData* table = GetClassData(1); 
+	int c = 255; 
+	for (int i = 1; i <= c; i++) { 
+		if (table->number != i) { table--; break; } 
+		table++; 
+	} 
+	c = table->number;
+	if (c > 255) { c = 255; } 
+	if (c < 1) { c = 1; } 
+	return c; 
+} 
+
 int GetMiscMax(int id) { 
     int result = 0; 
     switch (id) { 
         case 0: { result = 255; break; } // unitID
-        case 1: { result = 127; break; } // classID 
+        case 1: { result = GetMaxClasses(); break; } // classID 
         case 2: { result = 255; break; } // level
         case 3: { result = 100; break; } // exp  
         case 4: { result = 15; break; } // + con 
@@ -753,34 +778,6 @@ int GetMiscMax(int id) {
     return result; 
 } 
 
-
-
-
-/*
-int GetNextMisc(int val, int id, int min, int max) { 
-    int result = 0; 
-    switch (id) { 
-        case 0: { result = 255; break; } // unitID
-        case 1: { result = 127; break; } // classID 
-        case 2: { result = 255; break; } // level
-        case 3: { result = 100; break; } // exp  
-        case 4: { result = 15; break; } // + con 
-        case 5: { result = 15; break; } // + mov  
-        case 6: { result = 15; break; } // status  
-        default: 
-    } 
-    return result; 
-
-
-
-} 
-
-int GetPrevMisc(int val, int id, int min, int max) { 
-
-
-
-} 
-*/ 
 
 void EditMiscIdle(DebuggerProc* proc) { 
 	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
