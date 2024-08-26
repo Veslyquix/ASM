@@ -855,6 +855,234 @@ void EditMiscIdle(DebuggerProc* proc) {
 } 
 
 
+#define NumberOfLoad 7 
+#define LoadNameWidth 8 
+
+
+extern struct Unit* LoadUnit(const struct UnitDefinition* uDef); // 17788 17598
+extern void ClearUnit(struct Unit* unit); // 17508 17394
+static void InitUnitDef(struct UnitDefinition* uDef, struct Unit* unit, struct CharacterData* data) { 
+
+    uDef->charIndex = data->number;
+    uDef->classIndex = data->defaultClass;
+    uDef->leaderCharIndex = unit->supports[UNIT_SUPPORT_MAX_COUNT-1];
+    uDef->autolevel = true; 
+	uDef->allegiance = UNIT_FACTION(unit)>>6; 
+    uDef->level = data->baseLevel; 
+    uDef->xPosition = unit->xPos; 
+    uDef->yPosition = unit->yPos; 
+	uDef->genMonster = false; 
+	uDef->itemDrop = (unit->state & US_DROP_ITEM) != 0; 
+	uDef->sumFlag = 0; 
+	uDef->unk_05_7 = 0; 
+	uDef->extraData = 0; 
+	uDef->redaCount = 0; 
+	uDef->redas = NULL; 
+	uDef->items[0] = unit->items[0]; 
+	uDef->items[1] = unit->items[1]; 
+	uDef->items[2] = unit->items[2]; 
+	uDef->items[3] = unit->items[3]; 
+	uDef->ai[0] = unit->ai1;
+	uDef->ai[1] = unit->ai2;
+	uDef->ai[2] = unit->ai3And4 & 0xFF;
+	uDef->ai[3] = (unit->ai3And4>>8);
+} 
+
+void LoadAllUnits(void) { 
+	struct UnitDefinition uDef; 
+	struct Unit* unit; 
+	u32 state; 
+	int i = 1; 
+	int end = 0xC0; 
+    int loadPlayers = true; 
+    int loadEnemies = true; 
+	if (!loadPlayers) { i = 0x80; } 
+	if (!loadEnemies) { end = 0x80; } 
+	int c = 1; // char id 
+    
+	for (; i < end; ++i) { 
+        if (c > 0x45) { break; } 
+		unit = GetUnit(i); 
+		if (UNIT_IS_VALID(unit)) { continue; } 
+		state = unit->state; 
+		ClearUnit(unit);
+        InitUnitDef(&uDef, unit, GetCharacterData(c)); 
+		 
+		LoadUnit(&uDef); 
+		unit->state = state; 
+        c++; 
+	} 
+} 
+
+
+void SaveLoad(DebuggerProc* proc) { 
+
+    //struct Unit* unit = proc->unit; 
+    LoadAllUnits();
+
+
+}  
+
+void RedrawLoadMenu(DebuggerProc* proc); 
+void EditLoadInit(DebuggerProc* proc) { 
+    SomeMenuInit(proc); 
+    LoadIconPalettes(4);
+    struct Unit* unit = proc->unit; 
+    for (int i = 0; i < NumberOfLoad; ++i) { 
+        proc->tmp[i] = 0; 
+    }
+    // proc->tmp[0] = unit->pCharacterData->number; 
+    // proc->tmp[1] = unit->pClassData->number; 
+    // proc->tmp[2] = unit->level; 
+    // proc->tmp[3] = unit->exp; 
+    // proc->tmp[4] = unit->conBonus; 
+    // proc->tmp[5] = unit->movBonus; 
+    // proc->tmp[6] = unit->statusIndex; 
+    
+    
+    int x = NUMBER_X - LoadNameWidth - 1; 
+    int y = Y_HAND - 1; 
+    int w = LoadNameWidth + (START_X - NUMBER_X) + 5; 
+    int h = (NumberOfLoad * 2) + 2; 
+    
+    DrawUiFrame(
+        BG_GetMapBuffer(1), // back BG
+        x, y, w, h,
+        TILEREF(0, 0), 0); // style as 0 ? 
+
+    struct Text* th = gStatScreen.text;
+    
+    for (int i = 0; i < NumberOfLoad; ++i) { 
+        InitText(&th[i], LoadNameWidth);
+    } 
+
+
+    RedrawLoadMenu(proc);
+}
+  
+extern int sStatusNameTextIdLookup[];
+void RedrawLoadMenu(DebuggerProc* proc) { 
+	//TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfLoad, 0);
+    BG_Fill(gBG0TilemapBuffer, 0); 
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+    ResetIconGraphics();
+    //ResetText();
+    //struct Unit* unit = proc->unit; 
+    struct Text* th = gStatScreen.text;
+    int i = 0; 
+    for (i = 0; i < NumberOfLoad; ++i) { 
+        ClearText(&th[i]); 
+    } 
+    
+    
+    i = 0; 
+    
+    Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(proc->tmp[0])->nameTextId)); i++; 
+    Text_DrawString(&th[i], GetStringFromIndex(GetClassData(proc->tmp[1])->nameTextId)); i++; 
+    Text_DrawString(&th[i], "Level"); i++; 
+    Text_DrawString(&th[i], "Exp"); i++; 
+    Text_DrawString(&th[i], "Bonus Con"); i++; 
+    Text_DrawString(&th[i], "Bonus Mov"); i++; 
+    if (!proc->tmp[6]) { 
+        Text_DrawString(&th[i], "Status"); i++; 
+    } 
+    else { 
+        
+        Text_DrawString(&th[i], GetStringFromIndex(sStatusNameTextIdLookup[proc->tmp[6]])); i++; 
+    } 
+    
+    int x = NUMBER_X - (LoadNameWidth); 
+    for (i = 0; i < NumberOfLoad; ++i) { 
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
+    } 
+    for (i = 0; i < NumberOfLoad; ++i) { 
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+    } 
+    
+    //for (i = 0; i < NumberOfLoad; ++i) { // uses 
+    //    if (proc->tmp[i]) { n = (proc->tmp[i] & 0xFF00) >> 8; } else { n = 0; } 
+    //    PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 3, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, n); 
+    //} 
+
+
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+}
+
+void EditLoadIdle(DebuggerProc* proc) { 
+	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
+	u16 keys = sKeyStatusBuffer.repeatedKeys; 
+    if (keys & B_BUTTON) { //press B to not save stats 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update stats and continue 
+        SaveLoad(proc); 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if (proc->editing) { 
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
+        int max = GetLoadMax(proc->id); 
+        int min = GetLoadMin(proc->id); 
+        int max_digits = GetMaxDigits(max); 
+        int val = 0; 
+        
+        if (keys & DPAD_RIGHT) {
+          if (proc->digit > 0) { proc->digit--; }
+          else { proc->digit = max_digits - 1; proc->editing = false; } 
+          RedrawLoadMenu(proc);
+        }
+        if (keys & DPAD_LEFT) {
+          if (proc->digit < (max_digits-1)) { proc->digit++; }
+          else { proc->digit = 0; proc->editing = false; } 
+          RedrawLoadMenu(proc);
+        }
+        
+        if (keys & DPAD_UP) {
+            if ((proc->tmp[proc->id]) == max) { proc->tmp[proc->id] = min; } 
+            else { 
+                proc->tmp[proc->id] += DigitDecimalTable[proc->digit]; 
+                if ((proc->tmp[proc->id]) > max) { proc->tmp[proc->id] = max; } 
+            } 
+            //proc->tmp[proc->id] = GetPrevLoad(proc->tmp[proc->id], proc->id, min, max); 
+            RedrawLoadMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            if ((proc->tmp[proc->id]) == min) { proc->tmp[proc->id] = max; } 
+            else { 
+                val = (proc->tmp[proc->id]) - DigitDecimalTable[proc->digit]; 
+                if (val < min) { proc->tmp[proc->id] = min; } 
+                else { proc->tmp[proc->id] = val; } 
+            } 
+            //proc->tmp[proc->id] = GetNextLoad(proc->tmp[proc->id], proc->id, min, max); 
+            RedrawLoadMenu(proc); 
+        }
+    }
+    else { 
+        DisplayUiHand(CursorLocationTable[0].x - ((LoadNameWidth + 4) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (keys & DPAD_RIGHT) {
+            proc->digit = 1; 
+          proc->editing = true; 
+        }
+        if (keys & DPAD_LEFT) {
+          proc->digit = 0; 
+          proc->editing = true; 
+        }
+        
+        if (keys & DPAD_UP) {
+            proc->id--; 
+            if (proc->id < 0) { proc->id = NumberOfLoad - 1; } 
+            RedrawLoadMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            proc->id++; 
+            if (proc->id >= NumberOfLoad) { proc->id = 0; } 
+            
+            RedrawLoadMenu(proc); 
+        }
+    } 
+} 
 
 void ChooseTileInit(DebuggerProc* proc) { // if need to load gfx 
     EndPlayerPhaseSideWindows(); 
