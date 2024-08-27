@@ -683,39 +683,7 @@ void EditMiscInit(DebuggerProc* proc) {
     RedrawMiscMenu(proc);
 }
   
-const char HexTable[6][5] = { 
-"A",
-"B",
-"C",
-"D",
-"E",
-"F",
-}; 
-extern struct Font *gActiveFont; 
-extern u16 *GetColorLut(int color); 
-int CustomDrawTextGlyph(u16 *tm, struct Glyph *glyph, int color)
-{
-    //int subx = text->x & 7;
-    int subx = 0;
-    u32 *bitmap = glyph->bitmap;
 
-    DrawGlyphRam(GetColorLut(color), tm, bitmap, subx);
-    return glyph->width; 
-    //text->x += glyph->width;
-}
-
-int CustomText_DrawCharacterAscii(u16 *tm, int color, const char *str)
-{
-    struct Glyph *glyph = gActiveFont->glyphs[*str++];
-
-    if (glyph == NULL)
-        glyph = gActiveFont->glyphs['?'];
-
-    glyph = gActiveFont->glyphs['?'];
-    return CustomDrawTextGlyph(tm, glyph, color); 
-    //gActiveFont->drawGlyph(th, glyph);
-    //return str;
-}
 
 void PutNumberHex(u16 *tm, int color, int number)
 {
@@ -729,9 +697,10 @@ void PutNumberHex(u16 *tm, int color, int number)
         tmp = number % 16; 
         if (tmp > 9) { 
             tmp -= 10; 
-            //CustomText_DrawCharacterAscii(tm, color, HexTable[tmp]); 
-            //CustomText_DrawCharacterAscii(tm, color, "A"); 
-            PutSpecialChar(tm, color, tmp + TEXT_SPECIAL_A); 
+            if (tmp >= 5) { PutSpecialChar(tm, color, TEXT_SPECIAL_S ); } 
+            else { 
+                PutSpecialChar(tm, color, tmp + TEXT_SPECIAL_A); 
+            } 
         } 
         else { 
             PutSpecialChar(tm, color, number % 16 + TEXT_SPECIAL_BIGNUM_0);
