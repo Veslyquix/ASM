@@ -25,15 +25,3 @@ pop {r3}
 ldr r3, =0x801Cb65 
 bx r3 
 .ltorg 
-
-.global GetPromoTable
-.type GetPromoTable, %function 
-GetPromoTable: 
-ldr r3, =0x80CC7D0 
-ldr r3, [r3] 
-lsl r0, #1 
-add r3, r0 
-ldrb r0, [r3, r1] 
-bx lr 
-.ltorg 
-

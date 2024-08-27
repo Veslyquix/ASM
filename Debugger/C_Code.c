@@ -72,6 +72,7 @@ void RedrawItemMenu(DebuggerProc* proc);
 void LoadUnitsIdle(DebuggerProc* proc);
 void RedrawLoadMenu(DebuggerProc* proc); 
 void LoadUnitsInit(DebuggerProc* proc);
+void PutNumberHex(u16 *tm, int color, int number);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -204,10 +205,23 @@ static const u32 DigitDecimalTable[] = {
 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000
 }; 
 
-static int GetMaxDigits(int number) { 
+static const u32 DigitHexTable[] = { 
+0x1, 0x10, 0x100, 0x1000, 0x10000, 0x100000, 0x1000000, 0x10000000, 0xffffffff
+}; 
+
+static const u32* pDigitTable[2] = { DigitDecimalTable, DigitHexTable }; 
+
+static int GetMaxDigits(int number, int type) { 
 
 	int result = 1; 
-	while (number > DigitDecimalTable[result]) { result++; } 
+    while (number > pDigitTable[type][result]) { result++; } 
+    
+    // if (type) { 
+    // while (number > DigitHexTable[result]) { result++; } 
+    // }
+    // else { 
+	// while (number > DigitDecimalTable[result]) { result++; } 
+    // }
 	//result++; // table is 0 indexed, but we count digits from 1 
 	if (result > 9) { result = 9; } 
 	return result; 
@@ -379,7 +393,7 @@ void EditStatsIdle(DebuggerProc* proc) {
         DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
         int max = StatCapLookup[proc->id]; 
         int min = 0; 
-        int max_digits = GetMaxDigits(max); 
+        int max_digits = GetMaxDigits(max, 0); 
         
         if (keys & DPAD_RIGHT) {
           if (proc->digit > 0) { proc->digit--; }
@@ -492,7 +506,7 @@ void RedrawItemMenu(DebuggerProc* proc) {
     int n = 0; 
     for (int i = 0; i < NumberOfItems; ++i) { // item id 
         if (proc->tmp[i]) { n = itemData[i]->number; } else { n = 0; } 
-        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, n); 
+        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, n); 
     } 
     
     for (int i = 0; i < NumberOfItems; ++i) { // uses 
@@ -532,7 +546,7 @@ void EditItemsIdle(DebuggerProc* proc) {
             DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
             int max = GetMaxItems(); 
             int min = 1; 
-            int max_digits = GetMaxDigits(max); 
+            int max_digits = GetMaxDigits(max, 1); 
             int val = 0; 
             
             if (keys & DPAD_RIGHT) {
@@ -549,7 +563,7 @@ void EditItemsIdle(DebuggerProc* proc) {
             if (keys & DPAD_UP) {
                 if ((proc->tmp[proc->id] & 0xFF) == max) { proc->tmp[proc->id] = min | (proc->tmp[proc->id] & 0xFF00); } 
                 else { 
-                    proc->tmp[proc->id] += DigitDecimalTable[proc->digit]; 
+                    proc->tmp[proc->id] += pDigitTable[1][proc->digit]; 
                     if ((proc->tmp[proc->id] & 0xFF) > max) { proc->tmp[proc->id] = max | (proc->tmp[proc->id] & 0xFF00); } 
                 } 
                 proc->tmp[proc->id] = MakeNewItem(proc->tmp[proc->id] & 0xFF); 
@@ -558,7 +572,7 @@ void EditItemsIdle(DebuggerProc* proc) {
             if (keys & DPAD_DOWN) {
                 if ((proc->tmp[proc->id] & 0xFF) == min) { proc->tmp[proc->id] = max | (proc->tmp[proc->id] & 0xFF00); } 
                 else { 
-                    val = (proc->tmp[proc->id] & 0xFF) - DigitDecimalTable[proc->digit]; 
+                    val = (proc->tmp[proc->id] & 0xFF) - pDigitTable[1][proc->digit]; 
                     if (val < min) { proc->tmp[proc->id] = min | (proc->tmp[proc->id] & 0xFF00); } 
                     else { proc->tmp[proc->id] = val | (proc->tmp[proc->id] & 0xFF00); } 
                 } 
@@ -570,7 +584,7 @@ void EditItemsIdle(DebuggerProc* proc) {
             DisplayVertUiHand(CursorLocationTable[proc->digit].x + (3 * 8), (Y_HAND + (proc->id * 2)) * 8); 	
             int max = 255 << 8; // skill scrolls
             int min = 1 << 8; 
-            int max_digits = GetMaxDigits(max >> 8); 
+            int max_digits = GetMaxDigits(max >> 8, 0); 
             
             if (keys & DPAD_RIGHT) {
               if (proc->digit > 0) { proc->digit--; }
@@ -682,34 +696,8 @@ void EditMiscInit(DebuggerProc* proc) {
 
     RedrawMiscMenu(proc);
 }
-  
 
 
-void PutNumberHex(u16 *tm, int color, int number)
-{
-    if (number == 0) {
-        PutSpecialChar(tm, color, TEXT_SPECIAL_BIGNUM_0);
-        return;
-    }
-
-    int tmp; 
-    while (number != 0) {
-        tmp = number % 16; 
-        if (tmp > 9) { 
-            tmp -= 10; 
-            if (tmp >= 5) { PutSpecialChar(tm, color, TEXT_SPECIAL_S ); } 
-            else { 
-                PutSpecialChar(tm, color, tmp + TEXT_SPECIAL_A); 
-            } 
-        } 
-        else { 
-            PutSpecialChar(tm, color, number % 16 + TEXT_SPECIAL_BIGNUM_0);
-        } 
-        number >>= 4;
-
-        tm--;
-    }
-}
 
 
 extern int sStatusNameTextIdLookup[];
@@ -748,8 +736,14 @@ void RedrawMiscMenu(DebuggerProc* proc) {
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
     } 
     for (i = 0; i < NumberOfMisc; ++i) { 
-        //PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        //
+        if (i < 2) { 
         PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        } 
+        else { 
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        }
+        
     } 
     
     //for (i = 0; i < NumberOfMisc; ++i) { // uses 
@@ -768,7 +762,7 @@ int GetMiscMin(int id) {
         case 0: { result = 1; break; } // unitID
         case 1: { result = 1; break; } // classID 
         case 2: { result = 1; break; } // level
-        case 3: { result = -1; break; } // exp  
+        case 3: { result = 0; break; } // exp  -1 ? 
         case 4: { result = 0; break; } // + con 
         case 5: { result = 0; break; } // + mov  
         case 6: { result = 0; break; } // status  
@@ -835,7 +829,8 @@ void EditMiscIdle(DebuggerProc* proc) {
         DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
         int max = GetMiscMax(proc->id); 
         int min = GetMiscMin(proc->id); 
-        int max_digits = GetMaxDigits(max); 
+        int type = (proc->id < 2); 
+        int max_digits = GetMaxDigits(max, type); 
         int val = 0; 
         
         if (keys & DPAD_RIGHT) {
@@ -852,7 +847,7 @@ void EditMiscIdle(DebuggerProc* proc) {
         if (keys & DPAD_UP) {
             if ((proc->tmp[proc->id]) == max) { proc->tmp[proc->id] = min; } 
             else { 
-                proc->tmp[proc->id] += DigitDecimalTable[proc->digit]; 
+                proc->tmp[proc->id] += pDigitTable[type][proc->digit]; 
                 if ((proc->tmp[proc->id]) > max) { proc->tmp[proc->id] = max; } 
             } 
             //proc->tmp[proc->id] = GetPrevMisc(proc->tmp[proc->id], proc->id, min, max); 
@@ -861,7 +856,7 @@ void EditMiscIdle(DebuggerProc* proc) {
         if (keys & DPAD_DOWN) {
             if ((proc->tmp[proc->id]) == min) { proc->tmp[proc->id] = max; } 
             else { 
-                val = (proc->tmp[proc->id]) - DigitDecimalTable[proc->digit]; 
+                val = (proc->tmp[proc->id]) - pDigitTable[type][proc->digit]; 
                 if (val < min) { proc->tmp[proc->id] = min; } 
                 else { proc->tmp[proc->id] = val; } 
             } 
@@ -1138,9 +1133,10 @@ void RedrawLoadMenu(DebuggerProc* proc) {
     for (i = 0; i < NumberOfLoad; ++i) { 
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
     } 
-    PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x + 8, Y_HAND)); 
+    PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x + 6, Y_HAND)); 
     for (i = 0; i < 1; ++i) { 
-        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        //PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
     } 
     
     //for (i = 0; i < NumberOfLoad; ++i) { // uses 
@@ -1169,7 +1165,7 @@ void LoadUnitsIdle(DebuggerProc* proc) {
         DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
         int max = GetLoadMax(proc->id); 
         int min = GetLoadMin(proc->id); 
-        int max_digits = GetMaxDigits(max); 
+        int max_digits = GetMaxDigits(max, 1); 
         int val = 0; 
         
         if (keys & DPAD_RIGHT) {
@@ -1186,7 +1182,7 @@ void LoadUnitsIdle(DebuggerProc* proc) {
         if (keys & DPAD_UP) {
             if ((proc->tmp[proc->id]) == max) { proc->tmp[proc->id] = min; } 
             else { 
-                proc->tmp[proc->id] += DigitDecimalTable[proc->digit]; 
+                proc->tmp[proc->id] += DigitHexTable[proc->digit]; 
                 if ((proc->tmp[proc->id]) > max) { proc->tmp[proc->id] = max; } 
             } 
             //proc->tmp[proc->id] = GetPrevLoad(proc->tmp[proc->id], proc->id, min, max); 
@@ -1195,7 +1191,7 @@ void LoadUnitsIdle(DebuggerProc* proc) {
         if (keys & DPAD_DOWN) {
             if ((proc->tmp[proc->id]) == min) { proc->tmp[proc->id] = max; } 
             else { 
-                val = (proc->tmp[proc->id]) - DigitDecimalTable[proc->digit]; 
+                val = (proc->tmp[proc->id]) - DigitHexTable[proc->digit]; 
                 if (val < min) { proc->tmp[proc->id] = min; } 
                 else { proc->tmp[proc->id] = val; } 
             } 
@@ -2370,6 +2366,85 @@ u8 DebuggerHelpBox(struct MenuProc* menu, struct MenuItemProc* item)
 }
 
 
+struct SpecialCharSt {
+    s8 color;
+    s8 id;
+    s16 chr_position;
+};
+extern struct SpecialCharSt sSpecialCharStList[]; 
+extern int AddSpecialChar(struct SpecialCharSt *st, int color, int id); 
+extern void DrawSpecialCharGlyph(int a, int b, struct Glyph *glyph); 
+extern struct Font *gActiveFont; 
+int CustomAddSpecialChar(struct SpecialCharSt *st, int color, int id)
+{
+    st->color = color;
+    st->id = id;
+    st->chr_position = gActiveFont->chr_counter++;
 
+    (st + 1)->color = -1;
 
+    DrawSpecialCharGlyph(st->chr_position, color, TextGlyphs_System[id]);
+    //DrawSpecialCharGlyph(st->chr_position, color, &gUnknown_0858FC14);
 
+    return st->chr_position;
+}
+
+int CustomGetSpecialCharChr(int color, int id)
+{
+    struct SpecialCharSt *it = sSpecialCharStList;
+
+    while (1) {
+        if (it->color < 0)
+            return CustomAddSpecialChar(it, color, id);
+
+        if (it->color == color && it->id == id)
+            return it->chr_position;
+
+        it++;
+    }
+}
+
+void CustomPutSpecialChar(u16 * tm, int color, int id)
+{
+    int chr;
+
+    if (id == TEXT_SPECIAL_NOTHING) {
+        tm[0x00] = 0;
+        tm[0x20] = 0;
+
+        return;
+    }
+
+    chr = CustomGetSpecialCharChr(color, id) * 2 + gActiveFont->tileref;
+
+    tm[0x00] = chr;
+    tm[0x20] = chr + 1;
+}
+
+void PutNumberHex(u16 *tm, int color, int number)
+{
+    if (number == 0) {
+        PutSpecialChar(tm, color, TEXT_SPECIAL_BIGNUM_0);
+        return;
+    }
+
+    int tmp; 
+    while (number != 0) {
+        tmp = number % 16; 
+        if (tmp > 9) { 
+            tmp -= 10; 
+            CustomPutSpecialChar(tm, color, 65 + tmp );
+            //if (tmp >= 5) { CustomPutSpecialChar(tm, color, TEXT_SPECIAL_S ); } 
+            //else { 
+            //    PutSpecialChar(tm, color, tmp + TEXT_SPECIAL_A); 
+            //} 
+        } 
+        else { 
+            //PutSpecialChar(tm, color, number % 16 + TEXT_SPECIAL_BIGNUM_0);
+            CustomPutSpecialChar(tm, color, 48 + tmp );
+        } 
+        number >>= 4;
+
+        tm--;
+    }
+}
