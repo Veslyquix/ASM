@@ -69,6 +69,9 @@ void EditItemsIdle(DebuggerProc* proc);
 void EditMiscInit(DebuggerProc* proc);
 void EditMiscIdle(DebuggerProc* proc);
 void RedrawItemMenu(DebuggerProc* proc);
+void LoadUnitsIdle(DebuggerProc* proc);
+void RedrawLoadMenu(DebuggerProc* proc); 
+void LoadUnitsInit(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -83,7 +86,8 @@ u8 CanActiveUnitPromote(void);
 #define EditStatsLabel 9
 #define EditItemsLabel 10
 #define EditMiscLabel 11
-#define LoopLabel 12
+#define LoadUnitsLabel 12
+#define LoopLabel 13
 #define EndLabel 99 
 
 #define ActionID_Promo 1 
@@ -97,7 +101,6 @@ const struct ProcCmd DebuggerProcCmdIdler[] =
     PROC_END, 
 }; 
 void SaveProcVarsToIdler(DebuggerProc* proc) { 
-    //asm("mov r11, r11"); 
     DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
     CopyProcVariables(procIdler, proc); 
     Proc_End(proc); 
@@ -158,9 +161,14 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_REPEAT(EditItemsIdle), 
     PROC_GOTO(EndLabel), 
     
-    PROC_LABEL(EditMiscLabel), // Items 
+    PROC_LABEL(EditMiscLabel), // Class etc  
     PROC_CALL(EditMiscInit), 
     PROC_REPEAT(EditMiscIdle), 
+    PROC_GOTO(EndLabel), 
+    
+    PROC_LABEL(LoadUnitsLabel), // Units
+    PROC_CALL(LoadUnitsInit), 
+    PROC_REPEAT(LoadUnitsIdle), 
     PROC_GOTO(EndLabel), 
     
     PROC_LABEL(EndLabel), 
@@ -657,7 +665,7 @@ void EditMiscInit(DebuggerProc* proc) {
     
     int x = NUMBER_X - MiscNameWidth - 1; 
     int y = Y_HAND - 1; 
-    int w = MiscNameWidth + (START_X - NUMBER_X) + 5; 
+    int w = MiscNameWidth + (START_X - NUMBER_X) + 3; 
     int h = (NumberOfMisc * 2) + 2; 
     
     DrawUiFrame(
@@ -675,6 +683,66 @@ void EditMiscInit(DebuggerProc* proc) {
     RedrawMiscMenu(proc);
 }
   
+const char HexTable[6][5] = { 
+"A",
+"B",
+"C",
+"D",
+"E",
+"F",
+}; 
+extern struct Font *gActiveFont; 
+extern u16 *GetColorLut(int color); 
+int CustomDrawTextGlyph(u16 *tm, struct Glyph *glyph, int color)
+{
+    //int subx = text->x & 7;
+    int subx = 0;
+    u32 *bitmap = glyph->bitmap;
+
+    DrawGlyphRam(GetColorLut(color), tm, bitmap, subx);
+    return glyph->width; 
+    //text->x += glyph->width;
+}
+
+int CustomText_DrawCharacterAscii(u16 *tm, int color, const char *str)
+{
+    struct Glyph *glyph = gActiveFont->glyphs[*str++];
+
+    if (glyph == NULL)
+        glyph = gActiveFont->glyphs['?'];
+
+    glyph = gActiveFont->glyphs['?'];
+    return CustomDrawTextGlyph(tm, glyph, color); 
+    //gActiveFont->drawGlyph(th, glyph);
+    //return str;
+}
+
+void PutNumberHex(u16 *tm, int color, int number)
+{
+    if (number == 0) {
+        PutSpecialChar(tm, color, TEXT_SPECIAL_BIGNUM_0);
+        return;
+    }
+
+    int tmp; 
+    while (number != 0) {
+        tmp = number % 16; 
+        if (tmp > 9) { 
+            tmp -= 10; 
+            //CustomText_DrawCharacterAscii(tm, color, HexTable[tmp]); 
+            //CustomText_DrawCharacterAscii(tm, color, "A"); 
+            PutSpecialChar(tm, color, tmp + TEXT_SPECIAL_A); 
+        } 
+        else { 
+            PutSpecialChar(tm, color, number % 16 + TEXT_SPECIAL_BIGNUM_0);
+        } 
+        number >>= 4;
+
+        tm--;
+    }
+}
+
+
 extern int sStatusNameTextIdLookup[];
 void RedrawMiscMenu(DebuggerProc* proc) { 
 	//TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfMisc, 0);
@@ -711,7 +779,8 @@ void RedrawMiscMenu(DebuggerProc* proc) {
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
     } 
     for (i = 0; i < NumberOfMisc; ++i) { 
-        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        //PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
     } 
     
     //for (i = 0; i < NumberOfMisc; ++i) { // uses 
@@ -741,10 +810,12 @@ int GetMiscMin(int id) {
 
 static int GetMaxItems(void) {  
 	const struct ItemData* table = GetItemData(1); 
+    int c = 255; 
 	for (int i = 1; i < 255; i++) { 
 		if (table->number != i) { table--; break; } 
 		table++; 
 	} 
+    c = table->number;
 	if (c > 255) { c = 255; } 
 	if (c < 1) { c = 1; } 
 	return table->number; 
@@ -830,7 +901,7 @@ void EditMiscIdle(DebuggerProc* proc) {
         }
     }
     else { 
-        DisplayUiHand(CursorLocationTable[0].x - ((MiscNameWidth + 4) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        DisplayUiHand(CursorLocationTable[0].x - ((MiscNameWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
         if (keys & DPAD_RIGHT) {
             proc->digit = 1; 
           proc->editing = true; 
@@ -855,20 +926,22 @@ void EditMiscIdle(DebuggerProc* proc) {
 } 
 
 
-#define NumberOfLoad 7 
-#define LoadNameWidth 8 
+#define NumberOfLoad 4 
+#define LoadNameWidth 12 
 
 
 extern struct Unit* LoadUnit(const struct UnitDefinition* uDef); // 17788 17598
 extern void ClearUnit(struct Unit* unit); // 17508 17394
-static void InitUnitDef(struct UnitDefinition* uDef, struct Unit* unit, struct CharacterData* data) { 
+static void InitUnitDef(struct UnitDefinition* uDef, struct Unit* unit, const struct CharacterData* data) { 
 
     uDef->charIndex = data->number;
-    uDef->classIndex = data->defaultClass;
+    //uDef->classIndex = data->defaultClass;
+    uDef->classIndex = 0;
     uDef->leaderCharIndex = unit->supports[UNIT_SUPPORT_MAX_COUNT-1];
     uDef->autolevel = true; 
 	uDef->allegiance = UNIT_FACTION(unit)>>6; 
     uDef->level = data->baseLevel; 
+    if (!uDef->level) { uDef->level = 1; } 
     uDef->xPosition = unit->xPos; 
     uDef->yPosition = unit->yPos; 
 	uDef->genMonster = false; 
@@ -888,49 +961,157 @@ static void InitUnitDef(struct UnitDefinition* uDef, struct Unit* unit, struct C
 	uDef->ai[3] = (unit->ai3And4>>8);
 } 
 
-void LoadAllUnits(void) { 
+static void ReinitUnitDef(struct UnitDefinition* uDef, struct Unit* unit) { 
+
+    uDef->charIndex = unit->pCharacterData->number;
+    uDef->classIndex = unit->pCharacterData->defaultClass;
+    uDef->leaderCharIndex = unit->supports[UNIT_SUPPORT_MAX_COUNT-1];
+    uDef->autolevel = true; 
+	uDef->allegiance = UNIT_FACTION(unit)>>6; 
+    uDef->level = unit->pCharacterData->baseLevel; 
+    uDef->xPosition = unit->xPos; 
+    uDef->yPosition = unit->yPos; 
+	uDef->genMonster = false; 
+	uDef->itemDrop = (unit->state & US_DROP_ITEM) != 0; 
+	uDef->sumFlag = 0; 
+	uDef->unk_05_7 = 0; 
+	uDef->extraData = 0; 
+	uDef->redaCount = 0; 
+	uDef->redas = NULL; 
+	uDef->items[0] = unit->items[0]; 
+	uDef->items[1] = unit->items[1]; 
+	uDef->items[2] = unit->items[2]; 
+	uDef->items[3] = unit->items[3]; 
+	uDef->ai[0] = unit->ai1;
+	uDef->ai[1] = unit->ai2;
+	uDef->ai[2] = unit->ai3And4 & 0xFF;
+	uDef->ai[3] = (unit->ai3And4>>8);
+} 
+
+#define SingleUnit 0 
+#define PlayerUnits 1 
+#define BossUnits 2 
+#define ExistingUnits 3 
+
+int FindNextBoss(int c) { 
+    const struct CharacterData* data; 
+    for (; c < 256; ++c) { 
+        data = GetCharacterData(c); 
+        if (data->attributes & CA_BOSS) { return c; } 
+    } 
+    return 0; 
+} 
+
+
+void LoadAllUnits(int type, int uid) { 
 	struct UnitDefinition uDef; 
 	struct Unit* unit; 
-	u32 state; 
+
 	int i = 1; 
 	int end = 0xC0; 
-    int loadPlayers = true; 
-    int loadEnemies = true; 
-	if (!loadPlayers) { i = 0x80; } 
-	if (!loadEnemies) { end = 0x80; } 
+    u32 attr = 0; 
 	int c = 1; // char id 
+    int c_end = 0xFD; // last BWL is 0x45  
+	if (type == BossUnits) { i = 0x80; attr = CA_BOSS; c_end = 0xFD; } 
+	if (type == PlayerUnits) { end = 0x80; c_end = 50; } 
+	if (type == SingleUnit) { c = uid; c_end = uid + 1; } 
+    
+    int deployedPlayers = 0; 
+    int deployedNPCs = 0; 
+    int deployedEnemies = 0; 
+
+    u32 charIDsToIgnore[8] = { 0, 0, 0, 0, 0, 0, 0, 0 }; 
+    int i_copy = i; 
+    
+    int tmp = 0; 
+    if (type != ExistingUnits) { 
+        for (; i < end; ++i) { 
+            unit = GetUnit(i);
+            if (!UNIT_IS_VALID(unit)) { continue; } 
+            tmp = (UNIT_FACTION(unit) >> 6) + 1; 
+            deployedPlayers += tmp & 1; 
+            deployedNPCs += (tmp & 2) >> 1; 
+            deployedEnemies += tmp >> 2; 
+            
+            tmp = unit->pCharacterData->number; 
+            
+            
+            charIDsToIgnore[tmp >> 5] |= 1 << (tmp & 0x1F); // make 8 bitfields of unitIDs to ignore 
+            // 8 words * 32 bits = 256 characters  
+        }   
+    }
+    i = i_copy; 
     
 	for (; i < end; ++i) { 
-        if (c > 0x45) { break; } 
+        if (attr) { c = FindNextBoss(c); if (!c) { break; } } 
+        if (c >= c_end) { break; } 
+        if (charIDsToIgnore[c >> 5] & (1 << (c & 0x1F))) { c++; continue; } 
 		unit = GetUnit(i); 
-		if (UNIT_IS_VALID(unit)) { continue; } 
-		state = unit->state; 
-		ClearUnit(unit);
-        InitUnitDef(&uDef, unit, GetCharacterData(c)); 
-		 
+        if (!unit) { continue; } 
+		if (!(unit->pCharacterData) && (type == ExistingUnits)) { continue; } 
+		if ((unit->pCharacterData) && (type != ExistingUnits)) { continue; } 
+        if (type == ExistingUnits) { c = unit->pCharacterData->number; } 
+		u32 state = unit->state; 
+        tmp = (UNIT_FACTION(unit) >> 6) + 1; 
+        deployedPlayers += tmp & 1; 
+        deployedNPCs += (tmp & 2) >> 1; 
+        deployedEnemies += tmp >> 2; 
+        switch (tmp) { 
+            case 1: { if (deployedPlayers > 50) { state |= US_NOT_DEPLOYED; continue; } break; } 
+            case 2: { if (deployedNPCs > 20) { state |= US_NOT_DEPLOYED; continue; } break; } 
+            case 3: { if (deployedEnemies > 50) { state |= US_NOT_DEPLOYED; continue; } break; } 
+            default: 
+        } 
+        
+        if (type == ExistingUnits) { 
+            ReinitUnitDef(&uDef, unit); 
+            ClearUnit(unit);
+        } 
+        else { 
+            ClearUnit(unit);
+            InitUnitDef(&uDef, unit, GetCharacterData(c)); 
+        } 
 		LoadUnit(&uDef); 
 		unit->state = state; 
         c++; 
 	} 
 } 
 
+void SaveLoadUnit(DebuggerProc* proc) { 
 
-void SaveLoad(DebuggerProc* proc) { 
-
+    
     //struct Unit* unit = proc->unit; 
-    LoadAllUnits();
+    LoadAllUnits(proc->id, proc->tmp[0]);
 
 
 }  
 
+void SaveLoadUnits(DebuggerProc* proc) { 
+
+    //struct Unit* unit = proc->unit; 
+    LoadAllUnits(proc->id, proc->tmp[0]);
+
+
+}  
+
+int GetLoadMax(int val) { 
+    return 0xFF; 
+} 
+int GetLoadMin(int val) { 
+    return 0x1; 
+} 
+
+
 void RedrawLoadMenu(DebuggerProc* proc); 
-void EditLoadInit(DebuggerProc* proc) { 
+void LoadUnitsInit(DebuggerProc* proc) { 
     SomeMenuInit(proc); 
     LoadIconPalettes(4);
     struct Unit* unit = proc->unit; 
     for (int i = 0; i < NumberOfLoad; ++i) { 
         proc->tmp[i] = 0; 
     }
+    
+    proc->tmp[0] = 1; // Eirika default 
     // proc->tmp[0] = unit->pCharacterData->number; 
     // proc->tmp[1] = unit->pClassData->number; 
     // proc->tmp[2] = unit->level; 
@@ -942,7 +1123,7 @@ void EditLoadInit(DebuggerProc* proc) {
     
     int x = NUMBER_X - LoadNameWidth - 1; 
     int y = Y_HAND - 1; 
-    int w = LoadNameWidth + (START_X - NUMBER_X) + 5; 
+    int w = LoadNameWidth + (START_X - NUMBER_X) + 3; 
     int h = (NumberOfLoad * 2) + 2; 
     
     DrawUiFrame(
@@ -952,7 +1133,7 @@ void EditLoadInit(DebuggerProc* proc) {
 
     struct Text* th = gStatScreen.text;
     
-    for (int i = 0; i < NumberOfLoad; ++i) { 
+    for (int i = 0; i <= NumberOfLoad; ++i) { 
         InitText(&th[i], LoadNameWidth);
     } 
 
@@ -970,32 +1151,26 @@ void RedrawLoadMenu(DebuggerProc* proc) {
     //struct Unit* unit = proc->unit; 
     struct Text* th = gStatScreen.text;
     int i = 0; 
-    for (i = 0; i < NumberOfLoad; ++i) { 
+    for (i = 0; i <= NumberOfLoad; ++i) { 
         ClearText(&th[i]); 
     } 
     
     
     i = 0; 
     
+    Text_DrawString(&th[i], "Load Unit"); i++; 
+    Text_DrawString(&th[i], "Load all players"); i++; 
+    Text_DrawString(&th[i], "Load all bosses"); i++; 
+    Text_DrawString(&th[i], "Reload units"); i++; 
+    //Text_DrawString(&th[i], "Preparations menu"); i++; 
     Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(proc->tmp[0])->nameTextId)); i++; 
-    Text_DrawString(&th[i], GetStringFromIndex(GetClassData(proc->tmp[1])->nameTextId)); i++; 
-    Text_DrawString(&th[i], "Level"); i++; 
-    Text_DrawString(&th[i], "Exp"); i++; 
-    Text_DrawString(&th[i], "Bonus Con"); i++; 
-    Text_DrawString(&th[i], "Bonus Mov"); i++; 
-    if (!proc->tmp[6]) { 
-        Text_DrawString(&th[i], "Status"); i++; 
-    } 
-    else { 
-        
-        Text_DrawString(&th[i], GetStringFromIndex(sStatusNameTextIdLookup[proc->tmp[6]])); i++; 
-    } 
     
     int x = NUMBER_X - (LoadNameWidth); 
     for (i = 0; i < NumberOfLoad; ++i) { 
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
     } 
-    for (i = 0; i < NumberOfLoad; ++i) { 
+    PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x + 8, Y_HAND)); 
+    for (i = 0; i < 1; ++i) { 
         PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
     } 
     
@@ -1009,7 +1184,7 @@ void RedrawLoadMenu(DebuggerProc* proc) {
 
 }
 
-void EditLoadIdle(DebuggerProc* proc) { 
+void LoadUnitsIdle(DebuggerProc* proc) { 
 	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
 	u16 keys = sKeyStatusBuffer.repeatedKeys; 
     if (keys & B_BUTTON) { //press B to not save stats 
@@ -1017,7 +1192,7 @@ void EditLoadIdle(DebuggerProc* proc) {
         m4aSongNumStart(0x6B); 
     };
     if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update stats and continue 
-        SaveLoad(proc); 
+        SaveLoadUnits(proc); 
         Proc_Goto(proc, RestartLabel);
         m4aSongNumStart(0x6B); 
     };
@@ -1060,14 +1235,16 @@ void EditLoadIdle(DebuggerProc* proc) {
         }
     }
     else { 
-        DisplayUiHand(CursorLocationTable[0].x - ((LoadNameWidth + 4) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        DisplayUiHand(CursorLocationTable[0].x - ((LoadNameWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
         if (keys & DPAD_RIGHT) {
             proc->digit = 1; 
-          proc->editing = true; 
+            proc->editing = true; 
+            proc->id = 0; 
         }
         if (keys & DPAD_LEFT) {
-          proc->digit = 0; 
-          proc->editing = true; 
+            proc->digit = 0; 
+            proc->editing = true; 
+            proc->id = 0; 
         }
         
         if (keys & DPAD_UP) {
@@ -1473,6 +1650,13 @@ u8 EditMiscNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 LoadUnitsNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, LoadUnitsLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 extern int DebuggerTurnedOff_Flag; 
 int ShouldStartDebugger(void) { 
     if (CheckFlag(DebuggerTurnedOff_Flag)) { return false; } 
@@ -1490,12 +1674,13 @@ void SetupUnitFunc(void) {
     UnitBeginAction(gActiveUnit); 
 }
 
+extern u8* pPromoJidLut;
 extern int GetPromoTable(int classNumber, int aOrB);
 u8 CanActiveUnitPromote(void) { 
     if (UNIT_FACTION(gActiveUnit) != gPlaySt.faction) { return 2; } 
-    //u8 promoTable[][2] = *ggPromoJidLut; 
+    u8* promoTable = pPromoJidLut; 
     int classNumber = gActiveUnit->pClassData->number; 
-    if (!GetPromoTable(classNumber, 0) && !GetPromoTable(classNumber, 1)) { // gPromoJidLut[classNumber][0]; 
+    if ((!promoTable[classNumber * 2]) && (!promoTable[(classNumber * 2) + 1])) { // gPromoJidLut[classNumber][0]; 
         return 2; // greyed out 
     } 
             
