@@ -235,6 +235,18 @@ static LocationTable CursorLocationTable[] = {
   {(START_X*8) - (8 * 8) + 4, Y_HAND*8}, 
 };
 
+
+
+#define NumberOfState 32
+#define StateWidth 7 
+static LocationTable StateCursorLocationTable[] = {
+  //{(NUMBER_X*8) - (0 * 8) - 4, Y_HAND*8},
+  {8, 16}, {8, 32}, {8, 48}, {8, 64}, {8, 80}, {8, 96}, {8, 112}, {8, 128}, 
+  {8+(8*StateWidth), 16}, {8+(8*StateWidth), 32}, {8+(8*StateWidth), 48}, {8+(8*StateWidth), 64}, {8+(8*StateWidth), 80}, {8+(8*StateWidth), 96}, {8+(8*StateWidth), 112}, {8+(8*StateWidth), 128}, 
+  {8+(16*StateWidth), 16}, {8+(16*StateWidth), 32}, {8+(16*StateWidth), 48}, {8+(16*StateWidth), 64}, {8+(16*StateWidth), 80}, {8+(16*StateWidth), 96}, {8+(16*StateWidth), 112}, {8+(16*StateWidth), 128}, 
+  {8+(24*StateWidth), 16}, {8+(24*StateWidth), 32}, {8+(24*StateWidth), 48}, {8+(24*StateWidth), 64}, {8+(24*StateWidth), 80}, {8+(24*StateWidth), 96}, {8+(24*StateWidth), 112}, {8+(24*StateWidth), 128}, 
+};
+
 static const u32 DigitDecimalTable[] = { 
 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000
 }; 
@@ -484,8 +496,6 @@ void EditStatsIdle(DebuggerProc* proc) {
     } 
 } 
 
-#define NumberOfState 32
-#define StateWidth 7 
 
 static const char states[32][16] = { 
 "Acting",
@@ -532,7 +542,7 @@ void StateInit(DebuggerProc* proc) {
     
     int x = 1; 
     int y = 1; 
-    int w = 30; //StatWidth + (START_X - NUMBER_X) + 3; 
+    int w = 29; //StatWidth + (START_X - NUMBER_X) + 3; 
     int h = 18; //(NumberOfOptions * 2) + 2; 
     
     DrawUiFrame(
@@ -553,7 +563,6 @@ void StateInit(DebuggerProc* proc) {
     StartGreenText(proc);  
     RedrawStateMenu(proc);
 }
-
 
 
 
@@ -599,34 +608,55 @@ void RedrawStateMenu(DebuggerProc* proc) {
 	BG_EnableSyncByMask(BG0_SYNC_BIT);
 
 }
+void SaveState(DebuggerProc* proc) { 
+    u32 state = proc->tmp[0] | (proc->tmp[1] << 16); 
+    proc->unit->state = state;
+} 
 
 void StateIdle(DebuggerProc* proc) { 
 	u16 keys = sKeyStatusBuffer.repeatedKeys; 
-    if (keys & B_BUTTON) { //press B to not save stats 
+    if ((keys & START_BUTTON)||(keys & B_BUTTON)) { //press B or Start to update state and continue 
+         
         Proc_Goto(proc, RestartLabel);
         m4aSongNumStart(0x6B); 
     }
-    if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update stats and continue 
-        SaveItems(proc); 
-        Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B); 
+    u32 id = proc->id;
+    if ((keys & A_BUTTON)) { //press B or Start to update state and continue 
+        u32 state = proc->tmp[0] | (proc->tmp[1] << 16); 
+        state ^= (1 << id);
+        //state = (state & (1 << id)) | ~(state & (1 << id));
+        
+        proc->tmp[0] = state & 0xffff; 
+        proc->tmp[1] = state >> 16; 
+        SaveState(proc);
+        RedrawStateMenu(proc);
     }
     
-    DisplayUiHand(CursorLocationTable[proc->digit].x + (3 * 8), (Y_HAND + (proc->id * 2)) * 8); 	
-    int max = 255 << 8; // skill scrolls
-    int min = 1 << 8; 
-    int max_digits = GetMaxDigits(max >> 8, 0); 
+    DisplayUiHand(StateCursorLocationTable[id].x, StateCursorLocationTable[id].y); 	
     
     if (keys & DPAD_RIGHT) {
-      if (proc->digit > 0) { proc->digit--; }
-      else { proc->digit = max_digits - 1; proc->editing = false; } 
-      RedrawItemMenu(proc);
+      id += 8;
     }
     if (keys & DPAD_LEFT) {
-      if (proc->digit < (max_digits-1)) { proc->digit++; }
-      else { proc->digit = 0; proc->editing = 1; proc->digit = 0; } 
-      RedrawItemMenu(proc);
+      id -= 8;
     }
+    if (keys & DPAD_UP) {
+        if (!(id % 8)) { id += 8; }
+        id--;
+    }
+    if (keys & DPAD_DOWN) {
+        
+        id++;
+        if (!(id % 8)) { id -= 8; }
+        
+    }
+    
+    if (id != proc->id) { 
+        id %= 32; 
+        proc->id = id; 
+        RedrawStateMenu(proc);
+    } 
+    
     
     
 }
