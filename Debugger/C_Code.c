@@ -194,6 +194,7 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_CALL(MapAnim_MoveCameraOntoSubject),
     PROC_SLEEP(0x2),
     //PROC_CALL(UnlockGame),
+    PROC_CALL(UpdateActorFromBattle), 
     PROC_CALL(MapAnim_Cleanup),
     PROC_GOTO(RestartLabel), 
     
@@ -1522,12 +1523,12 @@ int LevelupAction(DebuggerProc* proc) {
             gBattleActor.unit.exp += 1;
 
             CheckBattleUnitLevelUp(&gBattleActor);
-            UpdateActorFromBattle(); 
+             
             //Proc_StartBlocking(sProcScr_BattleAnimSimpleLock, proc);
             MU_EndAll();
             ResetText(); 
             
-            gBattleActor.weaponBefore = ITEM_STAFF_FORTIFY; // see BeginMapAnimForSummon
+            gBattleActor.weaponBefore = 1; // see BeginMapAnimForSummon
 
             gManimSt.hp_changing = 0;
             gManimSt.u62 = 0;
@@ -1850,6 +1851,67 @@ int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return 0; 
 }
 
+struct Unit* GetNextUnit(int deployId, int allegiance) { 
+    struct Unit* unit;
+    //deployId++;
+    for (int i = deployId+1; i < ((allegiance & 0xC0) + 0x40); ++i)
+    {
+        unit = GetUnit(i); 
+        if (UNIT_IS_VALID(unit))
+        {
+            return unit;
+        }
+    }
+    for (int i = allegiance; i < deployId; ++i)
+    {
+        unit = GetUnit(i); 
+        if (UNIT_IS_VALID(unit))
+        {
+            return unit;
+        }
+    }
+    return NULL; 
+} 
+
+struct Unit* GetPrevUnit(int deployId, int allegiance) { 
+    struct Unit* unit;
+    //deployId--;
+    //if (!deployId) { deployId = ((allegiance & 0xC0) + 0x3F); } 
+    for (int i = deployId-1; i >= allegiance; --i) // should loop back to itself I guess 
+    {
+        unit = GetUnit(i); 
+        if (UNIT_IS_VALID(unit))
+        {
+            return unit;
+        }
+    }
+    for (int i = ((allegiance & 0xC0) + 0x3F); i > deployId; --i) // should loop back to itself I guess 
+    {
+        unit = GetUnit(i); 
+        if (UNIT_IS_VALID(unit))
+        {
+            return unit;
+        }
+    }
+    return NULL; 
+} 
+
+void SwapToPreviousUnit(DebuggerProc* proc) { 
+    struct Unit* unit = proc->unit; 
+    int deployId = unit->index & 0xFF; 
+    int allegiance = UNIT_FACTION(unit); // 0x00, 0x40, or 0x80 
+    if (!allegiance) { allegiance = 1; } // start GetUnit(i) at 1, not 0. 
+    unit = GetPrevUnit(deployId, allegiance); 
+    if (unit) { proc->unit = unit; } 
+}
+void SwapToNextUnit(DebuggerProc* proc) { 
+    struct Unit* unit = proc->unit; 
+    int deployId = unit->index & 0xFF; 
+    int allegiance = UNIT_FACTION(unit); 
+    unit = GetNextUnit(deployId, allegiance); 
+    if (unit) { proc->unit = unit; } 
+}
+
 u8 PageIdler(struct MenuProc* menu, struct MenuItemProc* command) { 
     u16 keys = gKeyStatusPtr->repeatedKeys; 
     PageMenuItemDrawSprites(menu); 
@@ -1859,6 +1921,22 @@ u8 PageIdler(struct MenuProc* menu, struct MenuItemProc* command) {
     proc->mainID = menu->itemCurrent; 
     procIdler->mainID = menu->itemCurrent; 
     int page = proc->page; 
+    
+    if (keys & L_BUTTON) { 
+        SwapToPreviousUnit(proc); 
+        gActiveUnitMoveOrigin.x = proc->unit->xPos; 
+        gActiveUnitMoveOrigin.y = proc->unit->yPos; 
+        Proc_Goto(proc, RestartLabel); 
+        return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
+    } 
+    if (keys & R_BUTTON) { 
+        SwapToNextUnit(proc);
+        gActiveUnitMoveOrigin.x = proc->unit->xPos; 
+        gActiveUnitMoveOrigin.y = proc->unit->yPos;         
+        Proc_Goto(proc, RestartLabel); 
+        return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
+    } 
+    
     if (keys & DPAD_LEFT) { 
         page--; 
     }
@@ -1960,6 +2038,7 @@ void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainId
         procIdler = Proc_Start(DebuggerProcCmdIdler, (void*)3);
         InitProc(procIdler); 
     } 
+    procIdler->unit = unit; 
     
 	DebuggerProc* proc = Proc_Find(DebuggerProcCmd); 
 	if (!proc) { 
@@ -2020,14 +2099,13 @@ void BmMain_StartPhase(ProcPtr proc)
 
 void RestartDebuggerMenu(DebuggerProc* proc) { 
     ClearActiveUnitStuff(proc); // in case we didn't refresh units before restarting 
-    struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
+    struct Unit * unit = proc->unit; //GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
     if (!unit) { Proc_Goto(proc, EndLabel); return; } 
     EndAllMenus();
     ResetText();
     ProcPtr playerPhaseProc = Proc_Find(gProcScr_PlayerPhase); 
     Proc_Goto(playerPhaseProc, 9); // wait for menu? 
     UnitBeginActionInit(unit); 
-    proc->unit = unit; 
     proc->actionID = 0; 
     proc->editing = false; 
     proc->actionID = 0; 
