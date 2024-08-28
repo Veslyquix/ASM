@@ -75,6 +75,9 @@ void LoadUnitsIdle(DebuggerProc* proc);
 void RedrawLoadMenu(DebuggerProc* proc); 
 void LoadUnitsInit(DebuggerProc* proc);
 void PutNumberHex(u16 *tm, int color, int number);
+void StateInit(DebuggerProc* proc);
+void StateIdle(DebuggerProc* proc);
+void RedrawStateMenu(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -91,7 +94,8 @@ u8 CanActiveUnitPromote(void);
 #define EditMiscLabel 11
 #define LoadUnitsLabel 12
 #define LevelupLabel 13
-#define LoopLabel 14
+#define StateLabel 14
+#define LoopLabel 15
 #define EndLabel 99 
 
 #define ActionID_Promo 1 
@@ -197,6 +201,11 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_CALL(UpdateActorFromBattle), 
     PROC_CALL(MapAnim_Cleanup),
     PROC_GOTO(RestartLabel), 
+    
+    PROC_LABEL(StateLabel), // Unit state
+    PROC_CALL(StateInit), 
+    PROC_REPEAT(StateIdle), 
+    PROC_GOTO(EndLabel), 
     
     PROC_LABEL(EndLabel), 
     PROC_CALL(ClearActiveUnitStuff),
@@ -474,6 +483,154 @@ void EditStatsIdle(DebuggerProc* proc) {
         }
     } 
 } 
+
+#define NumberOfState 32
+#define StateWidth 7 
+
+static const char states[32][16] = { 
+"Acting",
+"Acted",
+"Dead",
+"Undeployed",
+"Rescuing",
+"Rescued",
+"Cantoed",
+"Under roof",
+"Spotted",
+"Concealed",
+"AI decided",
+"In ballista",
+"Drop item",
+"Afa's drops",
+"Solo anim1",
+"Solo anim2",
+"Escaped",
+"Arena 1",
+"Arena 2",
+"Super arena",
+"Unk 25",
+"Benched",
+"Scene unit",
+"Portrait+1",
+"Shake",
+"Can't deploy",
+"Departed",
+"4th palette",
+"Unk 35",
+"Unk 36",
+"Capture",
+"Unk 38",
+}; 
+
+
+void StateInit(DebuggerProc* proc) { 
+    SomeMenuInit(proc); 
+    struct Unit* unit = proc->unit; 
+    proc->tmp[0] = unit->state; 
+    proc->tmp[1] = unit->state >> 16; 
+    
+    
+    int x = 1; 
+    int y = 1; 
+    int w = 30; //StatWidth + (START_X - NUMBER_X) + 3; 
+    int h = 18; //(NumberOfOptions * 2) + 2; 
+    
+    DrawUiFrame(
+        BG_GetMapBuffer(1), // back BG
+        x, y, w, h,
+        TILEREF(0, 0), 0); // style as 0 ? 
+
+    //ClearUiFrame(
+    //    BG_GetMapBuffer(1), // front BG 
+    //    x, y, w, h);
+    
+    struct Text* th = gStatScreen.text;
+    
+    for (int i = 0; i < NumberOfState; ++i) { 
+        InitText(&th[i], StateWidth);
+        Text_DrawString(&th[i], states[i]);
+    } 
+    StartGreenText(proc);  
+    RedrawStateMenu(proc);
+}
+
+
+
+
+void RedrawStateMenu(DebuggerProc* proc) { 
+	TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfOptions, 0);
+	//BG_EnableSyncByMask(BG0_SYNC_BIT);
+    //ResetText();
+    int c = 0; 
+    struct Text* th = gStatScreen.text;
+    
+    u32 state = proc->tmp[0] | (proc->tmp[1] << 16); 
+    
+    for (int i = 0; i < NumberOfState; ++i) { 
+        c = state & (1 << i); 
+        if (c) { c = TEXT_COLOR_SYSTEM_GOLD; } 
+        
+        if (Text_GetColor(&th[i]) != c) {
+            ClearText(&th[i]);
+            Text_SetColor(&th[i], c); 
+            Text_DrawString(&th[i], states[i]);
+        }
+    } 
+    c = 0;
+    int x = 2; 
+    int y = 2; 
+    for (int i = 0; i < 8; ++i) { 
+        PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, y + (i*2))); c++; 
+    } 
+    x += StateWidth; 
+    for (int i = 0; i < 8; ++i) { 
+        PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, y + (i*2))); c++; 
+    } 
+    x += StateWidth; 
+    for (int i = 0; i < 8; ++i) { 
+        PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, y + (i*2))); c++; 
+    } 
+    x += StateWidth; 
+    for (int i = 0; i < 8; ++i) { 
+        PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, y + (i*2))); c++; 
+    } 
+
+
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+}
+
+void StateIdle(DebuggerProc* proc) { 
+	u16 keys = sKeyStatusBuffer.repeatedKeys; 
+    if (keys & B_BUTTON) { //press B to not save stats 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    }
+    if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update stats and continue 
+        SaveItems(proc); 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    }
+    
+    DisplayUiHand(CursorLocationTable[proc->digit].x + (3 * 8), (Y_HAND + (proc->id * 2)) * 8); 	
+    int max = 255 << 8; // skill scrolls
+    int min = 1 << 8; 
+    int max_digits = GetMaxDigits(max >> 8, 0); 
+    
+    if (keys & DPAD_RIGHT) {
+      if (proc->digit > 0) { proc->digit--; }
+      else { proc->digit = max_digits - 1; proc->editing = false; } 
+      RedrawItemMenu(proc);
+    }
+    if (keys & DPAD_LEFT) {
+      if (proc->digit < (max_digits-1)) { proc->digit++; }
+      else { proc->digit = 0; proc->editing = 1; proc->digit = 0; } 
+      RedrawItemMenu(proc);
+    }
+    
+    
+}
+
 
 #define ItemNameWidth 8
 void EditItemsInit(DebuggerProc* proc) { 
@@ -1705,6 +1862,15 @@ u8 LoadUnitsNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     Proc_Goto(proc, LoadUnitsLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
+u8 EditStateNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, StateLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+
+
 
 extern int DebuggerTurnedOff_Flag; 
 int ShouldStartDebugger(void) { 
