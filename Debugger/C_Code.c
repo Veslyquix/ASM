@@ -42,11 +42,13 @@ void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) {
 
 extern int NumberOfPages; 
 void RestartDebuggerMenu(DebuggerProc* proc); 
+int RestartNow(DebuggerProc* proc); // goto restart label 
 void LoopDebuggerProc(DebuggerProc* proc);
 void PickupUnitIdle(DebuggerProc* proc); 
 void SetupUnitFunc(void); 
 int PromoAction(DebuggerProc* proc);
 int ArenaAction(DebuggerProc* proc); 
+int LevelupAction(DebuggerProc* proc); 
 int UnitActionFunc(DebuggerProc* proc); 
 void CallPlayerPhase_FinishAction(DebuggerProc* proc);
 void ClearActiveUnitStuff(DebuggerProc* proc); 
@@ -88,11 +90,13 @@ u8 CanActiveUnitPromote(void);
 #define EditItemsLabel 10
 #define EditMiscLabel 11
 #define LoadUnitsLabel 12
-#define LoopLabel 13
+#define LevelupLabel 13
+#define LoopLabel 14
 #define EndLabel 99 
 
 #define ActionID_Promo 1 
 #define ActionID_Arena 2 
+#define ActionID_Levelup 3 
 
 const struct ProcCmd DebuggerProcCmdIdler[] =
 {
@@ -128,6 +132,7 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_CALL(PlayerPhase_ApplyUnitMovementWithoutMenu), 
     PROC_WHILE_EXISTS(gProcScr_CamMove),
     PROC_CALL_2(PlayerPhase_PrepareActionBasic), 
+    PROC_SLEEP(1),
     PROC_CALL_2(UnitActionFunc),
     
     PROC_LABEL(PostActionLabel), // after action 
@@ -172,8 +177,27 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_REPEAT(LoadUnitsIdle), 
     PROC_GOTO(EndLabel), 
     
-    PROC_LABEL(EndLabel), 
+    PROC_LABEL(LevelupLabel), // Levelup
+    //PROC_CALL(LockGame), 
+    PROC_SLEEP(5),
+    PROC_WHILE(BattleEventEngineExists),
+    //PROC_CALL(MapAnmiProc_DisplayDeathFade),
+    //PROC_WHILE_EXISTS(ProcScr_MuDeathFade),
+    PROC_CALL(DeleteBattleAnimInfoThing),
+    PROC_SLEEP(0x1),
+    //PROC_CALL(MapAnimProc_DisplayItemStealingPopup),
+    //PROC_YIELD,
+    PROC_CALL(MapAnimProc_DisplayExpBar),
+    PROC_YIELD,
+    //PROC_CALL(DisplayWRankUpPopup),
+    //PROC_YIELD,
+    PROC_CALL(MapAnim_MoveCameraOntoSubject),
+    PROC_SLEEP(0x2),
+    //PROC_CALL(UnlockGame),
+    PROC_CALL(MapAnim_Cleanup),
+    PROC_GOTO(RestartLabel), 
     
+    PROC_LABEL(EndLabel), 
     PROC_CALL(ClearActiveUnitStuff),
     PROC_CALL(SaveProcVarsToIdler),
     PROC_END,
@@ -1378,6 +1402,8 @@ void PickupUnitIdle(DebuggerProc* proc) {
     if (gKeyStatusPtr->newKeys & A_BUTTON) { 
         gActionData.xMove = gBmSt.playerCursor.x; 
         gActionData.yMove = gBmSt.playerCursor.y; 
+        gActiveUnitMoveOrigin.x = gBmSt.playerCursor.x;
+        gActiveUnitMoveOrigin.y = gBmSt.playerCursor.y;
         PlayerPhase_ApplyUnitMovementWithoutMenu(proc); 
         ClearActiveUnitStuff(proc); 
         PlaySoundEffect(0x6B);
@@ -1401,10 +1427,13 @@ void PickupUnitIdle(DebuggerProc* proc) {
 
 void ClearActiveUnitStuff(DebuggerProc* proc) { 
     MU_EndAll(); 
-    if (UNIT_FACTION(gActiveUnit) == gPlaySt.faction) { // if turn of the actor, refresh 
-        gActiveUnit->state = gActiveUnit->state & ~(US_UNSELECTABLE|US_CANTOING); 
+    if (gActiveUnit) { 
+        //if (UNIT_FACTION(gActiveUnit) == gPlaySt.faction) { // if turn of the actor, refresh 
+        //EndAllMus();
+        gActiveUnit->state &= ~(US_HIDDEN|US_UNSELECTABLE|US_CANTOING); 
+        //} 
     } 
-    ClearActiveUnit(gActiveUnit); 
+
     EnsureCameraOntoPosition(proc, gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
     SetCursorMapPosition(gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
     gBmSt.gameStateBits &= ~BM_FLAG_3;
@@ -1413,6 +1442,7 @@ void ClearActiveUnitStuff(DebuggerProc* proc) {
 
     RefreshEntityBmMaps();
     RefreshUnitSprites();
+    
 
     //PlaySoundEffect(0x6B);
 
@@ -1457,6 +1487,10 @@ int UnitActionFunc(DebuggerProc* proc) {
         case ActionID_Arena: { 
             ArenaAction(proc); 
         break; } 
+        case ActionID_Levelup: { 
+            LevelupAction(proc); 
+        break; } 
+        
         default: 
     } 
     proc->actionID = 0; 
@@ -1473,6 +1507,47 @@ int ArenaAction(DebuggerProc* proc) {
     Proc_Goto(proc, PostActionLabel); 
     return 0; 
 } 
+extern const struct ProcCmd sProcScr_BattleAnimSimpleLock[]; 
+int LevelupAction(DebuggerProc* proc) { 
+    
+    gActiveUnit->exp = 99; 
+    InitBattleUnit(&gBattleActor, gActiveUnit);
+    //if (UNIT_FACTION(&gBattleActor.unit) != FACTION_BLUE)
+        //return;
+
+    if (CanBattleUnitGainLevels(&gBattleActor)) { // see BattleApplyMiscAction 
+        if (!(gPlaySt.chapterStateBits & PLAY_FLAG_EXTRA_MAP)) { 
+
+            gBattleActor.expGain = 1;
+            gBattleActor.unit.exp += 1;
+
+            CheckBattleUnitLevelUp(&gBattleActor);
+            UpdateActorFromBattle(); 
+            //Proc_StartBlocking(sProcScr_BattleAnimSimpleLock, proc);
+            MU_EndAll();
+            ResetText(); 
+            
+            gBattleActor.weaponBefore = ITEM_STAFF_FORTIFY; // see BeginMapAnimForSummon
+
+            gManimSt.hp_changing = 0;
+            gManimSt.u62 = 0;
+            gManimSt.actorCount_maybe = 1;
+
+            gManimSt.subjectActorId = 0;
+            gManimSt.targetActorId = 1;
+
+            SetupMapBattleAnim(&gBattleActor, &gBattleTarget, gBattleHitArray);
+            //Proc_Start(ProcScr_MapAnimSummon, PROC_TREE_3);
+            Proc_Goto(proc, LevelupLabel); 
+            return 0; 
+        }
+    }
+    Proc_Goto(proc, PostActionLabel); 
+    
+    
+    return 0; 
+} 
+
 u8 StartPromotionNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     //SetupUnitFunc(); 
     if (CanActiveUnitPromote() != 1) { return MENU_ACT_SKIPCURSOR | MENU_ACT_SND6B; } 
@@ -1487,6 +1562,14 @@ u8 StartArenaNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
 	DebuggerProc* proc; 
 	proc = Proc_Find(DebuggerProcCmd); 
     proc->actionID = ActionID_Arena; 
+    Proc_Goto(proc, UnitActionLabel); // 0xb7 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+u8 LevelupNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+    //SetupUnitFunc(); 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    proc->actionID = ActionID_Levelup; 
     Proc_Goto(proc, UnitActionLabel); // 0xb7 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -1860,12 +1943,17 @@ void UnitBeginActionInit(struct Unit* unit) {
     //gBmMapUnit[unit->yPos][unit->xPos] = 0;
 }
 
+int RestartNow(DebuggerProc* proc) { 
+    Proc_Goto(proc, RestartLabel); 
+    return 0; // yield 
+}
 
 void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainIdle
     if (!ShouldStartDebugger()) { return; } 
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
     if (!unit) { return; } 
-    
+    gActiveUnitMoveOrigin.x = unit->xPos; 
+    gActiveUnitMoveOrigin.y = unit->yPos; 
     
     DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
     if (!procIdler) { 
@@ -1931,6 +2019,7 @@ void BmMain_StartPhase(ProcPtr proc)
 
 
 void RestartDebuggerMenu(DebuggerProc* proc) { 
+    ClearActiveUnitStuff(proc); // in case we didn't refresh units before restarting 
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
     if (!unit) { Proc_Goto(proc, EndLabel); return; } 
     EndAllMenus();

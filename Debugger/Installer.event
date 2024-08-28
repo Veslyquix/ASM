@@ -40,7 +40,7 @@ FILL(256 * 4)
     
 ALIGN 4 
 NumberOfPages:
-WORD 3
+WORD 2
 
 ggDebuggerMenuItems:
 POIN gDebuggerMenuItems gDebuggerMenuItemsPage2 gDebuggerMenuItemsPage3 
@@ -51,11 +51,12 @@ gDebuggerMenuItems:
 MenuCommand1(PickupText, PickupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, PickupUnitNow)
 MenuCommand1(PromoteText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
 MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
-MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
+MenuCommand1(LevelupText,LevelupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LevelupNow)
 MenuCommand1(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
+MenuCommand1(EditMiscText,EditMiscDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMiscNow)
 MenuCommand1(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
 MenuCommand1(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
-MenuCommand1(ControlAiText,ControlAiDesc, NormalText, MenuAlwaysEnabled, ControlAiDrawText, ControlAiNow)
+
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 
 
@@ -64,8 +65,9 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 
 ALIGN 4 
 gDebuggerMenuItemsPage2: // must be immediately after gDebuggerMenuItems 
+MenuCommand1(ControlAiText,ControlAiDesc, NormalText, MenuAlwaysEnabled, ControlAiDrawText, ControlAiNow)
 MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
-MenuCommand1(EditMiscText,EditMiscDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMiscNow)
+MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
 MenuCommand1(LoadUnitsText,LoadUnitsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LoadUnitsNow)
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
@@ -162,4 +164,10 @@ LoadUnitsText:
 LoadUnitsDesc:
     String("Load units."); NL
     String("Possibly useful."); EndText 
+
+LevelupText:
+    String(" Level up"); EndText 
+LevelupDesc:
+    String("Level up"); NL
+    String("the unit."); EndText 
 
