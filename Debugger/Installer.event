@@ -70,6 +70,7 @@ MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMen
 MenuCommand1(ChStateText,ChStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, ChStateNow)
 MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
 MenuCommand1(LoadUnitsText,LoadUnitsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LoadUnitsNow)
+MenuCommand1(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, BootmodeDrawText, ToggleBootNow)
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
 //MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)

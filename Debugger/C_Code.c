@@ -43,6 +43,51 @@ void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) {
     dst->unit = src->unit; 
 } 
 
+void SetBootType(int id) { 
+    struct GlobalSaveInfo info;
+    ReadGlobalSaveInfo(&info);
+    info.charKnownFlags[0x10] = id; 
+    WriteGlobalSaveInfoNoChecksum(&info);
+} 
+
+int GetBootType(void) { 
+    struct GlobalSaveInfo info;
+    ReadGlobalSaveInfo(&info);
+    return info.charKnownFlags[0x10]; 
+} 
+
+
+void EventCallGameOverExt(ProcPtr proc)
+{
+    Proc_StartBlocking(ProcScr_BmGameOver, proc);
+    SetBootType(4); // title screen after game over 
+}
+
+#define LGAMECTRL_EXEC_BM_EXT 6  // Directly goto bmmap 
+void GameControl_CallEraseSaveEventWithKeyCombo(ProcPtr proc)
+{
+    if (gKeyStatusPtr->heldKeys == (L_BUTTON | DPAD_RIGHT | SELECT_BUTTON)) { 
+        Proc_Goto(proc, LGAMECTRL_ERASE_SAVE); 
+    } 
+    else { 
+        int var = GetBootType(); 
+        switch (var) { 
+            case 1: { GmDataInit(); Proc_Goto(proc, LGAMECTRL_EXEC_BM); break; } 
+            case 2: { GmDataInit(); Proc_Goto(proc, LGAMECTRL_EXEC_BM_EXT); break; } // Directly goto bmmap
+            case 3: { if (IsValidSuspendSave(SAVE_ID_SUSPEND)) { 
+                ReadSuspendSave(3);
+                //SetNextGameActionId(GAME_ACTION_4);
+                Proc_Goto(proc, 8); break; } }  // Resume ch
+            default: 
+        } 
+         
+        
+    } 
+    
+    // 8 = resume 
+    // 
+}
+
 
 extern int NumberOfPages; 
 void RestartDebuggerMenu(DebuggerProc* proc); 
@@ -953,7 +998,7 @@ void SaveChState(DebuggerProc* proc) {
         
     } 
     
-    if (gPlaySt.chapterVisionRange != proc->tmp[2]) {
+    if (gPlaySt.chapterVisionRange != proc->tmp[2]) { // fix? 
         gPlaySt.chapterVisionRange = proc->tmp[2];
         RefreshEntityBmMaps();
         RefreshUnitSprites();
@@ -2167,6 +2212,19 @@ u8 StartGodmodeNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 ToggleBootNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+    //SetupUnitFunc(); 
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    proc->actionID = 0; 
+    Proc_Goto(proc, RestartLabel); // 0xb7 
+    int boot = GetBootType(); 
+    boot++; 
+    boot %= 4;
+    SetBootType(boot); 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 u8 ControlAiNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     //SetupUnitFunc(); 
 	DebuggerProc* proc; 
@@ -2386,6 +2444,28 @@ int GodmodeDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     } 
     else { 
         Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
+    } 
+    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    return 0;
+} 
+
+int BootmodeDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem) { 
+    if (menuItem->availability == MENU_DISABLED) {
+        Text_SetColor(&menuItem->text, 1);
+    }
+    int boot = GetBootType();
+
+    if (boot == 1) { 
+        Text_DrawString(&menuItem->text, " Restart");
+    } 
+    else if (boot == 2) { 
+        Text_DrawString(&menuItem->text, " Restart2");
+    } 
+    else if (boot == 3) { 
+        Text_DrawString(&menuItem->text, " Resume");
+    } 
+    else { 
+        Text_DrawString(&menuItem->text, " Boot title");
     } 
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
