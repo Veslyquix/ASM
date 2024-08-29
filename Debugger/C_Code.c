@@ -20,6 +20,7 @@ typedef struct {
     u8 page; 
     s8 mainID; // by the main debugger menu 
     u16 tmp[tmpSize];
+    u16 lastFlag; 
     struct Unit* unit; 
 } DebuggerProc;
 
@@ -33,6 +34,7 @@ void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) {
     dst->digit = src->digit; 
     dst->godMode = src->godMode; 
     dst->page = src->page; 
+    dst->lastFlag = src->lastFlag; 
     for (int i = 0; i < tmpSize; ++i) { 
         dst->tmp[i] = src->tmp[i]; 
     }
@@ -78,6 +80,8 @@ void PutNumberHex(u16 *tm, int color, int number);
 void StateInit(DebuggerProc* proc);
 void StateIdle(DebuggerProc* proc);
 void RedrawStateMenu(DebuggerProc* proc);
+void ChStateInit(DebuggerProc* proc);
+void EditChStateIdle(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -95,7 +99,8 @@ u8 CanActiveUnitPromote(void);
 #define LoadUnitsLabel 12
 #define LevelupLabel 13
 #define StateLabel 14
-#define LoopLabel 15
+#define ChStateLabel 15
+#define LoopLabel 16
 #define EndLabel 99 
 
 #define ActionID_Promo 1 
@@ -853,6 +858,192 @@ void EditItemsIdle(DebuggerProc* proc) {
         }
     } 
 } 
+
+
+#define NumberOfChState 8 
+#define ChStateNameWidth 8 
+ 
+void SaveChState(DebuggerProc* proc) { 
+    proc->lastFlag = proc->tmp[6]; 
+    return; 
+
+}  
+
+static const char chStates[][16] = { 
+"Gold",
+"Weather",
+"Fog",
+"Jump to ch.",
+"Loma to ch.",
+"Turn",
+"Flags",
+"Save & restart"
+// clear ch 
+// Preparations 
+}; 
+
+
+void RedrawChStateMenu(DebuggerProc* proc); 
+void ChStateInit(DebuggerProc* proc) { 
+    SomeMenuInit(proc); 
+    LoadIconPalettes(4);
+    struct Unit* unit = proc->unit; 
+    for (int i = 0; i < NumberOfChState; ++i) { 
+        proc->tmp[i] = 0; 
+    }
+    proc->tmp[0] = gPlaySt->partyGoldAmount; // gold can be bigger than u16
+    proc->tmp[1] = chapterWeatherId; 
+    proc->tmp[2] = chapterVisionRange; 
+    proc->tmp[3] = chapterIndex; 
+    proc->tmp[4] = chapterIndex; 
+    proc->tmp[5] = chapterTurnNumber; 
+    proc->tmp[6] = proc->lastFlag; 
+    proc->tmp[7] = proc->lastFlag; // unused 
+    
+    
+    int x = NUMBER_X - MiscNameWidth - 1; 
+    int y = Y_HAND - 1; 
+    int w = MiscNameWidth + (START_X - NUMBER_X) + 3; 
+    int h = (NumberOfChState * 2) + 2; 
+    
+    DrawUiFrame(
+        BG_GetMapBuffer(1), // back BG
+        x, y, w, h,
+        TILEREF(0, 0), 0); // style as 0 ? 
+
+    struct Text* th = gStatScreen.text;
+    
+    for (int i = 0; i < NumberOfChState; ++i) { 
+        InitText(&th[i], ChStateNameWidth);
+    } 
+
+
+    RedrawChStateMenu(proc);
+}
+
+//"Gold",
+//"Weather",
+//"Fog",
+//"Jump to ch.", // hex 
+//"Loma to ch.", //hex 
+//"Turn",
+//"Flags", //hex 
+//"Save & restart" //n/a 
+static const s8 chStateHexOrDecimal[] = { 0, 0, 0, 1, 1, 0, 1, -1 }; 
+
+void RedrawChStateMenu(DebuggerProc* proc) { 
+	//TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfMisc, 0);
+    BG_Fill(gBG0TilemapBuffer, 0); 
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+    ResetIconGraphics();
+    //ResetText();
+    //struct Unit* unit = proc->unit; 
+    struct Text* th = gStatScreen.text;
+    int i = 0; 
+    for (i = 0; i < NumberOfChState; ++i) { 
+        ClearText(&th[i]); 
+        Text_DrawString(&th[i], chStates[i]);  
+    } 
+
+    int x = NUMBER_X - (MiscNameWidth); 
+    for (i = 0; i < NumberOfMisc; ++i) { 
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
+    } 
+    
+    PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND), TEXT_COLOR_SYSTEM_GOLD, gPlaySt->partyGoldAmount); 
+    
+    int hexOrDec = 0; 
+    for (i = i; i < NumberOfMisc; ++i) { 
+        //
+        hexOrDec = chStateHexOrDecimal[i]; 
+        if (hexOrDec < 0) { continue; } 
+        if (hexOrDec) { 
+        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        } 
+        else { 
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        }
+        
+    } 
+
+	BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+}
+
+void EditChStateIdle(DebuggerProc* proc) { 
+	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
+	u16 keys = sKeyStatusBuffer.repeatedKeys; 
+    if (keys & B_BUTTON) { //press B to not save ch state 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update ch state and continue 
+        SaveChState(proc); 
+        Proc_Goto(proc, RestartLabel);
+        m4aSongNumStart(0x6B); 
+    };
+    if (proc->editing) { 
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
+        int max = GetChStateMax(proc->id); 
+        int min = GetChStateMin(proc->id); 
+        int type = (proc->id < 2); 
+        int max_digits = GetMaxDigits(max, type); 
+        int val = 0; 
+        
+        if (keys & DPAD_RIGHT) {
+          if (proc->digit > 0) { proc->digit--; }
+          else { proc->digit = max_digits - 1; proc->editing = false; } 
+          RedrawChStateMenu(proc);
+        }
+        if (keys & DPAD_LEFT) {
+          if (proc->digit < (max_digits-1)) { proc->digit++; }
+          else { proc->digit = 0; proc->editing = false; } 
+          RedrawChStateMenu(proc);
+        }
+        
+        if (keys & DPAD_UP) {
+            if ((proc->tmp[proc->id]) == max) { proc->tmp[proc->id] = min; } 
+            else { 
+                proc->tmp[proc->id] += pDigitTable[type][proc->digit]; 
+                if ((proc->tmp[proc->id]) > max) { proc->tmp[proc->id] = max; } 
+            } 
+            RedrawChStateMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            if ((proc->tmp[proc->id]) == min) { proc->tmp[proc->id] = max; } 
+            else { 
+                val = (proc->tmp[proc->id]) - pDigitTable[type][proc->digit]; 
+                if (val < min) { proc->tmp[proc->id] = min; } 
+                else { proc->tmp[proc->id] = val; } 
+            } 
+            RedrawChStateMenu(proc); 
+        }
+    }
+    else { 
+        DisplayUiHand(CursorLocationTable[0].x - ((ChStateNameWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (keys & DPAD_RIGHT) {
+            proc->digit = 1; 
+          proc->editing = true; 
+        }
+        if (keys & DPAD_LEFT) {
+          proc->digit = 0; 
+          proc->editing = true; 
+        }
+        
+        if (keys & DPAD_UP) {
+            proc->id--; 
+            if (proc->id < 0) { proc->id = NumberOfChState - 1; } 
+            RedrawChStateMenu(proc); 
+        }
+        if (keys & DPAD_DOWN) {
+            proc->id++; 
+            if (proc->id >= NumberOfChState) { proc->id = 0; } 
+            
+            RedrawChStateMenu(proc); 
+        }
+    } 
+} 
+
 
 #define NumberOfMisc 7 
 #define MiscNameWidth 8 
@@ -1759,6 +1950,12 @@ u8 LevelupNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
 	proc = Proc_Find(DebuggerProcCmd); 
     proc->actionID = ActionID_Levelup; 
     Proc_Goto(proc, UnitActionLabel); // 0xb7 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+u8 ChMenuNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+	DebuggerProc* proc; 
+	proc = Proc_Find(DebuggerProcCmd); 
+    Proc_Goto(proc, ChMenuLabel); 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 

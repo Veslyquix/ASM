@@ -67,6 +67,7 @@ gDebuggerMenuItemsPage2: // must be immediately after gDebuggerMenuItems
 MenuCommand1(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
 MenuCommand1(ControlAiText,ControlAiDesc, NormalText, MenuAlwaysEnabled, ControlAiDrawText, ControlAiNow)
 MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
+MenuCommand1(ChStateText,ChStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, ChStateNow)
 MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
 MenuCommand1(LoadUnitsText,LoadUnitsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LoadUnitsNow)
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
@@ -111,6 +112,12 @@ ClearChText:
 ClearChDesc:
     String("Clear the current"); NL
     String("chapter."); EndText 
+    
+ChStateText:
+    String(" Ch. State"); EndText 
+ChStateDesc:
+    String("Edit things about"); NL
+    String("the chapter."); EndText 
 
 EditMapText:
     String(" Edit Map"); EndText 
