@@ -21,6 +21,7 @@ typedef struct {
     s8 mainID; // by the main debugger menu 
     u16 tmp[tmpSize];
     u16 lastFlag; 
+    u32 gold; 
     struct Unit* unit; 
 } DebuggerProc;
 
@@ -35,6 +36,7 @@ void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) {
     dst->godMode = src->godMode; 
     dst->page = src->page; 
     dst->lastFlag = src->lastFlag; 
+    dst->gold = src->gold; 
     for (int i = 0; i < tmpSize; ++i) { 
         dst->tmp[i] = src->tmp[i]; 
     }
@@ -81,7 +83,7 @@ void StateInit(DebuggerProc* proc);
 void StateIdle(DebuggerProc* proc);
 void RedrawStateMenu(DebuggerProc* proc);
 void ChStateInit(DebuggerProc* proc);
-void EditChStateIdle(DebuggerProc* proc);
+void ChStateIdle(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -212,6 +214,11 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_REPEAT(StateIdle), 
     PROC_GOTO(EndLabel), 
     
+    PROC_LABEL(ChStateLabel), // Ch state
+    PROC_CALL(ChStateInit), 
+    PROC_REPEAT(ChStateIdle), 
+    PROC_GOTO(EndLabel), 
+    
     PROC_LABEL(EndLabel), 
     PROC_CALL(ClearActiveUnitStuff),
     PROC_CALL(SaveProcVarsToIdler),
@@ -279,8 +286,34 @@ static int GetMaxDigits(int number, int type) {
 
 } 
 
+
+int GetMostSignificantDigit(int val, int type) { 
+    return GetMaxDigits(val, type) - 1; 
+} 
+
+
 #define StatWidth 3
 void RedrawUnitStatsMenu(DebuggerProc* proc); 
+
+void FixCursorOverflow(void) { 
+    int x = gBmSt.playerCursor.x; 
+    int y = gBmSt.playerCursor.y; 
+    if (x < 0) { gBmSt.playerCursor.x = 0; gActiveUnitMoveOrigin.x = 0; } 
+    if (y < 0) { gBmSt.playerCursor.y = 0; gActiveUnitMoveOrigin.y = 0; } 
+    if (x >= gBmMapSize.x) { 
+        x = gBmMapSize.x - 1;
+        gBmSt.playerCursor.x = x; 
+        gActiveUnitMoveOrigin.x = x; 
+        gActiveUnit->xPos = x; 
+    } 
+    if (y >= gBmMapSize.y) { 
+        y = gBmMapSize.y - 1; 
+        gBmSt.playerCursor.y = y; 
+        gActiveUnitMoveOrigin.x = y; 
+        gActiveUnit->yPos = y; 
+    } 
+
+} 
 
 void SomeMenuInit(DebuggerProc* proc) { 
     ResetTextFont();
@@ -861,15 +894,94 @@ void EditItemsIdle(DebuggerProc* proc) {
 
 
 #define NumberOfChState 8 
-#define ChStateNameWidth 8 
- 
-void SaveChState(DebuggerProc* proc) { 
-    proc->lastFlag = proc->tmp[6]; 
-    return; 
+#define ChStateNameWidth 11 
 
+void GotoChapter(int id) { 
+    SetNextChapterId(id); 
+    gPlaySt.save_menu_type = 2;
+    SetNextGameActionId(GAME_ACTION_USR_SKIPPED);
+
+    DeleteAll6CWaitMusicRelated();
+    Sound_FadeOutBGM(4);
+    SetTextFont(NULL);
+    InitSystemTextFont();
+    LoadUiFrameGraphics();
+    ReadGameSaveCoreGfx();
+    UnpackChapterMapPalette();
+    //ChangeUnitSpritePalette(proc->mapSpritePalIdOverride);
+    MU_EndAll(); 
+    EndBMapMain();
+    //memset((u8*)(gEventCallQueue), 0, 0x80);
+} 
+
+void LomaChapter(int id) { 
+    gPlaySt.chapterIndex = id; 
+    RestartBattleMap();
+    int x = 0; 
+    int y = 0; 
+    gBmSt.camera.x = GetCameraCenteredX(x * 16);
+    gBmSt.camera.y = GetCameraCenteredY(y * 16);
+
+    RefreshEntityBmMaps();
+    RenderBmMap();
+    RefreshUnitSprites();
+    RefreshBMapGraphics();
+
+    //ChangeUnitSpritePalette(proc->mapSpritePalIdOverride);
+
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_Fill(gBG1TilemapBuffer, 0);
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    BG_EnableSyncByMask(BG1_SYNC_BIT);
+    FixCursorOverflow(); 
+}
+ 
+extern void WfxInit(void); 
+void SaveChState(DebuggerProc* proc) { 
+    
+    gPlaySt.partyGoldAmount = proc->gold; 
+    gPlaySt.chapterTurnNumber = proc->tmp[5]; 
+    if (gPlaySt.chapterWeatherId != proc->tmp[1]) { 
+        gPlaySt.chapterWeatherId = 0; 
+        WfxInit(); //WfxNone_Init(); 
+        SetWeather(proc->tmp[1]); 
+        InitBmBgLayers();
+        UnpackChapterMapGraphics(gPlaySt.chapterIndex);
+        RenderBmMap();
+        RefreshUnitSprites();
+        
+    } 
+    
+    if (gPlaySt.chapterVisionRange != proc->tmp[2]) {
+        gPlaySt.chapterVisionRange = proc->tmp[2];
+        RefreshEntityBmMaps();
+        RefreshUnitSprites();
+        RenderBmMap();
+    }
+    if (proc->id == 3) { // mnc 2
+        GotoChapter(proc->tmp[3]); 
+        Proc_End(proc); 
+        return; 
+
+    } 
+    if (proc->id == 4) { 
+        LomaChapter(proc->tmp[4]); // loma 
+    } 
+    
+    proc->lastFlag = proc->tmp[6]; 
+    if (proc->id == 7) { // save & restart ch 
+        GotoChapter(gPlaySt.chapterIndex); 
+        Proc_End(proc); 
+        return; 
+    } 
+    
+    DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
+    procIdler->lastFlag = proc->lastFlag; 
+    
 }  
 
-static const char chStates[][16] = { 
+static const char chStates[][24] = { 
 "Gold",
 "Weather",
 "Fog",
@@ -877,9 +989,20 @@ static const char chStates[][16] = {
 "Loma to ch.",
 "Turn",
 "Flags",
-"Save & restart"
+"Save & restart ch."
 // clear ch 
 // Preparations 
+}; 
+
+static const char weatherStates[][16] = { 
+"Clear",
+"Snowy",
+"Blizzard",
+"Night",
+"Rainy",
+"Volcano",
+"Sandstorm",
+"Cloudy",
 }; 
 
 
@@ -887,23 +1010,23 @@ void RedrawChStateMenu(DebuggerProc* proc);
 void ChStateInit(DebuggerProc* proc) { 
     SomeMenuInit(proc); 
     LoadIconPalettes(4);
-    struct Unit* unit = proc->unit; 
+    //struct Unit* unit = proc->unit; 
     for (int i = 0; i < NumberOfChState; ++i) { 
         proc->tmp[i] = 0; 
     }
-    proc->tmp[0] = gPlaySt->partyGoldAmount; // gold can be bigger than u16
-    proc->tmp[1] = chapterWeatherId; 
-    proc->tmp[2] = chapterVisionRange; 
-    proc->tmp[3] = chapterIndex; 
-    proc->tmp[4] = chapterIndex; 
-    proc->tmp[5] = chapterTurnNumber; 
+    proc->gold = gPlaySt.partyGoldAmount; // gold can be bigger than u16
+    proc->tmp[1] = gPlaySt.chapterWeatherId; 
+    proc->tmp[2] = gPlaySt.chapterVisionRange; 
+    proc->tmp[3] = gPlaySt.chapterIndex; 
+    proc->tmp[4] = gPlaySt.chapterIndex; 
+    proc->tmp[5] = gPlaySt.chapterTurnNumber; 
     proc->tmp[6] = proc->lastFlag; 
     proc->tmp[7] = proc->lastFlag; // unused 
     
     
-    int x = NUMBER_X - MiscNameWidth - 1; 
+    int x = 2; 
     int y = Y_HAND - 1; 
-    int w = MiscNameWidth + (START_X - NUMBER_X) + 3; 
+    int w = ChStateNameWidth + (START_X - NUMBER_X) + 10; 
     int h = (NumberOfChState * 2) + 2; 
     
     DrawUiFrame(
@@ -912,13 +1035,16 @@ void ChStateInit(DebuggerProc* proc) {
         TILEREF(0, 0), 0); // style as 0 ? 
 
     struct Text* th = gStatScreen.text;
-    
-    for (int i = 0; i < NumberOfChState; ++i) { 
+    int i = 0; 
+    for (i = 0; i < (NumberOfChState); ++i) { 
         InitText(&th[i], ChStateNameWidth);
     } 
-
-
+    InitText(&th[i], ChStateNameWidth); i++; 
+    InitText(&th[i], ChStateNameWidth+4); i++; 
+    InitText(&th[i], ChStateNameWidth+4); i++; 
+    
     RedrawChStateMenu(proc);
+    //StartGreenText(proc); 
 }
 
 //"Gold",
@@ -930,6 +1056,15 @@ void ChStateInit(DebuggerProc* proc) {
 //"Flags", //hex 
 //"Save & restart" //n/a 
 static const s8 chStateHexOrDecimal[] = { 0, 0, 0, 1, 1, 0, 1, -1 }; 
+static const int chStateMax[] = { 999999, 7, 4, 0x4E, 0x4E, 999, 0x12C, 0 }; 
+static const int chStateMin[] = { 0,      0, 0, 0,    0,    0,     0,     0}; 
+
+int GetChStateMax(int id) { 
+    return chStateMax[id]; 
+} 
+int GetChStateMin(int id) { 
+    return chStateMin[id]; 
+} 
 
 void RedrawChStateMenu(DebuggerProc* proc) { 
 	//TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfMisc, 0);
@@ -940,28 +1075,44 @@ void RedrawChStateMenu(DebuggerProc* proc) {
     //struct Unit* unit = proc->unit; 
     struct Text* th = gStatScreen.text;
     int i = 0; 
-    for (i = 0; i < NumberOfChState; ++i) { 
+    for (i = 0; i < (NumberOfChState); ++i) { 
         ClearText(&th[i]); 
         Text_DrawString(&th[i], chStates[i]);  
     } 
+    ClearText(&th[i]); Text_DrawString(&th[i], weatherStates[proc->tmp[1]]); i++; 
+    ClearText(&th[i]); Text_DrawString(&th[i], GetStringFromIndex(GetROMChapterStruct(proc->tmp[3])->chapTitleTextId)); i++; 
+    ClearText(&th[i]); Text_DrawString(&th[i], GetStringFromIndex(GetROMChapterStruct(proc->tmp[4])->chapTitleTextId)); i++; 
 
-    int x = NUMBER_X - (MiscNameWidth); 
-    for (i = 0; i < NumberOfMisc; ++i) { 
+    int x = 3; 
+    for (i = 0; i < NumberOfChState; ++i) { 
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
     } 
     
-    PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND), TEXT_COLOR_SYSTEM_GOLD, gPlaySt->partyGoldAmount); 
+    x += ChStateNameWidth-4; 
+    PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (2))); i++;  // weather type 
+    PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (6))); i++;  // ch 
+    PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (8))); i++;  // ch
+    
+    PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 4, Y_HAND), TEXT_COLOR_SYSTEM_GOLD, proc->gold); 
     
     int hexOrDec = 0; 
-    for (i = i; i < NumberOfMisc; ++i) { 
-        //
+    int col = TEXT_COLOR_SYSTEM_WHITE; 
+    for (i = 1; i < NumberOfChState; ++i) { 
+        col = TEXT_COLOR_SYSTEM_WHITE;
+        if (i == 6) { // flags 
+            col = CheckFlag(proc->tmp[i]); 
+            if (col) { col = TEXT_COLOR_SYSTEM_GOLD; 
+            }
+            else { col = TEXT_COLOR_SYSTEM_WHITE; 
+            } 
+        } 
         hexOrDec = chStateHexOrDecimal[i]; 
         if (hexOrDec < 0) { continue; } 
         if (hexOrDec) { 
-        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+            PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 4, Y_HAND + (i*2)), col, proc->tmp[i]); 
         } 
         else { 
-        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 4, Y_HAND + (i*2)), col, proc->tmp[i]); 
         }
         
     } 
@@ -970,7 +1121,8 @@ void RedrawChStateMenu(DebuggerProc* proc) {
 
 }
 
-void EditChStateIdle(DebuggerProc* proc) { 
+
+void ChStateIdle(DebuggerProc* proc) { 
 	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
 	u16 keys = sKeyStatusBuffer.repeatedKeys; 
     if (keys & B_BUTTON) { //press B to not save ch state 
@@ -978,17 +1130,29 @@ void EditChStateIdle(DebuggerProc* proc) {
         m4aSongNumStart(0x6B); 
     };
     if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update ch state and continue 
-        SaveChState(proc); 
+        SaveChState(proc);
+        if (proc->id != 6) { 
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B); 
+        m4aSongNumStart(0x6B);
+        }
+        else { // flags 
+            int flag = proc->tmp[6]; 
+            if (CheckFlag(flag)) { ClearFlag(flag); } 
+            else { SetFlag(flag); } 
+            RedrawChStateMenu(proc);
+        } 
     };
-    if (proc->editing) { 
-        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
-        int max = GetChStateMax(proc->id); 
-        int min = GetChStateMin(proc->id); 
-        int type = (proc->id < 2); 
+    int id = proc->id; 
+    int type = chStateHexOrDecimal[id]; 
+    int val = proc->tmp[id];
+    if (!id) { val = proc->gold; } 
+    
+    if (proc->editing && (type >= 0)) { 
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x + 32, (Y_HAND + (id * 2)) * 8); 	
+        int max = GetChStateMax(id); 
+        int min = GetChStateMin(id); 
         int max_digits = GetMaxDigits(max, type); 
-        int val = 0; 
+        
         
         if (keys & DPAD_RIGHT) {
           if (proc->digit > 0) { proc->digit--; }
@@ -1002,32 +1166,51 @@ void EditChStateIdle(DebuggerProc* proc) {
         }
         
         if (keys & DPAD_UP) {
-            if ((proc->tmp[proc->id]) == max) { proc->tmp[proc->id] = min; } 
+            if (!id) { // gold 
+                if ((proc->gold) == max) { proc->gold = min; } 
+                else { 
+                    proc->gold += pDigitTable[type][proc->digit]; 
+                    if ((proc->gold) > max) { proc->gold = max; } 
+                } 
+            } 
             else { 
-                proc->tmp[proc->id] += pDigitTable[type][proc->digit]; 
-                if ((proc->tmp[proc->id]) > max) { proc->tmp[proc->id] = max; } 
+                if ((proc->tmp[id]) == max) { proc->tmp[id] = min; } 
+                else { 
+                    proc->tmp[id] += pDigitTable[type][proc->digit]; 
+                    if ((proc->tmp[id]) > max) { proc->tmp[id] = max; } 
+                } 
             } 
             RedrawChStateMenu(proc); 
         }
         if (keys & DPAD_DOWN) {
-            if ((proc->tmp[proc->id]) == min) { proc->tmp[proc->id] = max; } 
-            else { 
-                val = (proc->tmp[proc->id]) - pDigitTable[type][proc->digit]; 
-                if (val < min) { proc->tmp[proc->id] = min; } 
-                else { proc->tmp[proc->id] = val; } 
+            if (!id) { // gold 
+                if ((proc->gold) == min) { proc->gold = max; } 
+                else { 
+                    val = (proc->gold) - pDigitTable[type][proc->digit]; 
+                    if (val < min) { proc->gold = min; } 
+                    else { proc->gold = val; } 
+                } 
+            } 
+            else { // not gold 
+                if ((proc->tmp[id]) == min) { proc->tmp[id] = max; } 
+                else { 
+                    val = (proc->tmp[id]) - pDigitTable[type][proc->digit]; 
+                    if (val < min) { proc->tmp[id] = min; } 
+                    else { proc->tmp[id] = val; } 
+                } 
             } 
             RedrawChStateMenu(proc); 
         }
     }
     else { 
-        DisplayUiHand(CursorLocationTable[0].x - ((ChStateNameWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        DisplayUiHand(CursorLocationTable[0].x - ((ChStateNameWidth + 5) * 8), (Y_HAND + (id * 2)) * 8);
         if (keys & DPAD_RIGHT) {
-            proc->digit = 1; 
-          proc->editing = true; 
+            proc->digit = GetMostSignificantDigit(val, type); 
+            proc->editing = true; 
         }
         if (keys & DPAD_LEFT) {
-          proc->digit = 0; 
-          proc->editing = true; 
+            proc->digit = 0; 
+            proc->editing = true; 
         }
         
         if (keys & DPAD_UP) {
@@ -1473,7 +1656,7 @@ void RedrawLoadMenu(DebuggerProc* proc);
 void LoadUnitsInit(DebuggerProc* proc) { 
     SomeMenuInit(proc); 
     LoadIconPalettes(4);
-    struct Unit* unit = proc->unit; 
+    //struct Unit* unit = proc->unit; 
     for (int i = 0; i < NumberOfLoad; ++i) { 
         proc->tmp[i] = 0; 
     }
@@ -1746,9 +1929,16 @@ void EditMapInit(DebuggerProc* proc) {
     StartPlayerPhaseTerrainWindow(); 
 } 
 
+
+
+void FixAndHandlePlayerCursorMovement(void) { 
+    FixCursorOverflow(); 
+    HandlePlayerCursorMovement(); 
+} 
+
 extern const struct ProcCmd gProcScr_TerrainDisplay[]; 
 void EditMapIdle(DebuggerProc* proc) { 
-    HandlePlayerCursorMovement();
+    FixAndHandlePlayerCursorMovement();
     int x = gBmSt.playerCursor.x; 
     int y = gBmSt.playerCursor.y; 
     if (gKeyStatusPtr->newKeys & A_BUTTON) { // see https://github.com/FireEmblemUniverse/fireemblem8u/blob/a608c6c4b6bc0cdf15f14292c99657cae73f6bdb/src/bmmap.c#L271
@@ -1777,7 +1967,7 @@ void EditMapIdle(DebuggerProc* proc) {
 
 
 void PickupUnitIdle(DebuggerProc* proc) { 
-    HandlePlayerCursorMovement();
+    FixAndHandlePlayerCursorMovement(); 
     if (gKeyStatusPtr->newKeys & A_BUTTON) { 
         gActionData.xMove = gBmSt.playerCursor.x; 
         gActionData.yMove = gBmSt.playerCursor.y; 
@@ -1821,7 +2011,7 @@ void ClearActiveUnitStuff(DebuggerProc* proc) {
 
     RefreshEntityBmMaps();
     RefreshUnitSprites();
-    
+    RenderBmMap();
 
     //PlaySoundEffect(0x6B);
 
@@ -1952,10 +2142,10 @@ u8 LevelupNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
     Proc_Goto(proc, UnitActionLabel); // 0xb7 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
-u8 ChMenuNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
+u8 ChStateNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
 	DebuggerProc* proc; 
 	proc = Proc_Find(DebuggerProcCmd); 
-    Proc_Goto(proc, ChMenuLabel); 
+    Proc_Goto(proc, ChStateLabel); 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
