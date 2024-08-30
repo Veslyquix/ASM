@@ -315,17 +315,18 @@ static const int DigitHexTable[] = {
 static const int* pDigitTable[2] = { DigitDecimalTable, DigitHexTable }; 
 
 static int GetMaxDigits(int number, int type) { 
-
 	int result = 1; 
     while (number > pDigitTable[type][result]) { result++; } 
 	if (result > 9) { result = 9; } 
 	return result; 
-
 } 
 
 
 int GetMostSignificantDigit(int val, int type) { 
-    return GetMaxDigits(val, type) - 1; 
+	int result = 0; 
+    while (val >= pDigitTable[type][result+1]) { result++; } 
+	if (result > 9) { result = 9; } 
+	return result; 
 } 
 
 
