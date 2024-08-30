@@ -1659,6 +1659,7 @@ static void SilentTryAddItem(struct Unit* unit, int itemType) {
 
 void GrantWeapons(struct Unit* unit) { 
     if (unit->items[0]) { return; } 
+    
     for (int i = 0; i < 8; ++i) { 
         if (unit->ranks[i]) { 
             SilentTryAddItem(unit, i); 
@@ -1670,6 +1671,7 @@ void GrantWeapons(struct Unit* unit) {
     if (UNIT_CATTRIBUTES(unit) & CA_THIEF) { 
         SilentTryAddItem(unit, 9); 
     } 
+    if (UNIT_FACTION(unit) == FACTION_RED) { return; } 
     if (UNIT_CATTRIBUTES(unit) & CA_PROMOTED) { 
         SilentTryAddItem(unit, 10); // elixir 
     } 
@@ -1684,7 +1686,7 @@ inline s8 CanUnitCrossTerrain2(struct Unit* unit, int terrain) {
 }
 
 void FindNearestTile(struct Unit* unit) { 
-    //if (unit->state & 
+    if (unit->state & (US_DEAD | US_NOT_DEPLOYED | US_BIT16)) { return; }  
     int xOut = -1; 
     int yOut = -1;
     int iy, ix, minDistance = 9999;
