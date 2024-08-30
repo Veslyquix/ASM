@@ -25,6 +25,62 @@ typedef struct {
     struct Unit* unit; 
 } DebuggerProc;
 
+typedef struct { 
+    /* 00 */ PROC_HEADER;
+    int id; 
+} CheatCodeKeyListenerProc;
+
+const u16 KonamiCodeSequence[] = { DPAD_UP, DPAD_UP, DPAD_DOWN, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, DPAD_LEFT, DPAD_RIGHT, B_BUTTON, A_BUTTON, 0, 0 }; 
+extern int DebuggerTurnedOff_Flag; 
+extern int KeyComboToDisableFlag; 
+extern int KonamiCodeEnabled; 
+
+void ToggleFlag(int flag) { 
+    if (CheckFlag(flag)) { ClearFlag(flag); } 
+    else { SetFlag(flag); } 
+} 
+
+void CheckKeysForCheatCode(CheatCodeKeyListenerProc* proc) { 
+    int keys = gKeyStatusPtr->newKeys; 
+    if (!keys) { return; } 
+
+    if (KonamiCodeEnabled) { 
+        if (KonamiCodeSequence[proc->id] & keys) { proc->id++; } 
+        else {  if (keys & DPAD_UP) { proc->id = 2; } 
+                else { proc->id = 0; } 
+        }
+        if (!KonamiCodeSequence[proc->id]) { ToggleFlag(DebuggerTurnedOff_Flag); proc->id = 0; } 
+    }
+    keys |= gKeyStatusPtr->heldKeys; 
+    if (KeyComboToDisableFlag) { 
+        if ((keys&KEYS_MASK) == KeyComboToDisableFlag) { 
+            ToggleFlag(DebuggerTurnedOff_Flag); 
+        } 
+    } 
+    
+} 
+
+const struct ProcCmd CheatCodeKeyListenerCmd[] =
+{
+	PROC_NAME("CheatCodeKeyListenerProc"), 
+    PROC_YIELD,
+    PROC_REPEAT(CheckKeysForCheatCode), 
+    PROC_END, 
+}; 
+
+
+int StartKeyListenerProc(void) { 
+    int keys = gKeyStatusPtr->newKeys; 
+    if (!keys) { return 0; } 
+    CheatCodeKeyListenerProc* proc = Proc_Find(CheatCodeKeyListenerCmd); 
+    if (proc) { 
+        return 0; 
+    } 
+    proc = Proc_Start(CheatCodeKeyListenerCmd, PROC_TREE_3); 
+    proc->id = 0; 
+    return true; 
+} 
+
 void CopyProcVariables(DebuggerProc* dst, DebuggerProc* src) { 
     dst->tileID = src->tileID; 
     dst->mainID = src->mainID; 
@@ -2339,7 +2395,7 @@ u8 EditStateNow(struct MenuProc * menu, struct MenuItemProc * menuItem) {
 
 
 
-extern int DebuggerTurnedOff_Flag; 
+
 int ShouldStartDebugger(void) { 
     if (CheckFlag(DebuggerTurnedOff_Flag)) { return false; } 
     return true; 
@@ -2681,6 +2737,7 @@ int RestartNow(DebuggerProc* proc) {
     return 0; // yield 
 }
 
+
 void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainIdle
     if (!ShouldStartDebugger()) { return; } 
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
@@ -2720,6 +2777,7 @@ void InitProc(DebuggerProc* proc) {
     proc->editing = false; 
     proc->actionID = 0; 
     proc->godMode = 0; 
+    proc->lastFlag = 1; 
     proc->tileID = 1; 
     proc->id = 0; 
     proc->lastTileHovered = 0; 

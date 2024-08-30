@@ -5,6 +5,10 @@
 .type CallDebuggerProc, %function 
 CallDebuggerProc: 
 push  {r14}
+bl StartKeyListenerProc
+cmp r0, #0 
+bne PressedB 
+
 ldr r0, =0x858791c 
 ldr r0, [r0] @ 0x2024cc0
 ldrh r1, [r0, #8] @ new button 
@@ -19,6 +23,8 @@ bx r3
 .ltorg 
 
 PressedB: 
+
+
 mov r0, r6 @ parent 
 bl StartDebuggerProc
 pop {r3} 
