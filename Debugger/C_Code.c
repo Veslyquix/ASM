@@ -21,7 +21,7 @@ typedef struct {
     s8 mainID; // by the main debugger menu 
     u16 tmp[tmpSize];
     u16 lastFlag; 
-    u32 gold; 
+    int gold; 
     struct Unit* unit; 
 } DebuggerProc;
 
@@ -304,28 +304,20 @@ static LocationTable StateCursorLocationTable[] = {
   {8+(24*StateWidth), 16}, {8+(24*StateWidth), 32}, {8+(24*StateWidth), 48}, {8+(24*StateWidth), 64}, {8+(24*StateWidth), 80}, {8+(24*StateWidth), 96}, {8+(24*StateWidth), 112}, {8+(24*StateWidth), 128}, 
 };
 
-static const u32 DigitDecimalTable[] = { 
+static const int DigitDecimalTable[] = { 
 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000
 }; 
 
-static const u32 DigitHexTable[] = { 
-0x1, 0x10, 0x100, 0x1000, 0x10000, 0x100000, 0x1000000, 0x10000000, 0xffffffff
+static const int DigitHexTable[] = { 
+0x1, 0x10, 0x100, 0x1000, 0x10000, 0x100000, 0x1000000, 0x10000000, 0x7fffffff
 }; 
 
-static const u32* pDigitTable[2] = { DigitDecimalTable, DigitHexTable }; 
+static const int* pDigitTable[2] = { DigitDecimalTable, DigitHexTable }; 
 
 static int GetMaxDigits(int number, int type) { 
 
 	int result = 1; 
     while (number > pDigitTable[type][result]) { result++; } 
-    
-    // if (type) { 
-    // while (number > DigitHexTable[result]) { result++; } 
-    // }
-    // else { 
-	// while (number > DigitDecimalTable[result]) { result++; } 
-    // }
-	//result++; // table is 0 indexed, but we count digits from 1 
 	if (result > 9) { result = 9; } 
 	return result; 
 
@@ -457,10 +449,9 @@ static const u8 sHandVOffsetLookup[] = {
 };
 extern int sPrevHandClockFrame; 
 extern struct Vec2 sPrevHandScreenPosition; 
-extern int sPrevHandClockFrame; 
 static void DisplayVertUiHand(int x, int y)
 {
-    if ((GetGameClock() - 1) == sPrevHandClockFrame)
+    if ((int)(GetGameClock() - 1) == sPrevHandClockFrame)
     {
         x = (x + sPrevHandScreenPosition.x) >> 1;
         y = (y + sPrevHandScreenPosition.y) >> 1;
@@ -734,7 +725,7 @@ void StateIdle(DebuggerProc* proc) {
         
     }
     
-    if (id != proc->id) { 
+    if (id != (int)proc->id) { 
         id %= 32; 
         proc->id = id; 
         RedrawStateMenu(proc);
