@@ -6,8 +6,7 @@
 CallDebuggerProc: 
 push  {r14}
 bl StartKeyListenerProc
-cmp r0, #0 
-bne PressedB 
+
 
 ldr r0, =0x858791c 
 ldr r0, [r0] @ 0x2024cc0
