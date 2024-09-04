@@ -579,7 +579,8 @@ void AdjustCurrentRound(int id, int difference, int damage) {
 
 
 void UpdateHP(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct BattleUnit* some_bunit, int newHp, int side, int newDamage) { 
-	if (newHp < 0) { newHp = 0; } 
+    if (newHp < 0) { newHp = 0; } 
+    if (newHp > 127) { newHp = 127; } 
 	int hp = gEkrGaugeHp[side];
 	some_bunit->unit.curHP = newHp; 
 	if (hp == newHp) { return; } 
