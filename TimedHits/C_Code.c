@@ -658,7 +658,21 @@ void CheckForDeath(TimedHitsProc* proc, struct NewProcEfxHPBar* HpProc, struct B
 		//UpdateHP(proc, HpProc, opp_bunit, hp, side); // update hp is called before CheckForDeath already 
 	} 
 	
-	//BreakOnce(proc); 
+	// undo any exp / level gains because BattleApplyExpGains has already been called, 
+	// which calls CheckBattleUnitLevelUp, which adjusts the battle unit's exp / level 
+	struct Unit* unit = GetUnit(gBattleActor.unit.index);
+	if (UNIT_IS_VALID(unit)) { 
+		gBattleActor.unit.exp = unit->exp; 
+		gBattleActor.unit.level = unit->level; 
+	}
+	
+	unit = GetUnit(gBattleTarget.unit.index); 
+	if (UNIT_IS_VALID(unit)) { 
+		gBattleTarget.unit.exp = unit->exp; 
+		gBattleTarget.unit.level = unit->level; 
+	} 
+	
+	// now recalculate - a unit could've died due to timed hits 
 	BattleApplyExpGains();  // update exp 
 	gBanimExpGain[0] = gpEkrBattleUnitLeft->expGain; 
 	gBanimExpGain[1] = gpEkrBattleUnitRight->expGain; 
