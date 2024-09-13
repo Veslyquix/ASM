@@ -2822,7 +2822,7 @@ void UnitBeginActionInit(struct Unit* unit) {
     gBmSt.taken_action = 0;
     gBmSt.unk3F = 0xFF;
 
-    sub_802C334();
+    sub_802C334(); // zeroes out a few bits of unknown ram 
 
     //gActiveUnit->state |= US_HIDDEN;
     //gBmMapUnit[unit->yPos][unit->xPos] = 0;
@@ -2840,7 +2840,7 @@ void StartDebuggerProc(ProcPtr playerPhaseProc) { // based on PlayerPhase_MainId
     if (!unit) { return; } 
     gActiveUnitMoveOrigin.x = unit->xPos; 
     gActiveUnitMoveOrigin.y = unit->yPos; 
-    
+    UnitBeginActionInit(unit); 
     DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler); 
     if (!procIdler) { 
         procIdler = Proc_Start(DebuggerProcCmdIdler, (void*)3);
