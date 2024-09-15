@@ -536,7 +536,7 @@ static void DisplayVertUiHand(int x, int y)
 }
 
 const s8 StatCapLookup[] = { 
-    99, 63, 63, 63, 63, 63, 63, 63, 
+    99, 99, 63, 63, 63, 63, 63, 63, 63, 
 }; 
 
 void SaveStats(DebuggerProc* proc) { 
