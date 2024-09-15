@@ -19,11 +19,13 @@ typedef struct {
     u8 godMode; 
     u8 page; 
     s8 mainID; // by the main debugger menu 
-    u16 tmp[tmpSize];
     u16 lastFlag; 
     int gold; 
     struct Unit* unit; 
+    s16 tmp[tmpSize];
 } DebuggerProc;
+
+
 
 typedef struct { 
     /* 00 */ PROC_HEADER;
@@ -185,6 +187,10 @@ void StateIdle(DebuggerProc* proc);
 void RedrawStateMenu(DebuggerProc* proc);
 void ChStateInit(DebuggerProc* proc);
 void ChStateIdle(DebuggerProc* proc);
+void EditWExpInit(DebuggerProc* proc);
+void EditWExpIdle(DebuggerProc* proc);
+void EditSupportsInit(DebuggerProc* proc);
+void EditSupportsIdle(DebuggerProc* proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -323,13 +329,13 @@ const struct ProcCmd DebuggerProcCmd[] =
     PROC_GOTO(EndLabel), 
 
     PROC_LABEL(WExpLabel), // Wexp
-    PROC_CALL(WExpInit), 
-    PROC_REPEAT(WExpIdle), 
+    PROC_CALL(EditWExpInit), 
+    PROC_REPEAT(EditWExpIdle), 
     PROC_GOTO(EndLabel), 
 
     PROC_LABEL(SupportLabel), // Supports
-    PROC_CALL(SupportInit), 
-    PROC_REPEAT(SupportIdle), 
+    PROC_CALL(EditSupportsInit),
+    PROC_REPEAT(EditSupportsIdle), 
     PROC_GOTO(EndLabel), 
     
     PROC_LABEL(EndLabel), 
@@ -339,7 +345,7 @@ const struct ProcCmd DebuggerProcCmd[] =
 };
 
 //const char* UnitStats
-#define NumberOfOptions 8 
+#define NumberOfOptions 9 
 #define NumberOfItems 5
 #define START_X 19
 #define Y_HAND 2
@@ -398,7 +404,7 @@ int GetMostSignificantDigit(int val, int type) {
 } 
 
 
-#define StatWidth 3
+#define StatWidth 4
 void RedrawUnitStatsMenu(DebuggerProc* proc); 
 
 void FixCursorOverflow(void) { 
@@ -439,17 +445,19 @@ void EditStatsInit(DebuggerProc* proc) {
     SomeMenuInit(proc); 
     struct Unit* unit = proc->unit; 
     proc->tmp[0] = unit->maxHP; 
-    proc->tmp[1] = unit->pow; 
-    proc->tmp[2] = unit->skl; 
-    proc->tmp[3] = unit->spd; 
-    proc->tmp[4] = unit->def; 
-    proc->tmp[5] = unit->res; 
-    proc->tmp[6] = unit->lck; 
-    proc->tmp[7] = unit->_u3A; 
+    proc->tmp[1] = unit->curHP; 
+    proc->tmp[2] = unit->pow; 
+    proc->tmp[3] = unit->skl; 
+    proc->tmp[4] = unit->spd; 
+    proc->tmp[5] = unit->def; 
+    proc->tmp[6] = unit->res; 
+    proc->tmp[7] = unit->lck; 
+    proc->tmp[8] = unit->_u3A; 
+    
     
     
     int x = NUMBER_X - StatWidth - 1; 
-    int y = Y_HAND - 1; 
+    int y = Y_HAND - 2; 
     int w = StatWidth + (START_X - NUMBER_X) + 3; 
     int h = (NumberOfOptions * 2) + 2; 
     
@@ -468,6 +476,7 @@ void EditStatsInit(DebuggerProc* proc) {
         InitText(&th[i], StatWidth);
     } 
     int c = 0; 
+    Text_DrawString(&th[c], "Max HP"); c++; 
     Text_DrawString(&th[c], GetStringFromIndex(0x4E9)); c++; 
     Text_DrawString(&th[c], GetStringFromIndex(0x4FE)); c++; 
     Text_DrawString(&th[c], GetStringFromIndex(0x4EC)); c++; 
@@ -476,6 +485,7 @@ void EditStatsInit(DebuggerProc* proc) {
     Text_DrawString(&th[c], GetStringFromIndex(0x4F0)); c++; 
     Text_DrawString(&th[c], GetStringFromIndex(0x4EE)); c++; 
     Text_DrawString(&th[c], GetStringFromIndex(0x4FF)); c++; 
+    
     RedrawUnitStatsMenu(proc);
 }
 
@@ -483,24 +493,15 @@ void RedrawUnitStatsMenu(DebuggerProc* proc) {
 	TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfOptions, 0);
 	BG_EnableSyncByMask(BG0_SYNC_BIT);
     //ResetText();
-    int c = 0; 
     struct Text* th = gStatScreen.text;
-
-    
-    c = 0; 
     int x = NUMBER_X - StatWidth; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    for (int i = 0; i < NumberOfOptions; ++i) { 
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, (Y_HAND-1) + (i*2)));
+    } 
 
 
     for (int i = 0; i < NumberOfOptions; ++i) { 
-        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND - 1 + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
     } 
 
 	BG_EnableSyncByMask(BG0_SYNC_BIT);
@@ -540,16 +541,17 @@ const s8 StatCapLookup[] = {
 
 void SaveStats(DebuggerProc* proc) { 
     struct Unit* unit = proc->unit; 
-    int hpDiff = proc->tmp[0] - unit->maxHP; 
+    //int hpDiff = proc->tmp[0] - unit->maxHP; 
     unit->maxHP = proc->tmp[0]; 
-    if (hpDiff) { unit->curHP = unit->maxHP; } 
-    unit->pow = proc->tmp[1]; 
-    unit->skl = proc->tmp[2]; 
-    unit->spd = proc->tmp[3]; 
-    unit->def = proc->tmp[4]; 
-    unit->res = proc->tmp[5]; 
-    unit->lck = proc->tmp[6]; 
-    unit->_u3A = proc->tmp[7]; 
+    //if (hpDiff) { unit->curHP += hpDiff; } 
+    unit->curHP = proc->tmp[1]; 
+    unit->pow = proc->tmp[2]; 
+    unit->skl = proc->tmp[3]; 
+    unit->spd = proc->tmp[4]; 
+    unit->def = proc->tmp[5]; 
+    unit->res = proc->tmp[6]; 
+    unit->lck = proc->tmp[7]; 
+    unit->_u3A = proc->tmp[8]; 
 } 
 
 void SaveItems(DebuggerProc* proc) { 
@@ -579,7 +581,7 @@ void EditStatsIdle(DebuggerProc* proc) {
         m4aSongNumStart(0x6B); 
     };
     if (proc->editing) { 
-        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND - 1 + (proc->id * 2)) * 8); 	
         int max = StatCapLookup[proc->id]; 
         int min = 0; 
         int max_digits = GetMaxDigits(max, 0); 
@@ -615,7 +617,7 @@ void EditStatsIdle(DebuggerProc* proc) {
         }
     }
     else { 
-        DisplayUiHand(CursorLocationTable[0].x - ((StatWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        DisplayUiHand(CursorLocationTable[0].x - ((StatWidth + 2) * 8), (Y_HAND - 1 + (proc->id * 2)) * 8);
         if (keys & DPAD_RIGHT) {
             proc->digit = 1; 
           proc->editing = true; 
@@ -639,61 +641,80 @@ void EditStatsIdle(DebuggerProc* proc) {
     } 
 } 
 
-
+#define WExpWidth 11
+#define WExpOptions 8 
+void RedrawUnitWExpMenu(DebuggerProc* proc); 
 void EditWExpInit(DebuggerProc* proc) { 
     SomeMenuInit(proc); 
     struct Unit* unit = proc->unit; 
-    proc->tmp[0] = unit->maxHP; 
-    proc->tmp[1] = unit->pow; 
-    proc->tmp[2] = unit->skl; 
-    proc->tmp[3] = unit->spd; 
-    proc->tmp[4] = unit->def; 
-    proc->tmp[5] = unit->res; 
-    proc->tmp[6] = unit->lck; 
-    proc->tmp[7] = unit->_u3A; 
+    for (int i = 0; i < WExpOptions; ++i) { 
+        proc->tmp[i] = unit->ranks[i]; 
+    } 
     
     
     int x = NUMBER_X - WExpWidth - 1; 
     int y = Y_HAND - 1; 
     int w = WExpWidth + (START_X - NUMBER_X) + 3; 
-    int h = (NumberOfOptions * 2) + 2; 
+    int h = (WExpOptions * 2) + 2; 
     
     DrawUiFrame(
-        BG_GetMapBuffer(1), // back BG
+        BG_GetMapBuffer(2), // back BG
         x, y, w, h,
         TILEREF(0, 0), 0); // style as 0 ? 
-
-    //ClearUiFrame(
-    //    BG_GetMapBuffer(1), // front BG 
-    //    x, y, w, h);
+    BG_EnableSyncByMask(BG2_SYNC_BIT); 
     
-    struct Text* th = gWExpcreen.text;
+    struct Text* th = gStatScreen.text;
     
     for (int i = 0; i < 15; ++i) { 
         InitText(&th[i], WExpWidth);
     } 
-    int c = 0; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4E9)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4FE)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EC)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4ED)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EF)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4F0)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EE)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4FF)); c++; 
+    for (int i = 0; i < WExpOptions; ++i) { 
+        x = Text_GetCursor(&th[i]); x++; Text_SetCursor(&th[i], x); 
+        Text_DrawString(&th[i], GetStringFromIndex(0x505 + i));
+    } 
     RedrawUnitWExpMenu(proc);
 }
 
+void DebuggerDisplayWeaponExp(int num, int x, int y, int wtype, int wexp)
+{
+    int progress, progressMax, color;
+
+    //int wexp = gStatScreen.unit->ranks[wtype];
+
+    // Display weapon type icon
+    DrawIcon(gBG0TilemapBuffer + TILEMAP_INDEX(x, y),
+        0x70 + wtype, // TODO: icon id definitions
+        TILEREF(0, 2));
+    
+    x += 4; 
+
+    color = wexp >= WPN_EXP_S
+        ? TEXT_COLOR_SYSTEM_GREEN
+        : TEXT_COLOR_SYSTEM_BLUE;
+
+    // Display rank letter
+    PutSpecialChar(gBG0TilemapBuffer + TILEMAP_INDEX(x + 4, y),
+        color,
+        GetDisplayRankStringFromExp(wexp));
+
+    GetWeaponExpProgressState(wexp, &progress, &progressMax);
+
+    DrawStatBarGfx(0x180 + num*6, 5,
+        //gUiTmScratchC + TILEMAP_INDEX(x + 2, y + 1), TILEREF(0, STATSCREEN_BGPAL_6),
+        gBG1TilemapBuffer + TILEMAP_INDEX(x + 2, y + 1), TILEREF(0, 1),
+        0x22, (progress*34)/(progressMax-1), 0);
+}
+
 void RedrawUnitWExpMenu(DebuggerProc* proc) { 
-	TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfOptions, 0);
-	BG_EnableSyncByMask(BG0_SYNC_BIT);
+	TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * WExpOptions, 0);
+	BG_EnableSyncByMask(BG0_SYNC_BIT|BG1_SYNC_BIT);
     //ResetText();
     int c = 0; 
-    struct Text* th = gWExpcreen.text;
+    struct Text* th = gStatScreen.text;
 
     
     c = 0; 
-    int x = NUMBER_X - WExpWidth; 
+    int x = (NUMBER_X - WExpWidth) + 2; 
     PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
     PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
     PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
@@ -704,45 +725,45 @@ void RedrawUnitWExpMenu(DebuggerProc* proc) {
     PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
 
 
-    for (int i = 0; i < NumberOfOptions; ++i) { 
+    for (int i = 0; i < WExpOptions; ++i) { 
+        DebuggerDisplayWeaponExp(i, x-2, Y_HAND + (i*2), i, proc->tmp[i]); // first i is bar ID, second i is wep type ID 
         PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
     } 
-
-	BG_EnableSyncByMask(BG0_SYNC_BIT);
+    
+    
+    SetBlendTargetA(0, 0, 1, 0, 0);
+    //SetBlendTargetB(0, 0, 0, 0, 1);
+	BG_EnableSyncByMask(BG0_SYNC_BIT|BG1_SYNC_BIT);
 
 }
 
 
 void SaveWExp(DebuggerProc* proc) { 
     struct Unit* unit = proc->unit; 
-    int hpDiff = proc->tmp[0] - unit->maxHP; 
-    unit->maxHP = proc->tmp[0]; 
-    if (hpDiff) { unit->curHP = unit->maxHP; } 
-    unit->pow = proc->tmp[1]; 
-    unit->skl = proc->tmp[2]; 
-    unit->spd = proc->tmp[3]; 
-    unit->def = proc->tmp[4]; 
-    unit->res = proc->tmp[5]; 
-    unit->lck = proc->tmp[6]; 
-    unit->_u3A = proc->tmp[7]; 
+    for (int i = 0; i < WExpOptions; ++i) { 
+    unit->ranks[i] = proc->tmp[i]; 
+    } 
 } 
 
+void ClearTilesetRow(DebuggerProc* proc); 
 void EditWExpIdle(DebuggerProc* proc) { 
     
 	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
-	u16 keys = sKeyWExpusBuffer.repeatedKeys; 
+	u16 keys = sKeyStatusBuffer.repeatedKeys; 
     if (keys & B_BUTTON) { //press B to not save WExp 
+        ClearTilesetRow(proc); 
         Proc_Goto(proc, RestartLabel);
         m4aSongNumStart(0x6B); 
     };
     if ((keys & START_BUTTON)||(keys & A_BUTTON)) { //press A or Start to update WExp and continue 
         SaveWExp(proc); 
+        ClearTilesetRow(proc); 
         Proc_Goto(proc, RestartLabel);
         m4aSongNumStart(0x6B); 
     };
     if (proc->editing) { 
         DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
-        int max = WExpCapLookup[proc->id]; 
+        int max = 251; 
         int min = 0; 
         int max_digits = GetMaxDigits(max, 0); 
         
@@ -789,36 +810,32 @@ void EditWExpIdle(DebuggerProc* proc) {
         
         if (keys & DPAD_UP) {
             proc->id--; 
-            if (proc->id < 0) { proc->id = NumberOfOptions - 1; } 
+            if (proc->id < 0) { proc->id = WExpOptions - 1; } 
             RedrawUnitWExpMenu(proc); 
         }
         if (keys & DPAD_DOWN) {
             proc->id++; 
-            if (proc->id >= NumberOfOptions) { proc->id = 0; } 
+            if (proc->id >= WExpOptions) { proc->id = 0; } 
             
             RedrawUnitWExpMenu(proc); 
         }
     } 
 } 
 
-
+#define SupportWidth 5
+#define SupportOptions 7 
+void RedrawUnitSupportsMenu(DebuggerProc* proc);
 void EditSupportsInit(DebuggerProc* proc) { 
     SomeMenuInit(proc); 
     struct Unit* unit = proc->unit; 
-    proc->tmp[0] = unit->maxHP; 
-    proc->tmp[1] = unit->pow; 
-    proc->tmp[2] = unit->skl; 
-    proc->tmp[3] = unit->spd; 
-    proc->tmp[4] = unit->def; 
-    proc->tmp[5] = unit->res; 
-    proc->tmp[6] = unit->lck; 
-    proc->tmp[7] = unit->_u3A; 
-    
+    for (int i = 0; i < SupportOptions; ++i) { 
+        proc->tmp[i] = unit->supports[i]; 
+    } 
     
     int x = NUMBER_X - SupportWidth - 1; 
     int y = Y_HAND - 1; 
     int w = SupportWidth + (START_X - NUMBER_X) + 3; 
-    int h = (NumberOfOptions * 2) + 2; 
+    int h = (SupportOptions * 2) + 2; 
     
     DrawUiFrame(
         BG_GetMapBuffer(1), // back BG
@@ -829,44 +846,36 @@ void EditSupportsInit(DebuggerProc* proc) {
     //    BG_GetMapBuffer(1), // front BG 
     //    x, y, w, h);
     
-    struct Text* th = gSupportscreen.text;
+    struct Text* th = gStatScreen.text;
     
     for (int i = 0; i < 15; ++i) { 
         InitText(&th[i], SupportWidth);
+        Text_DrawString(&th[i], ""); 
     } 
-    int c = 0; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4E9)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4FE)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EC)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4ED)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EF)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4F0)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EE)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4FF)); c++; 
+    
+    if (unit->pCharacterData->pSupportData) { 
+        int uid; 
+        for (int i = 0; i < SupportOptions; ++i) { 
+            uid = unit->pCharacterData->pSupportData->characters[i]; 
+            if (uid) { 
+            Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(uid)->nameTextId));
+            } 
+        } 
+    } 
     RedrawUnitSupportsMenu(proc);
 }
 
 void RedrawUnitSupportsMenu(DebuggerProc* proc) { 
-	TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * NumberOfOptions, 0);
+	TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X-2, Y_HAND), 9, 2 * SupportOptions, 0);
 	BG_EnableSyncByMask(BG0_SYNC_BIT);
     //ResetText();
-    int c = 0; 
-    struct Text* th = gSupportscreen.text;
-
-    
-    c = 0; 
+    struct Text* th = gStatScreen.text;
     int x = NUMBER_X - SupportWidth; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
-    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c*2))); c++; 
+    for (int i = 0; i < SupportOptions; ++i) { 
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i*2))); 
+    } 
 
-
-    for (int i = 0; i < NumberOfOptions; ++i) { 
+    for (int i = 0; i < SupportOptions; ++i) { 
         PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]); 
     } 
 
@@ -877,22 +886,15 @@ void RedrawUnitSupportsMenu(DebuggerProc* proc) {
 
 void SaveSupports(DebuggerProc* proc) { 
     struct Unit* unit = proc->unit; 
-    int hpDiff = proc->tmp[0] - unit->maxHP; 
-    unit->maxHP = proc->tmp[0]; 
-    if (hpDiff) { unit->curHP = unit->maxHP; } 
-    unit->pow = proc->tmp[1]; 
-    unit->skl = proc->tmp[2]; 
-    unit->spd = proc->tmp[3]; 
-    unit->def = proc->tmp[4]; 
-    unit->res = proc->tmp[5]; 
-    unit->lck = proc->tmp[6]; 
-    unit->_u3A = proc->tmp[7]; 
+    for (int i = 0; i < SupportOptions; ++i) { 
+        unit->supports[i] = proc->tmp[i]; 
+    } 
 } 
 
 void EditSupportsIdle(DebuggerProc* proc) { 
     
 	//DisplayVertUiHand(CursorLocationTable[proc->digit].x, CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand 	
-	u16 keys = sKeySupportusBuffer.repeatedKeys; 
+	u16 keys = sKeyStatusBuffer.repeatedKeys; 
     if (keys & B_BUTTON) { //press B to not save Supports 
         Proc_Goto(proc, RestartLabel);
         m4aSongNumStart(0x6B); 
@@ -904,7 +906,7 @@ void EditSupportsIdle(DebuggerProc* proc) {
     };
     if (proc->editing) { 
         DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
-        int max = SupportCapLookup[proc->id]; 
+        int max = 255; 
         int min = 0; 
         int max_digits = GetMaxDigits(max, 0); 
         
@@ -951,12 +953,12 @@ void EditSupportsIdle(DebuggerProc* proc) {
         
         if (keys & DPAD_UP) {
             proc->id--; 
-            if (proc->id < 0) { proc->id = NumberOfOptions - 1; } 
+            if (proc->id < 0) { proc->id = SupportOptions - 1; } 
             RedrawUnitSupportsMenu(proc); 
         }
         if (keys & DPAD_DOWN) {
             proc->id++; 
-            if (proc->id >= NumberOfOptions) { proc->id = 0; } 
+            if (proc->id >= SupportOptions) { proc->id = 0; } 
             
             RedrawUnitSupportsMenu(proc); 
         }
@@ -1226,7 +1228,7 @@ void EditItemsIdle(DebuggerProc* proc) {
         if (proc->editing == 1) { 
             DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8); 	
             int max = GetMaxItems(); 
-            int min = 1; 
+            int min = 0; 
             int max_digits = GetMaxDigits(max, 1); 
             int val = 0; 
             
@@ -1264,7 +1266,7 @@ void EditItemsIdle(DebuggerProc* proc) {
         else { 
             DisplayVertUiHand(CursorLocationTable[proc->digit].x + (3 * 8), (Y_HAND + (proc->id * 2)) * 8); 	
             int max = 255 << 8; // skill scrolls
-            int min = 1 << 8; 
+            int min = 0 << 8; 
             int max_digits = GetMaxDigits(max >> 8, 0); 
             
             if (keys & DPAD_RIGHT) {
@@ -2369,6 +2371,7 @@ void OffsetTileset(DebuggerProc* proc, int amount) {
 
 void ClearTilesetRow(DebuggerProc* proc) { 
     SetBackgroundTileDataOffset(2, 0);
+    SetBlendTargetA(0, 1, 0, 0, 0);
     BG_Fill(gBG2TilemapBuffer, 0);
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
 } 
