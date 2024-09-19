@@ -6,4 +6,14 @@
 #include "C_Code.lyn.event" 
 
 
+ALIGN 4 
+ReclassTable: 
+FILL(6*256) 1 
+
+#define Reclass(currentClass, n1, n2, n3, n4, n5, n6) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 n5 n6; POP" 
+
+Reclass(0x4A, 1, 5, 9, 0xD, 0xF, 0x13) // Cleric into these 
+
+
+
 

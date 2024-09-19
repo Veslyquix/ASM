@@ -3,17 +3,19 @@
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
 
-ProcPtr ReclassMenuSelect(ProcPtr parent); 
+#define NumberOfReclassOptions 6 
 
+ProcPtr ReclassMenuSelect(ProcPtr parent); 
+extern u8 const ReclassTable[][6];
 
 struct ProcReclassSel { // see ProcPromoSel 
     PROC_HEADER;
     s8 _u29;
     s8 _u2a;
     s8 _u2b;
-    u8 jid[6];
+    u8 jid[6]; // NumberOfReclassOptions 
     u16 sprite[3];
-    s16 msg_desc[3];
+    s16 msg_desc[3]; // previously msg_desc 
     u16 _u3e;
     u8 stat;
     u8 main_select;
@@ -22,10 +24,11 @@ struct ProcReclassSel { // see ProcPromoSel
     u8 u46;
     u8 u47;
     u16 weapon;
-    u8 use_wpn[3];
+    u8 use_wpn[3]; // unused 
     u8 _u4d[3];
     u32 u50; // platform ID? 
     ProcPtr menu_proc;
+    //s16 msg_desc[6]; // NumberOfReclassOptions
     /* ... more maybe */
 };
 void ReclassMenuExec(struct ProcClassChgMenuSel *proc); 
@@ -57,27 +60,11 @@ u8 ReclassMenuItem_OnSelect(struct MenuProc *pmenu, struct MenuItemProc *pmitem)
     if (gparent->stat == 0) {
         struct Unit *unit = GetUnitFromCharId(ggparent->pid);
         u8 classnumber = unit->pClassData->number;
-        if (pmitem->itemNumber <= 1) {
-            classnumber = gPromoJidLut[classnumber][pmitem->itemNumber];
-            ggparent->jid = classnumber;
-        } else {
-            if (pmitem->itemNumber == 2) {
-                switch (classnumber) {
-                case CLASS_JOURNEYMAN:
-                    ggparent->jid = CLASS_JOURNEYMAN_T1;
-                    break;
-                case CLASS_PUPIL:
-                    ggparent->jid = CLASS_PUPIL_T1;
-                    break;
-                case CLASS_RECRUIT:
-                    ggparent->jid = CLASS_RECRUIT_T1;
-                    break;
-                default:
-                    ggparent->jid = classnumber;
-                    break;
-                }
-            }
+        int id = pmitem->itemNumber; 
+        if (id < NumberOfReclassOptions) { 
+            classnumber = ReclassTable[classnumber][id];
         }
+        ggparent->jid = classnumber;
 
         switch ((u8) ggparent->jid) {
         case CLASS_RANGER:
@@ -119,10 +106,29 @@ u8 ReclassMenuSelOnPressB(struct MenuProc *pmenu, struct MenuItemProc *pmitem) {
     if (gggparent->bmtype == PROMO_HANDLER_TYPE_PREP) {
         Proc_End(parent);
         Proc_Goto(gparent, PROC_CLASSCHG_SEL_2);
-        return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B;;
+        return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B;
     }
 
     return 0;
+}
+
+void ReclassMenuOnDrawCore(struct MenuProc *pmenu, struct MenuItemProc *pmitem, char *str)
+{
+    //u8 unused_stack[32];
+    u16 *mapbuf;
+    if (pmitem->def->color)
+        Text_SetColor(&pmitem->text, pmitem->def->color);
+
+    if (pmitem->availability == MENU_DISABLED)
+        Text_SetColor(&pmitem->text, TEXT_COLOR_SYSTEM_GRAY);
+
+    //ClearTextPart(&pmitem->text, 0, 20);
+    ClearTextPart(&pmitem->text, 0, 12);
+    Text_SetCursor(&pmitem->text, 8);
+    Text_DrawString(&pmitem->text, str);
+    mapbuf = BG_GetMapBuffer(pmenu->frontBg);
+
+    PutText(&pmitem->text, &mapbuf[pmitem->yTile * 32 + pmitem->xTile]);
 }
 
 int ReclassMenuItem_OnTextDraw(struct MenuProc *pmenu, struct MenuItemProc *pmitem)
@@ -133,8 +139,8 @@ int ReclassMenuItem_OnTextDraw(struct MenuProc *pmenu, struct MenuItemProc *pmit
 
     parent = pmenu->proc_parent;
     gparent = parent->proc_parent;
-    ClassChgMenuOnDrawCore(pmenu, pmitem, GetStringFromIndex(GetClassData(gparent->jid[pmitem->itemNumber])->nameTextId));
-    return 0xB7; 
+    ReclassMenuOnDrawCore(pmenu, pmitem, GetStringFromIndex(GetClassData(gparent->jid[pmitem->itemNumber])->nameTextId));
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
 
 int ReclassMenuItem_OnChange(struct MenuProc *pmenu, struct MenuItemProc *pmitem)
@@ -146,13 +152,17 @@ int ReclassMenuItem_OnChange(struct MenuProc *pmenu, struct MenuItemProc *pmitem
     gparent = parent->proc_parent;
     gparent->stat = 1;
     gparent->main_select = pmitem->itemNumber;
-    ChangeClassDescription(gparent->msg_desc[gparent->main_select]);
+    
+    int msg_desc = GetClassData(ReclassTable[GetUnitFromCharId(gparent->pid)->pClassData->number][pmenu->itemCurrent])->descTextId; //pmenu->itemCurrent
+    //ChangeClassDescription(gparent->msg_desc[gparent->main_select]);
+    ChangeClassDescription(msg_desc);
     SetTalkPrintDelay(-1);
-    return 0xB7; 
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A; 
 }
 
 u8 ReclassMenuItem_3rdUsability(const struct MenuItemDef * _def, int _number)
 {
+    return MENU_ENABLED; 
     struct ProcClassChgMenuSel *proc = Proc_Find(ProcScr_ReclassMenuSel);
     struct ProcReclassSel *parent = proc->proc_parent;
     struct ProcPromoMain *gparent = parent->proc_parent;
@@ -189,7 +199,7 @@ const struct MenuItemDef gMenuItem_ReclassSel[] = {
     },
     {
         "　第３兵種",
-        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 2, MenuAlwaysEnabled,
+        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 1, MenuAlwaysEnabled,
         ReclassMenuItem_OnTextDraw, ReclassMenuItem_OnSelect, 0, ReclassMenuItem_OnChange, 0
     },
     {
@@ -228,7 +238,7 @@ u32 ReclassMenuSelOnEnd(struct MenuProc *proc)
 }
 
 const struct MenuDef gMenuDef_ReclassSel = {
-    .rect = { 16, 2, 8, 0 },
+    .rect = { 16, 1, 8, 0 },
     .menuItems = gMenuItem_ReclassSel,
     .onInit = (void(*)(struct MenuProc*)) ReclassMenuSelOnInit,
     .onEnd = (void(*)(struct MenuProc*)) ReclassMenuSelOnEnd,
@@ -237,8 +247,8 @@ const struct MenuDef gMenuDef_ReclassSel = {
 
 const struct MenuRect ReclassMenuRect = {
     .x = 1,
-    .y = 1,
-    .w = 12,
+    .y = 0,
+    .w = 10, // InitText uses this for tile width 
     .h = 0
 };
 
@@ -258,7 +268,9 @@ void ReclassMenuExec(struct ProcClassChgMenuSel *proc)
     ResetTextFont();
     ResetText();
     SetTextFontGlyphs(0);
-    InitTextFont(&gFontClassChg, (void *)BG_VRAM + 0x1400, 160, 5);
+    //InitTextFont(&gFontClassChg, (void *)BG_VRAM + 0x1400, 0xA0, 5);
+    InitTextFont(&gFontClassChg, (void *)BG_VRAM + 0x3400, 0x1A0, 5);
+    //InitTextFont(&gFontClassChg, (void *)BG_VRAM + 0x1000, 160, 5);
     SetTextFont(&gFontClassChg);
     proc->pmenu = StartMenuCore(
 		&gMenuDef_ReclassSel,
@@ -338,36 +350,18 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel* proc) {
         pid = unit->pClassData->number;
         weapon = GetUnitEquippedWeapon(unit);
 
-        for (j = 0; j < 2; j++) {
-            proc->jid[j] = gPromoJidLut[pid][j];
-            proc->use_wpn[j] = LoadClassBattleSprite((void*)&proc->sprite[j], gPromoJidLut[pid][j], weapon);
-            proc->msg_desc[j] = GetClassData(gPromoJidLut[pid][j])->descTextId;
+        //for (j = 0; j < 2; j++) {
+        for (j = 0; j < NumberOfReclassOptions; j++) {
+            proc->jid[j] = ReclassTable[pid][j];
+            //proc->use_wpn[j] = 
+            LoadClassBattleSprite((void*)&proc->sprite[j], ReclassTable[pid][j], weapon);
+            //LoadClassBattleSprite((void*)&proc->sprite[j], ReclassTable[pid][j], weapon);
+            if (j < 2) { 
+                proc->msg_desc[j] = GetClassData(ReclassTable[pid][j])->descTextId;
+            } 
         }
 
         proc->weapon = weapon;
-
-        if (Check3rdTraineeEnabled()) {
-            pid = unit->pClassData->number;
-            switch (pid) {
-            case CLASS_JOURNEYMAN:
-                proc->jid[2] = CLASS_JOURNEYMAN_T1;
-                proc->use_wpn[2] = LoadClassBattleSprite((void*)&proc->sprite[2], CLASS_JOURNEYMAN_T1, weapon);
-                proc->msg_desc[2] = GetClassData(CLASS_JOURNEYMAN_T1)->descTextId;
-                break;
-
-            case CLASS_PUPIL:
-                proc->jid[2] = CLASS_PUPIL_T1;
-                proc->use_wpn[2] = LoadClassBattleSprite((void*)&proc->sprite[2], CLASS_PUPIL_T1, weapon);
-                proc->msg_desc[2] = GetClassData(CLASS_PUPIL_T1)->descTextId;
-                break;
-
-            case CLASS_RECRUIT:
-                proc->jid[2] = CLASS_RECRUIT_T1;
-                proc->use_wpn[2] = LoadClassBattleSprite((void*)&proc->sprite[2], CLASS_RECRUIT_T1, weapon);
-                proc->msg_desc[2] = GetClassData(CLASS_RECRUIT_T1)->descTextId;
-                break;
-            }
-        }
         break;
     }
 
@@ -449,7 +443,8 @@ void LoadBattleSpritesForBranchScreen2(struct ProcReclassSel *proc) {
             }
             sub_80CD47C((s16) ret, (s16) chara_pal, (s16) (p2->sprite[0] + 0x28), 0x58, 6);
             sub_805AE14(&gUnknown_0201FADC);
-            sub_80CD408(proc->u50, p2->sprite[0], p2->msg_desc[1]);
+            sub_80CD408(proc->u50, p2->sprite[0], p2->msg_desc[1]); // I dunno 
+            //sub_80CD408(proc->u50, 0x8c * 2, 0x68);
         } else {
             goto D1AC;
         }
