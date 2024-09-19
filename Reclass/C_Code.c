@@ -3,10 +3,16 @@
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
 
+#define BUGFIX 
 #define NumberOfReclassOptions 6 
 
 ProcPtr ReclassMenuSelect(ProcPtr parent); 
+ProcPtr StartReclassSelect(ProcPtr parent); 
 extern u8 const ReclassTable[][6];
+
+extern int PromoMain_SetupTraineeEvent_(struct ProcPromoMain *proc);
+extern bool PromoTraineeEventExists(struct ProcPromoMain *proc);
+extern bool sub_80CD330(struct ProcPromoMain *proc);
 
 struct ProcReclassSel { // see ProcPromoSel 
     PROC_HEADER;
@@ -49,6 +55,146 @@ PROC_LABEL(2),
     PROC_END,
 };
 
+int ReclassSubConfirm_OnInit(struct MenuProc *proc)
+{
+    SyncMenuBgs(proc);
+    return 0;
+}
+
+int ReclassSubConfirm_OnEnd(struct MenuProc *proc)
+{
+    TileMap_FillRect(TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 4), 0xA, 6, 0);
+    TileMap_FillRect(TILEMAP_LOCATED(gBG2TilemapBuffer, 8, 4), 0xA, 6, 0);
+    SetTextFont(&gFontClassChg);
+    sub_80CDA4C(proc->proc_parent);
+    RedrawMenu(proc->proc_parent);
+    SyncMenuBgs(proc);
+    return 0;
+}
+
+bool StartAndWaitReclassSelect(struct ProcPromoMain *proc); 
+void ReclassHandlerIdle(struct ProcPromoHandler *proc); 
+const struct ProcCmd ProcScr_ReclassHandler[] = {
+    PROC_SLEEP(3),
+
+PROC_LABEL(0),
+    PROC_CALL(PromoHandler_SetInitStat),
+
+PROC_LABEL(1),
+    PROC_REPEAT(ReclassHandlerIdle),
+
+PROC_LABEL(7),
+    PROC_END,
+};
+
+const struct ProcCmd ProcScr_ReclassMain[] = {
+	PROC_NAME("Reclass Main"),
+
+PROC_LABEL(PROMOMAIN_LABEL_START),
+    PROC_CALL(PromoMain_InitScreen),
+    PROC_SLEEP(3),
+
+PROC_LABEL(PROMOMAIN_LABEL_1),
+    PROC_CALL(PromoMain_HandleType),
+
+PROC_LABEL(PROMOMAIN_LABEL_TRAINEE),
+    PROC_WHILE(PromoMain_SetupTraineeEvent_),
+    PROC_WHILE(PromoTraineeEventExists),
+    PROC_CALL(PromoHandleTraineePostType),
+
+PROC_LABEL(PROMOMAIN_LABEL_SEL_EN),
+    PROC_WHILE(StartAndWaitReclassSelect),
+    PROC_SLEEP(5),
+    PROC_REPEAT(sub_80CD330),
+
+PROC_LABEL(PROMOMAIN_LABEL_POST_SEL),
+    PROC_CALL(ExecClassChgReal),
+    PROC_SLEEP(2),
+
+PROC_LABEL(6),
+    PROC_CALL(PromoMain_HandlePrepEndEffect),
+
+PROC_LABEL(7),
+PROC_LABEL(8),
+    PROC_CALL(PromoMain_OnEnd),
+    PROC_END,
+};
+
+bool StartAndWaitReclassSelect(struct ProcPromoMain *proc)
+{
+    struct ProcPromoMain *_proc = (struct ProcPromoMain *)proc;
+    switch (_proc->stat) {
+    case PROMO_MAIN_STAT_SELECTION:
+        return false;
+
+    case PROMO_MAIN_STAT_TRAINEE_EVENT:
+    case PROMO_MAIN_STAT_INIT:
+        proc->sel_en = StartReclassSelect(proc);
+        _proc->stat = PROMO_MAIN_STAT_SELECTION;
+        return false;
+
+    default:
+        return true;
+    }
+}
+
+
+u8 ReclassSubConfirmMenuOnSelect(struct MenuProc *proc, struct MenuItemProc *b)
+{
+    if (b->itemNumber == 0) {
+        ProcPtr found;
+        EndMenu(proc);
+        EndMenu(proc->proc_parent);
+        found = Proc_Find(ProcScr_ReclassMain);
+
+        EndAllProcChildren(found);
+        ClassChgLoadEfxTerrain();
+        Proc_Goto(found, PROMOMAIN_LABEL_POST_SEL);
+    }
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A;
+}
+
+u8 ReclassMenuSel_OnBPress(struct MenuProc *_proc, struct MenuItemProc *_proc2)
+{
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B;
+}
+
+const struct MenuItemDef MenuItem_ReclassSubConfirm[] = {
+    {
+        "　決定",
+        0x23,   /* Change */
+        0, TEXT_COLOR_SYSTEM_WHITE, 0,
+        MenuAlwaysEnabled,
+        NULL,
+        ReclassSubConfirmMenuOnSelect,
+        NULL, NULL
+    },
+    {
+        "　やめる",
+        0x24,   /* Cancel */
+        0, TEXT_COLOR_SYSTEM_WHITE, 1,
+        MenuAlwaysEnabled,
+        NULL,
+        ReclassSubConfirmMenuOnSelect,
+        NULL,
+        NULL
+    },
+    {0},
+};
+
+const struct MenuDef Menu_ReclassSubConfirm = {
+    { 9, 4, 6, 0 },
+    1,
+    MenuItem_ReclassSubConfirm,
+    (void(*)(struct MenuProc*)) ReclassSubConfirm_OnInit,
+    (void(*)(struct MenuProc*)) ReclassSubConfirm_OnEnd,
+    NULL,
+    ReclassMenuSel_OnBPress,
+    NULL,
+    MenuStdHelpBox
+};
+
+
 u8 ReclassMenuItem_OnSelect(struct MenuProc *pmenu, struct MenuItemProc *pmitem) {
     struct ProcClassChgMenuSel *parent;
     struct ProcReclassSel *gparent;
@@ -66,19 +212,14 @@ u8 ReclassMenuItem_OnSelect(struct MenuProc *pmenu, struct MenuItemProc *pmitem)
         }
         ggparent->jid = classnumber;
 
-        switch ((u8) ggparent->jid) {
-        case CLASS_RANGER:
-        case CLASS_RANGER_F:
-            if (unit->state & US_IN_BALLISTA) {
-                TryRemoveUnitFromBallista(unit);
-            }
-            break;
+        if (unit->state & US_IN_BALLISTA) {
+            TryRemoveUnitFromBallista(unit);
         }
 
         InitTextFont(&gFontClassChgMenu, (void *)BG_VRAM + 0x1000, 0x80, 0x5);
         TileMap_FillRect(TILEMAP_LOCATED(gBG0TilemapBuffer, 9, 4), 0xA, 0x6, 0);
         BG_EnableSyncByMask(BG0_SYNC_BIT);
-        StartMenuExt(&Menu_PromoSubConfirm, 2, 0, 0, 0, pmenu);
+        StartMenuExt(&Menu_ReclassSubConfirm, 2, 0, 0, 0, pmenu);
     }
 
     return 0;
@@ -514,7 +655,7 @@ PROC_LABEL(PROC_CLASSCHG_SEL_END1),
 };
 
 
-ProcPtr StartPromoClassSelect(ProcPtr parent)
+ProcPtr StartReclassSelect(ProcPtr parent)
 {
     return Proc_StartBlocking(ProcScr_ReclassSelect, parent);
 }
@@ -522,6 +663,122 @@ ProcPtr StartPromoClassSelect(ProcPtr parent)
 ProcPtr ReclassMenuSelect(ProcPtr parent)
 {
 	return Proc_Start(ProcScr_ReclassMenuSel, parent);
+}
+
+
+
+struct ProcPromoMain *Make6C_ReclassMain(ProcPtr proc)
+{
+    return Proc_StartBlocking(ProcScr_ReclassMain, proc);
+}
+
+void MakeReclassScreen(struct ProcPromoHandler *proc, u8 pid, u8 terrain); 
+u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler *proc)
+{
+    struct Unit *unit;
+    u8 classNumber;
+    u32 terrain = TERRAIN_PLAINS;
+
+    switch (gPlaySt.chapterModeIndex) {
+        case CHAPTER_MODE_EIRIKA:
+        default:
+            terrain = TERRAIN_PLAINS;
+            break;
+
+        case CHAPTER_MODE_EPHRAIM:
+            //terrain = TERRAIN_DESERT;
+            break;
+    }
+
+    if (proc->bmtype == PROMO_HANDLER_TYPE_BM) {
+        proc->bmtype = PROMO_HANDLER_TYPE_BM;
+        proc->sel_en = 1;
+        unit = GetUnitFromCharId(proc->pid);
+        classNumber = unit->pClassData->number;
+
+        /* If no class to promote, end the handler proc */
+        if (!gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1])
+            return PROMO_HANDLER_STAT_END;
+
+        if (gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) {
+            proc->jid = gPromoJidLut[classNumber][0];
+            proc->sel_en = 0;
+        }
+
+        if (!gPromoJidLut[classNumber][0] && gPromoJidLut[classNumber][1]) {
+            proc->jid = gPromoJidLut[classNumber][1];
+            proc->sel_en = 0;
+        }
+
+        MakeReclassScreen(proc, proc->pid, terrain);
+        return PROMO_HANDLER_STAT_IDLE;
+    } else if (proc->bmtype == PROMO_HANDLER_TYPE_PREP) {
+        proc->bmtype = PROMO_HANDLER_TYPE_PREP;
+        proc->sel_en = 1;
+        unit = GetUnitFromCharId(proc->pid);
+        classNumber = unit->pClassData->number;
+        if (!gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) {
+            BMapDispResume();
+            RefreshBMapGraphics();
+            return PROMO_HANDLER_STAT_END;
+        }
+        if (gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) {
+            proc->jid = gPromoJidLut[classNumber][0];
+            proc->sel_en = 0;
+        }
+        if (!gPromoJidLut[classNumber][0] && gPromoJidLut[classNumber][1]) {
+            proc->jid = gPromoJidLut[classNumber][1];
+            proc->sel_en = 0;
+        }
+        MakeReclassScreen(proc, proc->pid, terrain);
+        return PROMO_HANDLER_STAT_IDLE;
+    }
+    else
+        return PROMO_HANDLER_STAT_END;
+}
+
+void ReclassHandlerIdle(struct ProcPromoHandler *proc)
+{
+    switch (proc->stat) {
+    case PROMO_HANDLER_STAT_IDLE:
+    default:
+        return;
+
+    case PROMO_HANDLER_STAT_INIT:
+        proc->stat = ReclassHandler_SetupAndStartUI(proc);
+        break;
+
+    case PROMO_HANDLER_STAT_END:
+        Proc_Break(proc);
+        break;
+    }
+}
+
+void MakeReclassScreen(struct ProcPromoHandler *proc, u8 pid, u8 terrain)
+{
+    struct ProcPromoMain *child;
+
+    /* set callback stat */
+    proc->stat = PROMO_HANDLER_STAT_INIT;
+
+    child = Make6C_ReclassMain(proc);
+    proc->promo_main = child;
+    child->pid = pid;
+    child->terrain = terrain;
+}
+
+void StartBmPromotion(ProcPtr proc) // current hook 
+{
+    struct Unit *unit;
+    struct ProcPromoHandler *new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+    new_proc->bmtype = PROMO_HANDLER_TYPE_PREP;
+    new_proc->u32 = 0;
+    unit = GetUnit(gActionData.subjectIndex);
+    new_proc->pid = unit->pCharacterData->number;
+    new_proc->unit = GetUnit(gActionData.subjectIndex);
+    new_proc->item_slot = gActionData.itemSlotIndex;
+    BMapDispSuspend();
+    MU_EndAll();
 }
 
 
