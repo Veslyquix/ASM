@@ -38,6 +38,8 @@ struct ProcReclassSel { // see ProcPromoSel
     /* ... more maybe */
 };
 void ReclassMenuExec(struct ProcClassChgMenuSel *proc); 
+
+
 const struct ProcCmd ProcScr_ReclassMenuSel[] = {
     PROC_SLEEP(6),
 	PROC_NAME("Reclass Menu Select"),
@@ -76,7 +78,7 @@ bool StartAndWaitReclassSelect(struct ProcPromoMain *proc);
 void ReclassHandlerIdle(struct ProcPromoHandler *proc); 
 const struct ProcCmd ProcScr_ReclassHandler[] = {
     PROC_SLEEP(3),
-
+	PROC_NAME("Reclass Handler"),
 PROC_LABEL(0),
     PROC_CALL(PromoHandler_SetInitStat),
 
@@ -87,11 +89,32 @@ PROC_LABEL(7),
     PROC_END,
 };
 
+
+void SetLevelFunc(ProcPtr proc) { 
+    if (!Proc_Find(ProcScr_ReclassHandler)) { Proc_Break(proc); } 
+    gEkrLvupPostLevel = gActiveUnit->level;
+} 
+
+const struct ProcCmd ProcScr_SetLevel[] = { 
+    PROC_SLEEP(0),
+    PROC_NAME("Reclass Set Level"), 
+    PROC_REPEAT(SetLevelFunc), 
+    PROC_END, 
+};
+
+extern void ReclassPostConfirmWaitBanimEnd(struct ProcClassChgPostConfirm *proc)
+{
+    gEkrLvupPostLevel = gActiveUnit->level; 
+    int game_lock = proc->game_lock;
+    if (game_lock == GetGameLock())
+        Proc_Break(proc);
+}
 void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm *proc); 
 const struct ProcCmd ProcScr_ReclassChgReal[] = {
+	PROC_NAME("Reclassing Active"),
     PROC_WHILE(MusicProc4Exists),
     PROC_CALL(ReclassChgExecPromotionReal),
-    PROC_REPEAT(ClassChgPostConfirmWaitBanimEnd),
+    PROC_REPEAT(ReclassPostConfirmWaitBanimEnd),
     PROC_SLEEP(0x8),
     PROC_CALL(sub_80CDE98),
     PROC_SLEEP(0x5),
@@ -124,13 +147,9 @@ void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm *proc)
     BeginBattleAnimations();
 }
 
-extern void ClassChgPostConfirmWaitBanimEnd(struct ProcClassChgPostConfirm *proc); 
-//{
-//    int game_lock = proc->game_lock;
-//    if (game_lock == GetGameLock())
-//        Proc_Break(proc);
-//}
 
+
+extern void SetBlendConfig(int, int, int, int); 
 extern void sub_80CDE98(struct ProcClassChgPostConfirm *proc);
 //{
 //    struct ProcPromoMain *parent = proc->proc_parent;
@@ -173,7 +192,7 @@ void ApplyUnitReclass(struct Unit* unit, u8 classId) {
     
 
     int baseClassId = unit->pClassData->number;
-    int promClassId = newClass->number;
+    //int promClassId = newClass->number;
     
     const struct ClassData* oldClass = GetClassData(baseClassId); 
 
@@ -804,7 +823,7 @@ const struct ProcCmd ProcScr_ReclassSelect[] = {
     PROC_CALL(StartMidFadeToBlack),
     PROC_REPEAT(WaitForFade),
 
-    PROC_NAME("Reclass"),
+    PROC_NAME("Reclass Select"),
 
 PROC_LABEL(PROC_CLASSCHG_SEL_INIT),
     PROC_CALL(Make6C_ReclassMenuSelect),
@@ -858,6 +877,7 @@ struct ProcPromoMain *Make6C_ReclassMain(ProcPtr proc)
 void MakeReclassScreen(struct ProcPromoHandler *proc, u8 pid, u8 terrain); 
 u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler *proc)
 {
+    Proc_Start(ProcScr_SetLevel, (void*) 3); 
     struct Unit *unit;
     u8 classNumber;
     u32 terrain = TERRAIN_PLAINS;
@@ -950,10 +970,49 @@ void MakeReclassScreen(struct ProcPromoHandler *proc, u8 pid, u8 terrain)
     child->terrain = terrain;
 }
 
-void StartBmPromotion(ProcPtr proc) // current hook 
+// asmc or whatever 
+extern struct ProcCmd sProc_Menu[]; 
+int StartBmPromotion2(ProcPtr proc) // current hook 
 {
-    struct Unit *unit;
-    struct ProcPromoHandler *new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+    struct Unit* unit = gActiveUnit; 
+    gActiveUnit = unit;
+    gActiveUnitId = unit->index;
+
+    gActiveUnitMoveOrigin.x = unit->xPos;
+    gActiveUnitMoveOrigin.y = unit->yPos;
+    gActionData.xMove = unit->xPos; 
+    gActionData.yMove = unit->yPos; 
+
+    gActionData.subjectIndex = unit->index;
+    gActionData.itemSlotIndex = -1; 
+    gActionData.unitActionType = 0;
+    gActionData.moveCount = 0;
+
+    gBmSt.taken_action = 0;
+    gBmSt.unk3F = 0xFF;
+
+    sub_802C334();
+    
+    gActiveUnit->xPos = gActionData.xMove;
+    gActiveUnit->yPos = gActionData.yMove;
+    UnitFinalizeMovement(gActiveUnit); 
+    ResetTextFont();
+    gBattleActor.weaponBefore = gBattleTarget.weaponBefore = GetUnit(gActionData.subjectIndex)->items[gActionData.itemSlotIndex];
+
+    gBattleActor.weapon = gBattleTarget.weapon = GetUnitEquippedWeapon(GetUnit(gActionData.subjectIndex));
+
+    gBattleTarget.statusOut = -1;
+    struct ProcPromoHandler *new_proc;
+    struct MenuProc* menu = Proc_Find(sProc_Menu);
+    //asm("mov r11, r11"); 
+    if (menu) { // if a menu is active, don't block it. Instead, end it 
+        //EndAllMenus(); 
+        new_proc = Proc_Start(ProcScr_ReclassHandler, (void*) 3);
+//        new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+    } 
+    else { 
+        new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+    } 
     new_proc->bmtype = PROMO_HANDLER_TYPE_PREP;
     new_proc->u32 = 0;
     unit = GetUnit(gActionData.subjectIndex);
@@ -962,6 +1021,7 @@ void StartBmPromotion(ProcPtr proc) // current hook
     new_proc->item_slot = gActionData.itemSlotIndex;
     BMapDispSuspend();
     MU_EndAll();
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
 
 
