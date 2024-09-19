@@ -87,6 +87,189 @@ PROC_LABEL(7),
     PROC_END,
 };
 
+void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm *proc); 
+const struct ProcCmd ProcScr_ReclassChgReal[] = {
+    PROC_WHILE(MusicProc4Exists),
+    PROC_CALL(ReclassChgExecPromotionReal),
+    PROC_REPEAT(ClassChgPostConfirmWaitBanimEnd),
+    PROC_SLEEP(0x8),
+    PROC_CALL(sub_80CDE98),
+    PROC_SLEEP(0x5),
+    PROC_WHILE(MusicProc4Exists),
+    PROC_END
+};
+
+void ExecUnitReclass(struct Unit* unit, u8 classId, int itemIdx, s8 unk); 
+void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm *proc)
+{
+    struct ProcPromoMain *parent = proc->proc_parent;
+    struct ProcPromoHandler *gparent = parent->proc_parent;
+
+    struct Unit *unit = GetUnitFromCharId(parent->pid);
+
+    if (unit == NULL) {
+        Proc_End(proc);
+        return;
+    }
+
+    proc->game_lock = GetGameLock();
+    SetWinEnable(0, 0, 0);
+    ExecUnitReclass(unit, parent->jid, -1, 0);
+
+    if (gparent->bmtype != PROMO_HANDLER_TYPE_PREP)
+        gBattleStats.config = BATTLE_CONFIG_PROMOTION_PREP | BATTLE_CONFIG_PROMOTION;
+    else
+        gBattleStats.config = BATTLE_CONFIG_PROMOTION;
+
+    BeginBattleAnimations();
+}
+
+extern void ClassChgPostConfirmWaitBanimEnd(struct ProcClassChgPostConfirm *proc); 
+//{
+//    int game_lock = proc->game_lock;
+//    if (game_lock == GetGameLock())
+//        Proc_Break(proc);
+//}
+
+extern void sub_80CDE98(struct ProcClassChgPostConfirm *proc);
+//{
+//    struct ProcPromoMain *parent = proc->proc_parent;
+//    GetUnitFromCharId(parent->pid);
+//}
+
+void ExecReclassChgReal(struct ProcPromoMain *proc)
+{
+    int slot;
+    struct ProcPromoHandler *parent = proc->proc_parent;
+    gUnknown_03005398 = -1;
+    EndCgText();
+
+    ResetDialogueScreen();
+    APProc_DeleteAll();
+    EndMuralBackground_();
+
+    gLCDControlBuffer.bg0cnt.priority = 0;
+    gLCDControlBuffer.bg1cnt.priority = 1;
+    gLCDControlBuffer.bg2cnt.priority = 2;
+    gLCDControlBuffer.bg3cnt.priority = 3;
+
+    SetBlendConfig(3, 0, 0, 0x10);
+    SetBlendTargetA(1, 1, 1, 1, 1);
+
+    EndAllProcChildren(proc);
+
+    Proc_StartBlocking(ProcScr_ReclassChgReal, proc);
+
+    if (parent->bmtype != PROMO_HANDLER_TYPE_TRANINEE) {
+        slot = parent->item_slot;
+        if (slot != -1)
+            UnitUpdateUsedItem(parent->unit, slot);
+    }
+}
+
+
+void ApplyUnitReclass(struct Unit* unit, u8 classId) {
+    const struct ClassData* newClass = GetClassData(classId);
+    
+
+    int baseClassId = unit->pClassData->number;
+    int promClassId = newClass->number;
+    
+    const struct ClassData* oldClass = GetClassData(baseClassId); 
+
+    int i;
+
+    int diff; 
+    
+    diff = newClass->baseHP - oldClass->baseHP; 
+    unit->maxHP += diff;
+    unit->pow += newClass->basePow - oldClass->basePow; 
+    unit->skl += newClass->baseSkl - oldClass->baseSkl; 
+    unit->spd += newClass->baseSpd - oldClass->baseSpd; 
+    unit->def += newClass->baseDef - oldClass->baseDef; 
+    unit->res += newClass->baseRes - oldClass->baseRes; 
+    
+    if (unit->maxHP < 0) { unit->maxHP = 0; } 
+    if (unit->pow < 0) { unit->pow = 0; } 
+    if (unit->skl < 0) { unit->skl = 0; } 
+    if (unit->spd < 0) { unit->spd = 0; } 
+    if (unit->def < 0) { unit->def = 0; } 
+    if (unit->res < 0) { unit->res = 0; } 
+    //unit->lck += newClass->baseLck - oldClass->basePow; 
+    //unit->_u3A += newClass->basePow - oldClass->basePow; // mag 
+
+
+    // Remove base class' base wexp from unit wexp
+    for (i = 0; i < 8; ++i) { 
+        diff = unit->ranks[i] - oldClass->baseRanks[i];
+        if (diff >= 0) { unit->ranks[i] = diff; }
+    } 
+
+    // Update unit class
+    unit->pClassData = newClass;
+
+    // Add promoted class' base wexp to unit wexp
+    for (i = 0; i < 8; ++i) {
+        int wexp = unit->ranks[i];
+        diff = newClass->baseRanks[i]; 
+        
+        if (!diff) { unit->ranks[i] = 0; continue; } // if new class has no rank, set to 0 
+        wexp += diff;
+
+        if (wexp > WPN_EXP_S)
+            wexp = WPN_EXP_S;
+
+        unit->ranks[i] = wexp;
+    }
+
+    //unit->level = 1;
+    //unit->exp   = 0;
+    UnitCheckStatCaps(unit); 
+    unit->curHP += newClass->promotionHp;
+
+    if (unit->curHP > GetUnitMaxHp(unit))
+        unit->curHP = GetUnitMaxHp(unit);
+}
+
+void ExecUnitReclass(struct Unit* unit, u8 classId, int itemIdx, s8 unk) {
+
+    if (itemIdx != -1) {
+        gBattleActor.weaponBefore = gBattleTarget.weaponBefore = unit->items[itemIdx];
+    }
+
+    gBattleActor.weapon = gBattleTarget.weapon = GetUnitEquippedWeapon(unit);
+
+    InitBattleUnitWithoutBonuses(&gBattleTarget, unit);
+
+    ApplyUnitReclass(unit, classId);
+
+    InitBattleUnitWithoutBonuses(&gBattleActor, unit);
+
+    GenerateBattleUnitStatGainsComparatively(&gBattleActor, &gBattleTarget.unit);
+    // save from battle? 
+    //struct Unit* actor  = GetUnit(gBattleActor.unit.index);
+    //UpdateUnitFromBattle(actor, &gBattleActor);
+    //BattleApplyUnitUpdates(); 
+    SetBattleUnitTerrainBonusesAuto(&gBattleActor);
+    SetBattleUnitTerrainBonusesAuto(&gBattleTarget);
+
+    if (unk) {
+        unit->state |= US_HAS_MOVED;
+    }
+
+    if (itemIdx != -1) {
+        UnitUpdateUsedItem(unit, itemIdx);
+    }
+
+    gBattleHitArray[0].attributes = 0;
+    gBattleHitArray[0].info = BATTLE_HIT_INFO_END;
+    gBattleHitArray[0].hpChange = 0;
+
+    gBattleStats.config = BATTLE_CONFIG_PROMOTION;
+
+    return;
+}
+
 const struct ProcCmd ProcScr_ReclassMain[] = {
 	PROC_NAME("Reclass Main"),
 
@@ -108,7 +291,7 @@ PROC_LABEL(PROMOMAIN_LABEL_SEL_EN),
     PROC_REPEAT(sub_80CD330),
 
 PROC_LABEL(PROMOMAIN_LABEL_POST_SEL),
-    PROC_CALL(ExecClassChgReal),
+    PROC_CALL(ExecReclassChgReal),
     PROC_SLEEP(2),
 
 PROC_LABEL(6),
