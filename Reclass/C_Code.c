@@ -486,6 +486,129 @@ int ReclassMenuItem_OnTextDraw(struct MenuProc *pmenu, struct MenuItemProc *pmit
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
 
+extern struct Font gDefaultFont; 
+static const char stats[32][16] = { 
+"HP",
+"Str",
+"Skl",
+"Spd",
+"Def",
+"Res",
+"Con",
+"Mgc", // Mag? 
+"+",
+"-",
+}; 
+
+int GetStatDiff(int id, const struct ClassData* oldClass, const struct ClassData* newClass) { 
+    int result = 0; 
+    
+    switch (id) { 
+    case 0: { result = newClass->baseHP - oldClass->baseHP; break; } 
+    case 1: { result = newClass->basePow - oldClass->basePow; break; } 
+    case 2: { result = newClass->baseSkl - oldClass->baseSkl; break; } 
+    case 3: { result = newClass->baseSpd - oldClass->baseSpd; break; } 
+    case 4: { result = newClass->baseDef - oldClass->baseDef; break; } 
+    case 5: { result = newClass->baseRes - oldClass->baseRes; break; } 
+    case 6: { result = newClass->baseCon - oldClass->baseCon; break; } 
+    case 7: { result = newClass->baseMov - oldClass->baseMov; break; } 
+    default: 
+    
+    
+    } 
+    return result; 
+
+}
+void DrawStatDiff(int x, int y, int id, struct Unit* unit, const struct ClassData* classData) { 
+    struct Text* th = gStatScreen.text;
+    const struct ClassData* oldClass = unit->pClassData; 
+    int num = GetStatDiff(id, oldClass, classData); 
+    PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 2, stats[id]); 
+    if (num >= 0) { 
+        PutDrawText(&th[8], TILEMAP_LOCATED(gBG0TilemapBuffer, x+2, y), 0, 0, 3, stats[8]); // "+"
+    } 
+    else { 
+        PutDrawText(&th[9], TILEMAP_LOCATED(gBG0TilemapBuffer, x+2, y), 0, 0, 3, stats[9]); // "-" 
+    } 
+    if (ABS(num) > 9) { 
+        PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+4, y), 0, ABS(num)); 
+    } 
+    else { 
+        PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+3, y), 0, ABS(num)); 
+    } 
+} 
+
+struct SpecialCharSt {
+    s8 color;
+    s8 id;
+    s16 chr_position;
+};
+extern struct SpecialCharSt sSpecialCharStList[64]; 
+void ReclassDrawStatChanges(struct Unit* unit, const struct ClassData* classData) { 
+    struct Text* th = gStatScreen.text;
+    InitTextFont(&gDefaultFont, (void *)(VRAM + 0x4400), 0x220, 0);
+    sSpecialCharStList[0].color = -1; // redraw numbers !! 
+    for (int i = 0; i < 10; ++i) { 
+        InitText(&th[i], 3); 
+    } 
+    SetTextFontGlyphs(0);
+    
+    int x = 12; 
+    int y = 12; 
+    TileMap_FillRect(TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 8, 2, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    
+    int c = 0; 
+    //LoadIconPalette(1, 2);
+    //LoadIconPalettes(4); 
+    for (int i = 0; i < 8; ++i) { 
+        if (classData->baseRanks[i]) { 
+        DrawIcon(gBG0TilemapBuffer + TILEMAP_INDEX(x + (c*2), y),
+        0x70 + i, // TODO: icon id definitions
+        TILEREF(0, 4));
+        c++; 
+        } 
+    } 
+    
+    
+    y = 4; 
+    
+    DrawUiFrame(
+        BG_GetMapBuffer(2), // back BG
+        11, y-1, 6, 10,
+        TILEREF(0, 0), 0); // style as 0 ? 
+    DrawUiFrame(
+        BG_GetMapBuffer(2), // back BG
+        24, y-1, 6, 10,
+        TILEREF(0, 0), 0); // style as 0 ? 
+    BG_EnableSyncByMask(BG2_SYNC_BIT); 
+    SetBlendTargetA(0, 0, 1, 0, 0);
+    
+    
+    
+    DrawStatDiff(12, y + 0, 0, unit, classData); 
+    DrawStatDiff(25, y + 0, 1, unit, classData); 
+    DrawStatDiff(12, y + 2, 2, unit, classData); 
+    DrawStatDiff(25, y + 2, 3, unit, classData); 
+    DrawStatDiff(12, y + 4, 4, unit, classData); 
+    DrawStatDiff(25, y + 4, 5, unit, classData); 
+    DrawStatDiff(12, y + 6, 6, unit, classData); 
+    DrawStatDiff(25, y + 6, 7, unit, classData); 
+    
+    // PutDrawText(&th[0], TILEMAP_LOCATED(gBG0TilemapBuffer, 13, 1), 0, 0, 5, "HP"); 
+    // PutDrawText(&th[1], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 3), 0, 0, 5, "Str"); 
+    // PutDrawText(&th[2], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 5), 0, 0, 5, "Skl"); 
+    // PutDrawText(&th[3], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 7), 0, 0, 5, "Spd"); 
+    // PutDrawText(&th[4], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 9), 0, 0, 5, "Def"); 
+    // PutDrawText(&th[5], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 11), 0, 0, 5, "Res"); 
+    // PutDrawText(&th[6], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 13), 0, 0, 5, "Lck"); 
+    // PutDrawText(&th[7], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 15), 0, 0, 5, "Mag"); 
+    
+    
+
+    //PutDrawText(struct Text* text, u16* dest, int colorId, int x, int tileWidth, const char* string);
+} 
+
 int ReclassMenuItem_OnChange(struct MenuProc *pmenu, struct MenuItemProc *pmitem)
 {
     struct ProcClassChgMenuSel *parent;
@@ -496,7 +619,10 @@ int ReclassMenuItem_OnChange(struct MenuProc *pmenu, struct MenuItemProc *pmitem
     gparent->stat = 1;
     gparent->main_select = pmitem->itemNumber;
     
-    int msg_desc = GetClassData(ReclassTable[GetUnitFromCharId(gparent->pid)->pClassData->number][pmenu->itemCurrent])->descTextId; //pmenu->itemCurrent
+    struct Unit* unit = GetUnitFromCharId(gparent->pid); 
+    const struct ClassData* classData = GetClassData(ReclassTable[unit->pClassData->number][pmenu->itemCurrent]);
+    ReclassDrawStatChanges(unit, classData); 
+    int msg_desc = classData->descTextId; //pmenu->itemCurrent
     //ChangeClassDescription(gparent->msg_desc[gparent->main_select]);
     ChangeClassDescription(msg_desc);
     SetTalkPrintDelay(-1);
@@ -639,8 +765,8 @@ void LoadClassNameInClassReelFont2(struct ProcReclassSel *proc) {
     for (index = 0; index < 0x14 && str[index] != '\0'; index++) {
         struct ClassDisplayFont *font = GetClassDisplayFontInfo(str[index]);
         if (font) {
-            if (font->a) {
-                PutSpriteExt(4, xOffs - font->xBase - 2, font->yBase + 6, font->a, 0x81 << 7);
+            if (font->a) { // font->yBase + y is where to draw on screen 
+                PutSpriteExt(4, xOffs - font->xBase - 2, font->yBase + 0, font->a, 0x81 << 7);
                 xOffs += font->width - font->xBase;
             }
         } else {
@@ -972,7 +1098,7 @@ void MakeReclassScreen(struct ProcPromoHandler *proc, u8 pid, u8 terrain)
 
 // asmc or whatever 
 extern struct ProcCmd sProc_Menu[]; 
-int StartBmPromotion2(ProcPtr proc) // current hook 
+void StartBmPromotion(ProcPtr proc) // current hook 
 {
     struct Unit* unit = gActiveUnit; 
     gActiveUnit = unit;
