@@ -487,7 +487,7 @@ int ReclassMenuItem_OnTextDraw(struct MenuProc *pmenu, struct MenuItemProc *pmit
 }
 
 extern struct Font gDefaultFont; 
-static const char stats[32][16] = { 
+static const char stats[][16] = { 
 "HP",
 "Str",
 "Skl",
@@ -495,9 +495,8 @@ static const char stats[32][16] = {
 "Def",
 "Res",
 "Con",
-"Mgc", // Mag? 
-"+",
-"-",
+"Mov", 
+"Mag", 
 }; 
 
 int GetStatDiff(int id, const struct ClassData* oldClass, const struct ClassData* newClass) { 
@@ -523,18 +522,25 @@ void DrawStatDiff(int x, int y, int id, struct Unit* unit, const struct ClassDat
     struct Text* th = gStatScreen.text;
     const struct ClassData* oldClass = unit->pClassData; 
     int num = GetStatDiff(id, oldClass, classData); 
-    PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 2, stats[id]); 
+    //PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 2, stats[id]); 
     if (num >= 0) { 
-        PutDrawText(&th[8], TILEMAP_LOCATED(gBG0TilemapBuffer, x+2, y), 0, 0, 3, stats[8]); // "+"
+        PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 3, stats[id]); // "+"
+        Text_InsertDrawString(&th[id], 18, th[id].colorId, "+"); // th[id].x + 8
     } 
     else { 
-        PutDrawText(&th[9], TILEMAP_LOCATED(gBG0TilemapBuffer, x+2, y), 0, 0, 3, stats[9]); // "-" 
+        PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 3, stats[id]); // "-" 
+        Text_InsertDrawString(&th[id], 19, th[id].colorId, "-");
+        th[id].x++; 
     } 
+    th[id].x++; 
+    
     if (ABS(num) > 9) { 
-        PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+4, y), 0, ABS(num)); 
+        Text_InsertDrawNumberOrBlank(&th[id], th[id].x + 8, th[id].colorId, ABS(num));
+        //PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+4, y), 0, ABS(num)); 
     } 
     else { 
-        PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+3, y), 0, ABS(num)); 
+        Text_InsertDrawNumberOrBlank(&th[id], th[id].x, th[id].colorId, ABS(num));
+        //PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+3, y), 0, ABS(num)); 
     } 
 } 
 
@@ -549,7 +555,7 @@ void ReclassDrawStatChanges(struct Unit* unit, const struct ClassData* classData
     InitTextFont(&gDefaultFont, (void *)(VRAM + 0x4400), 0x220, 0);
     sSpecialCharStList[0].color = -1; // redraw numbers !! 
     for (int i = 0; i < 10; ++i) { 
-        InitText(&th[i], 3); 
+        InitText(&th[i], 6); 
     } 
     SetTextFontGlyphs(0);
     
