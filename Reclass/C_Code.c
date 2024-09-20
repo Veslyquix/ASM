@@ -3,9 +3,14 @@
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
 
-#define BUGFIX 
-#define NumberOfReclassOptions 6 
-
+#define NumberOfReclassOptions 6 // max 6 
+struct magClassTable { 
+u8 base; 
+u8 growth; 
+u8 cap; 
+u8 promo; 
+}; 
+extern struct magClassTable MagClassTable[]; 
 ProcPtr ReclassMenuSelect(ProcPtr parent); 
 ProcPtr StartReclassSelect(ProcPtr parent); 
 extern u8 const ReclassTable[][6];
@@ -18,7 +23,9 @@ int GetReclassOption(int unitID, int classID, int ID) {
     result = ReclassTable[classID][ID]; 
     return result; 
 } 
-
+int IsStrMagInstalled(void) { 
+    return MagClassTable[0].cap; 
+} 
 
 extern int PromoMain_SetupTraineeEvent_(struct ProcPromoMain *proc);
 extern bool PromoTraineeEventExists(struct ProcPromoMain *proc);
@@ -72,7 +79,7 @@ int ReclassSubConfirm_OnInit(struct MenuProc *proc)
     SyncMenuBgs(proc);
     return 0;
 }
-
+void ReclassDrawStatChanges(struct Unit* unit, const struct ClassData* classData);
 int ReclassSubConfirm_OnEnd(struct MenuProc *proc)
 {
     TileMap_FillRect(TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 4), 0xA, 6, 0);
@@ -81,6 +88,20 @@ int ReclassSubConfirm_OnEnd(struct MenuProc *proc)
     sub_80CDA4C(proc->proc_parent);
     RedrawMenu(proc->proc_parent);
     SyncMenuBgs(proc);
+    
+    struct ProcClassChgMenuSel *parent;
+    struct ProcReclassSel *gparent;
+
+    proc = proc->proc_parent;
+    parent = proc->proc_parent; 
+    gparent = parent->proc_parent;
+    //gparent->stat = 1;
+    //gparent->main_select = _proc2->itemNumber;
+    
+    struct Unit* unit = GetUnitFromCharId(gparent->pid); 
+    const struct ClassData* classData = GetClassData(GetReclassOption(gparent->pid, unit->pClassData->number, proc->itemCurrent));
+    ReclassDrawStatChanges(unit, classData);
+    
     return 0;
 }
 
@@ -197,6 +218,43 @@ void ExecReclassChgReal(struct ProcPromoMain *proc)
 }
 
 
+int GetStatDiff(int id, struct Unit* unit, const struct ClassData* oldClass, const struct ClassData* newClass) { 
+    int result = 0; 
+    
+    switch (id) { 
+        case 0: { result = newClass->baseHP - oldClass->baseHP; break; } 
+        case 1: { result = newClass->basePow - oldClass->basePow; break; } 
+        case 2: { result = newClass->baseSkl - oldClass->baseSkl; break; } 
+        case 3: { result = newClass->baseSpd - oldClass->baseSpd; break; } 
+        case 4: { result = newClass->baseDef - oldClass->baseDef; break; } 
+        case 5: { result = newClass->baseRes - oldClass->baseRes; break; } 
+        case 6: { result = newClass->baseCon - oldClass->baseCon; break; } 
+        case 7: { result = newClass->baseMov - oldClass->baseMov; break; } 
+        case 8: { 
+            if (!IsStrMagInstalled()) { break; } 
+            result = MagClassTable[newClass->number].base - MagClassTable[oldClass->number].base; break; 
+        } 
+    default: 
+    } 
+    int tmp = 0; 
+    switch (id) { 
+        case 0: { tmp = unit->maxHP; break; } 
+        case 1: { tmp = unit->pow; break; } 
+        case 2: { tmp = unit->skl; break; } 
+        case 3: { tmp = unit->spd; break; } 
+        case 4: { tmp = unit->def; break; } 
+        case 5: { tmp = unit->res; break; } 
+        case 8: { 
+            if (!IsStrMagInstalled()) { break; } 
+            tmp = unit->_u3A; break; 
+        } 
+    default: 
+    }
+    if ((tmp + result) < 0) { result = 0; } 
+    return result; 
+
+}
+
 void ApplyUnitReclass(struct Unit* unit, u8 classId) {
     const struct ClassData* newClass = GetClassData(classId);
     
@@ -208,15 +266,17 @@ void ApplyUnitReclass(struct Unit* unit, u8 classId) {
 
     int i;
 
-    int diff; 
-    
-    diff = newClass->baseHP - oldClass->baseHP; 
-    unit->maxHP += diff;
-    unit->pow += newClass->basePow - oldClass->basePow; 
-    unit->skl += newClass->baseSkl - oldClass->baseSkl; 
-    unit->spd += newClass->baseSpd - oldClass->baseSpd; 
-    unit->def += newClass->baseDef - oldClass->baseDef; 
-    unit->res += newClass->baseRes - oldClass->baseRes; 
+    int tmp; 
+    unit->maxHP += GetStatDiff(0, unit, oldClass, newClass);
+    unit->pow   += GetStatDiff(1, unit, oldClass, newClass);
+    unit->skl   += GetStatDiff(2, unit, oldClass, newClass);
+    unit->spd   += GetStatDiff(3, unit, oldClass, newClass);
+    unit->def   += GetStatDiff(4, unit, oldClass, newClass);
+    unit->res   += GetStatDiff(5, unit, oldClass, newClass);
+    tmp = unit->_u3A; // handle mag separately because _u3A is unsigned 
+    tmp += GetStatDiff(8, unit, oldClass, newClass);
+    if (tmp < 0) { tmp = 0; } 
+    unit->_u3A = tmp; 
     
     if (unit->maxHP < 0) { unit->maxHP = 0; } 
     if (unit->pow < 0) { unit->pow = 0; } 
@@ -230,8 +290,8 @@ void ApplyUnitReclass(struct Unit* unit, u8 classId) {
 
     // Remove base class' base wexp from unit wexp
     for (i = 0; i < 8; ++i) { 
-        diff = unit->ranks[i] - oldClass->baseRanks[i];
-        if (diff >= 0) { unit->ranks[i] = diff; }
+        tmp = unit->ranks[i] - oldClass->baseRanks[i];
+        if (tmp >= 0) { unit->ranks[i] = tmp; }
     } 
 
     // Update unit class
@@ -240,10 +300,10 @@ void ApplyUnitReclass(struct Unit* unit, u8 classId) {
     // Add promoted class' base wexp to unit wexp
     for (i = 0; i < 8; ++i) {
         int wexp = unit->ranks[i];
-        diff = newClass->baseRanks[i]; 
+        tmp = newClass->baseRanks[i]; 
         
-        if (!diff) { unit->ranks[i] = 0; continue; } // if new class has no rank, set to 0 
-        wexp += diff;
+        if (!tmp) { unit->ranks[i] = 0; continue; } // if new class has no rank, set to 0 
+        wexp += tmp;
 
         if (wexp > WPN_EXP_S)
             wexp = WPN_EXP_S;
@@ -367,7 +427,7 @@ u8 ReclassSubConfirmMenuOnSelect(struct MenuProc *proc, struct MenuItemProc *b)
 }
 
 u8 ReclassMenuSel_OnBPress(struct MenuProc *_proc, struct MenuItemProc *_proc2)
-{
+{ 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B;
 }
 
@@ -509,29 +569,10 @@ static const char stats[][16] = {
 "Mag", 
 }; 
 
-int GetStatDiff(int id, const struct ClassData* oldClass, const struct ClassData* newClass) { 
-    int result = 0; 
-    
-    switch (id) { 
-    case 0: { result = newClass->baseHP - oldClass->baseHP; break; } 
-    case 1: { result = newClass->basePow - oldClass->basePow; break; } 
-    case 2: { result = newClass->baseSkl - oldClass->baseSkl; break; } 
-    case 3: { result = newClass->baseSpd - oldClass->baseSpd; break; } 
-    case 4: { result = newClass->baseDef - oldClass->baseDef; break; } 
-    case 5: { result = newClass->baseRes - oldClass->baseRes; break; } 
-    case 6: { result = newClass->baseCon - oldClass->baseCon; break; } 
-    case 7: { result = newClass->baseMov - oldClass->baseMov; break; } 
-    default: 
-    
-    
-    } 
-    return result; 
-
-}
 void DrawStatDiff(int x, int y, int id, struct Unit* unit, const struct ClassData* classData) { 
     struct Text* th = gStatScreen.text;
     const struct ClassData* oldClass = unit->pClassData; 
-    int num = GetStatDiff(id, oldClass, classData); 
+    int num = GetStatDiff(id, unit, oldClass, classData); 
     //PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 2, stats[id]); 
     if (num >= 0) { 
         PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 3, stats[id]); // "+"
@@ -606,7 +647,12 @@ void ReclassDrawStatChanges(struct Unit* unit, const struct ClassData* classData
     DrawStatDiff(12, y + 4, 4, unit, classData); 
     DrawStatDiff(25, y + 4, 5, unit, classData); 
     DrawStatDiff(12, y + 6, 6, unit, classData); 
-    DrawStatDiff(25, y + 6, 7, unit, classData); 
+    if (IsStrMagInstalled()) { 
+        DrawStatDiff(25, y + 6, 8, unit, classData); // mag 
+    } 
+    else { 
+        DrawStatDiff(25, y + 6, 7, unit, classData); // mov 
+    } 
     
     // PutDrawText(&th[0], TILEMAP_LOCATED(gBG0TilemapBuffer, 13, 1), 0, 0, 5, "HP"); 
     // PutDrawText(&th[1], TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 3), 0, 0, 5, "Str"); 

@@ -23,3 +23,9 @@ FILL(6*256)
 
 UnitReclass(6, 9, 1, 2, 0, 0, 0) // Eirika instead reclasses into these classes 
 
+
+ALIGN 4 
+MagClassTable:
+WORD 0 
+
+
