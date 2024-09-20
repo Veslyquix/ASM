@@ -320,13 +320,26 @@ void ApplyUnitReclass(struct Unit* unit, u8 classId) {
         unit->curHP = GetUnitMaxHp(unit);
 }
 
+
+
+int CanClassEquipWeapon(int weapon, int reclassID) { 
+    weapon &= 0xFF; // id only 
+    int weaponType = GetItemData(weapon)->weaponType; 
+    return GetClassData(reclassID)->baseRanks[weaponType]; 
+
+} 
+
 void ExecUnitReclass(struct Unit* unit, u8 classId, int itemIdx, s8 unk) {
 
     if (itemIdx != -1) {
         gBattleActor.weaponBefore = gBattleTarget.weaponBefore = unit->items[itemIdx];
     }
-
-    gBattleActor.weapon = gBattleTarget.weapon = GetUnitEquippedWeapon(unit);
+    
+    int weapon = GetUnitEquippedWeapon(unit);
+    if (!CanClassEquipWeapon(weapon, classId)) { 
+        weapon = 0; 
+    } 
+    gBattleActor.weapon = gBattleTarget.weapon = weapon;
 
     InitBattleUnitWithoutBonuses(&gBattleTarget, unit);
 
@@ -827,7 +840,6 @@ void LoadClassNameInClassReelFont2(struct ProcReclassSel *proc) {
 }
 
 
-
 void Make6C_ReclassMenuSelect(struct ProcReclassSel* proc) {
     struct ProcPromoMain *parent = proc->proc_parent;
     struct ProcPromoHandler *grandparent;
@@ -867,10 +879,16 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel* proc) {
         pid = unit->pClassData->number;
         weapon = GetUnitEquippedWeapon(unit);
 
+        int maybeWep = 0;
+
         //for (j = 0; j < 2; j++) {
         for (j = 0; j < NumberOfReclassOptions; j++) {
             int reclassID = GetReclassOption(proc->pid, pid, j); 
             proc->jid[j] = reclassID;
+            maybeWep = 0; 
+            if (CanClassEquipWeapon(weapon, reclassID)) { 
+                maybeWep = weapon; 
+            } 
             //proc->use_wpn[j] = 
             
             //LoadClassBattleSprite((void*)&proc->sprite[j], ReclassTable[pid][j], weapon);
@@ -878,7 +896,7 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel* proc) {
                 proc->msg_desc[j] = GetClassData(reclassID)->descTextId; // i dunno 
             } 
             if (reclassID) { 
-                LoadClassBattleSprite((void*)&proc->sprite[j], reclassID, weapon);
+                LoadClassBattleSprite((void*)&proc->sprite[j], reclassID, maybeWep);
             } 
         }
 
@@ -951,10 +969,15 @@ void LoadBattleSpritesForBranchScreen2(struct ProcReclassSel *proc) {
             copied_unit = *unit;
             copied_unit.pClassData = GetClassData(proc->jid[proc->main_select]);
             battle_anim_ptr = copied_unit.pClassData->pBattleAnimDef;
+            int weapon = GetUnitEquippedWeapon(&copied_unit); 
+            if (!CanClassEquipWeapon(weapon, proc->jid[proc->main_select])) { 
+                weapon = 0; 
+            } 
+            
             ret = GetBattleAnimationId(
                 &copied_unit,
                 battle_anim_ptr,
-                (u16) GetUnitEquippedWeapon(&copied_unit),
+                (u16) weapon,
                 &battle_anim_id);
             for (i = 0; i <= 6; i++) {
                 if (gAnimCharaPalConfig[(s16)_pid][i] == (s16) _jid) {
@@ -1154,7 +1177,7 @@ void MakeReclassScreen(struct ProcPromoHandler *proc, u8 pid, u8 terrain)
 
 // asmc or whatever 
 extern struct ProcCmd sProc_Menu[]; 
-void StartBmPromotion(ProcPtr proc) // current hook 
+int StartBmReclass(ProcPtr proc) 
 {
     struct Unit* unit = gActiveUnit; 
     gActiveUnit = unit;
@@ -1181,8 +1204,12 @@ void StartBmPromotion(ProcPtr proc) // current hook
     ResetTextFont();
     gBattleActor.weaponBefore = gBattleTarget.weaponBefore = GetUnit(gActionData.subjectIndex)->items[gActionData.itemSlotIndex];
 
-    gBattleActor.weapon = gBattleTarget.weapon = GetUnitEquippedWeapon(GetUnit(gActionData.subjectIndex));
-
+    int weapon = GetUnitEquippedWeapon(GetUnit(gActionData.subjectIndex)); 
+    if (!CanClassEquipWeapon(weapon, gActiveUnit->pClassData->number)) { 
+        weapon = 0; 
+    } 
+    gBattleActor.weapon = gBattleTarget.weapon = weapon;
+    
     gBattleTarget.statusOut = -1;
     struct ProcPromoHandler *new_proc;
     struct MenuProc* menu = Proc_Find(sProc_Menu);
@@ -1205,5 +1232,7 @@ void StartBmPromotion(ProcPtr proc) // current hook
     MU_EndAll();
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
-
+// void StartBmPromotion(ProcPtr proc) { // test hook 
+    // StartBmReclass(proc); 
+// } 
 

@@ -1,11 +1,11 @@
-
+#include "EAstdlib.event"
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
 #include "Hooks.lyn.event" 
 #include "C_Code.lyn.event" 
 
-
+#define Take_Over_Item_Menu
 ALIGN 4 
 ReclassTable: 
 FILL(6*256)  
@@ -28,4 +28,11 @@ ALIGN 4
 MagClassTable:
 WORD 0 
 
+ALIGN 4
+ExampleEvent:
+ASMC StartBmReclass
+NoFade 
+ENDA 
+
+#include "../ItemSpecialEffect/Installer.event" 
 
