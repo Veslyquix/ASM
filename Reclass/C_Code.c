@@ -559,14 +559,11 @@ void ReclassDrawStatChanges(struct Unit* unit, const struct ClassData* classData
     BG_EnableSyncByMask(BG0_SYNC_BIT);
     
     int c = 0; 
-    //LoadIconPalette(1, 2);
-    //LoadIconPalettes(4); 
+    //LoadIconPalette(1, 3); // seems to be loaded already  
     for (int i = 0; i < 8; ++i) { 
         if (classData->baseRanks[i]) { 
-        DrawIcon(gBG0TilemapBuffer + TILEMAP_INDEX(x + (c*2), y),
-        0x70 + i, // TODO: icon id definitions
-        TILEREF(0, 4));
-        c++; 
+            DrawIcon(gBG0TilemapBuffer + TILEMAP_INDEX(x + (c*2), y), 0x70 + i, TILEREF(0, 3));
+            c++; 
         } 
     } 
     
