@@ -8,7 +8,7 @@
 
 ALIGN 4 
 ReclassTable: 
-FILL(6*256) 1 
+FILL(6*256)  
 
 #define Reclass(currentClass, n1, n2, n3, n4, n5, n6) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 n5 n6; POP" 
 
@@ -16,4 +16,10 @@ Reclass(0x4A, 1, 5, 9, 0xD, 0x1F, 0x13) // Cleric into these
 
 
 
+ALIGN 4 
+UnitOverrideReclassTable: 
+FILL(6*256) 
+#define UnitReclass(unitID, n1, n2, n3, n4, n5, n6) "PUSH; ORG UnitOverrideReclassTable + (unitID * 6); BYTE n1 n2 n3 n4 n5 n6; POP" 
+
+UnitReclass(6, 9, 1, 2, 0, 0, 0) // Eirika instead reclasses into these classes 
 

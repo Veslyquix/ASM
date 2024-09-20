@@ -9,6 +9,16 @@ int Mod(int a, int b) PUREFUNC;
 ProcPtr ReclassMenuSelect(ProcPtr parent); 
 ProcPtr StartReclassSelect(ProcPtr parent); 
 extern u8 const ReclassTable[][6];
+extern u8 const UnitOverrideReclassTable[][6];
+//extern u8* pPromoJidLut; 
+int GetReclassOption(int unitID, int classID, int ID) { 
+    int result = 0; 
+    result = UnitOverrideReclassTable[unitID][ID]; 
+    if (UnitOverrideReclassTable[unitID][0]) { return result; } 
+    result = ReclassTable[classID][ID]; 
+    return result; 
+} 
+
 
 extern int PromoMain_SetupTraineeEvent_(struct ProcPromoMain *proc);
 extern bool PromoTraineeEventExists(struct ProcPromoMain *proc);
@@ -410,7 +420,7 @@ u8 ReclassMenuItem_OnSelect(struct MenuProc *pmenu, struct MenuItemProc *pmitem)
         u8 classnumber = unit->pClassData->number;
         int id = pmitem->itemNumber; 
         if (id < NumberOfReclassOptions) { 
-            classnumber = ReclassTable[classnumber][id];
+            classnumber = GetReclassOption(ggparent->pid, classnumber, id);
         }
         ggparent->jid = classnumber;
 
@@ -623,7 +633,7 @@ int ReclassMenuItem_OnChange(struct MenuProc *pmenu, struct MenuItemProc *pmitem
     gparent->main_select = pmitem->itemNumber;
     
     struct Unit* unit = GetUnitFromCharId(gparent->pid); 
-    const struct ClassData* classData = GetClassData(ReclassTable[unit->pClassData->number][pmenu->itemCurrent]);
+    const struct ClassData* classData = GetClassData(GetReclassOption(gparent->pid, unit->pClassData->number, pmenu->itemCurrent));
     ReclassDrawStatChanges(unit, classData); 
     int msg_desc = classData->descTextId; //pmenu->itemCurrent
     //ChangeClassDescription(gparent->msg_desc[gparent->main_select]);
@@ -632,25 +642,14 @@ int ReclassMenuItem_OnChange(struct MenuProc *pmenu, struct MenuItemProc *pmitem
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A; 
 }
 
-u8 ReclassMenuItem_3rdUsability(const struct MenuItemDef * _def, int _number)
+u8 ReclassMenuItem_Usability(const struct MenuItemDef * _def, int _number)
 {
-    return MENU_ENABLED; 
     struct ProcClassChgMenuSel *proc = Proc_Find(ProcScr_ReclassMenuSel);
     struct ProcReclassSel *parent = proc->proc_parent;
     struct ProcPromoMain *gparent = parent->proc_parent;
-
-    if (Check3rdTraineeEnabled()) {
-        switch (GetUnitFromCharId(gparent->pid)->pClassData->number) {
-        case CLASS_JOURNEYMAN:
-        case CLASS_PUPIL:
-        case CLASS_RECRUIT:
-            return MENU_ENABLED;
-
-        default:
-            return MENU_NOTSHOWN;
-        }
-    }
-
+    if (GetReclassOption(gparent->pid, GetUnitFromCharId(gparent->pid)->pClassData->number, _number)) { 
+        return MENU_ENABLED;
+    } 
     return MENU_NOTSHOWN;
 }
 
@@ -671,27 +670,27 @@ const struct MenuItemDef gMenuItem_ReclassSel[] = {
     },
     {
         "　第３兵種",
-        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 1, MenuAlwaysEnabled,
+        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 1, ReclassMenuItem_Usability,
         ReclassMenuItem_OnTextDraw, ReclassMenuItem_OnSelect, 0, ReclassMenuItem_OnChange, 0
     },
     {
         "　第３兵種",
-        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 2, ReclassMenuItem_3rdUsability,
+        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 2, ReclassMenuItem_Usability,
         ReclassMenuItem_OnTextDraw, ReclassMenuItem_OnSelect, 0, ReclassMenuItem_OnChange, 0
     },
     {
         "　第３兵種",
-        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 3, ReclassMenuItem_3rdUsability,
+        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 3, ReclassMenuItem_Usability,
         ReclassMenuItem_OnTextDraw, ReclassMenuItem_OnSelect, 0, ReclassMenuItem_OnChange, 0
     },
     {
         "　第３兵種",
-        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 4, ReclassMenuItem_3rdUsability,
+        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 4, ReclassMenuItem_Usability,
         ReclassMenuItem_OnTextDraw, ReclassMenuItem_OnSelect, 0, ReclassMenuItem_OnChange, 0
     },
     {
         "　第３兵種",
-        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 5, ReclassMenuItem_3rdUsability,
+        0, 0x6DC, TEXT_COLOR_SYSTEM_WHITE, 5, ReclassMenuItem_Usability,
         ReclassMenuItem_OnTextDraw, ReclassMenuItem_OnSelect, 0, ReclassMenuItem_OnChange, 0
     },
     {0}
@@ -824,12 +823,16 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel* proc) {
 
         //for (j = 0; j < 2; j++) {
         for (j = 0; j < NumberOfReclassOptions; j++) {
-            proc->jid[j] = ReclassTable[pid][j];
+            int reclassID = GetReclassOption(proc->pid, pid, j); 
+            proc->jid[j] = reclassID;
             //proc->use_wpn[j] = 
-            LoadClassBattleSprite((void*)&proc->sprite[j], ReclassTable[pid][j], weapon);
+            
             //LoadClassBattleSprite((void*)&proc->sprite[j], ReclassTable[pid][j], weapon);
             if (j < 2) { 
-                proc->msg_desc[j] = GetClassData(ReclassTable[pid][j])->descTextId;
+                proc->msg_desc[j] = GetClassData(reclassID)->descTextId; // i dunno 
+            } 
+            if (reclassID) { 
+                LoadClassBattleSprite((void*)&proc->sprite[j], reclassID, weapon);
             } 
         }
 
@@ -1021,24 +1024,29 @@ u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler *proc)
             //terrain = TERRAIN_DESERT;
             break;
     }
-
+    unit = GetUnitFromCharId(proc->pid);
+    classNumber = unit->pClassData->number;
+    int reclassID_A = GetReclassOption(proc->pid, classNumber, 0); 
+    int reclassID_B = GetReclassOption(proc->pid, classNumber, 1); 
+    // if no options, end 
+    // if 1 option, reclass into that without the menu? 
+    // if >1 option, show menu 
+    
     if (proc->bmtype == PROMO_HANDLER_TYPE_BM) {
         proc->bmtype = PROMO_HANDLER_TYPE_BM;
         proc->sel_en = 1;
-        unit = GetUnitFromCharId(proc->pid);
-        classNumber = unit->pClassData->number;
 
-        /* If no class to promote, end the handler proc */
-        if (!gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1])
+        /* If no class to reclass into, end the handler proc */
+        if (!reclassID_A && !reclassID_B)
             return PROMO_HANDLER_STAT_END;
 
-        if (gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) {
-            proc->jid = gPromoJidLut[classNumber][0];
+        if (reclassID_A && !reclassID_B) {
+            proc->jid = reclassID_A;
             proc->sel_en = 0;
         }
 
-        if (!gPromoJidLut[classNumber][0] && gPromoJidLut[classNumber][1]) {
-            proc->jid = gPromoJidLut[classNumber][1];
+        if (!reclassID_A && reclassID_B) {
+            proc->jid = reclassID_B;
             proc->sel_en = 0;
         }
 
@@ -1047,19 +1055,18 @@ u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler *proc)
     } else if (proc->bmtype == PROMO_HANDLER_TYPE_PREP) {
         proc->bmtype = PROMO_HANDLER_TYPE_PREP;
         proc->sel_en = 1;
-        unit = GetUnitFromCharId(proc->pid);
-        classNumber = unit->pClassData->number;
-        if (!gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) {
+
+        if (!reclassID_A && !reclassID_B) {
             BMapDispResume();
             RefreshBMapGraphics();
             return PROMO_HANDLER_STAT_END;
         }
-        if (gPromoJidLut[classNumber][0] && !gPromoJidLut[classNumber][1]) {
-            proc->jid = gPromoJidLut[classNumber][0];
+        if (reclassID_A && !reclassID_B) {
+            proc->jid = reclassID_A;
             proc->sel_en = 0;
         }
-        if (!gPromoJidLut[classNumber][0] && gPromoJidLut[classNumber][1]) {
-            proc->jid = gPromoJidLut[classNumber][1];
+        if (!reclassID_A && reclassID_B) {
+            proc->jid = reclassID_B;
             proc->sel_en = 0;
         }
         MakeReclassScreen(proc, proc->pid, terrain);
