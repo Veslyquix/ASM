@@ -3486,7 +3486,7 @@ struct ProcCmd const ProcScr_HelpBoxIntroString[] = {
     PROC_END,
 };
 
-void ClearHelpBoxText(void) { // replaces original function 
+void ClearHelpBoxText2(void) { // 
 
     SetTextFont(&gHelpBoxSt.font);
 
@@ -3678,7 +3678,7 @@ void StartHelpBoxString(int x, int y, char* string)
     ApplyHelpBoxContentSizeString(proc, wContent, hContent, string);
     ApplyHelpBoxPosition(proc, info->xDisplay, info->yDisplay);
 
-    ClearHelpBoxText();
+    ClearHelpBoxText2();
     StartHelpBoxTextInitWithString(proc->item, proc->mid, string);
 
     sLastHbi = info;
