@@ -110,7 +110,9 @@ PROC_END
 
 
 ALIGN 4 
+#ifndef MagClassTable
 MagClassTable:
+#endif 
 WORD 0 
 
 ALIGN 4
