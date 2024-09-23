@@ -8,6 +8,11 @@ int Mod(int a, int b) PUREFUNC;
 #define favTilesAmount 15
 #define tmpSize 15
 
+char *GetStringFromIndexSafe(int index) { 
+    if ((index > 0x4000) || (index <= 0)) { return GetStringFromIndex(1); } 
+    return GetStringFromIndex(index); 
+} 
+
 typedef struct {
     /* 00 */ PROC_HEADER;
     s16 tileID; 
@@ -477,14 +482,14 @@ void EditStatsInit(DebuggerProc* proc) {
     } 
     int c = 0; 
     Text_DrawString(&th[c], "Max HP"); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4E9)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4FE)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EC)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4ED)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EF)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4F0)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4EE)); c++; 
-    Text_DrawString(&th[c], GetStringFromIndex(0x4FF)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4E9)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4FE)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4EC)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4ED)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4EF)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4F0)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4EE)); c++; 
+    Text_DrawString(&th[c], GetStringFromIndexSafe(0x4FF)); c++; 
     
     RedrawUnitStatsMenu(proc);
 }
@@ -670,7 +675,7 @@ void EditWExpInit(DebuggerProc* proc) {
     } 
     for (int i = 0; i < WExpOptions; ++i) { 
         x = Text_GetCursor(&th[i]); x++; Text_SetCursor(&th[i], x); 
-        Text_DrawString(&th[i], GetStringFromIndex(0x505 + i));
+        Text_DrawString(&th[i], GetStringFromIndexSafe(0x505 + i));
     } 
     RedrawUnitWExpMenu(proc);
 }
@@ -858,7 +863,7 @@ void EditSupportsInit(DebuggerProc* proc) {
         for (int i = 0; i < SupportOptions; ++i) { 
             uid = unit->pCharacterData->pSupportData->characters[i]; 
             if (uid) { 
-            Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(uid)->nameTextId));
+            Text_DrawString(&th[i], GetStringFromIndexSafe(GetCharacterData(uid)->nameTextId));
             } 
         } 
     } 
@@ -1176,7 +1181,7 @@ void RedrawItemMenu(DebuggerProc* proc) {
     for (int i = 0; i < NumberOfItems; ++i) { 
         ClearText(&th[i]); 
         if (proc->tmp[i]) { 
-            Text_DrawString(&th[i], GetStringFromIndex(itemData[i]->nameTextId));
+            Text_DrawString(&th[i], GetStringFromIndexSafe(itemData[i]->nameTextId));
         } 
     } 
     
@@ -1513,8 +1518,8 @@ void RedrawChStateMenu(DebuggerProc* proc) {
         Text_DrawString(&th[i], chStates[i]);  
     } 
     ClearText(&th[i]); Text_DrawString(&th[i], weatherStates[proc->tmp[1]]); i++; 
-    ClearText(&th[i]); Text_DrawString(&th[i], GetStringFromIndex(GetROMChapterStruct(proc->tmp[3])->chapTitleTextId)); i++; 
-    ClearText(&th[i]); Text_DrawString(&th[i], GetStringFromIndex(GetROMChapterStruct(proc->tmp[4])->chapTitleTextId)); i++; 
+    ClearText(&th[i]); Text_DrawString(&th[i], GetStringFromIndexSafe(GetROMChapterStruct(proc->tmp[3])->chapTitleTextId)); i++; 
+    ClearText(&th[i]); Text_DrawString(&th[i], GetStringFromIndexSafe(GetROMChapterStruct(proc->tmp[4])->chapTitleTextId)); i++; 
 
     int x = 3; 
     for (i = 0; i < NumberOfChState; ++i) { 
@@ -1736,8 +1741,8 @@ void RedrawMiscMenu(DebuggerProc* proc) {
     
     i = 0; 
     
-    Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(proc->tmp[0])->nameTextId)); i++; 
-    Text_DrawString(&th[i], GetStringFromIndex(GetClassData(proc->tmp[1])->nameTextId)); i++; 
+    Text_DrawString(&th[i], GetStringFromIndexSafe(GetCharacterData(proc->tmp[0])->nameTextId)); i++; 
+    Text_DrawString(&th[i], GetStringFromIndexSafe(GetClassData(proc->tmp[1])->nameTextId)); i++; 
     Text_DrawString(&th[i], "Level"); i++; 
     Text_DrawString(&th[i], "Exp"); i++; 
     Text_DrawString(&th[i], "Bonus Con"); i++; 
@@ -1747,7 +1752,7 @@ void RedrawMiscMenu(DebuggerProc* proc) {
     } 
     else { 
         
-        Text_DrawString(&th[i], GetStringFromIndex(sStatusNameTextIdLookup[proc->tmp[6]])); i++; 
+        Text_DrawString(&th[i], GetStringFromIndexSafe(sStatusNameTextIdLookup[proc->tmp[6]])); i++; 
     } 
     
     int x = NUMBER_X - (MiscNameWidth); 
@@ -2238,9 +2243,9 @@ void RedrawLoadMenu(DebuggerProc* proc) {
     Text_DrawString(&th[i], "Load all bosses"); i++; 
     Text_DrawString(&th[i], "Reload units"); i++; 
     //Text_DrawString(&th[i], "Preparations menu"); i++; 
-    Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(proc->tmp[0])->nameTextId)); i++; 
-    Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(proc->tmp[1])->nameTextId)); i++; 
-    Text_DrawString(&th[i], GetStringFromIndex(GetCharacterData(proc->tmp[2])->nameTextId)); i++; 
+    Text_DrawString(&th[i], GetStringFromIndexSafe(GetCharacterData(proc->tmp[0])->nameTextId)); i++; 
+    Text_DrawString(&th[i], GetStringFromIndexSafe(GetCharacterData(proc->tmp[1])->nameTextId)); i++; 
+    Text_DrawString(&th[i], GetStringFromIndexSafe(GetCharacterData(proc->tmp[2])->nameTextId)); i++; 
     
     int x = NUMBER_X - (LoadNameWidth); 
     for (i = 0; i < NumberOfLoad; ++i) { 
@@ -3550,7 +3555,7 @@ void HelpBoxIntroDrawTextsString(struct ProcHelpBoxIntroString * proc)
 
     otherProc->pretext_lines = proc->pretext_lines;
 
-    //GetStringFromIndex(proc->msg);
+    //GetStringFromIndexSafe(proc->msg);
     LoadStringIntoBuffer(proc->string); 
 
     otherProc->string = StringInsertSpecialPrefixByCtrl();

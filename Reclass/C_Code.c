@@ -613,6 +613,8 @@ struct SpecialCharSt {
     s8 id;
     s16 chr_position;
 };
+extern u16 Pal_SpinningArrow[];
+extern struct Font *gActiveFont; 
 extern struct SpecialCharSt sSpecialCharStList[64]; 
 void ReclassDrawStatChanges(struct Unit* unit, const struct ClassData* classData) { 
     struct Text* th = gStatScreen.text;
@@ -629,10 +631,10 @@ void ReclassDrawStatChanges(struct Unit* unit, const struct ClassData* classData
     BG_EnableSyncByMask(BG0_SYNC_BIT);
     
     int c = 0; 
-    //LoadIconPalette(1, 3); // seems to be loaded already  
+    LoadIconPalette(1, 3); // loaded already if non prep 
     for (int i = 0; i < 8; ++i) { 
         if (classData->baseRanks[i]) { 
-            DrawIcon(gBG0TilemapBuffer + TILEMAP_INDEX(x + (c*2), y), 0x70 + i, TILEREF(0, 3));
+            DrawIcon(gBG0TilemapBuffer + TILEMAP_INDEX(x + (c*2), y), 0x70 + i , TILEREF(0, 3));
             c++; 
         } 
     } 
@@ -1175,6 +1177,45 @@ void MakeReclassScreen(struct ProcPromoHandler *proc, u8 pid, u8 terrain)
     child->terrain = terrain;
 }
 
+void StartPrepScreenReclass(struct ProcPrepItemUse *proc); 
+s8 CanUnitReclass(struct Unit* unit)
+{
+    return GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0); 
+}
+/*
+const struct ProcCmd ProcScr_PrepItemUseJunaFruit[] = {
+    //PROC_SET_END_CB(PrepItemUseJuna_OnEnd),
+    //PROC_CALL(PrepItemUseJuna_OnInit),
+    //PROC_REPEAT(PrepItemUseJuna_IDLE),
+    //PROC_CALL(EndManimLevelUpStatGainLabels),
+    //PROC_SLEEP(0x1),
+    PROC_CALL_ARG(NewFadeOut, 0x10),
+    PROC_WHILE(FadeOutExists),
+    PROC_CALL(StartMidFadeToBlack),
+    PROC_REPEAT(WaitForFade),
+    PROC_CALL(StartPrepScreenReclass),
+    PROC_SLEEP(0x8),
+    PROC_CALL(PrepItemUse_ResetBgmAfterPromo),
+    PROC_SLEEP(0x1E),
+    PROC_CALL(PrepItemUse_PostPromotion),
+
+    PROC_CALL(PrepItemUse_InitDisplay),
+    PROC_CALL_ARG(NewFadeIn, 0x10),
+    PROC_WHILE(FadeInExists),
+    PROC_WHILE(MusicProc4Exists),
+    PROC_END,
+};
+*/
+
+void CallPrepItemUse_InitDisplay(struct ProcPrepItemUse *proc) { 
+    PrepItemUse_InitDisplay(proc->proc_parent); 
+} 
+void CallPrepItemUse_PostPromotion(struct ProcPrepItemUse *proc) { 
+    PrepItemUse_PostPromotion(proc->proc_parent); 
+    PrepItemUse_PostPromotion(proc);
+} 
+
+
 // asmc or whatever 
 extern struct ProcCmd sProc_Menu[]; 
 int StartBmReclass(ProcPtr proc) 
@@ -1189,7 +1230,10 @@ int StartBmReclass(ProcPtr proc)
     gActionData.yMove = unit->yPos; 
 
     gActionData.subjectIndex = unit->index;
-    gActionData.itemSlotIndex = -1; 
+    // deplete the used item when reclassing if it's being used via IER or juna fruit etc 
+    if (gActionData.unitActionType != 0x1A) { 
+        gActionData.itemSlotIndex = -1; // don't deplete the item if being called in a different way 
+    } 
     gActionData.unitActionType = 0;
     gActionData.moveCount = 0;
 
@@ -1232,6 +1276,55 @@ int StartBmReclass(ProcPtr proc)
     MU_EndAll();
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
+
+void StartPrepScreenReclass(struct ProcPrepItemUse *proc)
+{
+    struct ProcPrepItemUse* aParent = proc->proc_parent; 
+    proc->unit = aParent->unit; 
+    proc->slot = aParent->slot;
+    proc->unk34 = aParent->unk34;
+    proc->slot_rtext = aParent->slot_rtext;
+    proc->pos_subbox = aParent->pos_subbox;
+    //proc->game_lock = aParent->game_lock;
+    
+    
+    gActiveUnit = proc->unit; 
+    //struct BattleUnit *actor, *target;
+    struct ProcPromoHandler *new_proc;
+    struct ProcPrepItemUse *parent;
+
+    //u32 weapon;
+    //u32 slot = proc->slot;
+    //if (slot != -1) {
+    //    struct BattleUnit *actor, *target;
+    //    actor = &gBattleActor;
+    //    target = &gBattleTarget;
+    //    target->weaponBefore = proc->unit->items[slot];
+    //    actor->weaponBefore = proc->unit->items[slot];
+    //}
+    //ApplyPalette(Pal_SpinningArrow, 0x3);
+    gBattleActor.weaponBefore = gBattleTarget.weaponBefore = proc->unit->items[gActionData.itemSlotIndex];
+
+    int weapon = GetUnitEquippedWeapon(proc->unit); 
+    if (!CanClassEquipWeapon(weapon, proc->unit->pClassData->number)) { 
+        weapon = 0; 
+    } 
+    gBattleActor.weapon = gBattleTarget.weapon = weapon;
+    
+    gBattleTarget.statusOut = -1;
+
+    new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+    new_proc->bmtype = PROMO_HANDLER_TYPE_BM;
+    new_proc->u32 = 0;
+
+    parent = new_proc->proc_parent;
+    new_proc->pid = parent->unit->pCharacterData->number;
+    new_proc->unit = parent->unit;
+    new_proc->item_slot = parent->slot;
+}
+
+
+
 // void StartBmPromotion(ProcPtr proc) { // test hook 
     // StartBmReclass(proc); 
 // } 
