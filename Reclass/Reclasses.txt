@@ -1,18 +1,3 @@
-//#define Take_Over_Item_Menu
-#define Take_Over_Juna_Fruit
-
-#include "Internals.event" 
-
-
-
-// Unit overrides 
-UnitReclassUnpromoted(1, EirikaLord, Cleric, Mage_F, PegasusKnight, Archer_F, Bael, 0x5F) // Eirika instead reclasses into these classes 
-UnitReclassPromoted(1, 9, 1, 2, 3, 4, 5, 7) // Eirika instead reclasses into these classes 
-
-
-// Classes 
-// These IDs are in EventAssembler\EAStandardLibrary\FE8 Definitions.txt
-// Default reclassing done by GultyKappa 
 Reclass(Pupil_1, Recruit_1, Journeyman_1)
 Reclass(Recruit_1, Pupil_1, Journeyman_1)
 Reclass(Journeyman_1, Pupil_1, Recruit_1)
@@ -46,6 +31,8 @@ Reclass(Soldier, Pirate, Brigand, Thief, Myrmidon)
 Reclass(Brigand, Pirate, Thief, Myrmidon, Soldier)
 Reclass(Dancer, EirikaLord, Myrmidon_F)
 Reclass(Bard, EphraimLord)
+Reclass(EirikaMasterLord)
+Reclass(EphraimMasterLord)
 Reclass(General, GreatKnight, Paladin, WyvernKnight, WyvernLord)
 Reclass(General_F, GreatKnight_F, Paladin_F, WyvernKnight_F, WyvernLord_F, FalcoKnight)
 Reclass(GreatKnight, General, Paladin, WyvernKnight, WyvernLord)
@@ -81,7 +68,3 @@ Reclass(Druid, MageKnight, Bishop, Sage, Summoner)
 Reclass(Druid_F, MageKnight_F, Valkyrie, Bishop_F, Sage_F, Summoner_F)
 Reclass(Summoner, MageKnight, Bishop, Sage, Druid)
 Reclass(Summoner_F, MageKnight_F, Valkyrie, Bishop_F, Sage_F, Druid_F)
-
-
-
-

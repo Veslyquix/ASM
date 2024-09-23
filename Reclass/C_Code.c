@@ -14,12 +14,31 @@ extern struct magClassTable MagClassTable[];
 ProcPtr ReclassMenuSelect(ProcPtr parent); 
 ProcPtr StartReclassSelect(ProcPtr parent); 
 extern u8 const ReclassTable[][6];
-extern u8 const UnitOverrideReclassTable[][6];
+extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
+extern u8 const UnitOverrideReclassTable_Promoted[][7];
 //extern u8* pPromoJidLut; 
 int GetReclassOption(int unitID, int classID, int ID) { 
     int result = 0; 
-    result = UnitOverrideReclassTable[unitID][ID]; 
-    if (UnitOverrideReclassTable[unitID][0]) { return result; } 
+    if (GetClassData(classID)->attributes & CA_PROMOTED) { 
+        for (int i = 0; i < 7; ++i) { 
+            if (i > ID) { break; } 
+            if (UnitOverrideReclassTable_Promoted[unitID][i] == classID) { 
+                ID++; break; 
+            }
+        } 
+        result = UnitOverrideReclassTable_Promoted[unitID][ID]; 
+        if (UnitOverrideReclassTable_Promoted[unitID][0]) { return result; } 
+    } 
+    else { 
+        for (int i = 0; i < 7; ++i) { 
+            if (i > ID) { break; } 
+            if (UnitOverrideReclassTable_Unpromoted[unitID][i] == classID) { 
+                ID++; break; 
+            }
+        } 
+        result = UnitOverrideReclassTable_Unpromoted[unitID][ID]; 
+        if (UnitOverrideReclassTable_Unpromoted[unitID][0]) { return result; } 
+    } 
     result = ReclassTable[classID][ID]; 
     return result; 
 } 
