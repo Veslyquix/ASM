@@ -107,7 +107,9 @@ PROC_LABEL(7) // in case PrepItemUse_PostPromotion sends us here
 PROC_END
 
 
-
+#ifdef VeslyBuildfile 
+PUSH; ORG MagClassTable; WORD 0; POP 
+#endif 
 
 ALIGN 4 
 #ifndef MagClassTable
