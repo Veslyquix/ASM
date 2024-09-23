@@ -27,7 +27,10 @@ int GetReclassOption(int unitID, int classID, int ID) {
             }
         } 
         result = UnitOverrideReclassTable_Promoted[unitID][ID]; 
-        if (UnitOverrideReclassTable_Promoted[unitID][0]) { return result; } 
+        if (UnitOverrideReclassTable_Promoted[unitID][0]) { 
+            if ((!UnitOverrideReclassTable_Promoted[unitID][1]) && (ID == 1)) { return classID; } 
+            return result; 
+        } 
     } 
     else { 
         for (int i = 0; i < 7; ++i) { 
@@ -37,9 +40,13 @@ int GetReclassOption(int unitID, int classID, int ID) {
             }
         } 
         result = UnitOverrideReclassTable_Unpromoted[unitID][ID]; 
-        if (UnitOverrideReclassTable_Unpromoted[unitID][0]) { return result; } 
+        if (UnitOverrideReclassTable_Unpromoted[unitID][0]) { 
+            //asm("mov r11, r11");
+            if ((!UnitOverrideReclassTable_Unpromoted[unitID][1]) && (ID == 1)) { return classID; } 
+            return result; } 
     } 
     result = ReclassTable[classID][ID]; 
+    if (ReclassTable[classID][0] && (!ReclassTable[classID][1]) && (ID == 1)) { return classID; } 
     return result; 
 } 
 int IsStrMagInstalled(void) { 
@@ -359,6 +366,7 @@ void ExecUnitReclass(struct Unit* unit, u8 classId, int itemIdx, s8 unk) {
         weapon = 0; 
     } 
     gBattleActor.weapon = gBattleTarget.weapon = weapon;
+    //gBattleActor.weaponBefore = weapon; 
 
     InitBattleUnitWithoutBonuses(&gBattleTarget, unit);
 
@@ -1130,15 +1138,15 @@ u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler *proc)
         if (!reclassID_A && !reclassID_B)
             return PROMO_HANDLER_STAT_END;
 
-        if (reclassID_A && !reclassID_B) {
-            proc->jid = reclassID_A;
-            proc->sel_en = 0;
-        }
+        // if (reclassID_A && !reclassID_B) {
+            // proc->jid = reclassID_A;
+            // proc->sel_en = 0;
+        // }
 
-        if (!reclassID_A && reclassID_B) {
-            proc->jid = reclassID_B;
-            proc->sel_en = 0;
-        }
+        // if (!reclassID_A && reclassID_B) {
+            // proc->jid = reclassID_B;
+            // proc->sel_en = 0;
+        // }
 
         MakeReclassScreen(proc, proc->pid, terrain);
         return PROMO_HANDLER_STAT_IDLE;
@@ -1151,14 +1159,14 @@ u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler *proc)
             RefreshBMapGraphics();
             return PROMO_HANDLER_STAT_END;
         }
-        if (reclassID_A && !reclassID_B) {
-            proc->jid = reclassID_A;
-            proc->sel_en = 0;
-        }
-        if (!reclassID_A && reclassID_B) {
-            proc->jid = reclassID_B;
-            proc->sel_en = 0;
-        }
+        // if (reclassID_A && !reclassID_B) {
+            // proc->jid = reclassID_A;
+            // proc->sel_en = 0;
+        // }
+        // if (!reclassID_A && reclassID_B) {
+            // proc->jid = reclassID_B;
+            // proc->sel_en = 0;
+        // }
         MakeReclassScreen(proc, proc->pid, terrain);
         return PROMO_HANDLER_STAT_IDLE;
     }
