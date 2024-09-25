@@ -1,5 +1,5 @@
 
-
+ 
 #include "C_Code.h" // headers 
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
