@@ -1,5 +1,5 @@
 .include "fe8.s" 
-
+ 
 .macro SET_FUNC name, value
 	.global \name
 	.type   \name, function
@@ -11,7 +11,7 @@
 	.type   \name, object
 	.set    \name, \value
 .endm
-
+ 
 @ division & other libgcc functions
 SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
