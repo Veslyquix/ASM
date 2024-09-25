@@ -1,94 +1,92 @@
-#define FE6 
+#define FE6
 #include "headers/prelude.h"
-#include "headers/gbafe.h" 
+#include "headers/gbafe.h"
 #include "headers/unit.h"
 
-#define ALIGN(m) __attribute__((aligned (m)))
+#define ALIGN(m) __attribute__((aligned(m)))
 #define BITPACKED __attribute__((aligned(4), packed))
 
-extern u32 WriteAndVerifySramFast(void const * src, void * dest, u32 size); 
-extern void (ReadSramFast)(void const * src, void * dest, u32 size); 
-#ifdef FE6 
+extern u32 WriteAndVerifySramFast(void const * src, void * dest, u32 size);
+extern void(ReadSramFast)(void const * src, void * dest, u32 size);
+#ifdef FE6
 enum
 {
     // flags for GameSavePackedUnit::flags
 
-    SAVEUNIT_FLAG_DEAD       = 1 << 0,
+    SAVEUNIT_FLAG_DEAD = 1 << 0,
     SAVEUNIT_FLAG_UNDEPLOYED = 1 << 1,
-    SAVEUNIT_FLAG_SOLOANIM1  = 1 << 2,
-    SAVEUNIT_FLAG_SOLOANIM2  = 1 << 3,
+    SAVEUNIT_FLAG_SOLOANIM1 = 1 << 2,
+    SAVEUNIT_FLAG_SOLOANIM2 = 1 << 3,
 };
 
-
-
-struct GameSavePackedUnit // 0x28 
+struct GameSavePackedUnit // 0x28
 {
-    /* 00 */ //u32 pid    : 8;//7;
-    /*    */ //u32 jid    : 8;//7;
-    /*    */ u32 level  : 7;//5;
-    /*    */ u32 flags  : 6;
-    /*    */ u32 exp    : 7;
-    /* 04 */ u32 x      : 6;
-    /*    */ u32 y      : 6;
-    /*    */ u32 max_hp : 7; //6;
-    /*    */ u32 pow    : 6; //5;
-    /*    */ u32 skl    : 6; //5;
-    /*    */ u32 spd    : 6; //5;
-    /*    */ u32 def    : 6; //5;
-    /*    */ u32 res    : 6; //5;
-    /*    */ u32 lck    : 6; //5;
-    /*    */ u32 con    : 5; //5;
-    /*    */ u32 mov    : 5; //5;
+    /* 00 */                // u32 pid    : 8;//7;
+    /*    */                // u32 jid    : 8;//7;
+    /*    */ u32 level : 7; // 5;
+    /*    */ u32 flags : 6;
+    /*    */ u32 exp : 7;
+    /* 04 */ u32 x : 6;
+    /*    */ u32 y : 6;
+    /*    */ u32 max_hp : 7; // 6;
+    /*    */ u32 pow : 6;    // 5;
+    /*    */ u32 skl : 6;    // 5;
+    /*    */ u32 spd : 6;    // 5;
+    /*    */ u32 def : 6;    // 5;
+    /*    */ u32 res : 6;    // 5;
+    /*    */ u32 lck : 6;    // 5;
+    /*    */ u32 con : 5;    // 5;
+    /*    */ u32 mov : 5;    // 5;
     /*    */ u32 item_a : 14;
     /*    */ u32 item_b : 14;
-    /*    */ u32 item_c : 14; // 127 bits after this line 
+    /*    */ u32 item_c : 14; // 127 bits after this line
     /*    */ u32 item_d : 14;
     /*    */ u32 item_e : 14;
-			 u32 pid : 8; // 11 bits more than before, but 2 bytes were unused 
-			 u32 jid : 8; 
-			 
+    u32 pid : 8; // 11 bits more than before, but 2 bytes were unused
+    u32 jid : 8;
+
     /* 16 */ u8 wexp[UNIT_WEAPON_EXP_COUNT];
     /* 1E */ u8 supports[UNIT_SUPPORT_COUNT];
 } BITPACKED;
 
-struct SuspendSavePackedUnit // 0x34 
+struct SuspendSavePackedUnit // 0x34
 {
     /* 00 */ u8 pid;
     /* 01 */ u8 jid;
     /* 02 */ u8 ai_a;
     /* 03 */ u8 rescue;
     /* 04 */ u32 flags : 16;
-    /* 06 */ u32 item_a : 14; // -10 bits, then +9 bits 
-	
-	u32 item_b : 14; 
-	u32 item_c : 14; 
-	u32 max_hp : 7; 
-	u32 hp : 7; 
-	u32 exp : 7; 
-	u32 ai_flags : 8; 
-    /* 08 */ //u16 item_b;
-    /* 0A */ //u16 item_c;
-    /* 0C */ //u8 max_hp;
-    /* 0D */ //u8 hp;
-    /* 0E */ //u8 exp;
-    /* 0F */ //u8 ai_flags;
-    /* 28 */ u32 level           : 7; //5;
-    /*    */ u32 x               : 6;
-    /*    */ u32 y               : 6;
-    /*    */ u32 pow             : 6; //5;
-    /*    */ u32 skl             : 6; //5;
-    /*    */ u32 spd             : 6; //5;
-    /* 2C */ u32 def             : 6; //5;
-    /*    */ u32 res             : 6; //5;
-    /*    */ u32 lck             : 6; //5;
-    /*    */ u32 bonus_con       : 5; //5;
-    /*    */ u32 status          : 3;
+    /* 06 */ u32 item_a : 14; // -10 bits, then +9 bits
+
+    u32 item_b : 14;
+    u32 item_c : 14;
+    u32 max_hp : 7;
+    u32 hp : 7;
+    u32 exp : 7;
+    u32 ai_flags : 8;
+    /* 08 */                // u16 item_b;
+    /* 0A */                // u16 item_c;
+    /* 0C */                // u8 max_hp;
+    /* 0D */                // u8 hp;
+    /* 0E */                // u8 exp;
+    /* 0F */                // u8 ai_flags;
+    /* 28 */ u32 level : 7; // 5;
+    /*    */ u32 x : 6;
+    /*    */ u32 y : 6;
+    /*    */ u32 pow : 6;       // 5;
+    /*    */ u32 skl : 6;       // 5;
+    /*    */ u32 spd : 6;       // 5;
+    /* 2C */ u32 def : 6;       // 5;
+    /*    */ u32 res : 6;       // 5;
+    /*    */ u32 lck : 6;       // 5;
+    /*    */ u32 bonus_con : 5; // 5;
+    /*    */ u32 status : 3;
     /*    */ u32 status_duration : 3;
-    /*    */ u32 torch           : 3;
-    /*    */ u32 barrier         : 3;
-    /* 30 */ u32 bonus_mov       : 4;
-    /*    */ u32 item_d          : 14;
-    /*    */ u32 item_e          : 14;
+    /*    */ u32 torch : 3;
+    /*    */ u32 barrier : 3;
+    /* 30 */ u32 bonus_mov : 4;
+    /*    */ u32 item_d : 14;
+    /*    */ u32 item_e : 14;
     /* 22 */ u32 ai_a_pc : 8;
     /* 23 */ u32 ai_b : 8;
     /* 24 */ u32 ai_config : 16;
@@ -168,11 +166,16 @@ void ReadGameSavePackedUnit(void const * sram_src, struct Unit * unit)
 
     ReadSramFast(sram_src, &save_unit, sizeof(struct GameSavePackedUnit));
 
-	
     unit->pinfo = GetPInfo(save_unit.pid);
     unit->jinfo = GetJInfo(save_unit.jid);
-	if (!save_unit.pid) { unit->pinfo = NULL; } 
-	if (!save_unit.jid) { unit->jinfo = NULL; } 
+    if (!save_unit.pid)
+    {
+        unit->pinfo = NULL;
+    }
+    if (!save_unit.jid)
+    {
+        unit->jinfo = NULL;
+    }
 
     unit->level = save_unit.level;
     unit->exp = save_unit.exp;
@@ -295,7 +298,7 @@ void ReadSuspendSavePackedUnit(void const * sram_src, struct Unit * unit)
 
     unit->level = suspend_unit.level;
     unit->exp = suspend_unit.exp;
-    unit->flags =suspend_unit.flags;
+    unit->flags = suspend_unit.flags;
     unit->x = suspend_unit.x;
     unit->y = suspend_unit.y;
     unit->max_hp = suspend_unit.max_hp;
@@ -343,18 +346,4 @@ void ReadSuspendSavePackedUnit(void const * sram_src, struct Unit * unit)
         unit->y = -1;
 }
 
-
-
-#endif 
-
-
-
-
-
-
-
-
-
-
-
-
+#endif
