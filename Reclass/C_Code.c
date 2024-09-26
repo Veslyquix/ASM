@@ -18,63 +18,85 @@ extern u8 const ReclassTable[][6];
 extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
 extern u8 const UnitOverrideReclassTable_Promoted[][7];
 // extern u8* pPromoJidLut;
+
+int GetReclassTableID(u8 * const table, int size, int classID)
+{
+    for (int i = 0; i < size; ++i)
+    {
+        // if (i > ID)
+        // {
+        // break;
+        // }
+        if (table[i] == classID)
+        {
+            return i;
+        }
+    }
+    return (-1);
+}
+
 int GetReclassOption(int unitID, int classID, int ID)
 {
     int result = 0;
+    int ID_orig = ID;
+    int reclassTableID = 0xFF;
     if (GetClassData(classID)->attributes & CA_PROMOTED)
     {
-        for (int i = 0; i < 7; ++i)
-        {
-            if (i > ID)
-            {
-                break;
-            }
-            if (UnitOverrideReclassTable_Promoted[unitID][i] == classID)
-            {
-                ID++;
-                break;
-            }
-        }
-        result = UnitOverrideReclassTable_Promoted[unitID][ID];
+        reclassTableID = 0xFF;
+        reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Promoted[unitID], 7, classID);
+
         if (UnitOverrideReclassTable_Promoted[unitID][0])
         {
-            if ((!UnitOverrideReclassTable_Promoted[unitID][1]) && (ID == 1))
+            if ((!UnitOverrideReclassTable_Promoted[unitID][5]))
             {
-                return classID;
+                ID--;
+                if (!ID_orig)
+                {
+                    return classID;
+                }
             }
-            return result;
+
+            return UnitOverrideReclassTable_Promoted[unitID][ID];
         }
     }
     else
     {
-        for (int i = 0; i < 7; ++i)
-        {
-            if (i > ID)
-            {
-                break;
-            }
-            if (UnitOverrideReclassTable_Unpromoted[unitID][i] == classID)
-            {
-                ID++;
-                break;
-            }
-        }
-        result = UnitOverrideReclassTable_Unpromoted[unitID][ID];
+        ID = ID_orig;
         if (UnitOverrideReclassTable_Unpromoted[unitID][0])
         {
-            // asm("mov r11, r11");
-            if ((!UnitOverrideReclassTable_Unpromoted[unitID][1]) && (ID == 1))
+            if ((!UnitOverrideReclassTable_Unpromoted[unitID][5]))
             {
-                return classID;
+                ID--;
+                if (!ID_orig)
+                {
+                    return classID;
+                }
             }
-            return result;
+            for (int i = 0; i < 7; ++i)
+            {
+                if (i > ID)
+                {
+                    break;
+                }
+                if (UnitOverrideReclassTable_Unpromoted[unitID][i] == classID)
+                {
+                    ID++;
+                    break;
+                }
+            }
+            return UnitOverrideReclassTable_Unpromoted[unitID][ID];
+        }
+    }
+    ID = ID_orig;
+    if (ReclassTable[classID][0] && (!ReclassTable[classID][5]))
+    {
+        ID--;
+        if (!ID_orig)
+        {
+            return classID;
         }
     }
     result = ReclassTable[classID][ID];
-    if (ReclassTable[classID][0] && (!ReclassTable[classID][1]) && (ID == 1))
-    {
-        return classID;
-    }
     return result;
 }
 int IsStrMagInstalled(void)
@@ -726,6 +748,18 @@ int ReclassMenuItem_OnTextDraw(struct MenuProc * pmenu, struct MenuItemProc * pm
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
 
+int ClassHasMagicRank(const struct ClassData * data)
+{ // UnitHasMagicRank
+    int combinedRanks = 0;
+
+    combinedRanks |= data->baseRanks[ITYPE_STAFF];
+    combinedRanks |= data->baseRanks[ITYPE_ANIMA];
+    combinedRanks |= data->baseRanks[ITYPE_LIGHT];
+    combinedRanks |= data->baseRanks[ITYPE_DARK];
+
+    return combinedRanks ? TRUE : FALSE;
+}
+
 extern struct Font gDefaultFont;
 static const char stats[][16] = {
     "HP", "Str", "Skl", "Spd", "Def", "Res", "Con", "Mov", "Mag",
@@ -737,6 +771,10 @@ void DrawStatDiff(int x, int y, int id, struct Unit * unit, const struct ClassDa
     const struct ClassData * oldClass = unit->pClassData;
     int num = GetStatDiff(id, unit, oldClass, classData);
     // PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 2, stats[id]);
+    if (ClassHasMagicRank(classData) && (id == 1) && (!IsStrMagInstalled()))
+    {
+        id += 7;
+    }
     if (num >= 0)
     {
         PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 3, stats[id]); // "+"
@@ -810,7 +848,7 @@ void ReclassDrawStatChanges(struct Unit * unit, const struct ClassData * classDa
     SetBlendTargetA(0, 0, 1, 0, 0);
 
     DrawStatDiff(12, y + 0, 0, unit, classData);
-    DrawStatDiff(25, y + 0, 1, unit, classData);
+    DrawStatDiff(25, y + 0, 1, unit, classData); // Str or Mag
     DrawStatDiff(12, y + 2, 2, unit, classData);
     DrawStatDiff(25, y + 2, 3, unit, classData);
     DrawStatDiff(12, y + 4, 4, unit, classData);
