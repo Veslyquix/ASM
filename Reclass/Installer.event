@@ -6,8 +6,8 @@
 
 
 // Unit overrides 
-UnitReclassUnpromoted(1, EirikaLord, Cleric, Mage_F, PegasusKnight, Archer_F, Bael, 0) // Eirika instead reclasses into these classes 
-UnitReclassPromoted(1, 9, 1, 2, 3, 4, 5, 7) // Eirika instead reclasses into these classes 
+//UnitReclassUnpromoted(1, EirikaLord, Cleric, Mage_F, PegasusKnight, Archer_F, Bael, 0) // Eirika instead reclasses into these classes 
+//UnitReclassPromoted(1, 9, 1, 2, 3, 4, 5, 7) // Eirika instead reclasses into these classes 
 
 
 // Classes 

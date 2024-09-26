@@ -19,7 +19,7 @@ extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
 extern u8 const UnitOverrideReclassTable_Promoted[][7];
 // extern u8* pPromoJidLut;
 
-int GetReclassTableID(u8 * const table, int size, int classID)
+int GetReclassTableID(const u8 * table, int size, int classID)
 {
     for (int i = 0; i < size; ++i)
     {
@@ -39,15 +39,14 @@ int GetReclassOption(int unitID, int classID, int ID)
 {
     int result = 0;
     int ID_orig = ID;
-    int reclassTableID = 0xFF;
+    int reclassTableID = (-1);
     if (GetClassData(classID)->attributes & CA_PROMOTED)
     {
-        reclassTableID = 0xFF;
         reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Promoted[unitID], 7, classID);
-
         if (UnitOverrideReclassTable_Promoted[unitID][0])
         {
-            if ((!UnitOverrideReclassTable_Promoted[unitID][5]))
+            if ((!UnitOverrideReclassTable_Promoted[unitID][5]) ||
+                ((!UnitOverrideReclassTable_Promoted[unitID][6]) && (reclassTableID >= 0)))
             {
                 ID--;
                 if (!ID_orig)
@@ -55,16 +54,22 @@ int GetReclassOption(int unitID, int classID, int ID)
                     return classID;
                 }
             }
-
+            if ((ID >= reclassTableID) && (reclassTableID >= 0))
+            {
+                ID++;
+            }
             return UnitOverrideReclassTable_Promoted[unitID][ID];
         }
     }
     else
     {
         ID = ID_orig;
+        reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Unpromoted[unitID], 7, classID);
+
         if (UnitOverrideReclassTable_Unpromoted[unitID][0])
         {
-            if ((!UnitOverrideReclassTable_Unpromoted[unitID][5]))
+            if ((!UnitOverrideReclassTable_Unpromoted[unitID][5]) ||
+                ((!UnitOverrideReclassTable_Unpromoted[unitID][6]) && (reclassTableID >= 0)))
             {
                 ID--;
                 if (!ID_orig)
@@ -72,17 +77,9 @@ int GetReclassOption(int unitID, int classID, int ID)
                     return classID;
                 }
             }
-            for (int i = 0; i < 7; ++i)
+            if ((ID >= reclassTableID) && (reclassTableID >= 0))
             {
-                if (i > ID)
-                {
-                    break;
-                }
-                if (UnitOverrideReclassTable_Unpromoted[unitID][i] == classID)
-                {
-                    ID++;
-                    break;
-                }
+                ID++;
             }
             return UnitOverrideReclassTable_Unpromoted[unitID][ID];
         }
