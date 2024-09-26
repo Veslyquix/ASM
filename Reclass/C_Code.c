@@ -360,6 +360,16 @@ int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldClass, c
             tmp = unit->res;
             break;
         }
+        case 6:
+        {
+            tmp = oldClass->baseCon;
+            break;
+        }
+        case 7:
+        {
+            tmp = oldClass->baseMov;
+            break;
+        }
         case 8:
         {
             if (!IsStrMagInstalled())
