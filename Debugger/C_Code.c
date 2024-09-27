@@ -164,9 +164,31 @@ void EventCallGameOverExt(ProcPtr proc)
     SetBootType(4); // title screen after game over
 }
 
-#define LGAMECTRL_EXEC_BM_EXT 6 // Directly goto bmmap
-void GameControl_CallEraseSaveEventWithKeyCombo(ProcPtr proc)
+void sub_8009C5C_edit(struct GameCtrlProc * proc)
 {
+    // if (proc->nextAction == GAME_ACTION_5)
+    // {
+    // Proc_Goto(proc, 5);
+    // return;
+    // }
+
+    // InitPlayConfig(0, 0); gPlaySt stuff like difficulty
+    //  gPlaySt.chapterStateBits |= PLAY_FLAG_TUTORIAL;
+    ResetPermanentFlags();
+    ResetChapterFlags();
+    InitUnits();
+    gPlaySt.chapterIndex = proc->nextChapter;
+    ReadGameSave(ReadLastGameSaveId()); // added
+}
+
+#define LGAMECTRL_EXEC_BM_EXT 6 // Directly goto bmmap
+
+// StartupDebugMenu_WorldMapEffect
+// StartupDebugMenu_ChapterSelectEffect
+
+void GameControl_CallEraseSaveEventWithKeyCombo(ProcPtr aproc)
+{
+    struct GameCtrlProc * proc = (void *)aproc;
     if (gKeyStatusPtr->heldKeys == (L_BUTTON | DPAD_RIGHT | SELECT_BUTTON))
     {
         Proc_Goto(proc, LGAMECTRL_ERASE_SAVE);
@@ -178,17 +200,21 @@ void GameControl_CallEraseSaveEventWithKeyCombo(ProcPtr proc)
         {
             case 1:
             {
-                GmDataInit();
+                // GmDataInit();
+                proc->unk_2E = 20;
+                sub_8009C5C_edit(proc);
                 Proc_Goto(proc, LGAMECTRL_EXEC_BM);
                 break;
             }
+            // case 2:
+            // {
+            // // GmDataInit();
+            // proc->unk_2E = 20;
+            // sub_8009C5C_edit(proc);
+            // Proc_Goto(proc, LGAMECTRL_EXEC_BM_EXT);
+            // break;
+            // } // Directly goto bmmap / skirmish
             case 2:
-            {
-                GmDataInit();
-                Proc_Goto(proc, LGAMECTRL_EXEC_BM_EXT);
-                break;
-            } // Directly goto bmmap
-            case 3:
             {
                 if (IsValidSuspendSave(SAVE_ID_SUSPEND))
                 {
@@ -3582,7 +3608,7 @@ u8 ToggleBootNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     Proc_Goto(proc, RestartLabel); // 0xb7
     int boot = GetBootType();
     boot++;
-    boot %= 4;
+    boot = Mod(boot, 3);
     SetBootType(boot);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -3874,11 +3900,11 @@ int BootmodeDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem)
     {
         Text_DrawString(&menuItem->text, " Restart");
     }
+    // else if (boot == 2)
+    // {
+    // Text_DrawString(&menuItem->text, " Restart2");
+    // }
     else if (boot == 2)
-    {
-        Text_DrawString(&menuItem->text, " Restart2");
-    }
-    else if (boot == 3)
     {
         Text_DrawString(&menuItem->text, " Resume");
     }
