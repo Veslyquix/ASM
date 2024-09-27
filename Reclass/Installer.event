@@ -1,13 +1,14 @@
 //#define Take_Over_Item_Menu
-#define Take_Over_Juna_Fruit
+#define Take_Over_Juna_Fruit // needed for preparations reclassing 
 
 #include "Internals.event" 
 
-
+// You may wish to remove the Lord classes from reclassing below 
+// Instead, use UnitReclassUnpromoted for your unique characters. 
 
 // Unit overrides 
 //UnitReclassUnpromoted(1, EirikaLord, Cleric, Mage_F, PegasusKnight, Archer_F, Bael, 0) // Eirika instead reclasses into these classes 
-//UnitReclassPromoted(1, 9, 1, 2, 3, 4, 5, 7) // Eirika instead reclasses into these classes 
+//UnitReclassPromoted(1, 0x9, 0x1, 2, 3, 4, 5, 7) // Eirika instead reclasses into these classes 
 
 
 // Classes 
@@ -19,6 +20,14 @@ Reclass(Journeyman_1, Pupil_1, Recruit_1)
 Reclass(EirikaLord, Dancer, Myrmidon_F)
 Reclass(Dancer, EirikaLord, Myrmidon_F)
 Reclass(Myrmidon_F,  EirikaLord, Dancer)
+
+Reclass(EirikaMasterLord, Sniper_F, Ranger_F, Hero_F, Swordmaster_F, Assassin_F)
+Reclass(Sniper_F, Ranger_F, Hero_F, Swordmaster_F, Assassin_F, EirikaMasterLord)
+Reclass(Ranger_F, Sniper_F, Hero_F, Swordmaster_F, Assassin_F, EirikaMasterLord)
+Reclass(Hero_F, Sniper_F, Ranger_F, Swordmaster_F, Assassin_F, EirikaMasterLord)
+Reclass(Swordmaster_F, Sniper_F, Ranger_F, Hero_F, Assassin_F, EirikaMasterLord)
+Reclass( Assassin_F, Sniper_F, Ranger_F, Hero_F, Swordmaster_F,EirikaMasterLord)
+
 //Reclass(EphraimLord, Bard) // Bard has no vanilla animation, so this doesn't work unless you add an animation for Bard 
 //Reclass(Bard, EphraimLord)
 Reclass(EphraimLord, Pirate, Brigand, Thief, Myrmidon, Soldier) 
@@ -27,6 +36,15 @@ Reclass(Myrmidon, Pirate, Brigand, Thief, Soldier, EphraimLord)
 Reclass(Soldier, Pirate, Brigand, Thief, Myrmidon, EphraimLord)
 Reclass(Brigand, Pirate, Thief, Myrmidon, Soldier, EphraimLord)
 Reclass(Thief, Pirate, Brigand, Myrmidon, Soldier, EphraimLord)
+
+Reclass(EphraimMasterLord, Berserker, Sniper, Ranger, Hero, Warrior)
+Reclass(Berserker, Sniper, Ranger, Hero, Warrior, EphraimMasterLord)
+Reclass(Sniper, Berserker, Ranger, Hero, Warrior, EphraimMasterLord)
+Reclass(Ranger, Berserker, Sniper, Hero, Warrior, EphraimMasterLord)
+Reclass(Hero, Berserker, Sniper, Ranger, Warrior, EphraimMasterLord)
+Reclass(Warrior, Berserker, Sniper, Ranger, Hero, EphraimMasterLord)
+
+
 
 Reclass(Knight, Cavalier, Mercenary, WyvernRider, Fighter, Archer, Priest)
 Reclass(Knight_F, Cavalier_F, Mercenary_F, WyvernRider_F, PegasusKnight, Archer_F, Cleric)
@@ -54,18 +72,8 @@ Reclass(GreatKnight, General, Paladin, WyvernKnight, WyvernLord)
 Reclass(GreatKnight_F, General_F, Paladin_F, WyvernKnight_F, WyvernLord_F, FalcoKnight)
 Reclass(Paladin, General, GreatKnight, WyvernKnight, WyvernLord)
 Reclass(Paladin_F, General_F, GreatKnight_F, WyvernKnight_F, WyvernLord_F, FalcoKnight)
-Reclass(Sniper, Ranger, Hero, Warrior, Berserker)
-Reclass(Sniper_F, Ranger_F, Hero_F, Swordmaster_F, Assassin_F)
-Reclass(Ranger, Sniper, Hero, Warrior, Berserker)
-Reclass(Ranger_F, Sniper_F, Hero_F, Swordmaster_F, Assassin_F)
-Reclass(Hero, Sniper, Ranger, Warrior, Berserker)
-Reclass(Hero_F, Sniper_F, Ranger_F, Swordmaster_F, Assassin_F)
-Reclass(Warrior, Sniper, Ranger, Hero, Berserker)
-Reclass(Berserker, Sniper, Ranger, Hero, Warrior)
 Reclass(Swordmaster, Assassin, Rogue)
-Reclass(Swordmaster_F, Sniper_F, Ranger_F, Hero_F, Assassin_F)
 Reclass(Assassin, Swordmaster, Rogue)
-Reclass(Assassin_F, Sniper_F, Ranger_F, Hero_F, Swordmaster_F)
 Reclass(Rogue, Swordmaster, Assassin)
 Reclass(FalcoKnight, General_F, GreatKnight_F, Paladin_F, WyvernKnight_F, WyvernLord_F)
 Reclass(WyvernKnight, General, GreatKnight, Paladin, WyvernLord)
