@@ -1,4 +1,6 @@
-
+Custom Game Opening 
+-
+By Meteo, AetherDust, and Vesly 
 
 1. Use Meteo 1.5.0 - Mod.exe to generate video.gba 
 2. Put Project.gba in folder 
