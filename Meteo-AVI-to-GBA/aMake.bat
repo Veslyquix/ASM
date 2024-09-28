@@ -1,2 +1,2 @@
-armips.exe Open.s 
+armips.exe Open.s
 pause 

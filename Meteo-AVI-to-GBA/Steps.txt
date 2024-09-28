@@ -1,5 +1,0 @@
-
-Error: 
-
-No combination of intermediate filters could be found to make the connection 
-- Resize the video to 360 width on ezgif 

@@ -1,9 +1,12 @@
 .gba
-.open "FE8_Clean.gba","Patched.gba",0x8000000
+.open "Project.gba","ProjectWithVideo.gba",0x8000000
 
 ;该asm用于和Meteocn配套使用，具体效果是为游戏ROM增加视频片头
 
-.definelabel HijackPos,0x8FF0000;可以是88~8F
+;.definelabel HijackPos,0x8FF0000;可以是88~8F
+.definelabel HijackPos,0x9800000;
+.definelabel HijackLow, 0x9000000 ; 
+
 
 .org 0x8000000
 .arm
@@ -33,7 +36,7 @@ pop r0-r2
 ;.word 0AFFFFF5h;即beq CR
 .word  1AFFFFF4h;即beq CR
 ldr r0,[r6,4h]
-.db 59h,0F8h,0FFh,0EAh;???
+.db 59h,0F8h,0FFh,0EAh;??? a branch 
 .pool 
 CartRom:
 .thumb
@@ -132,19 +135,24 @@ bx r0
 .arm 
 .org HijackPos + 0x258
 b Back;设置返回程序
-.org HijackPos + 0xAE30 ;8FFAE30
+.org HijackPos + 0xAE30 
 .db 7Dh,07h,00h,0EAh;即b 3003000h
 .org HijackPos + 0xADC4
 .db 9Ch,07h,00h,0EAh;即b 3001310h
-;以下为指针校正
+;以下为指针校正 ; 8ff0300
 .org HijackPos + 0x306
-.db (HijackPos - 0x8000000) / 0x10000
+.db (HijackPos - HijackLow) / 0x10000 ; pointer byte relative distance I guess 
+.db HijackLow >> 24 ; make it potentially 0x9------ 
 .org HijackPos + 0x146
-.db (HijackPos - 0x8000000) / 0x10000
+.db (HijackPos - HijackLow) / 0x10000
+.db HijackLow >> 24
 .org HijackPos + 0x222
-.db (HijackPos - 0x8000000) / 0x10000
+.db (HijackPos - HijackLow) / 0x10000
+.db HijackLow >> 24
 .org HijackPos + 0x166
-.db (HijackPos - 0x8000000) / 0x10000
+.db (HijackPos - HijackLow) / 0x10000
+.db HijackLow >> 24
 .org HijackPos + 0x9CF6
-.db (HijackPos - 0x8000000) / 0x10000
+.db (HijackPos - HijackLow) / 0x10000
+.db HijackLow >> 24
 .close
