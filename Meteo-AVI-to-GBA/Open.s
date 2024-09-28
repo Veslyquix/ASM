@@ -25,13 +25,13 @@ bx r0
 ArmReturn: 
 mov r8, r8 
 tst r2, r1 
-;beq CR @ swap between thumb and arm or something ? 
-;.word 0AFFFFF5h;即beq CR
-.word  1AFFFFF5h;即beq CR
 ;b CartRom
 ;ldr r0,=CartRom
 ;bx r0;执行后切换为thumb模式
 pop r0-r2
+;beq CR @ swap between thumb and arm or something ? 
+;.word 0AFFFFF5h;即beq CR
+.word  1AFFFFF4h;即beq CR
 ldr r0,[r6,4h]
 .db 59h,0F8h,0FFh,0EAh;???
 .pool 
@@ -100,6 +100,7 @@ swi 0xC
 add sp, #4 
 mov r0,12h
 
+;mov r11, r11 
 
 ldr r0, =0x3007F00 
 mov sp, r0 
@@ -118,6 +119,9 @@ mov r9, r0
 mov r10, r0 
 mov r11, r0 
 mov r12, r0 
+ldr r1, =0x4000208 
+str r0, [r1] 
+;msr cpsr_fc, r0 ; arm only 
 
 ldr r1, =0x80000c0 
 bx r1 
