@@ -4,9 +4,9 @@
 ;该asm用于和Meteocn配套使用，具体效果是为游戏ROM增加视频片头
 
 ;.definelabel HijackPos,0x8FF0000;可以是88~8F
-.definelabel HijackPos,0x9800000;
-.definelabel HijackLow, 0x9000000 ; 
-
+.definelabel HijackPos,0x9C00000;
+.definelabel ReturnAddress, 0x80000c0; most roms 
+;.definelabel ReturnAddressPkmnFR, 0x8000204
 
 .org 0x8000000
 .arm
@@ -22,15 +22,11 @@ bx r0;执行后切换为thumb模式
 .pool
 Skip:;加入按Start键直接跳过视频
 push r0-r2
-;mov r11, r11 
 ldr r0, =ThumbCode|1
 bx r0 
 ArmReturn: 
 mov r8, r8 
 tst r2, r1 
-;b CartRom
-;ldr r0,=CartRom
-;bx r0;执行后切换为thumb模式
 pop r0-r2
 ;beq CR @ swap between thumb and arm or something ? 
 ;.word 0AFFFFF5h;即beq CR
@@ -50,10 +46,6 @@ Normal:
 mov r8, r8 
 ldr r0, =ClearRam|1 
 bx r0 
-mov r0,12h
-ldr r1, =0x80000c0 
-bx r1 
-;b 80000C0h;返回正常游戏
 .arm 
 Back:
 mov r7,r14
@@ -79,26 +71,57 @@ ldr r1,=3FFh; all!!
 ldrh r2,[r0]
 mvn r2, r2 
 and r2, r1 
-mov r1, #9 ; A button 
+mov r1, #9 ; A/Start button 
 ;cmp r2, r1 
 ldr r0, =0x3003020 ; ArmReturn 
 bx r0 
 .align 
 ClearRam:
+
+; https://rust-console.github.io/gbatek-gbaonly/#--gba-memory-map
 sub sp, #4
 mov r0, sp 
 mov r1, #0 
 str r1, [r0] 
 ldr r1, =0x2000000 
-ldr r2, =0x1010000
- 
+ldr r2, =((0x2040000-0x2000000) >> 2) | 0x1000000
 swi 0xC
+
 mov r0, sp 
 mov r1, #0 
 str r1, [r0] 
-ldr r1, =0x3000000 
-ldr r2, =0x1001C00
+ldr r1, =0x3000000 ; 03000000-03007FFF
+ldr r2, =((0x3007c00-0x3000000) >> 2) | 0x1000000
 swi 0xC 
+
+mov r0, sp 
+mov r1, #0 
+str r1, [r0] 
+ldr r1, =0x4000000 ;4000000-040003FE
+ldr r2, =((0x4000400-0x4000000) >> 2) | 0x1000000
+swi 0xC 
+
+mov r0, sp 
+mov r1, #0 
+str r1, [r0] 
+ldr r1, =0x5000000 ;05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
+ldr r2, =((0x5000400-0x5000000) >> 2) | 0x1000000
+swi 0xC 
+
+mov r0, sp 
+mov r1, #0 
+str r1, [r0] 
+ldr r1, =0x6000000 ;06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
+ldr r2, =((0x6018000-0x6000000) >> 2) | 0x1000000
+swi 0xC 
+
+mov r0, sp 
+mov r1, #0 
+str r1, [r0] 
+ldr r1, =0x7000000 ;07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
+ldr r2, =((0x7000400-0x7000000) >> 2) | 0x1000000
+swi 0xC 
+
 
 add sp, #4 
 mov r0,12h
@@ -124,13 +147,9 @@ mov r11, r0
 mov r12, r0 
 ldr r1, =0x4000208 
 str r0, [r1] 
-;msr cpsr_fc, r0 ; arm only 
-
-ldr r1, =0x80000c0 
+;mov r11, r11 
+ldr r1, =ReturnAddress
 bx r1 
-
-ldr r0, =0x3003004 
-bx r0 
 .pool 
 .arm 
 .org HijackPos + 0x258
@@ -141,18 +160,13 @@ b Back;设置返回程序
 .db 9Ch,07h,00h,0EAh;即b 3001310h
 ;以下为指针校正 ; 8ff0300
 .org HijackPos + 0x306
-.db (HijackPos - HijackLow) / 0x10000 ; pointer byte relative distance I guess 
-.db HijackLow >> 24 ; make it potentially 0x9------ 
+.dh HijackPos >> 16 ; pointer byte relative distance I guess 
 .org HijackPos + 0x146
-.db (HijackPos - HijackLow) / 0x10000
-.db HijackLow >> 24
+.dh HijackPos >> 16
 .org HijackPos + 0x222
-.db (HijackPos - HijackLow) / 0x10000
-.db HijackLow >> 24
+.dh HijackPos >> 16
 .org HijackPos + 0x166
-.db (HijackPos - HijackLow) / 0x10000
-.db HijackLow >> 24
+.dh HijackPos >> 16
 .org HijackPos + 0x9CF6
-.db (HijackPos - HijackLow) / 0x10000
-.db HijackLow >> 24
+.dh HijackPos >> 16
 .close
