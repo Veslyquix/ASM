@@ -94,33 +94,34 @@ ldr r1, =0x3000000 ; 03000000-03007FFF
 ldr r2, =((0x3007c00-0x3000000) >> 2) | 0x1000000
 swi 0xC 
 
-mov r0, sp 
-mov r1, #0 
-str r1, [r0] 
-ldr r1, =0x4000000 ;4000000-040003FE
-ldr r2, =((0x4000400-0x4000000) >> 2) | 0x1000000
-swi 0xC 
+; this makes audio worse fsr 
+;mov r0, sp 
+;mov r1, #0 
+;str r1, [r0] 
+;ldr r1, =0x4000000 ;4000000-040003FE
+;ldr r2, =((0x4000400-0x4000000) >> 2) | 0x1000000
+;swi 0xC 
 
-mov r0, sp 
-mov r1, #0 
-str r1, [r0] 
-ldr r1, =0x5000000 ;05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
-ldr r2, =((0x5000400-0x5000000) >> 2) | 0x1000000
-swi 0xC 
-
-mov r0, sp 
-mov r1, #0 
-str r1, [r0] 
-ldr r1, =0x6000000 ;06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
-ldr r2, =((0x6018000-0x6000000) >> 2) | 0x1000000
-swi 0xC 
-
-mov r0, sp 
-mov r1, #0 
-str r1, [r0] 
-ldr r1, =0x7000000 ;07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
-ldr r2, =((0x7000400-0x7000000) >> 2) | 0x1000000
-swi 0xC 
+;mov r0, sp 
+;mov r1, #0 
+;str r1, [r0] 
+;ldr r1, =0x5000000 ;05000000-050003FF   BG/OBJ Palette RAM        (1 Kbyte)
+;ldr r2, =((0x5000400-0x5000000) >> 2) | 0x1000000
+;swi 0xC 
+;
+;mov r0, sp 
+;mov r1, #0 
+;str r1, [r0] 
+;ldr r1, =0x6000000 ;06000000-06017FFF   VRAM - Video RAM          (96 KBytes)
+;ldr r2, =((0x6018000-0x6000000) >> 2) | 0x1000000
+;swi 0xC 
+;
+;mov r0, sp 
+;mov r1, #0 
+;str r1, [r0] 
+;ldr r1, =0x7000000 ;07000000-070003FF   OAM - OBJ Attributes      (1 Kbyte)
+;ldr r2, =((0x7000400-0x7000000) >> 2) | 0x1000000
+;swi 0xC 
 
 
 add sp, #4 
