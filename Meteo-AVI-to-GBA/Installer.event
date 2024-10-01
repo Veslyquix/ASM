@@ -1,0 +1,48 @@
+
+
+
+ALIGN 4 
+HijackPos:
+#define HijackAddress CurrentOffset+8
+POIN HijackAddress 
+ReturnAddress:
+POIN 0x80000c0 // most roms  
+//   0x8000204 // PkmnFR
+#incbin "video.dmp" 
+#include "video.lyn.event" 
+
+
+
+// PUSH 
+// ORG 0 
+// b HijackPos 
+// POP 
+
+
+PUSH 
+
+
+ORG HijackAddress + 0xAE30 
+BYTE $7D $07 $00 $EA // 即b 3003000h
+ORG HijackAddress + 0xADC4
+BYTE $9C $07 $00 $EA  // 即b 3001310h
+ // 以下为指针校正 ; 8ff0300
+ORG HijackAddress + 0x306
+SHORT HijackAddress >> 16  //  pointer byte relative distance I guess 
+ORG HijackAddress + 0x146
+SHORT HijackAddress >> 16
+ORG HijackAddress + 0x222
+SHORT HijackAddress >> 16
+ORG HijackAddress + 0x166
+SHORT HijackAddress >> 16
+ORG HijackAddress + 0x9CF6
+SHORT HijackAddress >> 16
+
+POP 
+
+
+
+
+
+
+
