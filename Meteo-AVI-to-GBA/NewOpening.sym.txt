@@ -1,0 +1,7 @@
+CartRom=$30
+Skip=$0C
+ThumbCode=$88
+ArmReturn=$18
+Normal=$34
+ClearRam=$98
+OpeningReturn=$40
