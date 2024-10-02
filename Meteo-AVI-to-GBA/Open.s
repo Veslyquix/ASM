@@ -4,7 +4,7 @@
 ;该asm用于和Meteocn配套使用，具体效果是为游戏ROM增加视频片头
 
 ;.definelabel HijackPos,0x8FF0000;可以是88~8F
-.definelabel HijackPos,0x9C00000;
+.definelabel HijackPos,0x9C00000; must be 0x10000 aligned (eg. multiple of 0x10000) 
 .definelabel ReturnAddress, 0x80000c0; most roms 
 ;.definelabel ReturnAddressPkmnFR, 0x8000204
 
