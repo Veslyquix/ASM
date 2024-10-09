@@ -1,0 +1,35 @@
+
+
+
+
+PUSH 
+ORG $b60945 
+SkillTester: 
+ORG $b82e3c // b732fc // original proc_adept.dmp 
+POIN NewAdept|1 
+ORG $b82e8c // b73414
+POIN NewPavise|1
+ORG $b82e90 // b741c8 
+POIN NewAegis|1
+POP 
+
+
+
+ALIGN 4 
+NewAdept: 
+#incbin "Adept/proc_adept.dmp" 
+POIN SkillTester 
+WORD 0xA
+ALIGN 4 
+NewPavise: 
+#incbin "Adept/proc_pavise.dmp" 
+POIN SkillTester 
+WORD 0x19
+ALIGN 4 
+NewAegis: 
+#incbin "Adept/proc_aegis.dmp" 
+POIN SkillTester 
+WORD 0x18
+
+
+

@@ -1,0 +1,3 @@
+AdeptID=$70
+SkillTester=$6C
+End=$64
