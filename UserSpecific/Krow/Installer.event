@@ -17,17 +17,17 @@ POP
 
 ALIGN 4 
 NewAdept: 
-#incbin "Adept/proc_adept.dmp" 
+#incbin "AdeptAegisPavise/proc_adept.dmp" 
 POIN SkillTester 
 WORD 0xA
 ALIGN 4 
 NewPavise: 
-#incbin "Adept/proc_pavise.dmp" 
+#incbin "AdeptAegisPavise/proc_pavise.dmp" 
 POIN SkillTester 
 WORD 0x19
 ALIGN 4 
 NewAegis: 
-#incbin "Adept/proc_aegis.dmp" 
+#incbin "AdeptAegisPavise/proc_aegis.dmp" 
 POIN SkillTester 
 WORD 0x18
 
