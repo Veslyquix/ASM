@@ -1,4 +1,13 @@
 #include "EAstdlib.event"
+#ifndef TextTable 
+	#define TextTable 0x15D48C 
+#endif 
+#ifndef setText 
+#define setText(textID, offset) "PUSH; ORG (TextTable+(4*textID)); POIN (offset|0x80000000); POP"
+#endif 
+
+#include "Extensions/Hack Installation.txt" 
+
 #include "ProcDefinitions.txt" 
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
