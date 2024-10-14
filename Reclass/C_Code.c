@@ -871,7 +871,7 @@ void ReclassDrawStatChanges(struct Unit * unit, const struct ClassData * classDa
 
     // PutDrawText(struct Text* text, u16* dest, int colorId, int x, int tileWidth, const char* string);
 }
-
+extern int ClassDescEnabled;
 int ReclassMenuItem_OnChange(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
 {
     struct ProcClassChgMenuSel * parent;
@@ -888,7 +888,10 @@ int ReclassMenuItem_OnChange(struct MenuProc * pmenu, struct MenuItemProc * pmit
     ReclassDrawStatChanges(unit, classData);
     int msg_desc = classData->descTextId; // pmenu->itemCurrent
     // ChangeClassDescription(gparent->msg_desc[gparent->main_select]);
-    ChangeClassDescription(msg_desc);
+    if (ClassDescEnabled)
+    {
+        ChangeClassDescription(msg_desc);
+    }
     SetTalkPrintDelay(-1);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
@@ -970,8 +973,13 @@ void ReclassMenuExec(struct ProcClassChgMenuSel * proc)
     proc->pmenu = StartMenuCore(&gMenuDef_ReclassSel, ReclassMenuRect, 2, 0, 0, 0, (struct Proc *)proc);
 }
 
+extern int ClassNameTopEnabled;
 void LoadClassNameInClassReelFont2(struct ProcReclassSel * proc)
 {
+    if (!ClassNameTopEnabled)
+    {
+        return;
+    }
     s8 str[0x20];
     s32 index;
     u8 idx = proc->main_select;
@@ -1000,6 +1008,25 @@ void LoadClassNameInClassReelFont2(struct ProcReclassSel * proc)
         proc->u44++;
 }
 
+extern u8 * sUnknown_08A30800[];
+extern u16 * sUnknown_08A30978[];
+extern int BottomMenuBGEnabled; // behind class text description
+void ReclassChgLoadUI(void)
+{
+    if (!BottomMenuBGEnabled)
+    {
+        return;
+    }
+    // asm("mov r11, r11");
+    u8 * src = *sUnknown_08A30800;
+    u32 off = GetBackgroundTileDataOffset(BG_2); // 0x3800?
+    // off = 0x800;
+    Decompress(src, (void *)VRAM + 0x3000 + off);
+    RegisterTsaWithOffset(
+        gBG2TilemapBuffer, *sUnknown_08A30978, TILEREF(0x180, 0) + 0x1000); // vanilla 0x1180, text rework 0x11c0 fsr
+}
+
+extern int PlatformYPos;
 void Make6C_ReclassMenuSelect(struct ProcReclassSel * proc)
 {
     struct ProcPromoMain * parent = proc->proc_parent;
@@ -1016,9 +1043,10 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel * proc)
     BG_Fill(gBG2TilemapBuffer, 0);
     LoadUiFrameGraphics();
     LoadObjUIGfx();
-    sub_80CD47C(0, -1, 0xfb * 2, 0x58, 6);
-    ClassChgLoadUI();
-    sub_80CD408(proc->u50, 0x8c * 2, 0x68);
+    sub_80CD47C(0, -1, 0xfb * 2, PlatformYPos, 6);
+    ReclassChgLoadUI();
+    // ClassChgLoadUI();
+    sub_80CD408(proc->u50, 0x8c * 2, PlatformYPos + 0x10);
 
     proc->sprite[0] = 0;
     proc->sprite[1] = 0;
@@ -1092,6 +1120,7 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel * proc)
     }
 }
 
+#define NONMATCHING
 void LoadBattleSpritesForBranchScreen2(struct ProcReclassSel * proc)
 {
     u32 a;
@@ -1158,10 +1187,10 @@ void LoadBattleSpritesForBranchScreen2(struct ProcReclassSel * proc)
                     break;
                 }
             }
-            sub_80CD47C((s16)ret, (s16)chara_pal, (s16)(p2->sprite[0] + 0x28), 0x58, 6);
+            sub_80CD47C((s16)ret, (s16)chara_pal, (s16)(p2->sprite[0] + 0x28), PlatformYPos, 6);
             sub_805AE14(&gUnknown_0201FADC);
             sub_80CD408(proc->u50, p2->sprite[0], p2->msg_desc[1]); // I dunno
-            // sub_80CD408(proc->u50, 0x8c * 2, 0x68);
+            // sub_80CD408(proc->u50, 0x8c * 2, PlatformYPos+0x10);
         }
         else
         {
@@ -1200,6 +1229,43 @@ D1AC:
     return;
 }
 
+void Reclasssub_80CCF60(struct ProcReclassSel * proc)
+{
+    u16 tmp;
+
+    ResetTextFont();
+    ResetText();
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT | BG3_SYNC_BIT);
+    InitTalk(0x100, 2, 0);
+    if (ClassDescEnabled)
+    {
+
+        ChangeClassDescription(proc->msg_desc[proc->main_select]);
+    }
+
+    SetTalkPrintDelay(-1);
+
+    gLCDControlBuffer.bg0cnt.priority = 0;
+    gLCDControlBuffer.bg1cnt.priority = 2;
+    gLCDControlBuffer.bg2cnt.priority = 1;
+    gLCDControlBuffer.bg3cnt.priority = 3;
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT | BG3_SYNC_BIT);
+
+    tmp = REG_BG0CNT;
+    tmp &= 0xFFFC;
+    REG_BG0CNT = tmp + 1;
+    tmp = REG_BG1CNT;
+    tmp &= 0xFFFC;
+    REG_BG1CNT = tmp + 1;
+    tmp = REG_BG2CNT;
+    tmp &= 0xFFFC;
+    REG_BG2CNT = tmp + 1;
+    tmp = REG_BG3CNT;
+    tmp &= 0xFFFC;
+    REG_BG3CNT = tmp + 1;
+}
+
 const struct ProcCmd ProcScr_ReclassSelect[] = {
     PROC_CALL(StartMidFadeToBlack),
     PROC_REPEAT(WaitForFade),
@@ -1209,7 +1275,7 @@ const struct ProcCmd ProcScr_ReclassSelect[] = {
     PROC_LABEL(PROC_CLASSCHG_SEL_INIT),
     PROC_CALL(Make6C_ReclassMenuSelect),
     PROC_SLEEP(6),
-    PROC_CALL(sub_80CCF60),
+    PROC_CALL(Reclasssub_80CCF60),
 
     PROC_LABEL(PROC_CLASSCHG_SEL_1),
     PROC_CALL(StartMidFadeFromBlack),

@@ -2339,7 +2339,7 @@ static int GetMaxItems(void)
 {
     const struct ItemData * table = GetItemData(1);
     int c = 255;
-    for (int i = 1; i < 255; i++)
+    for (int i = 1; i <= 255; i++)
     {
         if (table->number != i)
         {
@@ -2357,7 +2357,7 @@ static int GetMaxItems(void)
     {
         c = 1;
     }
-    return table->number;
+    return c;
 }
 
 static int GetMaxClasses(void)

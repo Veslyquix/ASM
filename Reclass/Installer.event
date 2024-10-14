@@ -3,6 +3,17 @@
 
 #include "Internals.event" 
 
+
+ALIGN 4 
+BottomMenuBGEnabled:
+WORD 1
+ClassDescEnabled:
+WORD 1
+ClassNameTopEnabled:
+WORD 1 
+PlatformYPos:
+WORD 0x58 // 0x58 vanilla 0x78 max 
+
 // You may wish to remove the Lord classes from reclassing below 
 // Instead, use UnitReclassUnpromoted for your unique characters. 
 

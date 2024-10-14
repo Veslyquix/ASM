@@ -16,6 +16,8 @@
 SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
 SET_DATA Pal_SpinningArrow, 0x8A1A084
+SET_DATA sUnknown_08A30800, 0x80CCC1c @ or 0x80B3A48
+SET_DATA sUnknown_08A30978, 0x80CCC28 @ or 0x80B3A50
 
 SET_DATA pPromoJidLut, 0x80cc7d0 
 SET_FUNC SetBlendConfig, 0x8001ea1
