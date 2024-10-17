@@ -230,7 +230,7 @@ void ClearPCBoxUnitsBuffer(void)
 
 void DeploySelectedUnits()
 {
-    // asm("mov r11, r11");
+    //
 
     // struct Unit unit[50] = (struct Unit*)&gGenericBuffer[0];
     // struct Unit unit[50] = (void*)gGenericBuffer;
@@ -243,7 +243,7 @@ void DeploySelectedUnits()
     InitUnitDeploymentIDs();
     // InitUnits(); // do not write 0 to their deployment ID!
 
-    for (int i = 0; i < 50; i++)
+    for (int i = 0; i < 62; i++)
     { // move units that were deployed back into unit struct ram
         if ((unit[i].pCharacterData) && (!(unit[i].state & US_NOT_DEPLOYED)))
         {
@@ -261,7 +261,7 @@ void DeploySelectedUnits()
             ClearUnit(&unit[i]);
         }
     }
-    for (int i = 0; i < BoxBufferCapacity; i++)
+    for (int i = 0; i < BoxBufferCapacity; i++) // selected box units to top of unit ram
     {
         unitTemp = &PCBoxUnitsBuffer[i];
         if ((unitTemp->pCharacterData) && (!(unitTemp->state & US_NOT_DEPLOYED)))
@@ -283,7 +283,7 @@ void DeploySelectedUnits()
 
     int c = CountTotalUnitsInUnitStructRam();
 
-    for (int i = 0; i < PartySizeThreshold; i++)
+    for (int i = 0; i < 62; i++)
     { // move units that were undeployed back into unit struct ram until it's full. Then into PC box
         if ((unit[i].pCharacterData))
         {
@@ -387,7 +387,8 @@ void PackUnitsIntoBox(int slot)
         }
 #endif
 
-        PackUnitIntoBox((void *)&bunit[i], unit2);
+        //
+        PackUnitIntoBox((void *)&bunit[i - c], unit2);
         // use the generic buffer instead of reading directly from SRAM
 
         ClearUnit(unit2);
@@ -492,7 +493,7 @@ struct Unit * UnpackUnitFromBox(struct BoxUnit * boxRam, struct Unit * unit)
 int GetFreeDeploymentID(void)
 {
     struct Unit * unit;
-    for (int i = 0; i < 0x40; i++)
+    for (int i = 0; i < 62; i++)
     { // deployment ID
         unit = &gUnitArrayBlue[i];
         if (unit->pCharacterData)
@@ -571,25 +572,19 @@ int CountAndUndeployTempUnits(void)
 int CountUnusableStoredUnitsUpToIndex(int index)
 {
     int cur = 0;
-    int i;
-    for (i = 0; i < BoxCapacity; ++i)
+    struct Unit * unit;
+    for (int i = 0; i <= index; i++) // BoxCapacity
     {
-        struct Unit * unit = GetTempUnit(i);
-        if (unit->pCharacterData)
+        unit = GetTempUnit(i);
+        if (UNIT_IS_VALID(unit))
         {
-            if (!IsUnitInCurrentRoster(unit))
+            if (IsUnitInCurrentRoster(unit))
             {
-                cur++;
-            }
-            else
-            {
-                // cur++;
-                if (i >= index)
-                {
-                    break; // keep counting until we find a valid unit so we know how many units to skip over
-                }
+                continue;
             }
         }
+        cur++; // not valid or empty slot
+        // count until we find a valid unit so we know how many units to skip over
     }
     return cur;
 }
@@ -632,7 +627,7 @@ inline struct Unit * GetUnitStructFromEventParameter_Inline(int id)
     struct Unit * unit = NULL;
 
     int i;
-    for (i = 0; i < 0x40; ++i)
+    for (i = 0; i < 62; ++i)
     {
         unit = &gUnitArrayBlue[i];
         if (!unit->pCharacterData)
@@ -657,7 +652,7 @@ int GetFreeUnitID(struct Unit buffer[])
     {
         section = 1;
     }
-    for (int i = 1; i < 0x40; i++)
+    for (int i = 1; i < 62; i++)
     { // unit ID, not deployment ID
         if (section == 0)
         {
@@ -698,7 +693,7 @@ int GetFreeUnitID(struct Unit buffer[]) {
                 unit = &buffer[i];
                 if (i == 0x3F) { // searched all units and did not find this unit ID
                         result = c;
-                        asm("mov r11, r11");
+
                         break;
                 }
                 if (!unit->pCharacterData) {
@@ -706,7 +701,7 @@ int GetFreeUnitID(struct Unit buffer[]) {
                 }
                 if (unit->pCharacterData->number == c) {
                         c++; i = 1; // go to next unit ID and deployment ID
-                        //asm("mov r11, r11");
+                        //
                 }
 
 
@@ -717,7 +712,7 @@ int GetFreeUnitID(struct Unit buffer[]) {
                         }
                         if (unit->pCharacterData->number == c) {
                                 c++; i = 1;  // go to next unit ID and deployment ID
-                                asm("mov r11, r11");
+
                         }
                 }
 

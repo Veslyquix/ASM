@@ -21,7 +21,7 @@ int PrepMenu_CtrlLoop_PressStartUsability(void)
     // proc = Proc_Find(ProcScr_PrepMenu);
     // if (proc) {
     //	if (proc->proc_parent) {
-    //	asm("mov r11, r11");
+    //
     //	}
     //	if (proc->on_PressStart) {
     //		if (proc->on_PressStart(proc->proc_parent)) {
@@ -116,15 +116,15 @@ void WriteSramFast(const u8 *src, u8 *dest, u32 size)
 
         if ((void*)dest > (void*)0xE00691C) {
                 if ((void*)dest < (void*) 0xE0070BC)
-                asm("mov r11, r11");
+
         }
         if ((void*)dest > (void*)0xE0070BC) {
                 if ((void*)dest < (void*) 0xE00785C)
-                asm("mov r11, r11");
+
         }
         if ((void*)dest > (void*)0xE00785C) {
                 if ((void*)dest < (void*) 0xE007FFC)
-                asm("mov r11, r11");
+
         }
 
     REG_WAITCNT = (REG_WAITCNT & ~3) | 3;
@@ -230,7 +230,7 @@ void PrepAutoCapDeployUnits(struct ProcAtMenu * proc)
         }
     }
 
-    // asm("mov r11, r11");
+    //
     if (proc->unit_count < proc->max_counter)
         proc->max_counter = proc->unit_count;
 
@@ -299,8 +299,8 @@ void MakePrepUnitList()
     int i;
     int cur = CountAndUndeployTempUnits();
     struct Unit * unit;
-    struct BoxUnit * bunit2;
-    for (i = 1; i < 64; i++)
+    // struct BoxUnit * bunit2;
+    for (i = 1; i < 62; i++)
     {
         unit = GetUnit(i);
 
@@ -308,11 +308,11 @@ void MakePrepUnitList()
             continue;
 
 #ifndef POKEMBLEM_VERSION
-        bunit2 = GetCharBoxSlotFromBox(unit->pCharacterData->number); // avoid duplicate char IDs
-        if (bunit2)
-        {
-            continue;
-        }
+        // bunit2 = GetCharBoxSlotFromBox(unit->pCharacterData->number); // avoid duplicate char IDs
+        // if (bunit2)
+        // {
+        // continue;
+        // }
 #endif
         if (IsUnitInCurrentRoster(unit))
         {
@@ -351,7 +351,7 @@ int CountTotalUnitsInUnitStructRam(void)
 {
     int cur = 0;
     struct Unit * unit;
-    for (int i = 0; i < 63; i++)
+    for (int i = 0; i < 62; i++)
     {
         unit = &gUnitArrayBlue[i];
 
@@ -363,57 +363,82 @@ int CountTotalUnitsInUnitStructRam(void)
     return cur;
 }
 
-int CountUnusableUnitsUpToIndex(int index)
+int CountTotalUsableUnitsInUnitStructRam(void)
 {
     int cur = 0;
     struct Unit * unit;
-    for (int i = 0; i < 64; i++)
+    for (int i = 0; i < 62; i++)
     {
         unit = &gUnitArrayBlue[i];
 
         if (UNIT_IS_VALID(unit))
         {
-            if (!IsUnitInCurrentRoster(unit))
+            if (IsUnitInCurrentRoster(unit))
             {
-                // NewRegisterPrepUnitList(cur, unit);
                 cur++;
-            }
-            else
-            {
-                // cur++;
-                if (i >= index)
-                {
-                    break; // keep counting until we find a valid unit so we know how many units to skip over
-                }
             }
         }
     }
     return cur;
 }
 
+int CountUnusableUnitsUpToIndex(int index)
+{
+    int cur = 0;
+    struct Unit * unit;
+    for (int i = 0; i <= index; i++)
+    {
+        unit = &gUnitArrayBlue[i];
+        if (UNIT_IS_VALID(unit))
+        {
+            if (IsUnitInCurrentRoster(unit))
+            {
+                continue;
+            }
+        }
+        cur++; // not valid or empty slot
+        // count until we find a valid unit so we know how many units to skip over
+    }
+    return cur;
+}
+// 80d1c0c
 struct Unit * GetUnitFromPrepList(int index) // called in 6 other functions
 {
     // return gPrepUnitList.units[index];
     struct Unit * unit;
-    int c = CountTotalUnitsInUnitStructRam();
+    int c = CountTotalUsableUnitsInUnitStructRam();
+    int success = false;
+    int offset = 0;
 
     if (index < c)
     {
-        int offset = CountUnusableUnitsUpToIndex(index);
+        success = true;
+        offset = CountUnusableUnitsUpToIndex(index);
         unit = &gUnitArrayBlue[index + offset];
+        if (!unit->pCharacterData)
+        {
+            success = false;
+            // asm("mov r11, r11");
+        }
     }
-    else
+    if (!success)
     {
+
         index = index - c;
-        int offset = CountUnusableStoredUnitsUpToIndex(index);
+        if (index < 0)
+        {
+            index = 0;
+        }
+        offset = CountUnusableStoredUnitsUpToIndex(index);
         unit = &PCBoxUnitsBuffer[index + offset];
         if ((u32 *)&PCBoxUnitsBuffer[index + offset] > (u32 *)0x2028E54)
         {
-            unit = &PCBoxUnitsBuffer[113]; // prevent overflow
+            unit = &PCBoxUnitsBuffer[111]; // prevent overflow
             // I think this happens because it ignores empty unit struct ram. If it's not empty, then indexes >113 are
             // valid
         }
     }
+
     return unit;
 }
 
@@ -424,7 +449,7 @@ void NewRegisterPrepUnitList(int index, struct Unit * unit)
 
 void ProcPrepUnit_OnInit(struct ProcPrepUnit * proc)
 {
-    struct ProcAtMenu * parent;
+    // struct ProcAtMenu * parent;
     MakePrepUnitList();
     proc->list_num_cur = UnitGetIndexInPrepList(PrepGetLatestCharId());
     proc->max_counter = ((struct ProcAtMenu *)(proc->proc_parent))->max_counter;

@@ -1,4 +1,6 @@
 
+//ORG 0x01FCBF00
+
 // Note: Extra units' items will be sent to supply when saving in order to maximize available space. Without doing this, we'd have 33% less space. 
 // Gfx glitch of duplicated names at bottom of items menu when scrolling from the top 
 // Stat Screen from within Prep won't scroll to extra units 
