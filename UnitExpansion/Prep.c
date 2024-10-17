@@ -308,7 +308,7 @@ void MakePrepUnitList()
             continue;
 
 #ifndef POKEMBLEM_VERSION
-        bunit2 = GetCharIDFromBox(unit->pCharacterData->number); // avoid duplicate char IDs
+        bunit2 = GetCharBoxSlotFromBox(unit->pCharacterData->number); // avoid duplicate char IDs
         if (bunit2)
         {
             continue;

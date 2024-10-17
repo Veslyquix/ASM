@@ -69,18 +69,29 @@ struct BoxUnit * GetTakenBoxSlot(int slot, int index)
 }
 
 #ifndef POKEMBLEM_VERSION
-struct BoxUnit * GetCharIDFromBox(int index)
+int GetCharIDFromBox(int index)
 {
     struct BoxUnit * boxUnitSaved = (void *)&bunit[0];
     for (int i = 0; i < BoxCapacity; i++)
     {
-        if (boxUnitSaved[i].classID && (boxUnitSaved[i].classID != 0xFF))
+        if ((boxUnitSaved[i].classID) && (boxUnitSaved[i].classID != 0xFF))
         {
             if (boxUnitSaved[i].unitID == index)
             {
-                return &boxUnitSaved[i];
+                return i;
             }
         }
+    }
+    return (-1);
+}
+
+struct BoxUnit * GetCharBoxSlotFromBox(int index)
+{
+    struct BoxUnit * boxUnitSaved = (void *)&bunit[0];
+    int i = GetCharIDFromBox(index);
+    if (i >= 0)
+    {
+        return &boxUnitSaved[i];
     }
     return NULL;
 } // 2021928 something 78563412
@@ -97,7 +108,7 @@ int EnsureUnitInParty(int slot, int charID)
     (*ReadSramFast)(
         (void *)PC_GetSaveAddressBySlot(slot), (void *)&bunit[0],
         sizeof(*bunit) * BoxCapacity); // use the generic buffer instead of reading directly from SRAM
-    struct BoxUnit * boxUnitSaved = GetCharIDFromBox(charID);
+    struct BoxUnit * boxUnitSaved = GetCharBoxSlotFromBox(charID);
     int result = false;
     struct Unit * newUnit;
     int deploymentID = 0;
@@ -341,6 +352,9 @@ void PackUnitsIntoBox(int slot)
     struct Unit * unit2;
 #ifndef POKEMBLEM_VERSION
     struct BoxUnit * bunit2;
+    int tmp = 0;
+    int c = 0;
+    struct BoxUnit * boxUnitSaved = (void *)&bunit[0];
 #endif
     // struct BoxUnit* bunitStart = GetFreeBoxSlot(slot);
 
@@ -357,10 +371,16 @@ void PackUnitsIntoBox(int slot)
         }
 
 #ifndef POKEMBLEM_VERSION
-        bunit2 = GetCharIDFromBox(
-            unit2->pCharacterData->number); // avoid duplicate char IDs in case EnsureUnitInParty has been used.
-        if (bunit2)
+        tmp = GetCharIDFromBox(unit2->pCharacterData->number); // avoid duplicate char IDs in case
+                                                               // EnsureUnitInParty has been used.
+        if (tmp >= 0)
         {
+            if (i == tmp)
+            {
+                c++; // for each unit that's already in the box, skip over that index
+            }
+            bunit2 = &boxUnitSaved[tmp];
+
             PackUnitIntoBox((void *)bunit2, unit2);
             ClearUnit(unit2);
             continue;

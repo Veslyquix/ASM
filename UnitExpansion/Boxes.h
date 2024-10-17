@@ -1,4 +1,4 @@
-
+ 
 //#define POKEMBLEM_VERSION
 
 
@@ -59,7 +59,8 @@ struct __attribute__((packed)) BoxUnit {
 };
 #endif 
 
-struct BoxUnit* GetCharIDFromBox(int index); 
+struct BoxUnit* GetCharBoxSlotFromBox(int index); 
+int GetCharIDFromBox(int index); 
 extern struct Unit unit[62]; // gGenericBuffer 0x2020188
 extern struct BoxUnit bunit[100]; 
 
