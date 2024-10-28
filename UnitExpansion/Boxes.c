@@ -957,7 +957,8 @@ struct Unit * UnpackUnitFromBox(struct BoxUnit * boxRam, struct Unit * unit)
                 unit->ranks[i] = UnpackFlooredWEXP((boxRam->wexp[i / 2] & 0xF0) >> 4);
             }
             else
-                unit->ranks[i] = UnpackFlooredWEXP((boxRam->wexp[i / 2] & 0xF) >> 4);
+                unit->ranks[i] = UnpackFlooredWEXP((boxRam->wexp[i / 2] & 0xF));
+            // unit->ranks[i] = UnpackFlooredWEXP((boxRam->wexp[i / 2] & 0xF) >> 4);
         }
 
         // zero things out
