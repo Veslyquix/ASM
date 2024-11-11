@@ -152,14 +152,13 @@ u16 GetPixel(u32 x, u32 y)
 const int xQuadByZoom[] = { 120 << 4, 60 << 4, 30 << 4, 15 << 4, 15 << 3, 15 << 2 };
 const int yQuadByZoom[] = { 80 << 4, 40 << 4, 20 << 4, 10 << 4, 5 << 4, 5 << 3 };
 
-// int UpdateQuadrant(int x, int y, int zoom, int oX, int oY) {
-// return (x / (120 << zoom)) + ((y / (80 << zoom)) * 2);
-// return ((x << 4) / xQuadByZoom[zoom]) +
-// (((y << 4) / (yQuadByZoom[zoom])) * 2);
-// }
+const u16 xSizeByZoom[] = { 240 << 2, 120 << 2, 60 << 2, 30 << 2, 15 << 2, 15 << 1, 15 }; // screen size
+const u16 ySizeByZoom[] = { 160 << 2, 80 << 2, 40 << 2, 20 << 2, 10 << 2, 10 << 1, 10 };
+
 int UpdateQuadrant(int x, int y, int zoom, int oX, int oY)
 {
-    return 5;
+    // return (x / (120 << zoom)) + ((y / (80 << zoom)) * 2);
+    return ((x << 4) / xQuadByZoom[zoom]) + (((y << 4) / (yQuadByZoom[zoom])) * 2);
 }
 
 #define RefreshScreen 10
@@ -181,36 +180,53 @@ struct MainProc
 int HandleCursorInput(struct MainProc * proc)
 {
     int quadrant = proc->quadrant;
-    int x = proc->x;
-    int y = proc->y;
     int color = proc->color;
     int zoom = proc->zoom;
-    if (CheckPressedKeys(DPAD_UP) && y > 0)
+    int xOffset = 0;
+    int yOffset = 0;
+
+    if (CheckPressedKeys(DPAD_UP))
     {
         proc->y--;
-        BufferPixel(x, proc->y, color);
-        quadrant = UpdateQuadrant(x, proc->y, zoom, 0, 0);
+        if (proc->y < yOffset) // if outside border of screen, jump to opposite edge
+        {
+            proc->y = (ySizeByZoom[zoom] >> 2) - 1 + yOffset;
+        }
+        BufferPixel(proc->x, proc->y, color);
+        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
 
-    if (CheckPressedKeys(DPAD_DOWN) && y < 160 - 1)
+    if (CheckPressedKeys(DPAD_DOWN))
     {
         proc->y++;
-        BufferPixel(x, proc->y, color);
-        quadrant = UpdateQuadrant(x, proc->y, zoom, 0, 0);
+        if (proc->y >= ((ySizeByZoom[zoom] >> 2) + yOffset))
+        {
+            proc->y = yOffset;
+        }
+        BufferPixel(proc->x, proc->y, color);
+        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
 
-    if (CheckPressedKeys(DPAD_LEFT) && x > 0)
+    if (CheckPressedKeys(DPAD_LEFT))
     {
         proc->x--;
-        BufferPixel(proc->x, y, color);
-        quadrant = UpdateQuadrant(proc->x, y, zoom, 0, 0);
+        if (proc->x < xOffset)
+        {
+            proc->x = (xSizeByZoom[zoom] >> 2) - 1 + xOffset;
+        }
+        BufferPixel(proc->x, proc->y, color);
+        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
 
-    if (CheckPressedKeys(DPAD_RIGHT) && x < 240 - 1)
+    if (CheckPressedKeys(DPAD_RIGHT))
     {
         proc->x++;
-        BufferPixel(proc->x, y, color);
-        quadrant = UpdateQuadrant(proc->x, y, zoom, 0, 0);
+        if (proc->x >= ((xSizeByZoom[zoom] >> 2) + xOffset))
+        {
+            proc->x = xOffset;
+        }
+        BufferPixel(proc->x, proc->y, color);
+        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
     return quadrant;
 }
