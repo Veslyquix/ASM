@@ -292,12 +292,32 @@ const u8 modeTypes[] = {
     zoomArea,
 };
 
+const u16 ColorBank[] = { Blue, Red, Yellow, Orange, Green, Purple, Brown, White };
+
 void SetupPalette(struct MainProc * proc)
 {
     u16 * dest = (u16 *)PLTT;
-    for (int i = 0; i < 256; ++i)
+    int colorCount = sizeof(ColorBank) / sizeof(ColorBank[0]);
+
+    // Fill the palette with progressively darker shades of each base color
+    for (int i = 0; i < colorCount; ++i)
     {
-        dest[i] = (White) - (0x80 * i);
+        u16 baseColor = ColorBank[i];
+        u8 baseRed = baseColor & 0x1F;
+        u8 baseGreen = (baseColor >> 5) & 0x1F;
+        u8 baseBlue = (baseColor >> 10) & 0x1F;
+
+        for (int shade = 0; shade < 16; ++shade)
+        {
+            // Gradually reduce brightness by scaling each component
+            u8 newRed = (baseRed * (16 - shade) / 16) & 0x1F;
+            u8 newGreen = (baseGreen * (16 - shade) / 16) & 0x1F;
+            u8 newBlue = (baseBlue * (16 - shade) / 16) & 0x1F;
+
+            // Combine into final color
+            u16 newShade = newRed | (newGreen << 5) | (newBlue << 10);
+            dest[i * 16 + shade] = newShade;
+        }
     }
     dest[0] = Black;
 }
