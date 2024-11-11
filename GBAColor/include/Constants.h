@@ -26,13 +26,22 @@ typedef u8  bool8;
 typedef u16 bool16;
 typedef u32 bool32;
 
-#define true (!0)
+#define true (-1)
 #define false 0  
+
+#define PLTT      0x5000000
+#define PLTT_SIZE 0x400
+
+#define BG_PLTT      PLTT
+#define BG_PLTT_SIZE 0x200
+
+#define OBJ_PLTT      (PLTT + 0x200)
+#define OBJ_PLTT_SIZE 0x200
 
 #define REG_BASE 0x4000000 // I/O register base address
 #define VIDEO_MODE      *(u32*)0x4000000
-#define VRAM            ((u16*)0x6000000)
-#define VRAM2            ((u16*)0x600A000)
+#define VRAM            ((u8*)0x6000000)
+#define VRAM2            ((u8*)0x600A000)
 #define MODE_3          0x403
 #define REG_VCOUNT      *(volatile u16*)0x04000006
 

@@ -44,7 +44,7 @@ u32 CheckPressedKeys(u32 key)
     return !(INPUT_DATA & key);
 }
 
-#define imageBuffer ((u16 *)0x2000000)
+#define imageBuffer ((u8 *)0x2000000)
 
 void VSync()
 {
@@ -75,14 +75,16 @@ struct MainProc
 {
     s16 x;
     s16 y;
+    u8 frame; 
     s8 size; // cursor 
     s8 mode; 
     s8 quadrant; 
     s8 zoom;
     s8 cycle;
     s8 ActiveColorID;
+    u8 colorId; 
     u16 color;
-    u16 CursorColor;
+    u8 cursColId;
     u16 keysPrev;
 };
 // clang-format on
@@ -101,11 +103,12 @@ void BufferPixel(u32 x, u32 y, u16 col)
 void UpdateVRAM(void)
 {
     int x, y;
-    u16 * vramC;
-    u16 * buf;
+    u8 * vramStart = &VRAM[0];
+    u8 * vramC;
+    u8 * buf;
     for (y = 0; y < 160; ++y)
     {
-        vramC = &VRAM[y * 240];
+        vramC = &vramStart[y * 240];
         buf = &imageBuffer[y * 240];
         for (x = 0; x < 240; ++x)
         {
@@ -113,8 +116,9 @@ void UpdateVRAM(void)
         }
     }
 }
-void UpdateVRAMZoom(int zoom, int type)
+void UpdateVRAMZoom(int zoom, int type, int frame)
 {
+    frame &= 1;
     if (type < 0)
     {
         return;
@@ -151,11 +155,16 @@ void UpdateVRAMZoom(int zoom, int type)
         }
         default:
     }
-    u16 * vramC;
-    u16 * buf;
+    u8 * vramStart = &VRAM[0];
+    if (frame)
+    {
+        vramStart = &VRAM[0];
+    }
+    u8 * vramC;
+    u8 * buf;
     for (int iy = y; iy <= yMax; ++iy)
     {
-        vramC = &VRAM[iy * 240];
+        vramC = &vramStart[iy * 240];
         buf = &imageBuffer[(iy >> zoom) * 240];
         for (int ix = x; ix <= xMax; ++ix)
         {
@@ -175,15 +184,20 @@ u16 GetPixel(u32 x, u32 y)
 
 void DrawCursor(struct MainProc * proc)
 {
-    int col = proc->CursorColor;
+    int frame = proc->frame & 1;
+    int col = proc->cursColId;
     int zoom = proc->zoom;
     // int size = proc->size << zoom;
     int size = 1 << zoom;
-
-    u16 * vramC;
+    u8 * vramStart = &VRAM[0];
+    if (frame)
+    {
+        vramStart = &VRAM[0];
+    }
+    u8 * vramC;
     for (int iy = proc->y << zoom; iy < (size + (proc->y << zoom)); ++iy)
     {
-        vramC = &VRAM[(iy) * 240];
+        vramC = &vramStart[iy * 240];
         for (int ix = proc->x << zoom; ix < (size + (proc->x << zoom)); ++ix)
         {
             // DrawPixel(ix, iy, col, zoom);
@@ -219,7 +233,7 @@ int UpdateQuadrant(int x, int y, int zoom, int oX, int oY)
 int HandleCursorInput(struct MainProc * proc)
 {
     int quadrant = proc->quadrant;
-    int color = proc->color;
+    int colorId = proc->colorId;
     int zoom = proc->zoom;
     int xOffset = 0;
     int yOffset = 0;
@@ -231,7 +245,7 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->y = (ySizeByZoom[zoom] >> 2) - 1 + yOffset;
         }
-        BufferPixel(proc->x, proc->y, color);
+        BufferPixel(proc->x, proc->y, colorId);
         quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
 
@@ -242,7 +256,7 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->y = yOffset;
         }
-        BufferPixel(proc->x, proc->y, color);
+        BufferPixel(proc->x, proc->y, colorId);
         quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
 
@@ -253,7 +267,7 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->x = (xSizeByZoom[zoom] >> 2) - 1 + xOffset;
         }
-        BufferPixel(proc->x, proc->y, color);
+        BufferPixel(proc->x, proc->y, colorId);
         quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
 
@@ -264,7 +278,7 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->x = xOffset;
         }
-        BufferPixel(proc->x, proc->y, color);
+        BufferPixel(proc->x, proc->y, colorId);
         quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
     }
     return quadrant;
@@ -278,38 +292,53 @@ const u8 modeTypes[] = {
     zoomArea,
 };
 
+void SetupPalette(struct MainProc * proc)
+{
+    u16 * dest = (u16 *)PLTT;
+    for (int i = 0; i < 256; ++i)
+    {
+        dest[i] = (White) - (0x80 * i);
+    }
+    dest[0] = Black;
+}
+
 int main()
 {
     // VIDEO_MODE = DISPCNT_BG2_ON | DISPCNT_MODE_3;
-    VIDEO_MODE = DISPCNT_BG0_ON | DISPCNT_MODE_4;
+    VIDEO_MODE = DISPCNT_BG2_ON | DISPCNT_MODE_4;
     struct MainProc proc;
     proc.mode = drawLines;
+    proc.frame = 0;
     proc.x = 0;
     proc.y = 0;
     // u32 x = 120, y = 80;
     proc.ActiveColorID = 0;
+
     proc.color = White;
+    proc.colorId = 1;
     proc.keysPrev = 0;
     proc.zoom = 0;
     proc.cycle = 0;
-    proc.CursorColor = Red;
+    proc.cursColId = 7;
     proc.quadrant = 0;
     proc.size = 0;
+    SetupPalette(&proc);
 
     while (true)
     {
-
+        // VIDEO_MODE = (VIDEO_MODE & ~(0x10)) | ((proc.frame & 1) << 4); // swap between frame 1 and 2
+        proc.frame++;
         proc.cycle++;
         if (proc.cycle > 3)
         {
             proc.cycle = 0;
         }
-        BufferPixel(proc.x, proc.y, proc.color);
+        BufferPixel(proc.x, proc.y, proc.colorId);
         // UpdateVRAM();
-        UpdateVRAMZoom(proc.zoom, proc.cycle);
+        UpdateVRAMZoom(proc.zoom, proc.cycle, proc.frame);
         if (proc.quadrant != proc.cycle)
         {
-            UpdateVRAMZoom(proc.zoom, proc.quadrant);
+            UpdateVRAMZoom(proc.zoom, proc.quadrant, proc.frame);
         }
         DrawCursor(&proc);
 
@@ -338,7 +367,7 @@ int main()
 
         proc.color = GetPixel(proc.x, proc.y);
 
-        // BufferPixel(proc.x, proc.y, proc.CursorColor);
+        // BufferPixel(proc.x, proc.y, proc.cursColId);
 
         VSync();
         InputPoll();
