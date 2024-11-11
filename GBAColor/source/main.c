@@ -48,11 +48,45 @@ u32 CheckPressedKeys(u32 key)
 
 void VSync()
 {
+
     while (REG_VCOUNT >= 160)
         ;
     while (REG_VCOUNT < 160)
         ;
 }
+/*
+void VSync()
+{
+    if (REG_VCOUNT >= 160)
+    {
+        while (REG_VCOUNT >= 160)
+            ;
+        return;
+    }
+    else
+    {
+        while (REG_VCOUNT < 160)
+            ;
+    }
+}*/
+
+// clang-format off
+struct MainProc
+{
+    s16 x;
+    s16 y;
+    s8 size; // cursor 
+    s8 mode; 
+    s8 quadrant; 
+    s8 zoom;
+    s8 cycle;
+    s8 ActiveColorID;
+    u16 color;
+    u16 CursorColor;
+    u16 keysPrev;
+};
+// clang-format on
+
 void ClearScreen()
 {
     for (int i = 0; i < 240 * 160; i++)
@@ -139,6 +173,25 @@ u16 GetPixel(u32 x, u32 y)
     return imageBuffer[x + y * 240];
 }
 
+void DrawCursor(struct MainProc * proc)
+{
+    int col = proc->CursorColor;
+    int zoom = proc->zoom;
+    // int size = proc->size << zoom;
+    int size = 1 << zoom;
+
+    u16 * vramC;
+    for (int iy = proc->y << zoom; iy < (size + (proc->y << zoom)); ++iy)
+    {
+        vramC = &VRAM[(iy) * 240];
+        for (int ix = proc->x << zoom; ix < (size + (proc->x << zoom)); ++ix)
+        {
+            // DrawPixel(ix, iy, col, zoom);
+            vramC[(ix)] = col;
+        }
+    }
+}
+
 // 240x160
 // 120x80
 // 60x40
@@ -162,20 +215,6 @@ int UpdateQuadrant(int x, int y, int zoom, int oX, int oY)
 }
 
 #define RefreshScreen 10
-// clang-format off
-struct MainProc
-{
-    s16 x;
-    s16 y;
-    s8 quadrant; 
-    s8 zoom;
-    s8 cycle;
-    s8 ActiveColorID;
-    u16 color;
-    u16 CursorColor;
-    u16 keysPrev;
-};
-// clang-format on
 
 int HandleCursorInput(struct MainProc * proc)
 {
@@ -231,10 +270,20 @@ int HandleCursorInput(struct MainProc * proc)
     return quadrant;
 }
 
+#define drawLines 0
+#define zoomArea 1
+
+const u8 modeTypes[] = {
+    drawLines,
+    zoomArea,
+};
+
 int main()
 {
-    VIDEO_MODE = MODE_3;
+    // VIDEO_MODE = DISPCNT_BG2_ON | DISPCNT_MODE_3;
+    VIDEO_MODE = DISPCNT_BG0_ON | DISPCNT_MODE_4;
     struct MainProc proc;
+    proc.mode = drawLines;
     proc.x = 0;
     proc.y = 0;
     // u32 x = 120, y = 80;
@@ -243,13 +292,13 @@ int main()
     proc.keysPrev = 0;
     proc.zoom = 0;
     proc.cycle = 0;
-    proc.CursorColor = White;
+    proc.CursorColor = Red;
     proc.quadrant = 0;
+    proc.size = 0;
 
     while (true)
     {
-        VSync();
-        InputPoll();
+
         proc.cycle++;
         if (proc.cycle > 3)
         {
@@ -262,6 +311,7 @@ int main()
         {
             UpdateVRAMZoom(proc.zoom, proc.quadrant);
         }
+        DrawCursor(&proc);
 
         proc.quadrant = HandleCursorInput(&proc);
 
@@ -288,7 +338,10 @@ int main()
 
         proc.color = GetPixel(proc.x, proc.y);
 
-        BufferPixel(proc.x, proc.y, proc.CursorColor);
+        // BufferPixel(proc.x, proc.y, proc.CursorColor);
+
+        VSync();
+        InputPoll();
     }
     return 0;
 }

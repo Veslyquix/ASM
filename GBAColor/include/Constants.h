@@ -32,11 +32,31 @@ typedef u32 bool32;
 #define REG_BASE 0x4000000 // I/O register base address
 #define VIDEO_MODE      *(u32*)0x4000000
 #define VRAM            ((u16*)0x6000000)
+#define VRAM2            ((u16*)0x600A000)
 #define MODE_3          0x403
 #define REG_VCOUNT      *(volatile u16*)0x04000006
 
 #define INPUT_MEMORY    (*(u32*)0x4000130)
 #define INPUT_MASK      0xFC00
+
+// DISPCNT
+#define DISPCNT_MODE_0       0x0000 // BG0: text, BG1: text, BG2: text,   BG3: text
+#define DISPCNT_MODE_1       0x0001 // BG0: text, BG1: text, BG2: affine, BG3: off
+#define DISPCNT_MODE_2       0x0002 // BG0: off,  BG1: off,  BG2: affine, BG3: affine
+#define DISPCNT_MODE_3       0x0003 // Bitmap mode, 240x160, BGR555 color
+#define DISPCNT_MODE_4       0x0004 // Bitmap mode, 240x160, 256 color palette
+#define DISPCNT_MODE_5       0x0005 // Bitmap mode, 160x128, BGR555 color
+#define DISPCNT_OBJ_1D_MAP   0x0040
+#define DISPCNT_FORCED_BLANK 0x0080
+#define DISPCNT_BG0_ON       0x0100
+#define DISPCNT_BG1_ON       0x0200
+#define DISPCNT_BG2_ON       0x0400
+#define DISPCNT_BG3_ON       0x0800
+#define DISPCNT_BG_ALL_ON    0x0F00
+#define DISPCNT_OBJ_ON       0x1000
+#define DISPCNT_WIN0_ON      0x2000
+#define DISPCNT_WIN1_ON      0x4000
+#define DISPCNT_OBJWIN_ON    0x8000
 
 // keys
 #define A_BUTTON        0x0001
