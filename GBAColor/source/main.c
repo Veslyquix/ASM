@@ -163,94 +163,116 @@ int UpdateQuadrant(int x, int y, int zoom, int oX, int oY)
 }
 
 #define RefreshScreen 10
+// clang-format off
+struct MainProc
+{
+    s16 x;
+    s16 y;
+    s8 quadrant; 
+    s8 zoom;
+    s8 cycle;
+    s8 ActiveColorID;
+    u16 color;
+    u16 CursorColor;
+    u16 keysPrev;
+};
+// clang-format on
+
+int HandleCursorInput(struct MainProc * proc)
+{
+    int quadrant = proc->quadrant;
+    int x = proc->x;
+    int y = proc->y;
+    int color = proc->color;
+    int zoom = proc->zoom;
+    if (CheckPressedKeys(DPAD_UP) && y > 0)
+    {
+        proc->y--;
+        BufferPixel(x, proc->y, color);
+        quadrant = UpdateQuadrant(x, proc->y, zoom, 0, 0);
+    }
+
+    if (CheckPressedKeys(DPAD_DOWN) && y < 160 - 1)
+    {
+        proc->y++;
+        BufferPixel(x, proc->y, color);
+        quadrant = UpdateQuadrant(x, proc->y, zoom, 0, 0);
+    }
+
+    if (CheckPressedKeys(DPAD_LEFT) && x > 0)
+    {
+        proc->x--;
+        BufferPixel(proc->x, y, color);
+        quadrant = UpdateQuadrant(proc->x, y, zoom, 0, 0);
+    }
+
+    if (CheckPressedKeys(DPAD_RIGHT) && x < 240 - 1)
+    {
+        proc->x++;
+        BufferPixel(proc->x, y, color);
+        quadrant = UpdateQuadrant(proc->x, y, zoom, 0, 0);
+    }
+    return quadrant;
+}
 
 int main()
 {
     VIDEO_MODE = MODE_3;
-
+    struct MainProc proc;
+    proc.x = 0;
+    proc.y = 0;
     // u32 x = 120, y = 80;
-    u32 x = 0, y = 0;
-    int ActiveColorID = 0;
-    int color = White;
-
-    int keysPrev = 0;
-    int zoom = 0;
-    int quadrant = 0;
-    int cycle = 0;
-    u16 CursorColor = White;
+    proc.ActiveColorID = 0;
+    proc.color = White;
+    proc.keysPrev = 0;
+    proc.zoom = 0;
+    proc.cycle = 0;
+    proc.CursorColor = White;
+    proc.quadrant = 0;
 
     while (true)
     {
         VSync();
         InputPoll();
-        cycle++;
-        if (cycle > 3)
+        proc.cycle++;
+        if (proc.cycle > 3)
         {
-            cycle = 0;
+            proc.cycle = 0;
         }
-        BufferPixel(x, y, color);
+        BufferPixel(proc.x, proc.y, proc.color);
         // UpdateVRAM();
-        UpdateVRAMZoom(zoom, cycle);
-        if (quadrant != cycle)
+        UpdateVRAMZoom(proc.zoom, proc.cycle);
+        if (proc.quadrant != proc.cycle)
         {
-            UpdateVRAMZoom(zoom, quadrant);
+            UpdateVRAMZoom(proc.zoom, proc.quadrant);
         }
 
-        // quadrant = HandleCursorInput(proc);
-        quadrant = -1;
-        // Moving the cursor and doing some conditions
-        if (CheckPressedKeys(DPAD_UP) && y > 0)
-        {
-            y--;
-            BufferPixel(x, y, color);
-            quadrant = UpdateQuadrant(x, y, zoom, 0, 0);
-        }
-
-        if (CheckPressedKeys(DPAD_DOWN) && y < 160 - 1)
-        {
-            y++;
-            BufferPixel(x, y, color);
-            quadrant = UpdateQuadrant(x, y, zoom, 0, 0);
-        }
-
-        if (CheckPressedKeys(DPAD_LEFT) && x > 0)
-        {
-            x--;
-            BufferPixel(x, y, color);
-            quadrant = UpdateQuadrant(x, y, zoom, 0, 0);
-        }
-
-        if (CheckPressedKeys(DPAD_RIGHT) && x < 240 - 1)
-        {
-            x++;
-            BufferPixel(x, y, color);
-            quadrant = UpdateQuadrant(x, y, zoom, 0, 0);
-        }
+        proc.quadrant = HandleCursorInput(&proc);
 
         if (CheckPressedKeys(SELECT_BUTTON))
         {
             // Change mode
             // ClearScreen();
-            zoom = ((zoom + 1) % 6);
-            quadrant = RefreshScreen;
+            proc.zoom = ((proc.zoom + 1) % 6);
+            proc.quadrant = RefreshScreen;
         }
 
         // Cycle through palette
-        if (CheckPressedKeys(L_BUTTON) & keysPrev)
+        if (CheckPressedKeys(L_BUTTON) & proc.keysPrev)
         {
-            ActiveColorID = ((ActiveColorID - 1) % sizeof(COLORS));
+            proc.ActiveColorID = ((proc.ActiveColorID - 1) % sizeof(COLORS));
         }
 
-        if (CheckPressedKeys(R_BUTTON) & keysPrev)
+        if (CheckPressedKeys(R_BUTTON) & proc.keysPrev)
         {
-            ActiveColorID = ((ActiveColorID + 1) % sizeof(COLORS));
+            proc.ActiveColorID = ((proc.ActiveColorID + 1) % sizeof(COLORS));
         }
 
-        keysPrev = CheckPressedKeys(KEYS_MASK);
+        proc.keysPrev = CheckPressedKeys(KEYS_MASK);
 
-        color = GetPixel(x, y);
+        proc.color = GetPixel(proc.x, proc.y);
 
-        BufferPixel(x, y, CursorColor);
+        BufferPixel(proc.x, proc.y, proc.CursorColor);
     }
     return 0;
 }
