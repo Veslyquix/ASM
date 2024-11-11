@@ -1,6 +1,10 @@
 #ifndef _CONSTANTS_H
 #define _CONSTANTS_H
 #include <stdint.h>
+#include <gba_sprites.h>
+#include <gba_video.h>
+#include <gba_systemcalls.h>
+
 typedef uint8_t   u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -26,8 +30,6 @@ typedef u8  bool8;
 typedef u16 bool16;
 typedef u32 bool32;
 
-#define true (-1)
-#define false 0  
 
 #define PLTT      0x5000000
 #define PLTT_SIZE 0x400
@@ -69,12 +71,12 @@ typedef u32 bool32;
 #define DMA_INTR_ENABLE   0x4000
 #define DMA_ENABLE        0x8000
 
-#define REG_BASE 0x4000000 // I/O register base address
 #define VIDEO_MODE      *(u32*)0x4000000
-#define VRAM            ((u8*)0x6000000)
+// #define VRAM            ((u8*)0x6000000)
+#define _VRAM ((u8*)0x6000000)
 #define VRAM2            ((u8*)0x600A000)
 #define MODE_3          0x403
-#define REG_VCOUNT      *(volatile u16*)0x04000006
+// #define REG_VCOUNT      *(volatile u16*)0x04000006
 
 #define INPUT_MEMORY    (*(u32*)0x4000130)
 #define INPUT_MASK      0xFC00

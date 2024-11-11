@@ -37,6 +37,7 @@ u32 CheckPressedKeys(u32 key)
 
 #define imageBuffer ((u8 *)0x2000000)
 #define zoomBuffer ((u8 *)0x2000000 + (240 * 160))
+#define spriteBuffer ((u8 *)zoomBuffer + (240 * 160))
 
 void VSync()
 {
@@ -61,7 +62,6 @@ struct MainProc
     s8 cycle;
     s8 ActiveColorID;
     u8 colorId; 
-    u16 color;
     u8 cursColId;
     u16 keysPrev;
 };
@@ -83,15 +83,22 @@ void BufferPixel(u32 x, u32 y, u16 col, int zoom)
 void updateScreen(u32 src)
 {
     // Configure DMA to copy from imageBuffer to VRAM
-    DMA0SAD = (u32)src;                                                         // Set source address
-    DMA0DAD = (u32)VRAM;                                                        // Set destination address
-    DMA0CNT_H = DMA_ENABLE | DMA_REPEAT | DMA_START_VBLANK | ((256 * 160) / 4); // Set transfer mode and size
+    DMA0SAD = (u32)src;                                            // Set source address
+    DMA0DAD = (u32)_VRAM;                                          // Set destination address
+    DMA0CNT_H = DMA_ENABLE | DMA_START_VBLANK | ((256 * 160) / 4); // Set transfer mode and size
+}
+void copyBuffer(u32 src, u32 dest)
+{
+    // Configure DMA to copy from imageBuffer to VRAM
+    DMA0SAD = (u32)src;                                            // Set source address
+    DMA0DAD = (u32)dest;                                           // Set destination address
+    DMA0CNT_H = DMA_ENABLE | DMA_START_VBLANK | ((256 * 160) / 4); // Set transfer mode and size
 }
 
 void UpdateVRAM(void)
 {
     int x, y;
-    u8 * vramStart = &VRAM[0];
+    u8 * vramStart = &_VRAM[0];
     u8 * vramC;
     u8 * buf;
     for (y = 0; y < 160; ++y)
@@ -122,47 +129,122 @@ void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
             dest[ix] = src[ix >> zoom];
         }
     }
-    if (zoom)
-    {
-        updateScreen((u32)zoomBuffer);
-    }
-    else
-    {
-        updateScreen((u32)imageBuffer);
-    }
 }
 
 void DrawPixel(u32 x, u32 y, u16 col, int zoom)
 {
-    VRAM[(x >> zoom) + (y >> zoom) * 240] = col;
+    _VRAM[(x >> zoom) + (y >> zoom) * 240] = col;
 }
 u16 GetPixel(u32 x, u32 y)
 {
     return imageBuffer[x + y * 240];
 }
+const u16 spritePalette[16] = {
+    RGB2HEX(0, 0, 0),    // Black
+    RGB2HEX(31, 0, 0),   // Red
+    RGB2HEX(0, 31, 0),   // Green
+    RGB2HEX(0, 0, 31),   // Blue
+    RGB2HEX(31, 31, 0),  // Yellow
+    RGB2HEX(31, 0, 31),  // Magenta
+    RGB2HEX(0, 31, 31),  // Cyan
+    RGB2HEX(31, 31, 31), // White
+    RGB2HEX(15, 15, 15), // Gray
+    RGB2HEX(31, 15, 0),  // Orange
+    RGB2HEX(15, 31, 0),  // Lime
+    RGB2HEX(0, 15, 31),  // Light Blue
+    RGB2HEX(31, 15, 31), // Pink
+    RGB2HEX(15, 0, 31),  // Purple
+    RGB2HEX(15, 31, 15), // Mint
+    RGB2HEX(25, 25, 25)  // Light Gray
+};
+const u8 spriteTiles[128] = {
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Row 1
+    0x00, 0x00, 0x07, 0x70, 0x00, 0x00, 0x00, 0x00, // Row 2
+    0x00, 0x07, 0x77, 0x77, 0x70, 0x00, 0x00, 0x00, // Row 3
+    0x00, 0x07, 0x76, 0x67, 0x77, 0x70, 0x00, 0x00, // Row 4
+    0x00, 0x77, 0x66, 0x66, 0x67, 0x77, 0x00, 0x00, // Row 5
+    0x07, 0x76, 0x66, 0x66, 0x66, 0x77, 0x70, 0x00, // Row 6
+    0x07, 0x66, 0x66, 0x66, 0x66, 0x67, 0x70, 0x00, // Row 7
+    0x07, 0x66, 0x66, 0x66, 0x66, 0x67, 0x70, 0x00, // Row 8
+    0x07, 0x76, 0x66, 0x66, 0x66, 0x77, 0x70, 0x00, // Row 9
+    0x00, 0x77, 0x66, 0x66, 0x67, 0x77, 0x00, 0x00, // Row 10
+    0x00, 0x07, 0x77, 0x77, 0x77, 0x70, 0x00, 0x00, // Row 11
+    0x00, 0x00, 0x07, 0x77, 0x70, 0x00, 0x00, 0x00, // Row 12
+    0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, // Row 13
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Row 14
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Row 15
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // Row 16
+};
 
-void DrawCursor(struct MainProc * proc)
+void restoreBuffer(u8 * buffer, int x, int y)
+{
+    for (int row = 0; row < 16; row++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            int screenX = x + col;
+            int screenY = y + row;
+
+            // Ensure the sprite is within screen bounds
+            if (screenX < SCREEN_WIDTH && screenY < SCREEN_HEIGHT)
+            {
+
+                // Set pixel in buffer (index-based for 8-bit Mode 4)
+                buffer[screenY * SCREEN_WIDTH + screenX] = spriteBuffer[row * 16 + col];
+            }
+        }
+    }
+}
+
+void drawSpriteToBuffer(u8 * buffer, int x, int y)
+{
+    for (int row = 0; row < 16; row++)
+    {
+        for (int col = 0; col < 8; col++)
+        {
+            int screenX = x + col;
+            int screenY = y + row;
+
+            // Ensure the sprite is within screen bounds
+            if (screenX < SCREEN_WIDTH && screenY < SCREEN_HEIGHT)
+            {
+                spriteBuffer[screenY * SCREEN_WIDTH + screenX] = buffer[screenY * SCREEN_WIDTH + screenX];
+                // Set pixel in buffer (index-based for 8-bit Mode 4)
+                buffer[screenY * SCREEN_WIDTH + screenX] = spriteTiles[row * 16 + col];
+            }
+        }
+    }
+}
+#define MODE4_BACKBUFFER ((u8 *)0x600A000)
+void DrawCursor(struct MainProc * proc, int x, int y)
 {
     int frame = proc->frame & 1;
     int col = proc->cursColId;
     int zoom = proc->zoom;
     // int size = proc->size << zoom;
     int size = 1 << zoom;
-    u8 * vramStart = &VRAM[0];
-    if (frame)
-    {
-        vramStart = &VRAM[0];
-    }
-    u8 * vramC;
-    for (int iy = proc->y << zoom; iy < (size + (proc->y << zoom)); ++iy)
-    {
-        vramC = &vramStart[iy * 240];
-        for (int ix = proc->x << zoom; ix < (size + (proc->x << zoom)); ++ix)
-        {
-            // DrawPixel(ix, iy, col, zoom);
-            vramC[(ix)] = col;
-        }
-    }
+    u8 * dest = _VRAM;
+    copyBuffer(buffer, spriteBuffer);
+    copyBuffer(spriteBuffer, buffer);
+
+    // restoreBuffer(dest, x << zoom, y << zoom);
+    drawSpriteToBuffer(dest, proc->x << zoom, proc->y << zoom);
+    return;
+    // u8 * vramStart = &_VRAM[0];
+    // if (frame)
+    // {
+    // vramStart = &_VRAM[0];
+    // }
+    // u8 * vramC;
+    // for (int iy = proc->y << zoom; iy < (size + (proc->y << zoom)); ++iy)
+    // {
+    // vramC = &vramStart[iy * 240];
+    // for (int ix = proc->x << zoom; ix < (size + (proc->x << zoom)); ++ix)
+    // {
+    // DrawPixel(ix, iy, col, zoom);
+    // vramC[(ix)] = col;
+    // }
+    // }
 }
 
 // 240x160
@@ -267,7 +349,7 @@ void SetupPalette(struct MainProc * proc)
 int main()
 {
     // VIDEO_MODE = DISPCNT_BG2_ON | DISPCNT_MODE_3;
-    VIDEO_MODE = DISPCNT_BG2_ON | DISPCNT_MODE_4;
+    VIDEO_MODE = DISPCNT_OBJ_ON | DISPCNT_BG2_ON | DISPCNT_MODE_4;
     struct MainProc proc;
     proc.mode = drawLines;
     proc.frame = 0;
@@ -275,8 +357,6 @@ int main()
     proc.y = 0;
     // u32 x = 120, y = 80;
     proc.ActiveColorID = 0;
-
-    proc.color = White;
     proc.colorId = 1;
     proc.keysPrev = 0;
     proc.zoom = 0;
@@ -286,30 +366,42 @@ int main()
     proc.xOffset = 0;
     proc.yOffset = 0;
     SetupPalette(&proc);
-    updateScreen((u32)imageBuffer);
-    VRAM[0] = 1;
+    // updateScreen((u32)imageBuffer);
+    _VRAM[0] = 1;
     int zoom = proc.zoom;
     while (true)
     {
-        // VIDEO_MODE = (VIDEO_MODE & ~(0x10)) | ((proc.frame & 1) << 4); // swap between frame 1 and 2
-        proc.frame++;
-        proc.cycle++;
-        if (proc.cycle > 3)
-        {
-            proc.cycle = 0;
-        }
-        BufferPixel(proc.x, proc.y, proc.colorId, proc.zoom);
+        REG_DISPCNT ^= BACKBUFFER;
+        //
+        InputPoll();
+        // BufferPixel(proc.x, proc.y, proc.colorId, proc.zoom);
 
         if (proc.zoom != zoom)
         {
             UpdateVRAMZoom(proc.zoom, proc.xOffset, proc.yOffset);
             zoom = proc.zoom;
         }
-        // drawZoomedBuffer(imageBuffer, proc.zoom, proc.xOffset, proc.yOffset);
-        // UpdateVRAMZoom(proc.zoom, proc.xOffset, proc.yOffset);
-        // DrawCursor(&proc);
 
+        // Save screen
+        // bank 1: draw cursor
+        // display screen
+        // restore bank 1 (saved in bank 3)
+        // update cursor position
+        //
+        // Flip the buffer by toggling the BACKBUFFER bit
+        // REG_DISPCNT ^= BACKBUFFER;
+        int x = proc.x;
+        int y = proc.y;
         HandleCursorInput(&proc);
+        DrawCursor(&proc, x, y);
+        if (proc.zoom)
+        {
+            updateScreen((u32)zoomBuffer);
+        }
+        else
+        {
+            updateScreen((u32)imageBuffer);
+        }
 
         if (CheckPressedKeys(SELECT_BUTTON))
         {
@@ -331,12 +423,10 @@ int main()
 
         proc.keysPrev = CheckPressedKeys(KEYS_MASK);
 
-        proc.color = GetPixel(proc.x, proc.y);
-
         // BufferPixel(proc.x, proc.y, proc.cursColId);
-
+        // VBlankIntrWait(); // Wait for vertical blank
         VSync();
-        InputPoll();
+        // VBlankIntrWait
     }
     return 0;
 }
