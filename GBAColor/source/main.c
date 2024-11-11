@@ -11,17 +11,8 @@
 #define White RGB2HEX(255, 255, 255)
 #define Black RGB2HEX(0, 0, 0)
 
-// Constants
-#define MAX_COLORS 9
 const u16 COLORS[] = { White, Yellow, Orange, Red, Blue, Green, Purple, Brown, Black };
-#define MAX_CURSOR_COLORS 5
-const u16 CURSOR_COLORS[] = {
-    1,      // CURRENT COLOR
-    0x7C11, // BLUE
-    0x11F,  // RED
-    0x7FFF, // WHITE
-    0       // BLACK
-};
+const u16 CURSOR_COLORS[] = { Blue, Red, White, Black };
 
 void VSync();
 void ClearScreen();
@@ -45,6 +36,7 @@ u32 CheckPressedKeys(u32 key)
 }
 
 #define imageBuffer ((u8 *)0x2000000)
+#define zoomBuffer ((u8 *)0x2000000 + (240 * 160))
 
 void VSync()
 {
@@ -54,31 +46,17 @@ void VSync()
     while (REG_VCOUNT < 160)
         ;
 }
-/*
-void VSync()
-{
-    if (REG_VCOUNT >= 160)
-    {
-        while (REG_VCOUNT >= 160)
-            ;
-        return;
-    }
-    else
-    {
-        while (REG_VCOUNT < 160)
-            ;
-    }
-}*/
 
 // clang-format off
 struct MainProc
 {
     s16 x;
     s16 y;
+    s16 xOffset; 
+    s16 yOffset; 
     u8 frame; 
     s8 size; // cursor 
     s8 mode; 
-    s8 quadrant; 
     s8 zoom;
     s8 cycle;
     s8 ActiveColorID;
@@ -96,10 +74,20 @@ void ClearScreen()
         imageBuffer[i] = 0;
     }
 }
-void BufferPixel(u32 x, u32 y, u16 col)
+void BufferPixel(u32 x, u32 y, u16 col, int zoom)
 {
     imageBuffer[x + y * 240] = col;
+    zoomBuffer[(x >> zoom) + (y >> zoom) * 240] = col;
 }
+
+void updateScreen(u32 src)
+{
+    // Configure DMA to copy from imageBuffer to VRAM
+    DMA0SAD = (u32)src;                                                         // Set source address
+    DMA0DAD = (u32)VRAM;                                                        // Set destination address
+    DMA0CNT_H = DMA_ENABLE | DMA_REPEAT | DMA_START_VBLANK | ((256 * 160) / 4); // Set transfer mode and size
+}
+
 void UpdateVRAM(void)
 {
     int x, y;
@@ -116,60 +104,31 @@ void UpdateVRAM(void)
         }
     }
 }
-void UpdateVRAMZoom(int zoom, int type, int frame)
+void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
 {
-    frame &= 1;
-    if (type < 0)
-    {
-        return;
-    }
-    int x = 0;
-    int y = 0;
+    int x = xOffset;
+    int y = yOffset;
     int xMax = 240;
     int yMax = 160;
-    switch (type)
-    {
-        case 0:
-        {
-            xMax >>= 1;
-            yMax >>= 1;
-            break;
-        }
-        case 1:
-        {
-            x = xMax >> 1;
-            yMax >>= 1;
-            break;
-        }
-        case 2:
-        {
-            xMax >>= 1;
-            y = yMax >> 1;
-            break;
-        }
-        case 3:
-        {
-            x = xMax >> 1;
-            y = yMax >> 1;
-            break;
-        }
-        default:
-    }
-    u8 * vramStart = &VRAM[0];
-    if (frame)
-    {
-        vramStart = &VRAM[0];
-    }
-    u8 * vramC;
-    u8 * buf;
+
+    u8 * dest;
+    u8 * src;
     for (int iy = y; iy <= yMax; ++iy)
     {
-        vramC = &vramStart[iy * 240];
-        buf = &imageBuffer[(iy >> zoom) * 240];
+        dest = &zoomBuffer[iy * 240];
+        src = &imageBuffer[(iy >> zoom) * 240];
         for (int ix = x; ix <= xMax; ++ix)
         {
-            vramC[ix] = buf[ix >> zoom];
+            dest[ix] = src[ix >> zoom];
         }
+    }
+    if (zoom)
+    {
+        updateScreen((u32)zoomBuffer);
+    }
+    else
+    {
+        updateScreen((u32)imageBuffer);
     }
 }
 
@@ -212,27 +171,12 @@ void DrawCursor(struct MainProc * proc)
 // 30x20
 // 15x10
 // 7x5
-//
-
-// x 120, 60, 30, 15, 8
-// y 80, 40, 20, 10, 5
-const int xQuadByZoom[] = { 120 << 4, 60 << 4, 30 << 4, 15 << 4, 15 << 3, 15 << 2 };
-const int yQuadByZoom[] = { 80 << 4, 40 << 4, 20 << 4, 10 << 4, 5 << 4, 5 << 3 };
 
 const u16 xSizeByZoom[] = { 240 << 2, 120 << 2, 60 << 2, 30 << 2, 15 << 2, 15 << 1, 15 }; // screen size
 const u16 ySizeByZoom[] = { 160 << 2, 80 << 2, 40 << 2, 20 << 2, 10 << 2, 10 << 1, 10 };
 
-int UpdateQuadrant(int x, int y, int zoom, int oX, int oY)
+void HandleCursorInput(struct MainProc * proc)
 {
-    // return (x / (120 << zoom)) + ((y / (80 << zoom)) * 2);
-    return ((x << 4) / xQuadByZoom[zoom]) + (((y << 4) / (yQuadByZoom[zoom])) * 2);
-}
-
-#define RefreshScreen 10
-
-int HandleCursorInput(struct MainProc * proc)
-{
-    int quadrant = proc->quadrant;
     int colorId = proc->colorId;
     int zoom = proc->zoom;
     int xOffset = 0;
@@ -245,8 +189,7 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->y = (ySizeByZoom[zoom] >> 2) - 1 + yOffset;
         }
-        BufferPixel(proc->x, proc->y, colorId);
-        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
+        BufferPixel(proc->x, proc->y, colorId, zoom);
     }
 
     if (CheckPressedKeys(DPAD_DOWN))
@@ -256,8 +199,7 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->y = yOffset;
         }
-        BufferPixel(proc->x, proc->y, colorId);
-        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
+        BufferPixel(proc->x, proc->y, colorId, zoom);
     }
 
     if (CheckPressedKeys(DPAD_LEFT))
@@ -267,8 +209,7 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->x = (xSizeByZoom[zoom] >> 2) - 1 + xOffset;
         }
-        BufferPixel(proc->x, proc->y, colorId);
-        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
+        BufferPixel(proc->x, proc->y, colorId, zoom);
     }
 
     if (CheckPressedKeys(DPAD_RIGHT))
@@ -278,10 +219,8 @@ int HandleCursorInput(struct MainProc * proc)
         {
             proc->x = xOffset;
         }
-        BufferPixel(proc->x, proc->y, colorId);
-        quadrant = UpdateQuadrant(proc->x, proc->y, zoom, xOffset, yOffset);
+        BufferPixel(proc->x, proc->y, colorId, zoom);
     }
-    return quadrant;
 }
 
 #define drawLines 0
@@ -322,6 +261,9 @@ void SetupPalette(struct MainProc * proc)
     dest[0] = Black;
 }
 
+#define SCREEN_WIDTH 240
+#define SCREEN_HEIGHT 160
+
 int main()
 {
     // VIDEO_MODE = DISPCNT_BG2_ON | DISPCNT_MODE_3;
@@ -340,10 +282,13 @@ int main()
     proc.zoom = 0;
     proc.cycle = 0;
     proc.cursColId = 7;
-    proc.quadrant = 0;
     proc.size = 0;
+    proc.xOffset = 0;
+    proc.yOffset = 0;
     SetupPalette(&proc);
-
+    updateScreen((u32)imageBuffer);
+    VRAM[0] = 1;
+    int zoom = proc.zoom;
     while (true)
     {
         // VIDEO_MODE = (VIDEO_MODE & ~(0x10)) | ((proc.frame & 1) << 4); // swap between frame 1 and 2
@@ -353,23 +298,24 @@ int main()
         {
             proc.cycle = 0;
         }
-        BufferPixel(proc.x, proc.y, proc.colorId);
-        // UpdateVRAM();
-        UpdateVRAMZoom(proc.zoom, proc.cycle, proc.frame);
-        if (proc.quadrant != proc.cycle)
-        {
-            UpdateVRAMZoom(proc.zoom, proc.quadrant, proc.frame);
-        }
-        DrawCursor(&proc);
+        BufferPixel(proc.x, proc.y, proc.colorId, proc.zoom);
 
-        proc.quadrant = HandleCursorInput(&proc);
+        if (proc.zoom != zoom)
+        {
+            UpdateVRAMZoom(proc.zoom, proc.xOffset, proc.yOffset);
+            zoom = proc.zoom;
+        }
+        // drawZoomedBuffer(imageBuffer, proc.zoom, proc.xOffset, proc.yOffset);
+        // UpdateVRAMZoom(proc.zoom, proc.xOffset, proc.yOffset);
+        // DrawCursor(&proc);
+
+        HandleCursorInput(&proc);
 
         if (CheckPressedKeys(SELECT_BUTTON))
         {
             // Change mode
             // ClearScreen();
             proc.zoom = ((proc.zoom + 1) % 6);
-            proc.quadrant = RefreshScreen;
         }
 
         // Cycle through palette

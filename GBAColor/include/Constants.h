@@ -38,6 +38,37 @@ typedef u32 bool32;
 #define OBJ_PLTT      (PLTT + 0x200)
 #define OBJ_PLTT_SIZE 0x200
 
+
+#define DMA0SAD       *(volatile u32*)0x40000B0  // Source address
+#define DMA0DAD       *(volatile u32*)0x40000B4  // Destination address
+#define DMA0CNT_L     *(volatile u16*)0x40000B8  // DMA control low
+#define DMA0CNT_H     *(volatile u16*)0x40000BA  // DMA control high
+
+#define DMA3SAD *(volatile u32*)0x40000d4
+#define DMA3DAD *(volatile u32*)0x40000d8
+#define DMA3CNT_L *(volatile u32*)0x40000dc
+#define DMA3CNT_H *(volatile u32*)0x40000de
+
+// DMA
+#define DMA_DEST_INC      0x0000
+#define DMA_DEST_DEC      0x0020
+#define DMA_DEST_FIXED    0x0040
+#define DMA_DEST_RELOAD   0x0060
+#define DMA_SRC_INC       0x0000
+#define DMA_SRC_DEC       0x0080
+#define DMA_SRC_FIXED     0x0100
+#define DMA_REPEAT        0x0200
+#define DMA_16BIT         0x0000
+#define DMA_32BIT         0x0400
+#define DMA_DREQ_ON       0x0800
+#define DMA_START_NOW     0x0000
+#define DMA_START_VBLANK  0x1000
+#define DMA_START_HBLANK  0x2000
+#define DMA_START_SPECIAL 0x3000
+#define DMA_START_MASK    0x3000
+#define DMA_INTR_ENABLE   0x4000
+#define DMA_ENABLE        0x8000
+
 #define REG_BASE 0x4000000 // I/O register base address
 #define VIDEO_MODE      *(u32*)0x4000000
 #define VRAM            ((u8*)0x6000000)
