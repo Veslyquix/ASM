@@ -73,7 +73,7 @@ typedef u32 bool32;
 
 #define VIDEO_MODE      *(u32*)0x4000000
 // #define VRAM            ((u8*)0x6000000)
-#define _VRAM ((u8*)0x6000000)
+#define _VRAM ((u16*)0x6000000)
 #define VRAM2            ((u8*)0x600A000)
 #define MODE_3          0x403
 #define REG_VCOUNT2      *(volatile u16*)0x04000006

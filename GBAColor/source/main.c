@@ -79,11 +79,12 @@ void ClearScreen()
 
 void DrawPix(u32 x, u32 y, u16 col)
 {
+
     _VRAM[(x) + (y) * 240] = col;
 }
 
 //
-
+// VRAM has a bus width of 16/32 bits, so this doesn't work.
 void BufferPixel(u32 x, u32 y, u16 col, int zoom)
 {
     if (col == 0)
@@ -93,12 +94,21 @@ void BufferPixel(u32 x, u32 y, u16 col, int zoom)
     imageBuffer[x + (y * 240)] = col;
     x <<= zoom;
     y <<= zoom;
-    for (int i = 0; i < (1 << zoom); ++i)
+    int tmp;
+    for (int iy = 0; iy < (1 << zoom); ++iy)
     {
-        for (int c = 0; c < (1 << zoom); ++c)
+        for (int ix = 0; ix < (1 << zoom); ix += 2)
         {
-            // zoomBuffer[(x) + (y) * 240] = col;
-            DrawPix((x) + i, (y) + c, col);
+            tmp = (x + ix) + (y + iy) * 240;
+            zoomBuffer[tmp] = col;
+            if (ix + 1 < 1 << zoom)
+            {
+                zoomBuffer[tmp + 1] = col;
+            }
+            tmp >>= 1; // ensure it is even
+            tmp <<= 1;
+
+            _VRAM[((x + ix) >> 1) + (y + iy) * 120] = zoomBuffer[tmp] | (zoomBuffer[tmp + 1] << 8);
         }
     }
 }
@@ -106,38 +116,36 @@ void BufferPixel(u32 x, u32 y, u16 col, int zoom)
 void UpdateVRAM(void)
 {
     int x, y;
-    u8 * vramStart = &_VRAM[0];
-    u8 * vramC;
-    u8 * buf;
+    u16 * vramStart = &_VRAM[0];
+    u16 * dest;
+    u8 * src;
     for (y = 0; y < 160; ++y)
     {
-        vramC = &vramStart[y * 240];
-        buf = &imageBuffer[y * 240];
-        for (x = 0; x < 240; ++x)
+        dest = &vramStart[y * 120];
+        src = &imageBuffer[y * 240];
+        for (x = 0; x < 240; x += 2)
         {
-            vramC[x] = buf[x];
+            dest[x >> 1] = src[x] | (src[x + 1] << 8);
         }
     }
 }
 void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
 {
-    int x = xOffset;
-    int y = yOffset;
-    int xMax = 240;
-    int yMax = 160;
-
     u8 * dest;
-    u8 * vramDest;
+    u16 * vramDest;
     u8 * src;
-    for (int iy = 0; iy <= yMax; ++iy)
+    int tmp;
+    for (int iy = 0; iy <= SCREEN_HEIGHT; ++iy)
     {
-        vramDest = &_VRAM[iy * 240];
-        dest = &zoomBuffer[iy * 240];
-        src = &imageBuffer[(iy >> zoom) * 240];
-        for (int ix = 0; ix <= xMax; ++ix)
+        vramDest = &_VRAM[iy * (SCREEN_WIDTH >> 1)];
+        dest = &zoomBuffer[iy * SCREEN_WIDTH];
+        src = &imageBuffer[((yOffset + iy) >> zoom) * SCREEN_WIDTH];
+        for (int ix = 0; ix <= SCREEN_WIDTH; ix += 2)
         {
-            dest[ix] = src[ix >> zoom];
-            vramDest[ix] = src[ix >> zoom];
+            tmp = src[(xOffset + ix) >> zoom] | (src[((xOffset + ix) >> zoom) + 1] << 8);
+            dest[ix] = tmp;          // u8
+            dest[ix + 1] = tmp;      // always the same since zoomed in
+            vramDest[ix >> 1] = tmp; // u16
         }
     }
 }
@@ -234,7 +242,7 @@ void DrawCursor(struct MainProc * proc, int x, int y)
     int zoom = proc->zoom;
     // int size = proc->size << zoom;
     int size = 1 << zoom;
-    u8 * dest = _VRAM;
+    u16 * dest = _VRAM;
     // copyBuffer(buffer, spriteBuffer);
     // copyBuffer(spriteBuffer, buffer);
 
