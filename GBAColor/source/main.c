@@ -184,31 +184,31 @@ void UpdateVRAM(void)
 }
 void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
 {
-    u8 * dest;
+    // u8 * dest;
     u16 * vramDest;
     u8 * src;
     int tmp;
 
     for (int iy = 0; iy <= SCREEN_HEIGHT; ++iy)
     {
-        int wrappedY = iy + yOffset;
-        if (wrappedY >= SCREEN_HEIGHT)
+        int wrappedY = (iy + yOffset) >> zoom;
+        if (wrappedY >= (SCREEN_HEIGHT))
         {
-            wrappedY -= SCREEN_HEIGHT; // Manually wrap Y
+            wrappedY %= (SCREEN_HEIGHT); // Manually wrap Y
         }
         vramDest = &_VRAM[iy * (SCREEN_WIDTH >> 1)];
-        dest = &zoomBuffer[iy * SCREEN_WIDTH];
-        src = &imageBuffer[(wrappedY >> zoom) * SCREEN_WIDTH];
+        // dest = &zoomBuffer[iy * SCREEN_WIDTH];
+        src = &imageBuffer[(wrappedY)*SCREEN_WIDTH];
         for (int ix = 0; ix <= SCREEN_WIDTH; ix += 2)
         {
-            int wrappedX = ix + xOffset;
-            if (wrappedX >= SCREEN_WIDTH)
+            int wrappedX = (ix + xOffset) >> zoom;
+            if (wrappedX >> zoom >= (SCREEN_WIDTH))
             {
-                wrappedX -= SCREEN_WIDTH; // Manually wrap X
+                wrappedX %= (SCREEN_WIDTH); // Manually wrap X
             }
-            tmp = src[(wrappedX) >> zoom] | (src[((wrappedX + 1) >> zoom)] << 8);
-            dest[ix] = tmp;          // u8
-            dest[ix + 1] = tmp;      // always the same since zoomed in
+            tmp = src[wrappedX] | (src[(wrappedX)] << 8);
+            // dest[ix] = tmp;          // u8
+            // dest[ix + 1] = tmp;      // always the same since zoomed in
             vramDest[ix >> 1] = tmp; // u16
         }
     }
