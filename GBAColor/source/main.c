@@ -139,20 +139,33 @@ void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
     u8 * src;
     int tmp;
     // maybe start at yOffset
-    for (int iy = 0; iy <= SCREEN_HEIGHT; ++iy)
+    for (int iy = yOffset; iy <= SCREEN_HEIGHT; ++iy)
     {
-        vramDest = &_VRAM[iy * (SCREEN_WIDTH >> 1)];
-        dest = &zoomBuffer[iy * SCREEN_WIDTH];
-        src = &imageBuffer[((yOffset + iy % SCREEN_HEIGHT) >> zoom) * SCREEN_WIDTH];
-        for (int ix = 0; ix <= SCREEN_WIDTH; ix += 2)
+        vramDest = &_VRAM[(iy - yOffset) * (SCREEN_WIDTH >> 1)];
+        dest = &zoomBuffer[(iy - yOffset) * SCREEN_WIDTH];
+        src = &imageBuffer[((iy) >> zoom) * SCREEN_WIDTH];
+        for (int ix = xOffset; ix <= SCREEN_WIDTH; ix += 2)
         {
-            tmp = src[(xOffset + ix % SCREEN_WIDTH) >> zoom] | (src[((xOffset + ix + 1 % SCREEN_WIDTH) >> zoom)] << 8);
-            dest[ix] = tmp;          // u8
-            dest[ix + 1] = tmp;      // always the same since zoomed in
-            vramDest[ix >> 1] = tmp; // u16
+            tmp = src[(xOffset + ix) >> zoom] | (src[((xOffset + ix + 1) >> zoom)] << 8);
+            dest[ix - xOffset] = tmp;            // u8
+            dest[ix - xOffset] = tmp;            // always the same since zoomed in
+            vramDest[(ix - xOffset) >> 1] = tmp; // u16
         }
     }
-    // repeat loop and end at yOffset % SCREEN_HEIGHT
+    // repeat loop and end at yOffset
+    for (int iy = 0; iy < yOffset; ++iy)
+    {
+        vramDest = &_VRAM[(iy + yOffset) * (SCREEN_WIDTH >> 1)];
+        dest = &zoomBuffer[(iy + yOffset) * SCREEN_WIDTH];
+        src = &imageBuffer[((iy) >> zoom) * SCREEN_WIDTH];
+        for (int ix = 0; ix < xOffset; ix += 2)
+        {
+            tmp = src[(ix) >> zoom] | (src[((ix + 1) >> zoom)] << 8);
+            dest[(ix + xOffset)] = tmp;          // u8
+            dest[(ix + xOffset) + 1] = tmp;      // always the same since zoomed in
+            vramDest[(ix + xOffset) >> 1] = tmp; // u16
+        }
+    }
 }
 
 void DrawPixel(u32 x, u32 y, u16 col, int zoom)
@@ -321,7 +334,7 @@ void HandleZoomArea(struct MainProc * proc)
         proc->yOffset--;
         if (proc->yOffset < 0)
         {
-            proc->yOffset = 0;
+            proc->yOffset = SCREEN_HEIGHT;
         }
         proc->offsetChanged = true;
     }
@@ -330,7 +343,7 @@ void HandleZoomArea(struct MainProc * proc)
         proc->yOffset++;
         if (proc->yOffset > SCREEN_HEIGHT) // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2)))
         {
-            proc->yOffset = SCREEN_HEIGHT; // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2));
+            proc->yOffset = 0; // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2));
         }
         proc->offsetChanged = true;
     }
@@ -339,7 +352,7 @@ void HandleZoomArea(struct MainProc * proc)
         proc->xOffset--;
         if (proc->xOffset < 0)
         {
-            proc->xOffset = 0;
+            proc->xOffset = SCREEN_WIDTH;
         }
         proc->offsetChanged = true;
     }
@@ -348,7 +361,7 @@ void HandleZoomArea(struct MainProc * proc)
         proc->xOffset++;
         if (proc->xOffset > 240) // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2)))
         {
-            proc->xOffset = 240; // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2));
+            proc->xOffset = 0; // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2));
         }
         proc->offsetChanged = true;
     }
