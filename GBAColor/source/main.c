@@ -1,29 +1,5 @@
 #include "Constants.h"
 
-#define RGB2HEX(red, green, blue) (red >> 3) | ((green >> 3) << 5) | ((blue >> 3) << 10)
-#define Blue RGB2HEX(27, 2, 218)
-#define Red RGB2HEX(218, 2, 5)
-#define Yellow RGB2HEX(232, 253, 77)
-#define Orange RGB2HEX(218, 83, 2)
-#define Green RGB2HEX(24, 196, 66)
-#define Purple RGB2HEX(188, 2, 218)
-#define Brown RGB2HEX(87, 23, 24)
-#define White RGB2HEX(255, 255, 255)
-#define Black RGB2HEX(0, 0, 0)
-
-const u16 COLORS[] = { White, Yellow, Orange, Red, Blue, Green, Purple, Brown, Black };
-const u16 CURSOR_COLORS[] = { Blue, Red, White, Black };
-
-void VSync();
-void ClearScreen();
-void DrawPixel(u32 x, u32 y, u16 col, int zoom);
-u16 GetPixel(u32 x, u32 y);
-
-int SetSwitch(u16 col, int _switch);
-
-void InputPoll();
-
-u32 INPUT_DATA;
 // clang-format off
 struct MainProc
 {
@@ -41,12 +17,85 @@ struct MainProc
     s8 exitMode; 
     s8 zoom;
     s8 cycle;
-    s8 ActiveColorID;
     
     u16 keysCur; 
     u16 keysPrev;
 };
 // clang-format on
+
+#define RGB2HEX(red, green, blue) (red >> 3) | ((green >> 3) << 5) | ((blue >> 3) << 10)
+#define Blue RGB2HEX(27, 2, 218)
+#define Red RGB2HEX(218, 2, 5)
+#define Yellow RGB2HEX(232, 253, 77)
+#define Orange RGB2HEX(218, 83, 2)
+#define Green RGB2HEX(24, 196, 66)
+#define Purple RGB2HEX(188, 2, 218)
+#define Brown RGB2HEX(87, 23, 24)
+#define White RGB2HEX(255, 255, 255)
+#define Black RGB2HEX(0, 0, 0)
+
+// const u16 COLORS[] = { White, Yellow, Orange, Red, Blue, Green, Purple, Brown, Black };
+const u16 CURSOR_COLORS[] = { Blue, Red, White, Black };
+// const u16 ColorBank[] = { Blue, Red, Yellow, Orange, Green, Purple, Brown, White };
+#define RGB5(red, green, blue) (red | green << 5 | blue << 10)
+
+const u16 ColorBank[] = {
+    RGB5(8, 0, 15),   // Dark Purple
+    RGB5(31, 0, 0),   // Red
+    RGB5(0, 31, 0),   // Green
+    RGB5(0, 0, 31),   // Blue
+    RGB5(31, 31, 0),  // Yellow
+    RGB5(31, 0, 31),  // Magenta
+    RGB5(0, 31, 31),  // Cyan
+    RGB5(31, 31, 31), // White
+    RGB5(15, 15, 15), // Gray
+    RGB5(31, 15, 0),  // Orange
+    RGB5(15, 31, 0),  // Lime
+    RGB5(0, 15, 31),  // Light Blue
+    RGB5(31, 15, 31), // Pink
+    RGB5(15, 0, 31),  // Purple
+    RGB5(15, 31, 15), // Mint
+    RGB5(25, 25, 25)  // Light Gray
+};
+
+void SetupPalette(struct MainProc * proc)
+{
+    u16 * dest = (u16 *)PLTT;
+    int colorCount = sizeof(ColorBank) / sizeof(ColorBank[0]);
+
+    // Fill the palette with progressively darker shades of each base color
+    for (int i = 0; i < colorCount; ++i)
+    {
+        u16 baseColor = ColorBank[i];
+        u8 baseRed = baseColor & 0x1F;
+        u8 baseGreen = (baseColor >> 5) & 0x1F;
+        u8 baseBlue = (baseColor >> 10) & 0x1F;
+
+        for (int shade = 0; shade < 16; ++shade)
+        {
+            // Gradually reduce brightness by scaling each component
+            u8 newRed = (baseRed * (16 - shade) / (8 + (baseRed >> 1))) & 0x1F;
+            u8 newGreen = (baseGreen * (16 - shade) / (8 + (baseGreen >> 1))) & 0x1F;
+            u8 newBlue = (baseBlue * (16 - shade) / (8 + (baseBlue >> 1))) & 0x1F;
+
+            // Combine into final color
+            u16 newShade = newRed | (newGreen << 5) | (newBlue << 10);
+            dest[i * 16 + shade] = newShade;
+        }
+    }
+    dest[0] = Black;
+}
+
+void VSync();
+void ClearScreen();
+void DrawPixel(u32 x, u32 y, u16 col, int zoom);
+u16 GetPixel(u32 x, u32 y);
+
+int SetSwitch(u16 col, int _switch);
+
+void InputPoll();
+
+u32 INPUT_DATA;
 
 void InputPoll(struct MainProc * proc)
 {
@@ -172,24 +221,7 @@ u16 GetPixel(u32 x, u32 y)
 {
     return imageBuffer[x + y * 240];
 }
-const u16 spritePalette[16] = {
-    RGB2HEX(0, 0, 0),    // Black
-    RGB2HEX(31, 0, 0),   // Red
-    RGB2HEX(0, 31, 0),   // Green
-    RGB2HEX(0, 0, 31),   // Blue
-    RGB2HEX(31, 31, 0),  // Yellow
-    RGB2HEX(31, 0, 31),  // Magenta
-    RGB2HEX(0, 31, 31),  // Cyan
-    RGB2HEX(31, 31, 31), // White
-    RGB2HEX(15, 15, 15), // Gray
-    RGB2HEX(31, 15, 0),  // Orange
-    RGB2HEX(15, 31, 0),  // Lime
-    RGB2HEX(0, 15, 31),  // Light Blue
-    RGB2HEX(31, 15, 31), // Pink
-    RGB2HEX(15, 0, 31),  // Purple
-    RGB2HEX(15, 31, 15), // Mint
-    RGB2HEX(25, 25, 25)  // Light Gray
-};
+
 const u8 spriteTiles[128] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Row 1
     0x00, 0x00, 0x07, 0x70, 0x00, 0x00, 0x00, 0x00, // Row 2
@@ -208,26 +240,6 @@ const u8 spriteTiles[128] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // Row 15
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  // Row 16
 };
-
-void restoreBuffer(u8 * buffer, int x, int y)
-{
-    for (int row = 0; row < 16; row++)
-    {
-        for (int col = 0; col < 8; col++)
-        {
-            int screenX = x + col;
-            int screenY = y + row;
-
-            // Ensure the sprite is within screen bounds
-            if (screenX < SCREEN_WIDTH && screenY < SCREEN_HEIGHT)
-            {
-
-                // Set pixel in buffer (index-based for 8-bit Mode 4)
-                buffer[screenY * SCREEN_WIDTH + screenX] = spriteBuffer[row * 16 + col];
-            }
-        }
-    }
-}
 
 void drawSpriteToBuffer(u8 * buffer, int x, int y)
 {
@@ -432,36 +444,6 @@ void HandleCursorInput(struct MainProc * proc)
     }
 }
 
-const u16 ColorBank[] = { Blue, Red, Yellow, Orange, Green, Purple, Brown, White };
-
-void SetupPalette(struct MainProc * proc)
-{
-    u16 * dest = (u16 *)PLTT;
-    int colorCount = sizeof(ColorBank) / sizeof(ColorBank[0]);
-
-    // Fill the palette with progressively darker shades of each base color
-    for (int i = 0; i < colorCount; ++i)
-    {
-        u16 baseColor = ColorBank[i];
-        u8 baseRed = baseColor & 0x1F;
-        u8 baseGreen = (baseColor >> 5) & 0x1F;
-        u8 baseBlue = (baseColor >> 10) & 0x1F;
-
-        for (int shade = 0; shade < 16; ++shade)
-        {
-            // Gradually reduce brightness by scaling each component
-            u8 newRed = (baseRed * (16 - shade) / 16) & 0x1F;
-            u8 newGreen = (baseGreen * (16 - shade) / 16) & 0x1F;
-            u8 newBlue = (baseBlue * (16 - shade) / 16) & 0x1F;
-
-            // Combine into final color
-            u16 newShade = newRed | (newGreen << 5) | (newBlue << 10);
-            dest[i * 16 + shade] = newShade;
-        }
-    }
-    dest[0] = Black;
-}
-
 #define SCREEN_WIDTH 240
 #define SCREEN_HEIGHT 160
 #define PROC_RAM ((void *)0x3000000)
@@ -476,7 +458,6 @@ int main()
     proc->x = 0;
     proc->y = 0;
     // u32 x = 120, y = 80;
-    proc->ActiveColorID = 0;
     proc->colorId = 1;
     proc->keysPrev = 0;
     proc->zoom = 0;
@@ -515,14 +496,14 @@ int main()
         }
 
         // Cycle through palette
-        if (CheckPressedKeys(proc, L_BUTTON) & proc->keysPrev)
+        if (CheckPressedKeys(proc, L_BUTTON))
         {
-            proc->ActiveColorID = ((proc->ActiveColorID - 1) % sizeof(COLORS));
+            proc->colorId = ((proc->colorId - 1) % (sizeof(ColorBank) * 16 / sizeof(ColorBank[0])));
         }
 
-        if (CheckPressedKeys(proc, R_BUTTON) & proc->keysPrev)
+        if (CheckPressedKeys(proc, R_BUTTON))
         {
-            proc->ActiveColorID = ((proc->ActiveColorID + 1) % sizeof(COLORS));
+            proc->colorId = ((proc->colorId + 1) % (sizeof(ColorBank) * 16 / sizeof(ColorBank[0])));
         }
 
         proc->keysPrev = CheckPressedKeys(proc, KEYS_MASK);
