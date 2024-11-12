@@ -83,8 +83,6 @@ void DrawPix(u32 x, u32 y, u16 col)
     _VRAM[(x) + (y) * 240] = col;
 }
 
-//
-// VRAM has a bus width of 16/32 bits, so this doesn't work.
 void BufferPixel(u32 x, u32 y, u16 col, int zoom)
 {
     if (col == 0)
@@ -142,7 +140,7 @@ void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
         src = &imageBuffer[((yOffset + iy) >> zoom) * SCREEN_WIDTH];
         for (int ix = 0; ix <= SCREEN_WIDTH; ix += 2)
         {
-            tmp = src[(xOffset + ix) >> zoom] | (src[((xOffset + ix) >> zoom) + 1] << 8);
+            tmp = src[(xOffset + ix) >> zoom] | (src[((xOffset + ix + 1) >> zoom)] << 8);
             dest[ix] = tmp;          // u8
             dest[ix + 1] = tmp;      // always the same since zoomed in
             vramDest[ix >> 1] = tmp; // u16
