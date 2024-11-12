@@ -76,6 +76,14 @@ void ClearScreen()
         imageBuffer[i] = 0;
     }
 }
+
+void DrawPix(u32 x, u32 y, u16 col)
+{
+    _VRAM[(x) + (y) * 240] = col;
+}
+
+//
+
 void BufferPixel(u32 x, u32 y, u16 col, int zoom)
 {
     if (col == 0)
@@ -83,22 +91,16 @@ void BufferPixel(u32 x, u32 y, u16 col, int zoom)
         col = 0x20;
     }
     imageBuffer[x + (y * 240)] = col;
-    zoomBuffer[(x >> zoom) + (y >> zoom) * 240] = col;
-}
-#define MODE4_FRONTBUFFER ((u32 *)0x6000000)
-void updateScreen(u32 src)
-{
-    // Configure DMA to copy from imageBuffer to VRAM
-    DMA3SAD = (u32)src;                                                     // Set source address
-    DMA3DAD = (u32)MODE4_FRONTBUFFER;                                       // Set destination address
-    DMA3CNT_H = DMA_ENABLE | DMA_START_VBLANK | DMA_REPEAT | ((240 * 160)); // Set transfer mode and size
-} //
-void copyBuffer(u32 src, u32 dest)
-{
-    // Configure DMA to copy from imageBuffer to VRAM
-    DMA0SAD = (u32)src;                                            // Set source address
-    DMA0DAD = (u32)dest;                                           // Set destination address
-    DMA0CNT_H = DMA_ENABLE | DMA_START_VBLANK | ((240 * 160) / 2); // Set transfer mode and size
+    x <<= zoom;
+    y <<= zoom;
+    for (int i = 0; i < (1 << zoom); ++i)
+    {
+        for (int c = 0; c < (1 << zoom); ++c)
+        {
+            // zoomBuffer[(x) + (y) * 240] = col;
+            DrawPix((x) + i, (y) + c, col);
+        }
+    }
 }
 
 void UpdateVRAM(void)
@@ -125,14 +127,17 @@ void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
     int yMax = 160;
 
     u8 * dest;
+    u8 * vramDest;
     u8 * src;
-    for (int iy = y; iy <= yMax; ++iy)
+    for (int iy = 0; iy <= yMax; ++iy)
     {
+        vramDest = &_VRAM[iy * 240];
         dest = &zoomBuffer[iy * 240];
         src = &imageBuffer[(iy >> zoom) * 240];
-        for (int ix = x; ix <= xMax; ++ix)
+        for (int ix = 0; ix <= xMax; ++ix)
         {
             dest[ix] = src[ix >> zoom];
+            vramDest[ix] = src[ix >> zoom];
         }
     }
 }
@@ -235,7 +240,7 @@ void DrawCursor(struct MainProc * proc, int x, int y)
 
     // restoreBuffer(dest, x << zoom, y << zoom);
     // drawSpriteToBuffer(dest, proc->x << zoom, proc->y << zoom);
-    BufferPixel(proc->x, proc->y, zoom, col);
+    // BufferPixel(proc->x, proc->y, zoom, col);
     // _VRAM[proc->y * 240 + proc->x] = col;
     // DrawPixel(proc->x, proc->y, zoom, col);
     return;
@@ -375,8 +380,6 @@ int main()
     proc->xOffset = 0;
     proc->yOffset = 0;
     SetupPalette(proc);
-    _VRAM[0] = 1;
-    updateScreen((u32)imageBuffer);
     int zoom = proc->zoom;
     while (true)
     {
@@ -389,14 +392,6 @@ int main()
             UpdateVRAMZoom(proc->zoom, proc->xOffset, proc->yOffset);
             zoom = proc->zoom;
         }
-        // if (proc->zoom)
-        // {
-        // updateScreen((u32)zoomBuffer);
-        // }
-        // else
-        // {
-        // updateScreen((u32)imageBuffer);
-        // }
 
         int x = proc->x;
         int y = proc->y;
