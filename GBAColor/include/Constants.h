@@ -1,9 +1,15 @@
 #ifndef _CONSTANTS_H
 #define _CONSTANTS_H
+
+#define SCREEN_HEIGHT 160 
+#define SCREEN_WIDTH 240 
+
+#include "io_reg.h"
 #include <stdint.h>
-#include <gba_sprites.h>
-#include <gba_video.h>
-#include <gba_systemcalls.h>
+#include <stdbool.h> 
+// #include <gba_sprites.h>
+// #include <gba_video.h>
+// #include <gba_systemcalls.h>
 
 typedef uint8_t   u8;
 typedef uint16_t u16;
@@ -117,6 +123,8 @@ typedef u32 bool32;
 #define KEY_AND_INTR    0x8000
 #define DPAD_ANY        0x00F0
 #define JOY_EXCL_DPAD   0x030F
+
+
 
 
 #endif

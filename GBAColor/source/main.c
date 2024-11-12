@@ -26,13 +26,21 @@ u32 CheckPressedKeys(u32 key);
 
 u32 INPUT_DATA;
 
-void InputPoll()
+void InputPoll(void)
 {
-    INPUT_DATA = INPUT_MASK | INPUT_MEMORY;
+    u32 keys = ~REG_KEYINPUT;
+
+    keys &= KEYS_MASK;
+    INPUT_DATA = keys;
 }
+
+// void InputPoll()
+// {
+// INPUT_DATA = INPUT_MASK | INPUT_MEMORY;
+// }
 u32 CheckPressedKeys(u32 key)
 {
-    return !(INPUT_DATA & key);
+    return INPUT_DATA & key;
 }
 
 #define imageBuffer ((u8 *)0x2000000)
@@ -57,8 +65,10 @@ struct MainProc
     s16 y;
     s16 xOffset; 
     s16 yOffset; 
+    u8 offsetChanged; 
     u8 frame; 
     s8 size; // cursor 
+    s8 zoomInit; 
     s8 mode; 
     s8 zoom;
     s8 cycle;
@@ -277,8 +287,84 @@ void DrawCursor(struct MainProc * proc, int x, int y)
 const u16 xSizeByZoom[] = { 240 << 2, 120 << 2, 60 << 2, 30 << 2, 15 << 2, 15 << 1, 15 }; // screen size
 const u16 ySizeByZoom[] = { 160 << 2, 80 << 2, 40 << 2, 20 << 2, 10 << 2, 10 << 1, 10 };
 
+#define drawLines 0
+#define zoomArea 1
+
+const u8 modeTypes[] = {
+    drawLines,
+    zoomArea,
+};
+
+void HandleZoomArea(struct MainProc * proc)
+{
+    if (!proc->zoomInit)
+    {
+        proc->zoomInit = true;
+        proc->zoom = ((proc->zoom + 1) % 6);
+        UpdateVRAMZoom(proc->zoom, proc->xOffset, proc->yOffset);
+    }
+    int zoom = proc->zoom;
+
+    if (CheckPressedKeys(DPAD_UP))
+    {
+        proc->yOffset--;
+        if (proc->yOffset < 0)
+        {
+            proc->yOffset = 0;
+        }
+        proc->offsetChanged = true;
+    }
+    if (CheckPressedKeys(DPAD_DOWN))
+    {
+        proc->yOffset++;
+        if (proc->yOffset > SCREEN_HEIGHT >> zoom)
+        {
+            proc->yOffset = SCREEN_HEIGHT >> zoom;
+        }
+        proc->offsetChanged = true;
+    }
+    if (CheckPressedKeys(DPAD_LEFT))
+    {
+        proc->xOffset--;
+        if (proc->xOffset < 0)
+        {
+            proc->xOffset = 0;
+        }
+        proc->offsetChanged = true;
+    }
+    if (CheckPressedKeys(DPAD_RIGHT))
+    {
+        proc->xOffset++;
+        if (proc->xOffset > SCREEN_WIDTH >> zoom)
+        {
+            proc->xOffset = SCREEN_WIDTH >> zoom;
+        }
+        proc->offsetChanged = true;
+    }
+    if (proc->frame & 4)
+    {
+        if (!CheckPressedKeys(START_BUTTON))
+        {
+            proc->mode = drawLines;
+            proc->zoomInit = false;
+            return;
+        }
+        if (proc->offsetChanged)
+        {
+
+            UpdateVRAMZoom(zoom, proc->xOffset, proc->yOffset);
+            proc->offsetChanged = false;
+        }
+    }
+}
+
 void HandleCursorInput(struct MainProc * proc)
 {
+    if (proc->mode == zoomArea)
+    {
+        return HandleZoomArea(proc);
+    }
+
     int colorId = proc->colorId;
     int zoom = proc->zoom;
     int xOffset = 0;
@@ -324,14 +410,6 @@ void HandleCursorInput(struct MainProc * proc)
         BufferPixel(proc->x, proc->y, colorId, zoom);
     }
 }
-
-#define drawLines 0
-#define zoomArea 1
-
-const u8 modeTypes[] = {
-    drawLines,
-    zoomArea,
-};
 
 const u16 ColorBank[] = { Blue, Red, Yellow, Orange, Green, Purple, Brown, White };
 
@@ -385,30 +463,33 @@ int main()
     proc->size = 0;
     proc->xOffset = 0;
     proc->yOffset = 0;
+    proc->offsetChanged = false;
+    proc->zoomInit = false;
     SetupPalette(proc);
     int zoom = proc->zoom;
     while (true)
     {
         // REG_DISPCNT ^= BACKBUFFER;
         //
+        proc->frame++;
         InputPoll();
 
-        if (proc->zoom != zoom)
-        {
-            UpdateVRAMZoom(proc->zoom, proc->xOffset, proc->yOffset);
-            zoom = proc->zoom;
-        }
+        // if (proc->zoom != zoom)
+        // {
+        // UpdateVRAMZoom(proc->zoom, proc->xOffset, proc->yOffset);
+        // zoom = proc->zoom;
+        // }
 
         int x = proc->x;
         int y = proc->y;
         HandleCursorInput(proc);
         DrawCursor(proc, x, y);
 
-        if (CheckPressedKeys(SELECT_BUTTON))
+        if (CheckPressedKeys(START_BUTTON))
         {
             // Change mode
             // ClearScreen();
-            proc->zoom = ((proc->zoom + 1) % 6);
+            proc->mode = zoomArea;
         }
 
         // Cycle through palette
