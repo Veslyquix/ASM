@@ -138,21 +138,30 @@ void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
     u16 * vramDest;
     u8 * src;
     int tmp;
-    // maybe start at yOffset
+
     for (int iy = 0; iy <= SCREEN_HEIGHT; ++iy)
     {
+        int wrappedY = iy + yOffset;
+        if (wrappedY >= SCREEN_HEIGHT)
+        {
+            wrappedY -= SCREEN_HEIGHT; // Manually wrap Y
+        }
         vramDest = &_VRAM[iy * (SCREEN_WIDTH >> 1)];
         dest = &zoomBuffer[iy * SCREEN_WIDTH];
-        src = &imageBuffer[((yOffset + iy % SCREEN_HEIGHT) >> zoom) * SCREEN_WIDTH];
+        src = &imageBuffer[(wrappedY >> zoom) * SCREEN_WIDTH];
         for (int ix = 0; ix <= SCREEN_WIDTH; ix += 2)
         {
-            tmp = src[(xOffset + ix % SCREEN_WIDTH) >> zoom] | (src[((xOffset + ix + 1 % SCREEN_WIDTH) >> zoom)] << 8);
+            int wrappedX = ix + xOffset;
+            if (wrappedX >= SCREEN_WIDTH)
+            {
+                wrappedX -= SCREEN_WIDTH; // Manually wrap X
+            }
+            tmp = src[(wrappedX) >> zoom] | (src[((wrappedX + 1) >> zoom)] << 8);
             dest[ix] = tmp;          // u8
             dest[ix + 1] = tmp;      // always the same since zoomed in
             vramDest[ix >> 1] = tmp; // u16
         }
     }
-    // repeat loop and end at yOffset % SCREEN_HEIGHT
 }
 
 void DrawPixel(u32 x, u32 y, u16 col, int zoom)
@@ -316,39 +325,39 @@ void HandleZoomArea(struct MainProc * proc)
 
     int zoom = proc->zoom;
 
-    if (CheckPressedKeys(proc, DPAD_UP))
+    if (CheckPressedKeys(proc, DPAD_DOWN))
     {
         proc->yOffset--;
         if (proc->yOffset < 0)
         {
-            proc->yOffset = 0;
+            proc->yOffset = SCREEN_HEIGHT;
         }
         proc->offsetChanged = true;
     }
-    if (CheckPressedKeys(proc, DPAD_DOWN))
+    if (CheckPressedKeys(proc, DPAD_UP))
     {
         proc->yOffset++;
         if (proc->yOffset > SCREEN_HEIGHT) // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2)))
         {
-            proc->yOffset = SCREEN_HEIGHT; // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2));
-        }
-        proc->offsetChanged = true;
-    }
-    if (CheckPressedKeys(proc, DPAD_LEFT))
-    {
-        proc->xOffset--;
-        if (proc->xOffset < 0)
-        {
-            proc->xOffset = 0;
+            proc->yOffset = 0; // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2));
         }
         proc->offsetChanged = true;
     }
     if (CheckPressedKeys(proc, DPAD_RIGHT))
     {
+        proc->xOffset--;
+        if (proc->xOffset < 0)
+        {
+            proc->xOffset = SCREEN_WIDTH;
+        }
+        proc->offsetChanged = true;
+    }
+    if (CheckPressedKeys(proc, DPAD_LEFT))
+    {
         proc->xOffset++;
         if (proc->xOffset > 240) // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2)))
         {
-            proc->xOffset = 240; // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2));
+            proc->xOffset = 0; // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2));
         }
         proc->offsetChanged = true;
     }
