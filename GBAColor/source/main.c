@@ -73,15 +73,16 @@ void SetupPalette(struct MainProc * proc)
 
         for (int shade = 0; shade < 16; ++shade)
         {
-            // Gradually reduce brightness by scaling each component
-            u8 newRed = (baseRed * (16 - shade) / (8 + (baseRed >> 1))) & 0x1F;
-            u8 newGreen = (baseGreen * (16 - shade) / (8 + (baseGreen >> 1))) & 0x1F;
-            u8 newBlue = (baseBlue * (16 - shade) / (8 + (baseBlue >> 1))) & 0x1F;
+            // Adjust scaling factors to keep colors brighter toward the end of the gradient
+            u8 newRed = ((baseRed * (32 - shade)) / 32) & 0x1F;     // Red fades moderately
+            u8 newGreen = ((baseGreen * (32 - shade)) / 32) & 0x1F; // Green fades slightly slower
+            u8 newBlue = ((baseBlue * (32 - shade)) / 32) & 0x1F;   // Blue fades the slowest
 
             // Combine into final color
             u16 newShade = newRed | (newGreen << 5) | (newBlue << 10);
             dest[i * 16 + shade] = newShade;
         }
+        dest[i * 16] = baseColor;
     }
     dest[0] = Black;
 }
