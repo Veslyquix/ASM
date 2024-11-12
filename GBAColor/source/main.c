@@ -22,40 +22,8 @@ u16 GetPixel(u32 x, u32 y);
 int SetSwitch(u16 col, int _switch);
 
 void InputPoll();
-u32 CheckPressedKeys(u32 key);
 
 u32 INPUT_DATA;
-
-void InputPoll(void)
-{
-    u32 keys = ~REG_KEYINPUT;
-
-    keys &= KEYS_MASK;
-    INPUT_DATA = keys;
-}
-
-// void InputPoll()
-// {
-// INPUT_DATA = INPUT_MASK | INPUT_MEMORY;
-// }
-u32 CheckPressedKeys(u32 key)
-{
-    return INPUT_DATA & key;
-}
-
-#define imageBuffer ((u8 *)0x2000000)
-#define zoomBuffer ((u8 *)0x2000000 + (240 * 160))
-#define spriteBuffer ((u8 *)zoomBuffer + (240 * 160))
-
-void VSync()
-{
-
-    while (REG_VCOUNT2 >= 160)
-        ;
-    while (REG_VCOUNT2 < 160)
-        ;
-}
-
 // clang-format off
 struct MainProc
 {
@@ -70,14 +38,41 @@ struct MainProc
     s8 size; // cursor 
     s8 zoomInit; 
     s8 mode; 
+    s8 exitMode; 
     s8 zoom;
     s8 cycle;
     s8 ActiveColorID;
     
-
+    u16 keysCur; 
     u16 keysPrev;
 };
 // clang-format on
+
+void InputPoll(struct MainProc * proc)
+{
+    u32 keys = ~REG_KEYINPUT;
+
+    keys &= KEYS_MASK;
+    proc->keysCur = keys;
+}
+
+u32 CheckPressedKeys(struct MainProc * proc, u32 key)
+{
+    return (key & proc->keysCur);
+}
+
+#define imageBuffer ((u8 *)0x2000000)
+#define zoomBuffer ((u8 *)0x2000000 + (240 * 160))
+#define spriteBuffer ((u8 *)zoomBuffer + (240 * 160))
+
+void VSync()
+{
+
+    while (REG_VCOUNT2 >= 160)
+        ;
+    while (REG_VCOUNT2 < 160)
+        ;
+}
 
 void ClearScreen()
 {
@@ -143,19 +138,21 @@ void UpdateVRAMZoom(int zoom, int xOffset, int yOffset)
     u16 * vramDest;
     u8 * src;
     int tmp;
+    // maybe start at yOffset
     for (int iy = 0; iy <= SCREEN_HEIGHT; ++iy)
     {
         vramDest = &_VRAM[iy * (SCREEN_WIDTH >> 1)];
         dest = &zoomBuffer[iy * SCREEN_WIDTH];
-        src = &imageBuffer[((yOffset + iy) >> zoom) * SCREEN_WIDTH];
+        src = &imageBuffer[((yOffset + iy % SCREEN_HEIGHT) >> zoom) * SCREEN_WIDTH];
         for (int ix = 0; ix <= SCREEN_WIDTH; ix += 2)
         {
-            tmp = src[(xOffset + ix) >> zoom] | (src[((xOffset + ix + 1) >> zoom)] << 8);
+            tmp = src[(xOffset + ix % SCREEN_WIDTH) >> zoom] | (src[((xOffset + ix + 1 % SCREEN_WIDTH) >> zoom)] << 8);
             dest[ix] = tmp;          // u8
             dest[ix + 1] = tmp;      // always the same since zoomed in
             vramDest[ix >> 1] = tmp; // u16
         }
     }
+    // repeat loop and end at yOffset % SCREEN_HEIGHT
 }
 
 void DrawPixel(u32 x, u32 y, u16 col, int zoom)
@@ -287,6 +284,8 @@ void DrawCursor(struct MainProc * proc, int x, int y)
 const u16 xSizeByZoom[] = { 240 << 2, 120 << 2, 60 << 2, 30 << 2, 15 << 2, 15 << 1, 15 }; // screen size
 const u16 ySizeByZoom[] = { 160 << 2, 80 << 2, 40 << 2, 20 << 2, 10 << 2, 10 << 1, 10 };
 
+// xSizeByZoom[zoom]>>2
+// ABS(SCREEN_WIDTH - (xSizeByZoom[zoom]>>2))
 #define drawLines 0
 #define zoomArea 1
 
@@ -303,9 +302,21 @@ void HandleZoomArea(struct MainProc * proc)
         proc->zoom = ((proc->zoom + 1) % 6);
         UpdateVRAMZoom(proc->zoom, proc->xOffset, proc->yOffset);
     }
+    if (CheckPressedKeys(proc, B_BUTTON))
+    {
+        proc->exitMode = true;
+    }
+    if (!(proc->keysPrev & START_BUTTON)) // if we press start again, then zoom in again
+    {
+        if (CheckPressedKeys(proc, START_BUTTON))
+        {
+            proc->zoomInit = false;
+        }
+    }
+
     int zoom = proc->zoom;
 
-    if (CheckPressedKeys(DPAD_UP))
+    if (CheckPressedKeys(proc, DPAD_UP))
     {
         proc->yOffset--;
         if (proc->yOffset < 0)
@@ -314,16 +325,16 @@ void HandleZoomArea(struct MainProc * proc)
         }
         proc->offsetChanged = true;
     }
-    if (CheckPressedKeys(DPAD_DOWN))
+    if (CheckPressedKeys(proc, DPAD_DOWN))
     {
         proc->yOffset++;
-        if (proc->yOffset > SCREEN_HEIGHT >> zoom)
+        if (proc->yOffset > SCREEN_HEIGHT) // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2)))
         {
-            proc->yOffset = SCREEN_HEIGHT >> zoom;
+            proc->yOffset = SCREEN_HEIGHT; // abs(SCREEN_HEIGHT - (ySizeByZoom[zoom] >> 2));
         }
         proc->offsetChanged = true;
     }
-    if (CheckPressedKeys(DPAD_LEFT))
+    if (CheckPressedKeys(proc, DPAD_LEFT))
     {
         proc->xOffset--;
         if (proc->xOffset < 0)
@@ -332,28 +343,29 @@ void HandleZoomArea(struct MainProc * proc)
         }
         proc->offsetChanged = true;
     }
-    if (CheckPressedKeys(DPAD_RIGHT))
+    if (CheckPressedKeys(proc, DPAD_RIGHT))
     {
         proc->xOffset++;
-        if (proc->xOffset > SCREEN_WIDTH >> zoom)
+        if (proc->xOffset > 240) // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2)))
         {
-            proc->xOffset = SCREEN_WIDTH >> zoom;
+            proc->xOffset = 240; // abs(SCREEN_WIDTH - (xSizeByZoom[zoom] >> 2));
         }
         proc->offsetChanged = true;
     }
-    if (proc->frame & 4)
+    if ((proc->frame % 8) == 0)
     {
-        if (!CheckPressedKeys(START_BUTTON))
-        {
-            proc->mode = drawLines;
-            proc->zoomInit = false;
-            return;
-        }
+
         if (proc->offsetChanged)
         {
 
             UpdateVRAMZoom(zoom, proc->xOffset, proc->yOffset);
             proc->offsetChanged = false;
+        }
+        if (proc->exitMode)
+        {
+            proc->mode = drawLines;
+            proc->zoomInit = false;
+            proc->exitMode = false;
         }
     }
 }
@@ -370,7 +382,7 @@ void HandleCursorInput(struct MainProc * proc)
     int xOffset = 0;
     int yOffset = 0;
 
-    if (CheckPressedKeys(DPAD_UP))
+    if (CheckPressedKeys(proc, DPAD_UP))
     {
         proc->y--;
         if (proc->y < yOffset) // if outside border of screen, jump to opposite edge
@@ -380,7 +392,7 @@ void HandleCursorInput(struct MainProc * proc)
         BufferPixel(proc->x, proc->y, colorId, zoom);
     }
 
-    if (CheckPressedKeys(DPAD_DOWN))
+    if (CheckPressedKeys(proc, DPAD_DOWN))
     {
         proc->y++;
         if (proc->y >= ((ySizeByZoom[zoom] >> 2) + yOffset))
@@ -390,7 +402,7 @@ void HandleCursorInput(struct MainProc * proc)
         BufferPixel(proc->x, proc->y, colorId, zoom);
     }
 
-    if (CheckPressedKeys(DPAD_LEFT))
+    if (CheckPressedKeys(proc, DPAD_LEFT))
     {
         proc->x--;
         if (proc->x < xOffset)
@@ -400,7 +412,7 @@ void HandleCursorInput(struct MainProc * proc)
         BufferPixel(proc->x, proc->y, colorId, zoom);
     }
 
-    if (CheckPressedKeys(DPAD_RIGHT))
+    if (CheckPressedKeys(proc, DPAD_RIGHT))
     {
         proc->x++;
         if (proc->x >= ((xSizeByZoom[zoom] >> 2) + xOffset))
@@ -450,6 +462,7 @@ int main()
     VIDEO_MODE = DISPCNT_OBJ_ON | DISPCNT_BG2_ON | DISPCNT_MODE_4;
     struct MainProc * proc = PROC_RAM;
     proc->mode = drawLines;
+    proc->exitMode = false;
     proc->frame = 0;
     proc->x = 0;
     proc->y = 0;
@@ -472,7 +485,7 @@ int main()
         // REG_DISPCNT ^= BACKBUFFER;
         //
         proc->frame++;
-        InputPoll();
+        InputPoll(proc);
 
         // if (proc->zoom != zoom)
         // {
@@ -485,7 +498,7 @@ int main()
         HandleCursorInput(proc);
         DrawCursor(proc, x, y);
 
-        if (CheckPressedKeys(START_BUTTON))
+        if (CheckPressedKeys(proc, START_BUTTON))
         {
             // Change mode
             // ClearScreen();
@@ -493,17 +506,17 @@ int main()
         }
 
         // Cycle through palette
-        if (CheckPressedKeys(L_BUTTON) & proc->keysPrev)
+        if (CheckPressedKeys(proc, L_BUTTON) & proc->keysPrev)
         {
             proc->ActiveColorID = ((proc->ActiveColorID - 1) % sizeof(COLORS));
         }
 
-        if (CheckPressedKeys(R_BUTTON) & proc->keysPrev)
+        if (CheckPressedKeys(proc, R_BUTTON) & proc->keysPrev)
         {
             proc->ActiveColorID = ((proc->ActiveColorID + 1) % sizeof(COLORS));
         }
 
-        proc->keysPrev = CheckPressedKeys(KEYS_MASK);
+        proc->keysPrev = CheckPressedKeys(proc, KEYS_MASK);
 
         // BufferPixel(proc->x, proc->y, proc->cursColId);
         // VBlankIntrWait(); // Wait for vertical blank

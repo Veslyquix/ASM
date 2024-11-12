@@ -6,6 +6,7 @@
 
 #include "io_reg.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdbool.h> 
 // #include <gba_sprites.h>
 // #include <gba_video.h>
