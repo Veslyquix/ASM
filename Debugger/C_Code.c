@@ -2338,8 +2338,8 @@ int GetMiscMin(int id)
 static int GetMaxItems(void)
 {
     const struct ItemData * table = GetItemData(1);
-    int c = 255;
-    for (int i = 1; i <= 255; i++)
+    int c = 256;
+    for (int i = 1; i <= 256; i++)
     {
         if (table->number != i)
         {
@@ -2363,7 +2363,7 @@ static int GetMaxItems(void)
 static int GetMaxClasses(void)
 {
     const struct ClassData * table = GetClassData(1);
-    int c = 255;
+    int c = 256;
     for (int i = 1; i <= c; i++)
     {
         if (table->number != i)
