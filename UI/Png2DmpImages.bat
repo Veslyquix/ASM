@@ -13,15 +13,6 @@ echo %%m
 
 @del png.txt
 
-@cd %~dp0/battle_png 
-@dir *.png /b > png.txt
-
-@for /f "tokens=*" %%m in (png.txt) do (
-"%Png2Dmp%" "%%m"
-echo %%m
-)
-@del png.txt
-
 echo Done!
 
 pause

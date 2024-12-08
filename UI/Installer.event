@@ -4,47 +4,84 @@
 
 
 ALIGN 4 
-gUiFrameImage_Alt:
-#incbin "png/Main_Stephano.dmp" 
+gUiFrameImage_Stephano:
+#incbin "png/Stephano_Main.dmp" 
 
 ALIGN 4 
-gGfx_PlayerInterfaceFontTiles_Alt:
-#incbin "png/NewHPbar_Stephano.dmp" 
+gPrepExtra1_Stephano: 
+#incbin "png/Stephano_Preps.dmp" 
 
 ALIGN 4 
-gGfx_PlayerInterfaceNumbers_Alt:
-#incbin "png/NewNumbers_Stephano.dmp" 
+gPrepUseGfx_Stephano: 
+#incbin "png/Stephano_Eretein_PrepsUseGfx.dmp" 
 
 ALIGN 4 
-gPrepExtra1_Alt: 
-#incbin "png/Preps_Stephano.dmp" 
+gGfx_PlayerInterfaceFontTiles_Stephano:
+#incbin "png/Stephano_HPbar.dmp" 
 
 ALIGN 4 
-gPrepUseGfx_Alt: 
-#incbin "png/PrepsUseGfx_Eretein.dmp" 
+gGfx_PlayerInterfaceNumbers_Stephano:
+#incbin "png/Stephano_Numbers.dmp" 
+
 
 ALIGN 4 
-Img_08801C14_Alt:
-#incbin "png/Main_Sokaballa.dmp" 
+Img_08801C14_Sokaballa:
+#incbin "png/Sokaballa_Battle.dmp" 
 ALIGN 4 
-Img_EfxLeftNameBox_Alt:
-#incbin "png/Left_Sokaballa.dmp" 
+Img_EfxLeftNameBox_Sokaballa:
+#incbin "png/Sokaballa_Left.dmp" 
 ALIGN 4 
-Img_EfxLeftItemBox_Alt:
-#incbin "png/LeftItem_Sokaballa.dmp" 
+Img_EfxLeftItemBox_Sokaballa:
+#incbin "png/Sokaballa_LeftItem.dmp" 
 ALIGN 4 
-Img_EfxRightNameBox_Alt:
-#incbin "png/Right_Sokaballa.dmp" 
+Img_EfxRightNameBox_Sokaballa:
+#incbin "png/Sokaballa_Right.dmp" 
 ALIGN 4 
-Img_EfxRightItemBox_Alt:
-#incbin "png/RightItem_Sokaballa.dmp" 
+Img_EfxRightItemBox_Sokaballa:
+#incbin "png/Sokaballa_RightItem.dmp" 
+
+ALIGN 4 
+Img_08801C14_Gamma:
+#incbin "png/Gamma_Battle.dmp" 
+ALIGN 4 
+Img_EfxLeftNameBox_Gamma:
+#incbin "png/Gamma_Left.dmp" 
+ALIGN 4 
+Img_EfxLeftItemBox_Gamma:
+#incbin "png/Gamma_LeftItem.dmp" 
+ALIGN 4 
+Img_EfxRightNameBox_Gamma:
+#incbin "png/Gamma_Right.dmp" 
+ALIGN 4 
+Img_EfxRightItemBox_Gamma:
+#incbin "png/Gamma_RightItem.dmp" 
+
+ALIGN 4 
+gUiFrameImage_Gamma:
+#incbin "png/Gamma_Main.dmp" 
+
+ALIGN 4 
+gPrepExtra1_Gamma: 
+#incbin "png/Gamma_Preps.dmp" 
+
+ALIGN 4 
+gPrepUseGfx_Gamma: 
+#incbin "png/Gamma_PrepsUseGfx.dmp" 
+
 
 ALIGN 4 
 gUnknown_08802558_Alt: // Battle UI Palette 
 BYTE  $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $65 $62 $08 $7F $48 $24 $41 $30 $FC $36 $83 $1C $E7 $65 $86 $55 $25 $49 $82 $48 $6D $1D $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $B8 $14 $DF $5A $49 $08 $59 $29 $FC $36 $87 $0C $39 $11 $F5 $0C $B0 $08 $8D $04 $6D $1D $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $67 $2F $EB $3F $22 $0D $66 $02 $FC $36 $C2 $08 $A6 $1E $25 $0A $82 $05 $21 $05 $6D $1D $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $DE $77 $BD $73 $9C $6F $7B $6B $FC $36 $53 $46 $32 $46 $F0 $3D $CF $39 $8D $31 $6D $1D;
-// TSA below 
 ALIGN 4 
-gUnknown_0880210C_Alt:
+gUnknown_08802558_Gamma: // Battle UI Palette 
+#incbin "png/Gamma_battletileset.pal" 
+ALIGN 4 
+
+
+
+// Battle TSA below 
+ALIGN 4 
+gUnknown_0880210C_Sokaballa:
 BYTE  $02 $10 $01 $10 $01 $10 $01 $10 $09 $14 $08 $14 $07 $14 $06 $14 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $44 $10 $46 $10 $48 $10 $4A $10 $4C $10 $4E $10 $50 $10 $0A $14 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $45 $10 $47 $10 $49 $10 $4B $10 $4D $10 $4F $10 $51 $10 $04 $14 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $0E $14 $0D $10 $0D $10 $0D $10 $0D $10 $0D $10 $0C $10 $0B $14 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00;
 ALIGN 4 
 gUnknown_088021C0_Alt:
@@ -60,7 +97,12 @@ ALIGN 4
 gUnknown_08802508_Alt:
 BYTE  $03 $00 $03 $14 $10 $00 $10 $14 $11 $00 $11 $14 $0F $00 $0F $14 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $13 $00 $13 $14 $22 $00 $22 $14 $22 $00 $22 $14 $22 $00 $22 $14 $23 $00 $23 $14 $22 $00 $22 $14;
 
-
+ALIGN 4 
+gUnknown_0880210C_Gamma: 
+#incbin "png/Gamma_battleTSA.bin" 
+ALIGN 4
+MenuTilesPalette_Gamma:
+#incbin "png/Gamma_MenuPal.pal"
 
 
 #include "HackInstallation.txt" 

@@ -27,37 +27,51 @@ extern u16 Img_EfxLeftItemBox[];
 extern u16 Img_EfxRightNameBox[];
 extern u16 Img_EfxRightItemBox[];
 
-extern const u8 gUiFrameImage_Alt[];
-extern const u8 gGfx_PlayerInterfaceFontTiles_Alt[];
-extern const u8 gGfx_PlayerInterfaceNumbers_Alt[];
-extern const u8 gPrepExtra1_Alt[]; // gUnknown_08A1B730
-extern const u8 gPrepUseGfx_Alt[]; // Img_PrepItemUseScreen
+extern const u8 gUiFrameImage_Stephano[];
+extern const u8 gGfx_PlayerInterfaceFontTiles_Stephano[];
+extern const u8 gGfx_PlayerInterfaceNumbers_Stephano[];
+extern const u8 gPrepExtra1_Stephano[]; // gUnknown_08A1B730
+extern const u8 gPrepUseGfx_Stephano[]; // Img_PrepItemUseScreen
+
+extern const u8 gUiFrameImage_Gamma[];
+extern const u8 gPrepExtra1_Gamma[]; // gUnknown_08A1B730
+extern const u8 gPrepUseGfx_Gamma[]; // Img_PrepItemUseScreen
+
 // battle
-extern u16 gUnknown_08802558_Alt[]; // palette in func EfxPrepareScreenFx
+extern u16 gUnknown_08802558_Sokaballa[]; // palette in func EfxPrepareScreenFx
 // TSA
-extern u8 gUnknown_0880210C_Alt[]; // ekrGaugeMain
+extern u8 gUnknown_0880210C_Sokaballa[]; // ekrGaugeMain
 extern u8 gUnknown_088021C0_Alt[];
 extern u8 gUnknown_08802274_Alt[];
 extern u8 gUnknown_08802348_Alt[];
 extern u8 gUnknown_08802428_Alt[]; // ekrGaugeMain
 extern u8 gUnknown_08802508_Alt[]; // EfxPrepareScreenFx
 // img
-extern u16 Img_08801C14_Alt[];
-extern u16 Img_EfxLeftNameBox_Alt[];
-extern u16 Img_EfxLeftItemBox_Alt[];
-extern u16 Img_EfxRightNameBox_Alt[];
-extern u16 Img_EfxRightItemBox_Alt[];
+extern u16 Img_08801C14_Sokaballa[];
+extern u16 Img_EfxLeftNameBox_Sokaballa[];
+extern u16 Img_EfxLeftItemBox_Sokaballa[];
+extern u16 Img_EfxRightNameBox_Sokaballa[];
+extern u16 Img_EfxRightItemBox_Sokaballa[];
+
+extern u8 gUnknown_0880210C_Gamma[];  // ekrGaugeMain
+extern u16 gUnknown_08802558_Gamma[]; // palette in func EfxPrepareScreenFx
+extern u16 Img_08801C14_Gamma[];
+extern u16 Img_EfxLeftNameBox_Gamma[];
+extern u16 Img_EfxLeftItemBox_Gamma[];
+extern u16 Img_EfxRightNameBox_Gamma[];
+extern u16 Img_EfxRightItemBox_Gamma[];
 
 int GetUI_id(void)
 {
-    return CheckFlag(0xB0);
+    int id = 2; // CheckFlag(0xB0)
+    return id;
 }
 
 static const void * sUiFrame[] = {
 
     gUiFrameImage, // vanilla
-    gUiFrameImage_Alt,
-    gUiFrameImage,
+    gUiFrameImage_Stephano,
+    gUiFrameImage_Gamma,
     gUiFrameImage,
 };
 
@@ -70,9 +84,9 @@ const u8 * GetUiFrame(void)
 static const void * sPIFontTiles[] = {
 
     gGfx_PlayerInterfaceFontTiles, // vanilla
-    gGfx_PlayerInterfaceFontTiles_Alt,
-    gGfx_PlayerInterfaceFontTiles_Alt,
-    gGfx_PlayerInterfaceFontTiles_Alt,
+    gGfx_PlayerInterfaceFontTiles_Stephano,
+    gGfx_PlayerInterfaceFontTiles_Stephano,
+    gGfx_PlayerInterfaceFontTiles_Stephano,
 };
 
 const u8 * GetPIFontTiles(void)
@@ -84,9 +98,9 @@ const u8 * GetPIFontTiles(void)
 static const void * sPINumbers[] = {
 
     gGfx_PlayerInterfaceNumbers, // vanilla
-    gGfx_PlayerInterfaceNumbers_Alt,
-    gGfx_PlayerInterfaceNumbers_Alt,
-    gGfx_PlayerInterfaceNumbers_Alt,
+    gGfx_PlayerInterfaceNumbers_Stephano,
+    gGfx_PlayerInterfaceNumbers_Stephano,
+    gGfx_PlayerInterfaceNumbers_Stephano,
 };
 
 const u8 * GetPINumbers(void)
@@ -104,9 +118,9 @@ void PlayerPhaseInterfaceNumbersHook(void)
 static const void * sPrepExtra1[] = {
 
     gUnknown_08A1B730, // vanilla
-    gPrepExtra1_Alt,
-    gPrepExtra1_Alt,
-    gPrepExtra1_Alt,
+    gPrepExtra1_Stephano,
+    gPrepExtra1_Gamma,
+    gPrepExtra1_Stephano,
 };
 
 const u8 * GetPrepExtra1(void)
@@ -125,9 +139,9 @@ void PrepInitGfxHook(void)
 static const void * sPrepUseItem[] = {
 
     Img_PrepItemUseScreen, // vanilla
-    gPrepUseGfx_Alt,
-    gPrepUseGfx_Alt,
-    gPrepUseGfx_Alt,
+    gPrepUseGfx_Stephano,
+    gPrepUseGfx_Gamma,
+    gPrepUseGfx_Stephano,
 };
 
 const u8 * GetPrepUseItem(void)
@@ -218,8 +232,8 @@ struct ProcEkrDispUP2
 static const void * sBUiFrame_880210C[] = {
 
     gUnknown_0880210C, // vanilla
-    gUnknown_0880210C_Alt,
-    gUnknown_0880210C,
+    gUnknown_0880210C_Sokaballa,
+    gUnknown_0880210C_Gamma,
     gUnknown_0880210C,
 };
 const u8 * GetBUiFrame_880210C(void)
@@ -357,8 +371,8 @@ const u8 * GetUnknown_08802508()
 static const void * sImg_08801C14[] = {
 
     Img_08801C14, // vanilla
-    Img_08801C14_Alt,
-    Img_08801C14,
+    Img_08801C14_Sokaballa,
+    Img_08801C14_Gamma,
     Img_08801C14,
 };
 
@@ -371,8 +385,8 @@ const u8 * GetImg_08801C14()
 static const void * sBPal_8802558[] = {
 
     gUnknown_08802558, // vanilla
-    gUnknown_08802558_Alt,
-    gUnknown_08802558,
+    gUnknown_08802558_Sokaballa,
+    gUnknown_08802558_Gamma,
     gUnknown_08802558,
 };
 const u16 * GetBPal_8802558(void)
@@ -409,8 +423,8 @@ extern struct Text gBanimText[20];
 static const void * sImg_EfxLeftNameBox[] = {
 
     Img_EfxLeftNameBox, // vanilla
-    Img_EfxLeftNameBox_Alt,
-    Img_EfxLeftNameBox,
+    Img_EfxLeftNameBox_Sokaballa,
+    Img_EfxLeftNameBox_Gamma,
     Img_EfxLeftNameBox,
 };
 
@@ -422,8 +436,8 @@ const u8 * GetImg_EfxLeftNameBox()
 static const void * sImg_EfxLeftItemBox[] = {
 
     Img_EfxLeftItemBox, // vanilla
-    Img_EfxLeftItemBox_Alt,
-    Img_EfxLeftItemBox,
+    Img_EfxLeftItemBox_Sokaballa,
+    Img_EfxLeftItemBox_Gamma,
     Img_EfxLeftItemBox,
 };
 
@@ -436,8 +450,8 @@ const u8 * GetImg_EfxLeftItemBox()
 static const void * sImg_EfxRightNameBox[] = {
 
     Img_EfxRightNameBox, // vanilla
-    Img_EfxRightNameBox_Alt,
-    Img_EfxRightNameBox,
+    Img_EfxRightNameBox_Sokaballa,
+    Img_EfxRightNameBox_Gamma,
     Img_EfxRightNameBox,
 };
 
@@ -450,8 +464,8 @@ const u8 * GetImg_EfxRightNameBox()
 static const void * sImg_EfxRightItemBox[] = {
 
     Img_EfxRightItemBox, // vanilla
-    Img_EfxRightItemBox_Alt,
-    Img_EfxRightItemBox,
+    Img_EfxRightItemBox_Sokaballa,
+    Img_EfxRightItemBox_Gamma,
     Img_EfxRightItemBox,
 };
 
@@ -532,4 +546,34 @@ void EfxPrepareScreenFx(void)
     gEkrBg0QuakeVec.x = 0;
     gEkrBg0QuakeVec.y = 0;
     BG_SetPosition(BG_0, 0, 0);
+}
+
+// UI palette
+// static const u16 * sUiFramePaletteLookup[] = {
+// gUiFramePaletteA,
+// gUiFramePaletteB,
+// gUiFramePaletteC,
+// gUiFramePaletteD,
+// };
+extern const u16 gUiFramePaletteA[];
+extern const u16 MenuTilesPalette_Gamma[];
+
+const u16 * GetFactionBattleForecastFramePalette(int faction)
+{
+
+    switch (faction)
+    {
+        case FACTION_BLUE:
+            return MenuTilesPalette_Gamma;
+
+        case FACTION_RED:
+            return gUiFramePaletteB;
+
+        case FACTION_GREEN:
+            return gUiFramePaletteC;
+
+        case FACTION_PURPLE:
+            return gUiFramePaletteD;
+    }
+    return gUiFramePaletteA;
 }
