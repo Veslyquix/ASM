@@ -5,7 +5,7 @@
 .type DecompressImg_ShopGoldBox_Hook, %function 
 DecompressImg_ShopGoldBox_Hook: 
 push  {r14}
-bl DecompressImg_ShopGoldBox
+@bl DecompressImg_ShopGoldBox
 pop {r3} 
 ldr r3, =0x80B4E31 
 bx r3 

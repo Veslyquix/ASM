@@ -1,15 +1,12 @@
 ALIGN 4
 PUSH
 ORG CURRENTOFFSET+$1;DecompressImg_ShopGoldBox_Hook:
-ORG CURRENTOFFSET+$10;Decompress_Img_PrepItemUseScreen_Hook:
+ORG CURRENTOFFSET+$c;Decompress_Img_PrepItemUseScreen_Hook:
 ORG CURRENTOFFSET+$10;ekrGaugeMain_Hook:
 ORG CURRENTOFFSET+$1c;ekrGaugeMain_Hook2:
 ORG CURRENTOFFSET+$18;ekrGaugeMain_Hook3:
 POP
-SHORT $B500
-SHORT ((DecompressImg_ShopGoldBox-4-CURRENTOFFSET>>12)&$7FF)|$F000 ((DecompressImg_ShopGoldBox-4-CURRENTOFFSET>>1)&$7FF)|$F800
-SHORT $BC08
-WORD $47184B00 $80B4E31
+WORD $BC08B500 $47184B00 $80B4E31
 SHORT $B500
 SHORT ((Decompress_Img_PrepItemUseScreen-4-CURRENTOFFSET>>12)&$7FF)|$F000 ((Decompress_Img_PrepItemUseScreen-4-CURRENTOFFSET>>1)&$7FF)|$F800
 SHORT $BC08

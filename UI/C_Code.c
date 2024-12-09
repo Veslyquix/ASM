@@ -7,9 +7,10 @@ extern const u8 gUiFrameImage[];
 extern u8 gGfx_PlayerInterfaceFontTiles[];
 extern u8 gGfx_PlayerInterfaceNumbers[];
 extern u8 CONST_DATA gUnknown_08A1B730[];
-extern u8 gUnknown_08A1B1FC[]; // unused atm
-extern u16 Img_ShopGoldBox[];  // unused atm
+extern u8 gUnknown_08A1B1FC[];
+extern u16 Img_ShopGoldBox[];
 extern u16 CONST_DATA Img_PrepItemUseScreen[];
+extern u8 Img_PrepPopupWindow[];
 
 // battle
 extern u16 gUnknown_08802558[]; // palette in func EfxPrepareScreenFx
@@ -34,8 +35,10 @@ extern const u8 gPrepExtra1_Stephano[]; // gUnknown_08A1B730
 extern const u8 gPrepUseGfx_Stephano[]; // Img_PrepItemUseScreen
 
 extern const u8 gUiFrameImage_Gamma[];
-extern const u8 gPrepExtra1_Gamma[]; // gUnknown_08A1B730
-extern const u8 gPrepUseGfx_Gamma[]; // Img_PrepItemUseScreen
+extern const u8 gPrepExtra1_Gamma[];     // gUnknown_08A1B730
+extern const u8 gPrepUseGfx_Gamma[];     // Img_PrepItemUseScreen
+extern const u8 gPrepItemGfx_Gamma[];    // gUnknown_08A1B1FC
+extern const u8 Gamma_PrepPopupWindow[]; // Img_PrepPopupWindow
 
 // battle
 extern u16 gUnknown_08802558_Sokaballa[]; // palette in func EfxPrepareScreenFx
@@ -60,11 +63,20 @@ extern u16 Img_EfxLeftNameBox_Gamma[];
 extern u16 Img_EfxLeftItemBox_Gamma[];
 extern u16 Img_EfxRightNameBox_Gamma[];
 extern u16 Img_EfxRightItemBox_Gamma[];
+extern u16 Img_ShopGoldBox_Gamma[];
 
 int GetUI_id(void)
 {
-    int id = 2; // CheckFlag(0xB0)
+    int id = 1; //
+    if (CheckFlag(0xB0))
+    {
+        id = 2;
+    }
     return id;
+}
+int GetUIPalID(void)
+{
+    return GetUI_id();
 }
 
 static const void * sUiFrame[] = {
@@ -155,12 +167,48 @@ void Decompress_Img_PrepItemUseScreen(void)
     Decompress(GetPrepUseItem(), (void *)BG_VRAM + 0x440);
 }
 
+static const void * sPrepItem[] = {
+
+    gUnknown_08A1B1FC, // vanilla
+    gUnknown_08A1B1FC,
+    gPrepItemGfx_Gamma,
+    gUnknown_08A1B1FC,
+};
+
+const u8 * GetPrepItem(void)
+{
+    int id = GetUI_id();
+    return sPrepItem[id];
+}
+
 void DrawFundsSprite_Init(struct DrawFundsSpriteProc * proc)
 {
-    Decompress(gUnknown_08A1B1FC, (void *)0x06013000);
+    Decompress(GetPrepItem(), (void *)0x06013000);
     ApplyPalette(gUnknown_08A1B638, proc->pal + 0x10);
     return;
 }
+
+static const void * sPrepPopupWindow[] = {
+
+    Img_PrepPopupWindow, // vanilla
+    Gamma_PrepPopupWindow,
+    Gamma_PrepPopupWindow,
+    Img_PrepPopupWindow,
+};
+
+const u8 * GetPrepPopupWindow(void)
+{
+    int id = GetUI_id();
+    return sPrepPopupWindow[id];
+}
+
+void PutImg_PrepPopupWindow(int vram, int pal)
+{
+    Decompress(GetPrepPopupWindow(), (void *)(0x06010000 + vram));
+    ApplyPalette(gUiFramePaletteD, pal + 0x10);
+    return;
+}
+
 enum bmshop_bgchr
 {
     OBJCHR_SHOP_SPINARROW = 0x4800 / 0x20,
@@ -172,10 +220,10 @@ enum bmshop_bgchr
     BGPAL_SHOP_4 = 4,
     BGPAL_SHOP_MAINBG = 14,
 };
-void DecompressImg_ShopGoldBox(void)
-{
-    Decompress(Img_ShopGoldBox, OBJ_CHR_ADDR(OBJCHR_SHOP_GOLDBOX));
-}
+// void DecompressImg_ShopGoldBox(void)
+// {
+// Decompress(Img_ShopGoldBox, OBJ_CHR_ADDR(OBJCHR_SHOP_GOLDBOX));
+// }
 
 void UnpackUiFrameImage(void * dest)
 {
@@ -548,32 +596,164 @@ void EfxPrepareScreenFx(void)
     BG_SetPosition(BG_0, 0, 0);
 }
 
+// extern const u16 gPal_PlayerInterface_Blue[];
+
 // UI palette
-// static const u16 * sUiFramePaletteLookup[] = {
-// gUiFramePaletteA,
-// gUiFramePaletteB,
-// gUiFramePaletteC,
-// gUiFramePaletteD,
-// };
 extern const u16 gUiFramePaletteA[];
 extern const u16 MenuTilesPalette_Gamma[];
 
+static const u16 * const sUiPalLookupVanilla[] = {
+    &gUiFramePaletteA[0x0], // gUiFramePaletteA has all 4 in a row anyway
+    &gUiFramePaletteA[0x10], &gUiFramePaletteA[0x20], &gUiFramePaletteA[0x30], &gUiFramePaletteA[0x40],
+    &gUiFramePaletteA[0x50], &gUiFramePaletteA[0x60], &gUiFramePaletteA[0x70],
+
+};
+
+static const u16 * const sUiPalLookupGamma[] = {
+    &MenuTilesPalette_Gamma[0x0],  &MenuTilesPalette_Gamma[0x10], &MenuTilesPalette_Gamma[0x20],
+    &MenuTilesPalette_Gamma[0x30], &MenuTilesPalette_Gamma[0x40], &MenuTilesPalette_Gamma[0x50],
+    &MenuTilesPalette_Gamma[0x60], &MenuTilesPalette_Gamma[0x70],
+
+};
+
+static const u16 * const sFactionPalLookupVanilla[] = {
+    &gUiFramePaletteA[0x00],
+    &gUiFramePaletteA[0x20],
+    &gUiFramePaletteA[0x10],
+    &gUiFramePaletteA[0x30],
+};
+
+static const u16 * const sFactionPalLookupGamma[] = {
+    &MenuTilesPalette_Gamma[0x10],
+    &MenuTilesPalette_Gamma[0x20],
+    &MenuTilesPalette_Gamma[0x0],
+    &MenuTilesPalette_Gamma[0x30],
+};
+
+static const u16 * const * const sUiPalLookup[] = {
+    sUiPalLookupVanilla,
+    sUiPalLookupVanilla,
+    sUiPalLookupGamma,
+    sUiPalLookupVanilla,
+};
+static const u16 * const * const sFactionPalLookup[] = {
+    sFactionPalLookupVanilla,
+    sFactionPalLookupVanilla,
+    sFactionPalLookupGamma,
+    sFactionPalLookupVanilla,
+};
+
+#define BGPAL_WINDOW_FRAME 1
+void UnpackUiFramePalette(int palId)
+{
+    int id = GetUIPalID();
+    if (palId < 0)
+        palId = BGPAL_WINDOW_FRAME;
+
+    // ApplyPalette(sUiFramePaletteLookup[gPlaySt.config.windowColor], palId);
+    ApplyPalette(sUiPalLookup[id][gPlaySt.config.windowColor], palId);
+    // ApplyPalette(&MenuTilesPalette_Gamma[gPlaySt.config.windowColor * 0x10], palId);
+}
+
+void DrawUnitInfoBg_Init(void)
+{
+    int id = GetUIPalID();
+    const u16 * pal = sUiPalLookup[id][0];
+    ApplyPalette(pal, 0x12);
+    return;
+}
+
+void StatusScreenUIPal_Hook(void)
+{
+    ClearBg0Bg1();
+
+    int id = GetUIPalID();
+
+    ApplyPalette(sFactionPalLookup[id][0], 2);
+    ApplyPalette(sFactionPalLookup[id][2], 3);
+    ApplyPalette(sFactionPalLookup[id][1], 4);
+
+    // const u16 * pal = sFactionPalLookup[id][0];
+    // ApplyPalettes(pal, 2, 3);
+}
+
+void GuideUIPal_Hook(void)
+{
+    int id = GetUIPalID();
+    const u16 * pal = sFactionPalLookup[id][gPlaySt.config.windowColor + 4];
+    ApplyPalette(pal, 2);
+}
+
+void GetMinimugFactionPalette(int faction, int palId)
+{
+    int id = GetUIPalID();
+    const u16 * pal = sFactionPalLookup[id][faction >> 6]; // 0x40 -> 0x10
+    ApplyPalette(pal, palId);
+}
+
 const u16 * GetFactionBattleForecastFramePalette(int faction)
 {
+    int id = GetUIPalID();
+    const u16 * pal = sFactionPalLookup[id][faction >> 6]; // 0x40 -> 0x10
+    return pal;
+}
 
-    switch (faction)
-    {
-        case FACTION_BLUE:
-            return MenuTilesPalette_Gamma;
+struct ProcShop
+{
+    /* 00 */ PROC_HEADER;
 
-        case FACTION_RED:
-            return gUiFramePaletteB;
+    /* 2C */ struct Unit * unit;
+    /* 30 */ u16 shopItems[20];
 
-        case FACTION_GREEN:
-            return gUiFramePaletteC;
+    /* 58 */ u16 unk_58;
 
-        case FACTION_PURPLE:
-            return gUiFramePaletteD;
-    }
-    return gUiFramePaletteA;
+    /* 5A */ u8 shopItemCount;
+    /* 5B */ u8 unitItemCount;
+    /* 5C */ u8 head_loc;
+    /* 5D */ u8 hand_loc;
+    /* 5E */ u8 head_idx;
+    /* 5F */ u8 hand_idx; // maybe top visible item in menu?
+    /* 60 */ u8 buy_or_sel;
+    /* 61 */ u8 shopType;
+    /* 62 */ u8 helpTextActive;
+
+    /* 64 */ s16 goldbox_x;
+    /* 66 */ s16 goldbox_y;
+    /* 68 */ s16 goldbox_oam2;
+};
+
+extern void InitGoldBoxText(u16 *);
+
+static const void * sUiGoldBox[] = {
+
+    Img_ShopGoldBox, // vanilla
+    Img_ShopGoldBox_Gamma,
+    Img_ShopGoldBox_Gamma,
+    Img_ShopGoldBox,
+};
+
+const u8 * GetUiGoldBox(void)
+{
+    int id = GetUI_id();
+    return sUiGoldBox[id];
+}
+
+void StartUiGoldBox(ProcPtr parent)
+{
+    struct ProcShop * proc;
+
+    Decompress(GetUiGoldBox(), OBJ_CHR_ADDR(OBJCHR_SHOP_GOLDBOX));
+
+    proc = Proc_Start(gProcScr_GoldBox, parent);
+    proc->goldbox_x = 0xAC;
+    proc->goldbox_y = 0x2D;
+    proc->goldbox_oam2 = OBJ_PALETTE(OBJPAL_SHOP_GOLDBOX) + OBJ_CHAR(OBJCHR_SHOP_GOLDBOX);
+
+    int id = GetUIPalID();
+    const u16 * pal = sUiPalLookup[id][0];
+    ApplyPalette(pal, 0x10 + OBJPAL_SHOP_GOLDBOX);
+
+    // ApplyPalette(gUiFramePaletteA, 0x10 + OBJPAL_SHOP_GOLDBOX);
+    InitGoldBoxText(TILEMAP_LOCATED(gBG0TilemapBuffer, 28, 6));
+    DisplayGoldBoxText(TILEMAP_LOCATED(gBG0TilemapBuffer, 27, 6));
 }

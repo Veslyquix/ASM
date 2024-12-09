@@ -68,9 +68,21 @@ ALIGN 4
 gPrepUseGfx_Gamma: 
 #incbin "png/Gamma_PrepsUseGfx.dmp" 
 
+ALIGN 4 
+Img_ShopGoldBox_Gamma: 
+#incbin "png/Gamma_ShopGoldDisplay.dmp" 
 
 ALIGN 4 
-gUnknown_08802558_Alt: // Battle UI Palette 
+gPrepItemGfx_Gamma: 
+#incbin "png/Gamma_PrepItems.dmp" 
+
+ALIGN 4 
+Gamma_PrepPopupWindow:
+#incbin "png/Gamma_PrepPopupWindow.dmp" 
+
+
+ALIGN 4 
+gUnknown_08802558_Sokaballa: // Battle UI Palette 
 BYTE  $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $65 $62 $08 $7F $48 $24 $41 $30 $FC $36 $83 $1C $E7 $65 $86 $55 $25 $49 $82 $48 $6D $1D $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $B8 $14 $DF $5A $49 $08 $59 $29 $FC $36 $87 $0C $39 $11 $F5 $0C $B0 $08 $8D $04 $6D $1D $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $67 $2F $EB $3F $22 $0D $66 $02 $FC $36 $C2 $08 $A6 $1E $25 $0A $82 $05 $21 $05 $6D $1D $0E $52 $A6 $10 $BE $77 $AA $00 $13 $1E $DE $77 $BD $73 $9C $6F $7B $6B $FC $36 $53 $46 $32 $46 $F0 $3D $CF $39 $8D $31 $6D $1D;
 ALIGN 4 
 gUnknown_08802558_Gamma: // Battle UI Palette 
@@ -121,8 +133,16 @@ ORG $9a894
 callHackNew(PrepInitGfxHook)
 SHORT $46c0 $46c0 
 
-ORG $B4E28 
-jumpToHack(DecompressImg_ShopGoldBox_Hook) 
+ORG $8dfc0 
+callHackNew(StatusScreenUIPal_Hook) 
+SHORT $46c0 
+
+ORG $CEE08
+callHackNew(GuideUIPal_Hook)
+SHORT $46c0 
+
+// ORG $B4E28 
+// jumpToHack(DecompressImg_ShopGoldBox_Hook) 
 
 ORG $9C658
 jumpToHack(Decompress_Img_PrepItemUseScreen_Hook) 
