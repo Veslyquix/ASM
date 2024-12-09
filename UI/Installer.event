@@ -59,6 +59,9 @@ Img_EfxRightItemBox_Gamma:
 ALIGN 4 
 gUiFrameImage_Gamma:
 #incbin "png/Gamma_Main.dmp" 
+ALIGN 4
+MenuTilesPalette_Gamma:
+#incbin "png/Gamma_MenuPal.pal"
 
 ALIGN 4 
 gPrepExtra1_Gamma: 
@@ -79,6 +82,21 @@ gPrepItemGfx_Gamma:
 ALIGN 4 
 Gamma_PrepPopupWindow:
 #incbin "png/Gamma_PrepPopupWindow.dmp" 
+
+ALIGN 4 
+gUiFrameImage_Pikmin:
+#incbin "png/PikminMain.dmp" 
+ALIGN 4
+MenuTilesPalette_Pikmin:
+#incbin "png/PikminMain.pal.bin"
+#incbin "png/PikminMain.pal.bin"
+#incbin "png/PikminMain.pal.bin"
+#incbin "png/PikminMain.pal.bin"
+#incbin "png/PikminMain.pal.bin"
+#incbin "png/PikminMain.pal.bin"
+#incbin "png/PikminMain.pal.bin"
+#incbin "png/PikminMain.pal.bin"
+
 
 
 ALIGN 4 
@@ -112,9 +130,7 @@ BYTE  $03 $00 $03 $14 $10 $00 $10 $14 $11 $00 $11 $14 $0F $00 $0F $14 $00 $00 $0
 ALIGN 4 
 gUnknown_0880210C_Gamma: 
 #incbin "png/Gamma_battleTSA.bin" 
-ALIGN 4
-MenuTilesPalette_Gamma:
-#incbin "png/Gamma_MenuPal.pal"
+
 
 
 #include "HackInstallation.txt" 

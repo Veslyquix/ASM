@@ -35,6 +35,7 @@ extern const u8 gPrepExtra1_Stephano[]; // gUnknown_08A1B730
 extern const u8 gPrepUseGfx_Stephano[]; // Img_PrepItemUseScreen
 
 extern const u8 gUiFrameImage_Gamma[];
+extern const u8 gUiFrameImage_Pikmin[];
 extern const u8 gPrepExtra1_Gamma[];     // gUnknown_08A1B730
 extern const u8 gPrepUseGfx_Gamma[];     // Img_PrepItemUseScreen
 extern const u8 gPrepItemGfx_Gamma[];    // gUnknown_08A1B1FC
@@ -83,8 +84,8 @@ static const void * sUiFrame[] = {
 
     gUiFrameImage, // vanilla
     gUiFrameImage_Stephano,
+    gUiFrameImage_Pikmin,
     gUiFrameImage_Gamma,
-    gUiFrameImage,
 };
 
 const u8 * GetUiFrame(void)
@@ -601,6 +602,7 @@ void EfxPrepareScreenFx(void)
 // UI palette
 extern const u16 gUiFramePaletteA[];
 extern const u16 MenuTilesPalette_Gamma[];
+extern const u16 MenuTilesPalette_Pikmin[];
 
 static const u16 * const sUiPalLookupVanilla[] = {
     &gUiFramePaletteA[0x0], // gUiFramePaletteA has all 4 in a row anyway
@@ -613,6 +615,12 @@ static const u16 * const sUiPalLookupGamma[] = {
     &MenuTilesPalette_Gamma[0x0],  &MenuTilesPalette_Gamma[0x10], &MenuTilesPalette_Gamma[0x20],
     &MenuTilesPalette_Gamma[0x30], &MenuTilesPalette_Gamma[0x40], &MenuTilesPalette_Gamma[0x50],
     &MenuTilesPalette_Gamma[0x60], &MenuTilesPalette_Gamma[0x70],
+
+};
+static const u16 * const sUiPalLookupPikmin[] = {
+    &MenuTilesPalette_Pikmin[0x0],  &MenuTilesPalette_Pikmin[0x10], &MenuTilesPalette_Pikmin[0x20],
+    &MenuTilesPalette_Pikmin[0x30], &MenuTilesPalette_Pikmin[0x40], &MenuTilesPalette_Pikmin[0x50],
+    &MenuTilesPalette_Pikmin[0x60], &MenuTilesPalette_Pikmin[0x70],
 
 };
 
@@ -629,18 +637,24 @@ static const u16 * const sFactionPalLookupGamma[] = {
     &MenuTilesPalette_Gamma[0x0],
     &MenuTilesPalette_Gamma[0x30],
 };
+static const u16 * const sFactionPalLookupPikmin[] = {
+    &MenuTilesPalette_Pikmin[0x10],
+    &MenuTilesPalette_Pikmin[0x20],
+    &MenuTilesPalette_Pikmin[0x0],
+    &MenuTilesPalette_Pikmin[0x30],
+};
 
 static const u16 * const * const sUiPalLookup[] = {
     sUiPalLookupVanilla,
     sUiPalLookupVanilla,
+    sUiPalLookupPikmin,
     sUiPalLookupGamma,
-    sUiPalLookupVanilla,
 };
 static const u16 * const * const sFactionPalLookup[] = {
     sFactionPalLookupVanilla,
     sFactionPalLookupVanilla,
+    sFactionPalLookupPikmin,
     sFactionPalLookupGamma,
-    sFactionPalLookupVanilla,
 };
 
 #define BGPAL_WINDOW_FRAME 1
@@ -651,6 +665,7 @@ void UnpackUiFramePalette(int palId)
         palId = BGPAL_WINDOW_FRAME;
 
     // ApplyPalette(sUiFramePaletteLookup[gPlaySt.config.windowColor], palId);
+    asm("mov r11, r11");
     ApplyPalette(sUiPalLookup[id][gPlaySt.config.windowColor], palId);
     // ApplyPalette(&MenuTilesPalette_Gamma[gPlaySt.config.windowColor * 0x10], palId);
 }
