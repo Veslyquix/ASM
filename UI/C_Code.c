@@ -665,7 +665,7 @@ void UnpackUiFramePalette(int palId)
         palId = BGPAL_WINDOW_FRAME;
 
     // ApplyPalette(sUiFramePaletteLookup[gPlaySt.config.windowColor], palId);
-    asm("mov r11, r11");
+    // asm("mov r11, r11");
     ApplyPalette(sUiPalLookup[id][gPlaySt.config.windowColor], palId);
     // ApplyPalette(&MenuTilesPalette_Gamma[gPlaySt.config.windowColor * 0x10], palId);
 }
