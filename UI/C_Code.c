@@ -68,11 +68,13 @@ extern u16 Img_ShopGoldBox_Gamma[];
 
 int GetUI_id(void)
 {
-    int id = 1; //
-    if (CheckFlag(0xB0))
+
+    int id = gPlaySt.unk19; //
+    if (id > 3)
     {
-        id = 2;
+        id = 0;
     }
+    id = 3;
     return id;
 }
 int GetUIPalID(void)
@@ -84,8 +86,8 @@ static const void * sUiFrame[] = {
 
     gUiFrameImage, // vanilla
     gUiFrameImage_Stephano,
-    gUiFrameImage_Pikmin,
     gUiFrameImage_Gamma,
+    gUiFrameImage_Pikmin,
 };
 
 const u8 * GetUiFrame(void)
@@ -171,9 +173,9 @@ void Decompress_Img_PrepItemUseScreen(void)
 static const void * sPrepItem[] = {
 
     gUnknown_08A1B1FC, // vanilla
-    gUnknown_08A1B1FC,
     gPrepItemGfx_Gamma,
-    gUnknown_08A1B1FC,
+    gPrepItemGfx_Gamma,
+    gPrepItemGfx_Gamma,
 };
 
 const u8 * GetPrepItem(void)
@@ -194,7 +196,7 @@ static const void * sPrepPopupWindow[] = {
     Img_PrepPopupWindow, // vanilla
     Gamma_PrepPopupWindow,
     Gamma_PrepPopupWindow,
-    Img_PrepPopupWindow,
+    Gamma_PrepPopupWindow,
 };
 
 const u8 * GetPrepPopupWindow(void)
@@ -647,14 +649,14 @@ static const u16 * const sFactionPalLookupPikmin[] = {
 static const u16 * const * const sUiPalLookup[] = {
     sUiPalLookupVanilla,
     sUiPalLookupVanilla,
-    sUiPalLookupPikmin,
     sUiPalLookupGamma,
+    sUiPalLookupPikmin,
 };
 static const u16 * const * const sFactionPalLookup[] = {
     sFactionPalLookupVanilla,
     sFactionPalLookupVanilla,
-    sFactionPalLookupPikmin,
     sFactionPalLookupGamma,
+    sFactionPalLookupPikmin,
 };
 
 #define BGPAL_WINDOW_FRAME 1
@@ -695,7 +697,7 @@ void StatusScreenUIPal_Hook(void)
 void GuideUIPal_Hook(void)
 {
     int id = GetUIPalID();
-    const u16 * pal = sFactionPalLookup[id][gPlaySt.config.windowColor + 4];
+    const u16 * pal = sUiPalLookup[id][gPlaySt.config.windowColor + 4];
     ApplyPalette(pal, 2);
 }
 
@@ -744,7 +746,7 @@ static const void * sUiGoldBox[] = {
     Img_ShopGoldBox, // vanilla
     Img_ShopGoldBox_Gamma,
     Img_ShopGoldBox_Gamma,
-    Img_ShopGoldBox,
+    Img_ShopGoldBox_Gamma,
 };
 
 const u8 * GetUiGoldBox(void)
