@@ -79,6 +79,7 @@ int GetUI_id(void)
 }
 int GetUIPalID(void)
 {
+    // asm("mov r11, r11");
     return GetUI_id();
 }
 
@@ -188,6 +189,7 @@ void DrawFundsSprite_Init(struct DrawFundsSpriteProc * proc)
 {
     Decompress(GetPrepItem(), (void *)0x06013000);
     ApplyPalette(gUnknown_08A1B638, proc->pal + 0x10);
+
     return;
 }
 
@@ -660,22 +662,56 @@ static const u16 * const * const sFactionPalLookup[] = {
 };
 
 #define BGPAL_WINDOW_FRAME 1
-void UnpackUiFramePalette(int palId)
+// sub_804D80C - link arena?
+// gGfx_SupportMenu
+// gPal_SupportMenu
+
+// StartLinkArenaMainMenu - hook this and have it restore UI palette to normal, or similar
+
+// 0x80481e0
+
+void UnpackUiFramePalette(int palId) // used in link arena
 {
     int id = GetUIPalID();
     if (palId < 0)
         palId = BGPAL_WINDOW_FRAME;
 
     // ApplyPalette(sUiFramePaletteLookup[gPlaySt.config.windowColor], palId);
-    // asm("mov r11, r11");
     ApplyPalette(sUiPalLookup[id][gPlaySt.config.windowColor], palId);
     // ApplyPalette(&MenuTilesPalette_Gamma[gPlaySt.config.windowColor * 0x10], palId);
 }
-
-void DrawUnitInfoBg_Init(void)
+extern void ApplyUnitSpritePalettes(void);
+// 4C374
+void RestoreLinkArenaUI(void)
 {
+    // asm("mov r11, r11");
+    gLCDControlBuffer.bg0cnt.priority = 0;
+    gLCDControlBuffer.bg1cnt.priority = 1;
+    gLCDControlBuffer.bg2cnt.priority = 2;
+    gLCDControlBuffer.bg3cnt.priority = 3;
+
+    ReadGameSaveCoreGfx();
+
+    Decompress(sUiFrame[0], BG_CHAR_ADDR(0));
+    ApplyPalette(sUiPalLookup[0][gPlaySt.config.windowColor], BGPAL_WINDOW_FRAME);
+    // InitTextFont(&Font_0203DB64, (void *)0x06001800, 0xc0, 0);
+}
+
+// obj pal 2.. not this
+void PrepItemScreen_SetupGfx_Hook(void)
+{
+
+    // ApplyPalette(gUiFramePaletteD, 2);
     int id = GetUIPalID();
-    const u16 * pal = sUiPalLookup[id][0];
+    const u16 * pal = sUiPalLookup[id][3];
+    // ApplyPalette(pal, 2);
+    LoadObjUIGfx();
+}
+
+void DrawUnitInfoBg_Init(void) // in prep - [id][0] was causing palette problems
+{
+    // int id = GetUIPalID();
+    const u16 * pal = sUiPalLookup[0][0]; // normally gUiFramePaletteA
     ApplyPalette(pal, 0x12);
     return;
 }
@@ -701,6 +737,25 @@ void GuideUIPal_Hook(void)
     ApplyPalette(pal, 2);
 }
 
+extern u16 Pal_SysBrownBox[];
+const u8 Pal_SysBrownBox_Pikmin[] = {
+    0x0E, 0x52, 0xFF, 0x7F, 0x9E, 0x73, 0xDB, 0x5A, 0x2E, 0x7F, 0x7F, 0x13, 0x51, 0x05, 0x1F, 0x1E,
+    0x78, 0x00, 0x2E, 0x7F, 0xE5, 0x4D, 0xCF, 0x4B, 0xE3, 0x0A, 0x30, 0x4E, 0x1F, 0x7C, 0x00, 0x00,
+    0x0E, 0x52, 0xDE, 0x7B, 0x5B, 0x63, 0xB7, 0x4A, 0x14, 0x32, 0x4F, 0x19, 0xEA, 0x10, 0x00, 0x00,
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+void Pal_SysBrownBox_Hook()
+{
+    if (GetUIPalID() == 3)
+    {
+        ApplyPalettes(Pal_SysBrownBox_Pikmin, 0x19, 2);
+    }
+    else
+    {
+        ApplyPalettes(Pal_SysBrownBox, 0x19, 2);
+    }
+}
+
 void GetMinimugFactionPalette(int faction, int palId)
 {
     int id = GetUIPalID();
@@ -713,6 +768,42 @@ const u16 * GetFactionBattleForecastFramePalette(int faction)
     int id = GetUIPalID();
     const u16 * pal = sFactionPalLookup[id][faction >> 6]; // 0x40 -> 0x10
     return pal;
+}
+
+void sub_80BE5B4(int faction, int palId) // world map
+{
+    int id = GetUIPalID();
+    if (faction < 0)
+    {
+        faction = 0xC0; // does some grey palette on world map
+    }
+    const u16 * pal = sFactionPalLookup[id][faction >> 6]; // 0x40 -> 0x10
+
+    ApplyPalette(pal, palId);
+    // u16 * src;
+
+    // switch (faction)
+    // {
+    // case FACTION_BLUE:
+    // src = gUnknown_08A98E2C;
+    // break;
+
+    // case FACTION_RED:
+    // src = gUnknown_08A98E4C;
+    // break;
+
+    // case FACTION_GREEN:
+    // src = gUnknown_08A98E6C;
+    // break;
+
+    // default:
+    // src = gUnknown_08A98E8C;
+    // break;
+    // }
+
+    // ApplyPalette(src, palId);
+
+    return;
 }
 
 struct ProcShop

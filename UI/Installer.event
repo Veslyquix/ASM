@@ -157,6 +157,34 @@ ORG $CEE08
 callHackNew(GuideUIPal_Hook)
 SHORT $46c0 
 
+ORG $90ECC 
+callHackNew(Pal_SysBrownBox_Hook) 
+
+ORG $4C374 
+callHackNew(RestoreLinkArenaUI) 
+
+// 36D48, 98980, 98CbC, 98D84 as POIN greyUI 
+
+// ORG $36D48 // GetFactionBattleForecastFramePalette 
+// POIN MenuTilesPalette_Pikmin
+
+// ORG $98980 // PrepItemScreen_SetupGfx
+// POIN MenuTilesPalette_Pikmin
+
+// ORG $98CbC // sub_8098BC8	Prep 
+// POIN MenuTilesPalette_Pikmin
+
+// ORG $98D84 // sub_8098CC0	
+// POIN MenuTilesPalette_Pikmin
+
+
+
+
+
+ORG $986B8 
+callHackNew(PrepItemScreen_SetupGfx_Hook)
+// 
+
 // ORG $B4E28 
 // jumpToHack(DecompressImg_ShopGoldBox_Hook) 
 

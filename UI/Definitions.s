@@ -19,6 +19,7 @@ SET_DATA gBanimText, 0x02017660
 SET_DATA gBanimValid, 0x203e104
 SET_DATA Img_08801C14, 0x8801C14
 SET_DATA gUnknown_08802598, 0x8802598
+SET_FUNC ApplyUnitSpritePalettes, 0x8026629 
 
 
 @ division & other libgcc functions
