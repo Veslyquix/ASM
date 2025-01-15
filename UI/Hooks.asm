@@ -21,6 +21,17 @@ ldr r3, =0x809C661
 bx r3 
 .ltorg 
 
+.global PrepUiPalHook
+.type PrepUiPalHook, %function 
+PrepUiPalHook: 
+push {lr} 
+mov r5, r6 
+bl PrepUiPalHook_2
+pop {r3} 
+bx r3 
+.ltorg 
+
+
 .global ekrGaugeMain_Hook
 .type ekrGaugeMain_Hook, %function 
 ekrGaugeMain_Hook: 

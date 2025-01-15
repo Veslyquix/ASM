@@ -86,6 +86,13 @@ Gamma_PrepPopupWindow:
 ALIGN 4 
 gUiFrameImage_Pikmin:
 #incbin "png/PikminMain.dmp" 
+ALIGN 4 
+gPrepExtra1_Pikmin: 
+#incbin "png/PikminPreps.dmp" 
+ALIGN 4 
+gPrepUseGfx_Pikmin: 
+#incbin "png/Pikmin_PrepsUseGfx.dmp" 
+
 ALIGN 4
 MenuTilesPalette_Pikmin:
 #incbin "png/PikminMain.pal.bin"
@@ -183,7 +190,14 @@ callHackNew(RestoreLinkArenaUI)
 
 ORG $986B8 
 callHackNew(PrepItemScreen_SetupGfx_Hook)
-// 
+
+ORG 0x98D28
+callHackNew(PrepUiPalHook) // in sub_8098CC0 98CC0
+
+ORG 0x95dCE 
+SHORT $46c0 
+callHackNew(PrepUiPalHook_3)
+// in AtMenu_Reinitialize
 
 // ORG $B4E28 
 // jumpToHack(DecompressImg_ShopGoldBox_Hook) 

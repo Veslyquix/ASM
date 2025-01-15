@@ -37,7 +37,9 @@ extern const u8 gPrepUseGfx_Stephano[]; // Img_PrepItemUseScreen
 extern const u8 gUiFrameImage_Gamma[];
 extern const u8 gUiFrameImage_Pikmin[];
 extern const u8 gPrepExtra1_Gamma[];     // gUnknown_08A1B730
+extern const u8 gPrepExtra1_Pikmin[];    // gUnknown_08A1B730
 extern const u8 gPrepUseGfx_Gamma[];     // Img_PrepItemUseScreen
+extern const u8 gPrepUseGfx_Pikmin[];    // Img_PrepItemUseScreen
 extern const u8 gPrepItemGfx_Gamma[];    // gUnknown_08A1B1FC
 extern const u8 Gamma_PrepPopupWindow[]; // Img_PrepPopupWindow
 
@@ -136,7 +138,7 @@ static const void * sPrepExtra1[] = {
     gUnknown_08A1B730, // vanilla
     gPrepExtra1_Stephano,
     gPrepExtra1_Gamma,
-    gPrepExtra1_Stephano,
+    gPrepExtra1_Pikmin,
 };
 
 const u8 * GetPrepExtra1(void)
@@ -157,7 +159,7 @@ static const void * sPrepUseItem[] = {
     Img_PrepItemUseScreen, // vanilla
     gPrepUseGfx_Stephano,
     gPrepUseGfx_Gamma,
-    gPrepUseGfx_Stephano,
+    gPrepUseGfx_Pikmin,
 };
 
 const u8 * GetPrepUseItem(void)
@@ -706,6 +708,25 @@ void PrepItemScreen_SetupGfx_Hook(void)
     const u16 * pal = sUiPalLookup[id][3];
     // ApplyPalette(pal, 2);
     LoadObjUIGfx();
+}
+
+void PrepUiPalHook_2(void) // item use screen
+{
+    int id = GetUIPalID();
+    const u16 * pal = sUiPalLookup[id][3]; // normally gUiFramePaletteD
+    ApplyPalette(pal, 0x2);
+}
+
+void PrepUiPalHook_3(void) // main prep palette
+{
+    RestartMuralBackground();
+    int id = GetUIPalID();
+    const u16 * pal = sUiPalLookup[id][1]; // normally gUiFramePaletteB
+    ApplyPalette(pal, 0x2);
+    pal = sUiPalLookup[id][2]; // normally gUiFramePaletteC
+    ApplyPalette(pal, 0x3);
+    pal = sUiPalLookup[id][3]; // normally gUiFramePaletteD
+    ApplyPalette(pal, 0x4);
 }
 
 void DrawUnitInfoBg_Init(void) // in prep - [id][0] was causing palette problems
