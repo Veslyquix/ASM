@@ -1,5 +1,12 @@
 
 
+ALIGN 4 
+StephanoStyleFlag: 
+WORD 0xAA 
+GammaStyleFlag:
+WORD 0xAB  
+PikminStyleFlag:
+WORD 0xAC
 
 
 

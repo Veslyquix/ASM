@@ -68,16 +68,25 @@ extern u16 Img_EfxRightNameBox_Gamma[];
 extern u16 Img_EfxRightItemBox_Gamma[];
 extern u16 Img_ShopGoldBox_Gamma[];
 
+extern int StephanoStyleFlag;
+extern int GammaStyleFlag;
+extern int PikminStyleFlag;
 int GetUI_id(void)
 {
-
-    int id = gPlaySt.unk19; //
-    if (id > 3)
+    if (CheckFlag(StephanoStyleFlag))
     {
-        id = 0;
+        return 1;
     }
-    id = 3;
-    return id;
+    if (CheckFlag(GammaStyleFlag))
+    {
+        return 2;
+    }
+    if (CheckFlag(PikminStyleFlag))
+    {
+        return 3;
+    }
+
+    return 0;
 }
 int GetUIPalID(void)
 {
@@ -704,8 +713,8 @@ void PrepItemScreen_SetupGfx_Hook(void)
 {
 
     // ApplyPalette(gUiFramePaletteD, 2);
-    int id = GetUIPalID();
-    const u16 * pal = sUiPalLookup[id][3];
+    // int id = GetUIPalID();
+    // const u16 * pal = sUiPalLookup[id][3];
     // ApplyPalette(pal, 2);
     LoadObjUIGfx();
 }
