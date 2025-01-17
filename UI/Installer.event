@@ -47,6 +47,21 @@ ALIGN 4
 Img_EfxRightItemBox_Sokaballa:
 #incbin "png/Sokaballa_RightItem.dmp" 
 
+
+ALIGN 4 
+Img_08801C14_Fenreir:
+#incbin "png/Fenreir_Battle.dmp" 
+ALIGN 4 
+Img_EfxLeftNameBox_Fenreir:
+Img_EfxRightNameBox_Fenreir:
+#incbin "png/Fenreir_Name.dmp" 
+ALIGN 4 
+Img_EfxLeftItemBox_Fenreir:
+#incbin "png/Fenreir_LeftItem.dmp" 
+ALIGN 4 
+Img_EfxRightItemBox_Fenreir:
+#incbin "png/Fenreir_RightItem.dmp" 
+
 ALIGN 4 
 Img_08801C14_Gamma:
 #incbin "png/Gamma_Battle.dmp" 
@@ -120,6 +135,8 @@ ALIGN 4
 gUnknown_08802558_Gamma: // Battle UI Palette 
 #incbin "png/Gamma_battletileset.pal" 
 ALIGN 4 
+gUnknown_08802558_Fenreir: // Battle UI Palette 
+#incbin "png/Fenreir_Battle.pal.bin" 
 
 
 
@@ -145,6 +162,11 @@ ALIGN 4
 gUnknown_0880210C_Gamma: 
 #incbin "png/Gamma_battleTSA.bin" 
 
+ALIGN 4 
+gUnknown_0880210C_Fenreir: 
+#incbin "png/Fenreir_battleTSA.bin" 
+
+
 
 
 #include "HackInstallation.txt" 
@@ -155,6 +177,39 @@ gUnknown_0880210C_Gamma:
 
 
 PUSH 
+
+/* 
+// Fenreir 
+ORG 0x519B8  //Item Icon Location Y Axis Left Side
+SHORT 0x3578 //original is 3579
+
+ORG 0x51A24  //Item Icon Location Y Axis Right Side
+SHORT 0x3578 //original is 3579
+
+ORG 0x5196A  //HIT DMG CRIT numbers X Axis location
+SHORT 0x30D9 //original is 30D8
+
+ORG 0x51994  //HIT DMG CRIT words X Axis location
+SHORT 0x3088 //original is 3087
+
+ORG 0x514FC  //Single HP BAR and Number Location Y Axis
+SHORT 0x3094 //original is 3091
+
+ORG 0x5172A  //When two HP Bars, Top HP BAR on Left Side
+SHORT 0x3090 //original is 308E
+
+ORG 0x51770  //When two HP Bars, Bottom HP BAR on Left Side
+SHORT 0x3097 //original is 3095
+
+ORG 0x5185C  //When two HP Bars, Top HP BAR on Right Side
+SHORT 0x3090 //original is 308E
+
+ORG 0x518A2  //When two HP Bars, Bottom HP BAR on Right Side
+SHORT 0x3097 //original is 3095
+*/ 
+
+
+
 ORG $8D04C 
 callHackNew(PlayerPhaseInterfaceNumbersHook)
 SHORT $46c0 

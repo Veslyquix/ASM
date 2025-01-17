@@ -298,7 +298,7 @@ static const void * sBUiFrame_880210C[] = {
     gUnknown_0880210C, // vanilla
     gUnknown_0880210C_Sokaballa,
     gUnknown_0880210C_Gamma,
-    gUnknown_0880210C,
+    gUnknown_0880210C_Fenreir,
 };
 const u8 * GetBUiFrame_880210C(void)
 {
@@ -437,7 +437,7 @@ static const void * sImg_08801C14[] = {
     Img_08801C14, // vanilla
     Img_08801C14_Sokaballa,
     Img_08801C14_Gamma,
-    Img_08801C14,
+    Img_08801C14_Fenreir,
 };
 
 const u8 * GetImg_08801C14()
@@ -451,7 +451,7 @@ static const void * sBPal_8802558[] = {
     gUnknown_08802558, // vanilla
     gUnknown_08802558_Sokaballa,
     gUnknown_08802558_Gamma,
-    gUnknown_08802558,
+    gUnknown_08802558_Fenreir,
 };
 const u16 * GetBPal_8802558(void)
 {
@@ -489,7 +489,7 @@ static const void * sImg_EfxLeftNameBox[] = {
     Img_EfxLeftNameBox, // vanilla
     Img_EfxLeftNameBox_Sokaballa,
     Img_EfxLeftNameBox_Gamma,
-    Img_EfxLeftNameBox,
+    Img_EfxLeftNameBox_Fenreir,
 };
 
 const u8 * GetImg_EfxLeftNameBox()
@@ -502,7 +502,7 @@ static const void * sImg_EfxLeftItemBox[] = {
     Img_EfxLeftItemBox, // vanilla
     Img_EfxLeftItemBox_Sokaballa,
     Img_EfxLeftItemBox_Gamma,
-    Img_EfxLeftItemBox,
+    Img_EfxLeftItemBox_Fenreir,
 };
 
 const u8 * GetImg_EfxLeftItemBox()
@@ -516,7 +516,7 @@ static const void * sImg_EfxRightNameBox[] = {
     Img_EfxRightNameBox, // vanilla
     Img_EfxRightNameBox_Sokaballa,
     Img_EfxRightNameBox_Gamma,
-    Img_EfxRightNameBox,
+    Img_EfxRightNameBox_Fenreir,
 };
 
 const u8 * GetImg_EfxRightNameBox()
@@ -530,7 +530,7 @@ static const void * sImg_EfxRightItemBox[] = {
     Img_EfxRightItemBox, // vanilla
     Img_EfxRightItemBox_Sokaballa,
     Img_EfxRightItemBox_Gamma,
-    Img_EfxRightItemBox,
+    Img_EfxRightItemBox_Fenreir,
 };
 
 const u8 * GetImg_EfxRightItemBox()
