@@ -19,6 +19,7 @@ extern u8 gUnknown_0880210C[]; // ekrGaugeMain
 extern u8 gUnknown_088021C0[];
 extern u8 gUnknown_08802274[];
 extern u8 gUnknown_08802348[];
+extern u8 gUnknown_08802348_Fenreir[];
 extern u8 gUnknown_08802428[]; // ekrGaugeMain
 extern u8 gUnknown_08802508[]; // EfxPrepareScreenFx
 // Img
@@ -48,7 +49,9 @@ extern u16 gUnknown_08802558_Sokaballa[]; // palette in func EfxPrepareScreenFx
 // TSA
 extern u8 gUnknown_0880210C_Sokaballa[]; // ekrGaugeMain
 extern u8 gUnknown_088021C0_Alt[];
+extern u8 gUnknown_088021C0_Fenreir[];
 extern u8 gUnknown_08802274_Alt[];
+extern u8 gUnknown_08802274_Fenreir[];
 extern u8 gUnknown_08802348_Alt[];
 extern u8 gUnknown_08802428_Alt[]; // ekrGaugeMain
 extern u8 gUnknown_08802508_Alt[]; // EfxPrepareScreenFx
@@ -59,13 +62,20 @@ extern u16 Img_EfxLeftItemBox_Sokaballa[];
 extern u16 Img_EfxRightNameBox_Sokaballa[];
 extern u16 Img_EfxRightItemBox_Sokaballa[];
 
-extern u8 gUnknown_0880210C_Gamma[];  // ekrGaugeMain
-extern u16 gUnknown_08802558_Gamma[]; // palette in func EfxPrepareScreenFx
+extern u8 gUnknown_0880210C_Gamma[];    // ekrGaugeMain
+extern u8 gUnknown_0880210C_Fenreir[];  // ekrGaugeMain
+extern u16 gUnknown_08802558_Gamma[];   // palette in func EfxPrepareScreenFx
+extern u16 gUnknown_08802558_Fenreir[]; // palette in func EfxPrepareScreenFx
 extern u16 Img_08801C14_Gamma[];
+extern u16 Img_08801C14_Fenreir[];
 extern u16 Img_EfxLeftNameBox_Gamma[];
+extern u16 Img_EfxLeftNameBox_Fenreir[];
 extern u16 Img_EfxLeftItemBox_Gamma[];
+extern u16 Img_EfxLeftItemBox_Fenreir[];
 extern u16 Img_EfxRightNameBox_Gamma[];
+extern u16 Img_EfxRightNameBox_Fenreir[];
 extern u16 Img_EfxRightItemBox_Gamma[];
+extern u16 Img_EfxRightItemBox_Fenreir[];
 extern u16 Img_ShopGoldBox_Gamma[];
 
 extern int StephanoStyleFlag;
@@ -297,7 +307,7 @@ static const void * sBUiFrame_880210C[] = {
 
     gUnknown_0880210C, // vanilla
     gUnknown_0880210C_Sokaballa,
-    gUnknown_0880210C_Gamma,
+    gUnknown_0880210C,
     gUnknown_0880210C_Fenreir,
 };
 const u8 * GetBUiFrame_880210C(void)
@@ -310,7 +320,7 @@ static const void * sBUiFrame_88021C0[] = {
     gUnknown_088021C0, // vanilla
     gUnknown_088021C0_Alt,
     gUnknown_088021C0,
-    gUnknown_088021C0,
+    gUnknown_088021C0_Fenreir,
 };
 const u8 * GetBUiFrame_88021C0(void)
 {
@@ -380,7 +390,7 @@ static const void * sUnknown_08802274[] = {
     gUnknown_08802274, // vanilla
     gUnknown_08802274_Alt,
     gUnknown_08802274,
-    gUnknown_08802274,
+    gUnknown_08802274_Fenreir,
 };
 
 const u8 * ekrGaugeMain_GetImg()
@@ -394,7 +404,7 @@ static const void * sUnknown_08802348[] = {
     gUnknown_08802348, // vanilla
     gUnknown_08802348,
     gUnknown_08802348,
-    gUnknown_08802348,
+    gUnknown_08802348_Fenreir,
 };
 
 const u8 * ekrGaugeMain2_GetImg()

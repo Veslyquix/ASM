@@ -164,9 +164,22 @@ gUnknown_0880210C_Gamma:
 
 ALIGN 4 
 gUnknown_0880210C_Fenreir: 
-#incbin "png/Fenreir_battleTSA.bin" 
+#incbin "png/Fenreir_BattleTSA.dmp" 
+ALIGN 4 
+gUnknown_088021C0_Fenreir: 
+#incbin "png/Fenreir_BattleRTSA.dmp" 
 
-
+BYTE 0 0 0 0 
+ALIGN 4 
+gUnknown_08802274_Fenreir:
+ORG CURRENTOFFSET-2 
+#incbin "png/Fenreir_Battle_LeftTSA.dmp" 
+BYTE 0 0 0 0 
+ALIGN 4 
+gUnknown_08802348_Fenreir: 
+ORG CURRENTOFFSET-2 
+#incbin "png/Fenreir_Battle_RightTSA.dmp" 
+BYTE 0 0 0 0 
 
 
 #include "HackInstallation.txt" 
@@ -272,12 +285,12 @@ jumpToHack(Decompress_Img_PrepItemUseScreen_Hook)
 // SHORT $46c0 $46c0 $46c0 $46c0 $46c0 $46c0 
 
 // the 3 below might be needed for alternate TSA but seem to be breaking atm 
-// ORG $51324 
-// callHackNew(ekrGaugeMain_Hook) 
-// SHORT $46c0 
+ORG $51324 
+callHackNew(ekrGaugeMain_Hook) 
+SHORT $46c0 
 
-// ORG $5136C 
-// jumpToHack(ekrGaugeMain_Hook2)
+ORG $5136C 
+jumpToHack(ekrGaugeMain_Hook2)
 
 // ORG $51384 
 // jumpToHack(ekrGaugeMain_Hook3)
