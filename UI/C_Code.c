@@ -306,9 +306,8 @@ struct ProcEkrDispUP2
 static const void * sBUiFrame_880210C[] = {
 
     gUnknown_0880210C, // vanilla
-    gUnknown_0880210C_Sokaballa,
-    gUnknown_0880210C,
-    gUnknown_0880210C_Fenreir,
+    gUnknown_0880210C_Sokaballa, gUnknown_0880210C,
+    gUnknown_0880210C_Fenreir, // top left box for name TSA
 };
 const u8 * GetBUiFrame_880210C(void)
 {
@@ -318,9 +317,8 @@ const u8 * GetBUiFrame_880210C(void)
 static const void * sBUiFrame_88021C0[] = {
 
     gUnknown_088021C0, // vanilla
-    gUnknown_088021C0_Alt,
-    gUnknown_088021C0,
-    gUnknown_088021C0_Fenreir,
+    gUnknown_088021C0_Alt, gUnknown_088021C0,
+    gUnknown_088021C0_Fenreir, // top right box for name TSA
 };
 const u8 * GetBUiFrame_88021C0(void)
 {
@@ -388,9 +386,8 @@ void ekrDispUPMain(struct ProcEkrDispUP * var)
 static const void * sUnknown_08802274[] = {
 
     gUnknown_08802274, // vanilla
-    gUnknown_08802274_Alt,
-    gUnknown_08802274,
-    gUnknown_08802274_Fenreir,
+    gUnknown_08802274_Alt, gUnknown_08802274,
+    gUnknown_08802274_Fenreir, // bottom left side TSA
 };
 
 const u8 * ekrGaugeMain_GetImg()
@@ -402,9 +399,8 @@ const u8 * ekrGaugeMain_GetImg()
 static const void * sUnknown_08802348[] = {
 
     gUnknown_08802348, // vanilla
-    gUnknown_08802348,
-    gUnknown_08802348,
-    gUnknown_08802348_Fenreir,
+    gUnknown_08802348, gUnknown_08802348,
+    gUnknown_08802348_Fenreir, // bottom right side TSA
 };
 
 const u8 * ekrGaugeMain2_GetImg()
@@ -417,9 +413,8 @@ static const void * sUnknown_08802428[] = {
 
     gUnknown_08802428, // vanilla
     // gUnknown_08802428_Alt,
-    gUnknown_08802428,
-    gUnknown_08802428,
-    gUnknown_08802428,
+    gUnknown_08802428, gUnknown_08802428,
+    gUnknown_08802348_Fenreir, // bottom right side TSA alternate
 };
 
 const u8 * ekrGaugeMain3_GetImg()

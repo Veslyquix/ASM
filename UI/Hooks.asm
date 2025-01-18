@@ -44,7 +44,6 @@ lsl r1, r3, #1
 ldr r3, =0x805137C 
 ldr r3, [r3] 
 add r2, r4, r3 
-
 pop {r3} 
 bx r3 
 .ltorg 
@@ -54,14 +53,25 @@ bx r3
 .type ekrGaugeMain_Hook2, %function 
 ekrGaugeMain_Hook2: 
 push  {r14}
-bl ekrGaugeMain2_GetImg
+ldr r0, [r1, #0x4C] 
+cmp r0, #0 
+beq Load2428 
+bl ekrGaugeMain2_GetImg @ 0x8802348 
 mov r3, r8 
 add r2, r3, r0 
-lsl r5, r7, #1 
-pop {r3} 
-ldr r3, =0x805138D 
-bx r3 
+b Exit_ekrGaugeMain_Hook2
+Load2428: 
+@ldr r0, =0x805141C 
+@ldr r0, [r0] @ 0x8802428 
+bl ekrGaugeMain3_GetImg
+mov r4, r8 
+add r2, r4, r0 
+Exit_ekrGaugeMain_Hook2: 
+pop {r1} 
+bx r1 
 .ltorg 
+
+
 
 .global ekrGaugeMain_Hook3
 .type ekrGaugeMain_Hook3, %function 
