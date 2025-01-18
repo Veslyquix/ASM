@@ -169,19 +169,6 @@ ALIGN 4
 gUnknown_088021C0_Fenreir: 
 #incbin "png/Fenreir_BattleRightNameTSA.dmp" 
 
-// 44 10 46 10 48 10 4A 10 4C 10 4E 10 50 10
-
-PUSH 
-// make it so names appear in the boxes 
-ORG gUnknown_0880210C_Fenreir + ((15*2)+2)*2 // coord 2x2y 
-BYTE $46 $10 $48 $10 $4A $10 $4C $10 $4E $10 $50 $10
-ORG gUnknown_0880210C_Fenreir + ((15*3)+2)*2 // coord 2x3y 
-BYTE $47 $10 $49 $10 $4B $10 $4D $10 $4F $10 $51 $10 
-ORG gUnknown_088021C0_Fenreir + ((15*2)+7)*2 // coord 7x2y 
-BYTE $62 $00 $64 $00 $66 $00 $68 $00 $6A $00 $6C $00 $6E $00 
-ORG gUnknown_088021C0_Fenreir + ((15*3)+7)*2 // coord 7x3y 
-BYTE $63 $00 $65 $00 $67 $00 $69 $00 $6B $00 $6D $00 $6F $00 
-POP 
 
 BYTE 0 0 0 0 
 ALIGN 4 
@@ -194,18 +181,6 @@ gUnknown_08802348_Fenreir:
 ORG CURRENTOFFSET-2 
 #incbin "png/Fenreir_Battle_RightTSA.dmp" 
 BYTE 0 0 0 0 
-
-PUSH 
-// make it so item text appears in the boxes 
-ORG gUnknown_08802274_Fenreir + ((15*2)+7)*2 // coord 6x3y 
-SHORT $52 $54 $56 $58 $5a $5c $5e $60 
-ORG gUnknown_08802274_Fenreir + ((15*3)+7)*2 // coord 6x4y 
-SHORT $53 $55 $57 $59 $5b $5d $5f $61 
-ORG gUnknown_08802348_Fenreir + ((16*2)+2)*2 // coord 1x3y 
-SHORT $70 $72 $74 $76 $78 $7a $7c $7e 
-ORG gUnknown_08802348_Fenreir + ((16*3)+2)*2 // coord 1x4y 
-SHORT $71 $73 $75 $77 $79 $7b $7d $7f 
-POP 
 
 #include "HackInstallation.txt" 
 
