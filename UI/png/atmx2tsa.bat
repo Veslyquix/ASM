@@ -1,6 +1,6 @@
 @echo off
 
-tmx2tsa.exe "%~1" "%~n1"TSA.dmp
+tmx2tsa.py "%~1" "%~n1"TSA.dmp -rnh
 
 
 pause
