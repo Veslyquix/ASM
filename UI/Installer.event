@@ -158,9 +158,25 @@ ALIGN 4
 gUnknown_08802508_Alt:
 BYTE  $03 $00 $03 $14 $10 $00 $10 $14 $11 $00 $11 $14 $0F $00 $0F $14 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $00 $13 $00 $13 $14 $22 $00 $22 $14 $22 $00 $22 $14 $22 $00 $22 $14 $23 $00 $23 $14 $22 $00 $22 $14;
 
+
+
+
 ALIGN 4 
-gUnknown_0880210C_Gamma: 
+gUnknown_0880201C_Gamma:
 #incbin "png/Gamma_battleTSA.bin" 
+PUSH 
+ORG gUnknown_0880201C_Gamma + ($210C - $201C) 
+gUnknown_0880210C_Gamma: 
+ORG gUnknown_0880201C_Gamma + ($21C0 - $201C) 
+gUnknown_088021C0_Gamma: 
+ORG gUnknown_0880201C_Gamma + ($2274 - $201C) 
+gUnknown_08802274_Gamma: 
+ORG gUnknown_0880201C_Gamma + ($2348 - $201C) 
+gUnknown_08802348_Gamma: 
+ORG gUnknown_0880201C_Gamma + ($2428 - $201C) 
+gUnknown_08802428_Gamma: 
+POP 
+
 
 ALIGN 4 
 gUnknown_0880210C_Fenreir: 

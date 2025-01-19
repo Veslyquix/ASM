@@ -62,7 +62,11 @@ extern u16 Img_EfxLeftItemBox_Sokaballa[];
 extern u16 Img_EfxRightNameBox_Sokaballa[];
 extern u16 Img_EfxRightItemBox_Sokaballa[];
 
-extern u8 gUnknown_0880210C_Gamma[];    // ekrGaugeMain
+extern u8 gUnknown_0880210C_Gamma[]; // ekrGaugeMain
+extern u8 gUnknown_088021C0_Gamma[];
+extern u8 gUnknown_08802274_Gamma[];
+extern u8 gUnknown_08802348_Gamma[];
+extern u8 gUnknown_08802428_Gamma[];
 extern u8 gUnknown_0880210C_Fenreir[];  // ekrGaugeMain
 extern u16 gUnknown_08802558_Gamma[];   // palette in func EfxPrepareScreenFx
 extern u16 gUnknown_08802558_Fenreir[]; // palette in func EfxPrepareScreenFx
@@ -306,7 +310,7 @@ struct ProcEkrDispUP2
 static const void * sBUiFrame_880210C[] = {
 
     gUnknown_0880210C, // vanilla
-    gUnknown_0880210C_Sokaballa, gUnknown_0880210C,
+    gUnknown_0880210C_Sokaballa, gUnknown_0880210C_Gamma,
     gUnknown_0880210C_Fenreir, // top left box for name TSA
 };
 const u8 * GetBUiFrame_880210C(void)
@@ -317,7 +321,7 @@ const u8 * GetBUiFrame_880210C(void)
 static const void * sBUiFrame_88021C0[] = {
 
     gUnknown_088021C0, // vanilla
-    gUnknown_088021C0_Alt, gUnknown_088021C0,
+    gUnknown_088021C0_Alt, gUnknown_088021C0_Gamma,
     gUnknown_088021C0_Fenreir, // top right box for name TSA
 };
 const u8 * GetBUiFrame_88021C0(void)
@@ -386,7 +390,7 @@ void ekrDispUPMain(struct ProcEkrDispUP * var)
 static const void * sUnknown_08802274[] = {
 
     gUnknown_08802274, // vanilla
-    gUnknown_08802274_Alt, gUnknown_08802274,
+    gUnknown_08802274, gUnknown_08802274_Gamma,
     gUnknown_08802274_Fenreir, // bottom left side TSA
 };
 
@@ -399,7 +403,7 @@ const u8 * ekrGaugeMain_GetImg()
 static const void * sUnknown_08802348[] = {
 
     gUnknown_08802348, // vanilla
-    gUnknown_08802348, gUnknown_08802348,
+    gUnknown_08802348, gUnknown_08802348_Gamma,
     gUnknown_08802348_Fenreir, // bottom right side TSA
 };
 
@@ -413,7 +417,7 @@ static const void * sUnknown_08802428[] = {
 
     gUnknown_08802428, // vanilla
     // gUnknown_08802428_Alt,
-    gUnknown_08802428, gUnknown_08802428,
+    gUnknown_08802428, gUnknown_08802428_Gamma,
     gUnknown_08802348_Fenreir, // bottom right side TSA alternate
 };
 

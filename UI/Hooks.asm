@@ -55,7 +55,7 @@ ekrGaugeMain_Hook2:
 push  {r14}
 ldr r0, [r1, #0x4C] 
 cmp r0, #0 
-beq Load2428 
+bne Load2428 
 bl ekrGaugeMain2_GetImg @ 0x8802348 
 mov r3, r8 
 add r2, r3, r0 
