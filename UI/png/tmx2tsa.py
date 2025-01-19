@@ -8,6 +8,8 @@ parser.add_argument('file',help='TMX file to parse.')
 parser.add_argument('output',help='Output dump file.')
 parser.add_argument('-p','--paletteID',default=1,type=int,help='Palette ID for TSA. Default is 1.')
 parser.add_argument('-c','--compress',help='Filepath to compress.exe for lz77 compression.')
+parser.add_argument('-r','--reverseoutput',help='Data of rows is reversed. Needed for some data')
+parser.add_argument('-nh','--noheader',help='Do not include the size of x and y at the start')
 args = parser.parse_args()
 
 tsa = [] # List of shorts to write.
@@ -17,13 +19,15 @@ class TSA:
         self.height = height
         #print([e.gid for e in tiles])
         self.tiles = [ tiles[i:i+self.width] for i in range(0,self.width*self.height,self.width) ] # This sorts the rows in reverse order.
-        self.tiles.reverse()
+        if args.reverseoutput == False: 
+            self.tiles.reverse()
         for row in self.tiles:
             print([e.gid for e in row])
         self.paletteID = paletteID
     def write(self,file): # Output width-1, height-1, and then the list of struct unsigned halfwords.
         with open(file,'wb') as out:
-            out.write(bytes([self.width-1,self.height-1]))
+            if args.noheader == False: 
+                out.write(bytes([self.width-1,self.height-1]))
             for row in self.tiles:
                 for tile in row:
                     out.write(struct.pack('<H',(tile.gid-1)|(tile.hflip<<10)|(tile.vflip<<11)|(self.paletteID<<12)))

@@ -170,15 +170,12 @@ gUnknown_088021C0_Fenreir:
 #incbin "png/Fenreir_BattleRightNameTSA.dmp" 
 
 
-BYTE 0 0 0 0 
 ALIGN 4 
 gUnknown_08802274_Fenreir:
-ORG CURRENTOFFSET-2 
 #incbin "png/Fenreir_Battle_LeftTSA.dmp" 
-BYTE 0 0 0 0 
+
 ALIGN 4 
 gUnknown_08802348_Fenreir: 
-ORG CURRENTOFFSET-2 
 #incbin "png/Fenreir_Battle_RightTSA.dmp" 
 BYTE 0 0 0 0 
 
