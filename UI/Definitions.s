@@ -12,6 +12,7 @@
 	.set    \name, \value
 .endm
 
+SET_DATA sUiFrameImage, 0x085B6470
 SET_DATA Img_ShopGoldBox, 0x089ad9f8
 SET_DATA gBanimFactionPal, 0x203e114
 SET_DATA gBanimFont, 0x02017648

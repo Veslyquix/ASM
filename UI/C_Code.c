@@ -108,6 +108,7 @@ int GetUIPalID(void)
     return GetUI_id();
 }
 
+const void * sUiFrameImage;
 static const void * sUiFrame[] = {
 
     gUiFrameImage, // vanilla
@@ -119,6 +120,10 @@ static const void * sUiFrame[] = {
 const u8 * GetUiFrame(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return sUiFrameImage;
+    }
     return sUiFrame[id];
 }
 
