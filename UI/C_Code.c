@@ -104,11 +104,10 @@ int GetUI_id(void)
 }
 int GetUIPalID(void)
 {
-    // asm("mov r11, r11");
     return GetUI_id();
 }
 
-const void * sUiFrameImage;
+extern const void * sUiFrameImage;
 static const void * sUiFrame[] = {
 
     gUiFrameImage, // vanilla
@@ -127,6 +126,7 @@ const u8 * GetUiFrame(void)
     return sUiFrame[id];
 }
 
+extern const void * poinGfx_PlayerInterfaceFontTiles; // poin 8a167c8
 static const void * sPIFontTiles[] = {
 
     gGfx_PlayerInterfaceFontTiles, // vanilla
@@ -138,9 +138,14 @@ static const void * sPIFontTiles[] = {
 const u8 * GetPIFontTiles(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinGfx_PlayerInterfaceFontTiles;
+    }
     return sPIFontTiles[id];
 }
 
+extern const void * poinGfx_PlayerInterfaceNumbers; // poin 8a16d6c
 static const void * sPINumbers[] = {
 
     gGfx_PlayerInterfaceNumbers, // vanilla
@@ -152,6 +157,10 @@ static const void * sPINumbers[] = {
 const u8 * GetPINumbers(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinGfx_PlayerInterfaceNumbers;
+    }
     return sPINumbers[id];
 }
 
@@ -161,6 +170,7 @@ void PlayerPhaseInterfaceNumbersHook(void)
     Decompress(GetPINumbers(), (void *)(VRAM + 0x15C00));
 }
 
+extern const void * poinUnknown_08A1B730;
 static const void * sPrepExtra1[] = {
 
     gUnknown_08A1B730, // vanilla
@@ -172,6 +182,10 @@ static const void * sPrepExtra1[] = {
 const u8 * GetPrepExtra1(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08A1B730;
+    }
     return sPrepExtra1[id];
 }
 
@@ -182,6 +196,7 @@ void PrepInitGfxHook(void)
     Decompress(GetPrepExtra1(), (void *)0x06000440);
 }
 
+extern const void * poinImg_PrepItemUseScreen;
 static const void * sPrepUseItem[] = {
 
     Img_PrepItemUseScreen, // vanilla
@@ -193,6 +208,10 @@ static const void * sPrepUseItem[] = {
 const u8 * GetPrepUseItem(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_PrepItemUseScreen;
+    }
     return sPrepUseItem[id];
 }
 
@@ -201,6 +220,7 @@ void Decompress_Img_PrepItemUseScreen(void)
     Decompress(GetPrepUseItem(), (void *)BG_VRAM + 0x440);
 }
 
+extern const void * poinUnknown_08A1B1FC;
 static const void * sPrepItem[] = {
 
     gUnknown_08A1B1FC, // vanilla
@@ -212,6 +232,10 @@ static const void * sPrepItem[] = {
 const u8 * GetPrepItem(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08A1B1FC;
+    }
     return sPrepItem[id];
 }
 
@@ -223,6 +247,7 @@ void DrawFundsSprite_Init(struct DrawFundsSpriteProc * proc)
     return;
 }
 
+extern const void * poinImg_PrepPopupWindow;
 static const void * sPrepPopupWindow[] = {
 
     Img_PrepPopupWindow, // vanilla
@@ -234,6 +259,10 @@ static const void * sPrepPopupWindow[] = {
 const u8 * GetPrepPopupWindow(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_PrepPopupWindow;
+    }
     return sPrepPopupWindow[id];
 }
 
@@ -311,7 +340,7 @@ struct ProcEkrDispUP2
 };
 // decomp says [1], not [16] !
 #define gBG0TilemapBuffer2D ((u16(*)[16])gBG0TilemapBuffer)
-
+extern const void * poinUnknown_0880210C;
 static const void * sBUiFrame_880210C[] = {
 
     gUnknown_0880210C, // vanilla
@@ -321,8 +350,13 @@ static const void * sBUiFrame_880210C[] = {
 const u8 * GetBUiFrame_880210C(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_0880210C;
+    }
     return sBUiFrame_880210C[id];
 }
+extern const void * poinUnknown_088021C0;
 static const void * sBUiFrame_88021C0[] = {
 
     gUnknown_088021C0, // vanilla
@@ -332,6 +366,10 @@ static const void * sBUiFrame_88021C0[] = {
 const u8 * GetBUiFrame_88021C0(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_088021C0;
+    }
     return sBUiFrame_88021C0[id];
 }
 
@@ -398,13 +436,18 @@ static const void * sUnknown_08802274[] = {
     gUnknown_08802274, gUnknown_08802274_Gamma,
     gUnknown_08802274_Fenreir, // bottom left side TSA
 };
-
+extern const void * poinUnknown_08802274;
 const u8 * ekrGaugeMain_GetImg()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08802274;
+    }
     return sUnknown_08802274[id];
 }
 
+extern const void * poinUnknown_08802348;
 static const void * sUnknown_08802348[] = {
 
     gUnknown_08802348, // vanilla
@@ -415,9 +458,14 @@ static const void * sUnknown_08802348[] = {
 const u8 * ekrGaugeMain2_GetImg()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08802348;
+    }
     return sUnknown_08802348[id];
 }
 
+extern const void * poinUnknown_08802428;
 static const void * sUnknown_08802428[] = {
 
     gUnknown_08802428, // vanilla
@@ -429,9 +477,14 @@ static const void * sUnknown_08802428[] = {
 const u8 * ekrGaugeMain3_GetImg()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08802428;
+    }
     return sUnknown_08802428[id];
 }
 
+extern const void * poinUnknown_08802508;
 static const void * sUnknown_08802508[] = {
 
     gUnknown_08802508, // vanilla
@@ -443,9 +496,14 @@ static const void * sUnknown_08802508[] = {
 const u8 * GetUnknown_08802508()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08802508;
+    }
     return sUnknown_08802508[id];
 }
 
+extern const void * poinImg_08801C14;
 static const void * sImg_08801C14[] = {
 
     Img_08801C14, // vanilla
@@ -457,9 +515,14 @@ static const void * sImg_08801C14[] = {
 const u8 * GetImg_08801C14()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_08801C14;
+    }
     return sImg_08801C14[id];
 }
 
+extern const void * poinUnknown_08802558;
 static const void * sBPal_8802558[] = {
 
     gUnknown_08802558, // vanilla
@@ -470,6 +533,10 @@ static const void * sBPal_8802558[] = {
 const u16 * GetBPal_8802558(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08802558;
+    }
     return sBPal_8802558[id];
 }
 
@@ -498,6 +565,7 @@ extern struct Font gBanimFont;
 extern s16 gBanimValid[2];
 extern struct Text gBanimText[20];
 
+extern const void * poinImg_EfxLeftNameBox;
 static const void * sImg_EfxLeftNameBox[] = {
 
     Img_EfxLeftNameBox, // vanilla
@@ -509,8 +577,13 @@ static const void * sImg_EfxLeftNameBox[] = {
 const u8 * GetImg_EfxLeftNameBox()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_EfxLeftNameBox;
+    }
     return sImg_EfxLeftNameBox[id];
 }
+extern const void * poinImg_EfxLeftItemBox;
 static const void * sImg_EfxLeftItemBox[] = {
 
     Img_EfxLeftItemBox, // vanilla
@@ -522,9 +595,14 @@ static const void * sImg_EfxLeftItemBox[] = {
 const u8 * GetImg_EfxLeftItemBox()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_EfxLeftItemBox;
+    }
     return sImg_EfxLeftItemBox[id];
 }
 
+extern const void * poinImg_EfxRightNameBox;
 static const void * sImg_EfxRightNameBox[] = {
 
     Img_EfxRightNameBox, // vanilla
@@ -536,9 +614,14 @@ static const void * sImg_EfxRightNameBox[] = {
 const u8 * GetImg_EfxRightNameBox()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_EfxRightNameBox;
+    }
     return sImg_EfxRightNameBox[id];
 }
 
+extern const void * poinImg_EfxRightItemBox;
 static const void * sImg_EfxRightItemBox[] = {
 
     Img_EfxRightItemBox, // vanilla
@@ -550,13 +633,13 @@ static const void * sImg_EfxRightItemBox[] = {
 const u8 * GetImg_EfxRightItemBox()
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_EfxRightItemBox;
+    }
     return sImg_EfxRightItemBox[id];
 }
 
-extern u16 Img_EfxLeftNameBox[];
-extern u16 Img_EfxLeftItemBox[];
-extern u16 Img_EfxRightNameBox[];
-extern u16 Img_EfxRightItemBox[];
 void EfxPrepareScreenFx(void)
 {
     const char * str;
@@ -875,7 +958,7 @@ struct ProcShop
 };
 
 extern void InitGoldBoxText(u16 *);
-
+extern const void * poinImg_ShopGoldBox;
 static const void * sUiGoldBox[] = {
 
     Img_ShopGoldBox, // vanilla
