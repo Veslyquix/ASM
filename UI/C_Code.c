@@ -170,6 +170,50 @@ void PlayerPhaseInterfaceNumbersHook(void)
     Decompress(GetPINumbers(), (void *)(VRAM + 0x15C00));
 }
 
+// AtMenu_Reintialize 08095c84
+// gUnknown_08A1B698? gUnknown_08A1B698, gUnknown_08A1B658
+
+// gUnknown_08A1B7C8
+// A1B7C8
+
+extern const void * poinUnknown_08A1B658; // Link arena something UI tsa?
+extern const u8 gUnknown_08A1B698_Gamma[];
+extern const void * poinUnknown_08A1B698;
+
+static const void * sUnknown_08A1B698[] = {
+
+    gUnknown_08A1B698, // vanilla
+    gUnknown_08A1B698,
+    gUnknown_08A1B698_Gamma,
+    gUnknown_08A1B698,
+};
+
+const u8 * GetUnknown_08A1B698(void)
+{
+    int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08A1B698;
+    }
+    return sUnknown_08A1B698[id];
+}
+
+void PrepUiTSAHook(void)
+{
+    if (CheckInLinkArena())
+    {
+        Decompress(GetUnknown_08A1B698(), gGenericBuffer);
+        CallARM_FillTileRect(TILEMAP_LOCATED(gBG1TilemapBuffer, 1, 5), gGenericBuffer, 0x1000);
+    }
+    else
+    {
+        Decompress(gUnknown_08A1B658, gGenericBuffer);
+        CallARM_FillTileRect(TILEMAP_LOCATED(gBG1TilemapBuffer, 0x10, 2), gGenericBuffer, 0x1000);
+        Decompress(GetUnknown_08A1B698(), gGenericBuffer);
+        CallARM_FillTileRect(TILEMAP_LOCATED(gBG1TilemapBuffer, 1, 6), gGenericBuffer, 0x1000);
+    }
+}
+
 extern const void * poinUnknown_08A1B730;
 static const void * sPrepExtra1[] = {
 
@@ -189,11 +233,34 @@ const u8 * GetPrepExtra1(void)
     return sPrepExtra1[id];
 }
 
+extern const u8 gUnknown_08A1B7C8_Gamma[];
+extern const void * poinUnknown_08A1B7C8;
+static const void * sUnknown_08A1B7C8[] = {
+
+    gUnknown_08A1B7C8, // vanilla
+    gUnknown_08A1B7C8,
+    gUnknown_08A1B7C8_Gamma,
+    gUnknown_08A1B7C8,
+};
+
+const u8 * GetUnknown_08A1B7C8(void)
+{
+    int id = GetUI_id();
+    if (!id)
+    {
+        return poinUnknown_08A1B7C8;
+    }
+    return sUnknown_08A1B7C8[id];
+}
+
 void PrepInitGfxHook(void)
 {
     sub_80950E8(0x6000, 0xF);
 
     Decompress(GetPrepExtra1(), (void *)0x06000440);
+    Decompress(GetUnknown_08A1B7C8(), gGenericBuffer);
+    asm("mov r11, r11");
+    CallARM_FillTileRect(gBG1TilemapBuffer, gGenericBuffer, 0x1000);
 }
 
 extern const void * poinImg_PrepItemUseScreen;

@@ -32,6 +32,9 @@ SET_DATA poinImg_EfxLeftItemBox, 0x08052028
 SET_DATA poinImg_EfxRightNameBox, 0x08052088
 SET_DATA poinImg_EfxRightItemBox, 0x08052164
 SET_DATA poinImg_ShopGoldBox, 0x080b4e70
+SET_DATA poinUnknown_08A1B658, 0x08095eac
+SET_DATA poinUnknown_08A1B698, 0x08095e3c
+SET_DATA poinUnknown_08A1B7C8, 0x0809a8e0
 
 
 SET_DATA Img_ShopGoldBox, 0x089ad9f8

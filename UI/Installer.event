@@ -176,6 +176,13 @@ gUnknown_08802348_Gamma:
 ORG gUnknown_0880201C_Gamma + ($2428 - $201C) 
 gUnknown_08802428_Gamma: 
 POP 
+ALIGN 4 
+gUnknown_08A1B698_Gamma: 
+#incbin "png/Gamma_prepscreenmain.bgtsa.lz77" 
+ALIGN 4 
+gUnknown_08A1B7C8_Gamma:
+#incbin "png/Gamma_PrepScreenUnit2TSA.dmp" 
+// #incbin "png/Gamma_prepscreenunit.bgtsa.lz77"  
 
 
 ALIGN 4 
@@ -243,6 +250,10 @@ SHORT $46c0
 ORG $9a894 
 callHackNew(PrepInitGfxHook)
 SHORT $46c0 $46c0 
+SHORT $46c0 $46c0 
+SHORT $46c0 $46c0 $46c0 
+SHORT $46c0 $46c0 $46c0 
+SHORT $46c0 $46c0 $46c0 
 
 ORG $8dfc0 
 callHackNew(StatusScreenUIPal_Hook) 
@@ -285,7 +296,11 @@ callHackNew(PrepUiPalHook) // in sub_8098CC0 98CC0
 ORG 0x95dCE 
 SHORT $46c0 
 callHackNew(PrepUiPalHook_3)
+ORG $95DDC 
+callHackNew(PrepUiTSAHook) 
+SHORT $46c0 $46c0 $46c0 $46c0 $46c0 $46c0 $46c0 $46c0 $46c0 $46c0 
 // in AtMenu_Reinitialize
+
 
 // ORG $B4E28 
 // jumpToHack(DecompressImg_ShopGoldBox_Hook) 
