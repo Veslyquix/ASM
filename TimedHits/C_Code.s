@@ -2167,120 +2167,123 @@ AdjustDamageByPercent:
 	@ args = 8, pretend = 0, frame = 16
 	@ frame_needed = 0, uses_anonymous_args = 0
 	push	{r4, r5, r6, r7, lr}	@
-	mov	r6, r9	@,
-	mov	r7, r10	@,
 	mov	r5, r8	@,
+	mov	r7, r10	@,
+	mov	r6, r9	@,
 	mov	lr, fp	@,
 	push	{r5, r6, r7, lr}	@
-	movs	r7, r3	@ opp_bunit, tmp228
+	movs	r7, r3	@ opp_bunit, tmp229
 @ C_Code.c:945:     if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange))
 	ldr	r3, [r0, #56]	@ _1, proc_48(D)->currentRound
-	mov	r9, r3	@ _1, _1
+	mov	r8, r3	@ _1, _1
 @ C_Code.c:945:     if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange))
 	ldr	r3, [r3]	@ *_1, *_1
-	lsls	r3, r3, #13	@ tmp163, *_1,
+	lsls	r3, r3, #13	@ tmp164, *_1,
 @ C_Code.c:943: {
-	movs	r6, r2	@ active_bunit, tmp227
-	movs	r4, r0	@ proc, tmp225
-	movs	r5, r1	@ HpProc, tmp226
+	movs	r6, r2	@ active_bunit, tmp228
+	movs	r4, r0	@ proc, tmp226
+	movs	r5, r1	@ HpProc, tmp227
 	sub	sp, sp, #36	@,,
 @ C_Code.c:945:     if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange))
-	lsrs	r2, r3, #13	@ _2, tmp163,
+	lsrs	r2, r3, #13	@ _2, tmp164,
 @ C_Code.c:945:     if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange))
-	lsls	r3, r3, #17	@ tmp232, tmp163,
+	lsls	r3, r3, #17	@ tmp233, tmp164,
 	bmi	.L294		@,
 @ C_Code.c:945:     if ((proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS) || (!proc->currentRound->hpChange))
-	mov	r3, r9	@ _1, _1
-	ldrb	r3, [r3, #3]	@ tmp166,
-	lsls	r3, r3, #24	@ tmp166, tmp166,
-	asrs	r3, r3, #24	@ tmp166, tmp166,
+	mov	r3, r8	@ _1, _1
+	ldrb	r3, [r3, #3]	@ tmp167,
+	lsls	r3, r3, #24	@ tmp167, tmp167,
+	asrs	r3, r3, #24	@ tmp167, tmp167,
 	beq	.L294		@,
 @ C_Code.c:949:     if (round->hpChange <= 0)
-	movs	r1, #3	@ _6,
-	ldr	r3, [sp, #72]	@ tmp244, round
-	ldrsb	r1, [r3, r1]	@ _6,* _6
+	ldr	r3, [sp, #72]	@ tmp245, round
+	ldrb	r3, [r3, #3]	@ _6,
+	lsls	r3, r3, #24	@ _6, _6,
+	asrs	r3, r3, #24	@ _6, _6,
+	mov	r9, r3	@ _6, _6
 @ C_Code.c:949:     if (round->hpChange <= 0)
-	cmp	r1, #0	@ _6,
+	cmp	r3, #0	@ _6,
 	ble	.L294		@,
 @ C_Code.c:953:     int side = proc->side;
-	movs	r3, #74	@ tmp169,
+	movs	r3, #74	@ tmp170,
 	ldrb	r3, [r0, r3]	@ side,
-	movs	r0, r3	@ side, side
-	str	r3, [sp, #20]	@ side, %sfp
+	movs	r1, r3	@ side, side
+	str	r3, [sp, #16]	@ side, %sfp
 @ C_Code.c:954:     int hp = gEkrGaugeHp[proc->side];
-	ldr	r3, .L332	@ tmp170,
-	lsls	r0, r0, #1	@ tmp171, side,
+	ldr	r3, .L333	@ tmp171,
+	lsls	r1, r1, #1	@ tmp172, side,
 @ C_Code.c:954:     int hp = gEkrGaugeHp[proc->side];
-	ldrsh	r3, [r0, r3]	@ hp, gEkrGaugeHp
-	str	r3, [sp, #24]	@ hp, %sfp
+	ldrsh	r3, [r1, r3]	@ hp, gEkrGaugeHp
+	str	r3, [sp, #20]	@ hp, %sfp
 @ C_Code.c:955:     if (!hp)
 	cmp	r3, #0	@ hp,
-	bne	.LCB1772	@
+	bne	.LCB1774	@
 	b	.L329	@long jump	@
-.LCB1772:
+.LCB1774:
 @ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
-	movs	r3, #1	@ tmp179,
-	ldr	r0, [sp, #20]	@ side, %sfp
-@ C_Code.c:964:     int oldDamage = round->hpChange;
-	mov	r8, r1	@ oldDamage, _6
+	movs	r3, #1	@ tmp180,
+	ldr	r0, [sp, #16]	@ side, %sfp
 @ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
-	eors	r3, r0	@ tmp178, side
+	ldr	r1, .L333+4	@ tmp175,
 @ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
-	ldr	r1, .L332+4	@ tmp174,
-	lsls	r3, r3, #1	@ tmp180, tmp178,
+	eors	r3, r0	@ tmp179, side
+@ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
+	lsls	r3, r3, #1	@ tmp181, tmp179,
 	ldrsh	r3, [r3, r1]	@ pretmp_81, gEkrGaugeDmg
 @ C_Code.c:965:     if (proc->currentRound->attributes & BATTLE_HIT_ATTR_CRIT)
-	lsls	r2, r2, #31	@ tmp233, _2,
-	bpl	.L297		@,
-@ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
-	lsls	r2, r3, #1	@ tmp184, pretmp_81,
-	adds	r3, r2, r3	@ tmp185, tmp184, pretmp_81
-@ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
-	cmp	r8, r3	@ oldDamage, tmp185
-	blt	.L327		@,
+	lsls	r2, r2, #31	@ tmp234, _2,
+	bmi	.L330		@,
+@ C_Code.c:964:     int oldDamage = round->hpChange;
+	mov	fp, r9	@ oldDamage, _6
+@ C_Code.c:973:     else if (gEkrGaugeDmg[side ^ 1] > oldDamage)
+	cmp	r9, r3	@ _6, pretmp_81
+	bge	.L299		@,
+@ C_Code.c:975:         oldDamage = gEkrGaugeDmg[side ^ 1];
+	mov	fp, r3	@ oldDamage, pretmp_81
 .L299:
 @ C_Code.c:978:     if (UsingSkillSys == 2)
-	ldr	r3, .L332+8	@ tmp186,
+	ldr	r3, .L333+8	@ tmp187,
 	ldr	r3, [r3]	@ UsingSkillSys.38_16, UsingSkillSys
-	str	r3, [sp, #28]	@ UsingSkillSys.38_16, %sfp
+	str	r3, [sp, #24]	@ UsingSkillSys.38_16, %sfp
 @ C_Code.c:978:     if (UsingSkillSys == 2)
 	cmp	r3, #2	@ UsingSkillSys.38_16,
 	bne	.L300		@,
 @ C_Code.c:980:         oldDamage = ABS(round->overDmg);
-	ldr	r3, [sp, #72]	@ tmp255, round
-	movs	r2, #6	@ tmp240,
-	ldrsh	r3, [r3, r2]	@ tmp187, tmp255, tmp240
-	asrs	r2, r3, #31	@ tmp234, tmp187,
-	adds	r3, r3, r2	@ tmp188, tmp187, tmp234
-	eors	r3, r2	@ tmp188, tmp234
+	ldr	r3, [sp, #72]	@ tmp259, round
+	movs	r2, #6	@ tmp241,
+	ldrsh	r3, [r3, r2]	@ tmp188, tmp259, tmp241
+	asrs	r2, r3, #31	@ tmp235, tmp188,
+	adds	r3, r3, r2	@ tmp189, tmp188, tmp235
+	eors	r3, r2	@ tmp189, tmp235
 @ C_Code.c:980:         oldDamage = ABS(round->overDmg);
-	lsls	r3, r3, #16	@ tmp189, tmp188,
-	lsrs	r3, r3, #16	@ oldDamage, tmp189,
-	mov	r8, r3	@ oldDamage, oldDamage
+	lsls	r3, r3, #16	@ tmp190, tmp189,
+	lsrs	r3, r3, #16	@ oldDamage, tmp190,
+	mov	fp, r3	@ oldDamage, oldDamage
 .L300:
 @ C_Code.c:984:     int newDamage = ((oldDamage * percent)) / 100;
-	ldr	r2, [sp, #76]	@ tmp258, percent
-	mov	r3, r8	@ _19, oldDamage
-	muls	r3, r2	@ _19, tmp258
-	mov	fp, r3	@ _19, _19
+	ldr	r2, [sp, #76]	@ tmp262, percent
+	mov	r3, fp	@ _19, oldDamage
+	muls	r3, r2	@ _19, tmp262
+	mov	r10, r3	@ _19, _19
 @ C_Code.c:984:     int newDamage = ((oldDamage * percent)) / 100;
-	ldr	r3, .L332+12	@ tmp193,
+	ldr	r3, .L333+12	@ tmp194,
 	movs	r1, #100	@,
-	mov	r0, fp	@, _19
-	mov	r10, r3	@ tmp193, tmp193
+	mov	r0, r10	@, _19
+	str	r3, [sp, #28]	@ tmp194, %sfp
 	bl	.L10		@
 @ C_Code.c:985:     if (newDamage >= oldDamage)
-	cmp	r8, r0	@ oldDamage, tmp229
+	cmp	fp, r0	@ oldDamage, tmp230
 	bgt	.L301		@,
 @ C_Code.c:987:         newDamage = ((oldDamage * percent) + BonusDamageRounding) / 100;
-	ldr	r3, .L332+16	@ tmp195,
+	ldr	r3, .L333+16	@ tmp196,
 	ldr	r0, [r3]	@ BonusDamageRounding, BonusDamageRounding
 @ C_Code.c:987:         newDamage = ((oldDamage * percent) + BonusDamageRounding) / 100;
 	movs	r1, #100	@,
+	ldr	r3, [sp, #28]	@ tmp194, %sfp
 @ C_Code.c:987:         newDamage = ((oldDamage * percent) + BonusDamageRounding) / 100;
-	add	r0, r0, fp	@ tmp196, _19
+	add	r0, r0, r10	@ tmp197, _19
 @ C_Code.c:987:         newDamage = ((oldDamage * percent) + BonusDamageRounding) / 100;
-	bl	.L71		@
+	bl	.L10		@
 .L302:
 @ C_Code.c:993:     if (newDamage <= 0)
 	mov	r10, r0	@ newDamage, newDamage
@@ -2291,34 +2294,34 @@ AdjustDamageByPercent:
 .L303:
 @ C_Code.c:997:     int newHp = hp - newDamage;
 	mov	r2, r10	@ newDamage, newDamage
-	ldr	r3, [sp, #24]	@ hp, %sfp
+	ldr	r3, [sp, #20]	@ hp, %sfp
 @ C_Code.c:998:     if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)
-	movs	r1, #11	@ tmp212,
+	movs	r1, #11	@ tmp213,
 @ C_Code.c:997:     int newHp = hp - newDamage;
 	subs	r2, r3, r2	@ newHp, hp, newDamage
 @ C_Code.c:998:     if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)
-	movs	r3, #192	@ tmp213,
-	ldrsb	r1, [r6, r1]	@ tmp212,
-	ands	r3, r1	@ tmp214, tmp212
+	movs	r3, #192	@ tmp214,
+	ldrsb	r1, [r6, r1]	@ tmp213,
+	ands	r3, r1	@ tmp215, tmp213
 @ C_Code.c:998:     if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)
-	cmp	r3, #128	@ tmp214,
-	beq	.L330		@,
+	cmp	r3, #128	@ tmp215,
+	beq	.L331		@,
 .L304:
 @ C_Code.c:1017:     if (newHp <= 0)
-	mvns	r3, r2	@ tmp224, newHp
-	asrs	r3, r3, #31	@ tmp223, tmp224,
-	ands	r2, r3	@ newHp, tmp223
+	mvns	r3, r2	@ tmp225, newHp
+	asrs	r3, r3, #31	@ tmp224, tmp225,
+	ands	r2, r3	@ newHp, tmp224
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
-	ldr	r3, [sp, #28]	@ UsingSkillSys.38_16, %sfp
+	ldr	r3, [sp, #24]	@ UsingSkillSys.38_16, %sfp
 @ C_Code.c:1017:     if (newHp <= 0)
 	mov	fp, r2	@ _3, newHp
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
 	cmp	r3, #0	@ UsingSkillSys.38_16,
 	beq	.L307		@,
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
-	mov	r3, r9	@ _1, _1
+	mov	r3, r8	@ _1, _1
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
-	ldr	r2, .L332+20	@ tmp219,
+	ldr	r2, .L333+20	@ tmp220,
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
 	ldr	r2, [r2]	@ ProcSkillsStackWithTimedHits, ProcSkillsStackWithTimedHits
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
@@ -2327,16 +2330,16 @@ AdjustDamageByPercent:
 	cmp	r2, #0	@ ProcSkillsStackWithTimedHits,
 	beq	.L308		@,
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
-	ldr	r2, .L332+24	@ tmp221,
+	ldr	r2, .L333+24	@ tmp222,
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
-	ldrb	r2, [r2, r3]	@ tmp222, SkillExceptionsTable
-	cmp	r2, #0	@ tmp222,
+	ldrb	r2, [r2, r3]	@ tmp223, SkillExceptionsTable
+	cmp	r2, #0	@ tmp223,
 	bne	.L308		@,
 .L307:
 @ C_Code.c:1031:     UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage);
 	mov	r3, r10	@ newDamage, newDamage
 	str	r3, [sp, #4]	@ newDamage,
-	ldr	r3, [sp, #20]	@ side, %sfp
+	ldr	r3, [sp, #16]	@ side, %sfp
 	movs	r2, r7	@, opp_bunit
 	str	r3, [sp]	@ side,
 	movs	r1, r5	@, HpProc
@@ -2349,9 +2352,9 @@ AdjustDamageByPercent:
 	mov	r3, fp	@ _3, _3
 .L328:
 	str	r3, [sp, #4]	@ _3,
-	ldr	r3, [sp, #72]	@ tmp276, round
+	ldr	r3, [sp, #72]	@ tmp283, round
 	movs	r2, r6	@, active_bunit
-	str	r3, [sp]	@ tmp276,
+	str	r3, [sp]	@ tmp283,
 	movs	r1, r5	@, HpProc
 	movs	r3, r7	@, opp_bunit
 	movs	r0, r4	@, proc
@@ -2368,53 +2371,56 @@ AdjustDamageByPercent:
 	pop	{r4, r5, r6, r7}
 	pop	{r0}
 	bx	r0
-.L297:
-@ C_Code.c:973:     else if (gEkrGaugeDmg[side ^ 1] > oldDamage)
-	cmp	r8, r3	@ oldDamage, pretmp_81
+.L330:
+@ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
+	lsls	r2, r3, #1	@ tmp185, pretmp_81,
+	mov	fp, r2	@ tmp185, tmp185
+	add	fp, fp, r3	@ tmp185, pretmp_81
+@ C_Code.c:967:         if (gEkrGaugeDmg[side ^ 1] * 3 > oldDamage)
+	cmp	fp, r9	@ oldDamage, _6
 	bge	.L299		@,
-.L327:
-@ C_Code.c:975:         oldDamage = gEkrGaugeDmg[side ^ 1];
-	mov	r8, r3	@ oldDamage, pretmp_81
+	mov	fp, r9	@ oldDamage, _6
 	b	.L299		@
 .L308:
 @ C_Code.c:1022:     if (UsingSkillSys && ((!ProcSkillsStackWithTimedHits) || SkillExceptionsTable[proc->currentRound->skillID]) &&
 	cmp	r3, #0	@ pretmp_78,
 	beq	.L307		@,
-@ C_Code.c:1027:         newHp = hp - oldDamage;
-	mov	r2, r8	@ oldDamage, oldDamage
-	ldr	r3, [sp, #24]	@ hp, %sfp
-	subs	r3, r3, r2	@ _3, hp, oldDamage
+@ C_Code.c:1027:         newHp = hp - round->hpChange;
+	mov	r2, r9	@ _6, _6
+	ldr	r3, [sp, #20]	@ hp, %sfp
+	subs	r3, r3, r2	@ _3, hp, _6
 	mov	fp, r3	@ _3, _3
-@ C_Code.c:1026:         newDamage = oldDamage;
-	mov	r10, r8	@ newDamage, oldDamage
+@ C_Code.c:1026:         newDamage = round->hpChange; // actual oldDamage without choosing between displayed / round dmg
+	mov	r10, r9	@ newDamage, _6
 	b	.L307		@
 .L301:
 @ C_Code.c:991:         newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100;
-	ldr	r3, .L332+28	@ tmp202,
+	ldr	r3, .L333+28	@ tmp203,
 	ldr	r0, [r3]	@ ReducedDamageRounding, ReducedDamageRounding
 @ C_Code.c:991:         newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100;
-	ldr	r3, .L332+32	@ tmp205,
+	ldr	r3, .L333+32	@ tmp206,
 	ldr	r3, [r3]	@ ReducedDamageSubtract, ReducedDamageSubtract
 @ C_Code.c:991:         newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100;
-	add	r0, r0, fp	@ tmp203, _19
+	add	r0, r0, r10	@ tmp204, _19
 @ C_Code.c:991:         newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100;
 	movs	r1, #100	@,
 @ C_Code.c:991:         newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100;
-	subs	r0, r0, r3	@ tmp206, tmp203, ReducedDamageSubtract
+	subs	r0, r0, r3	@ tmp207, tmp204, ReducedDamageSubtract
 @ C_Code.c:991:         newDamage = ((oldDamage * percent) + ReducedDamageRounding - ReducedDamageSubtract) / 100;
-	bl	.L71		@
+	ldr	r3, [sp, #28]	@ tmp194, %sfp
+	bl	.L10		@
 	b	.L302		@
-.L330:
+.L331:
 @ C_Code.c:1002:         if ((hp - oldDamage) <= 0)
-	mov	r1, r8	@ oldDamage, oldDamage
-	ldr	r3, [sp, #24]	@ hp, %sfp
+	mov	r1, fp	@ oldDamage, oldDamage
+	ldr	r3, [sp, #20]	@ hp, %sfp
 	subs	r3, r3, r1	@ _29, hp, oldDamage
 @ C_Code.c:1002:         if ((hp - oldDamage) <= 0)
 	cmp	r3, #0	@ _29,
-	ble	.L331		@,
+	ble	.L332		@,
 .L305:
 @ C_Code.c:1010:         if (!BlockingEnabled)
-	ldr	r1, .L332+36	@ tmp217,
+	ldr	r1, .L333+36	@ tmp218,
 @ C_Code.c:1010:         if (!BlockingEnabled)
 	ldr	r1, [r1]	@ BlockingEnabled, BlockingEnabled
 	cmp	r1, #0	@ BlockingEnabled,
@@ -2422,15 +2428,15 @@ AdjustDamageByPercent:
 @ C_Code.c:1012:             newHp = hp - oldDamage;
 	movs	r2, r3	@ newHp, _29
 @ C_Code.c:1013:             newDamage = oldDamage;
-	mov	r10, r8	@ newDamage, oldDamage
+	mov	r10, fp	@ newDamage, oldDamage
 	b	.L304		@
 .L329:
 @ C_Code.c:957:         CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, hp, 0);
 	str	r3, [sp, #8]	@ hp,
 	b	.L328		@
-.L331:
+.L332:
 @ C_Code.c:1004:             if (!BlockingCanPreventLethal)
-	ldr	r1, .L332+40	@ tmp215,
+	ldr	r1, .L333+40	@ tmp216,
 @ C_Code.c:1004:             if (!BlockingCanPreventLethal)
 	ldr	r1, [r1]	@ BlockingCanPreventLethal, BlockingCanPreventLethal
 	cmp	r1, #0	@ BlockingCanPreventLethal,
@@ -2438,11 +2444,11 @@ AdjustDamageByPercent:
 @ C_Code.c:1006:                 newHp = hp - oldDamage;
 	movs	r2, r3	@ newHp, _29
 @ C_Code.c:1007:                 newDamage = oldDamage;
-	mov	r10, r8	@ newDamage, oldDamage
+	mov	r10, fp	@ newDamage, oldDamage
 	b	.L305		@
-.L333:
+.L334:
 	.align	2
-.L332:
+.L333:
 	.word	gEkrGaugeHp
 	.word	gEkrGaugeDmg
 	.word	UsingSkillSys
@@ -2478,49 +2484,49 @@ AdjustDamageWithGetter:
 @ C_Code.c:726:     if (success)
 	ldr	r5, [sp, #28]	@ tmp173, success
 	cmp	r5, #0	@ tmp173,
-	beq	.L335		@,
+	beq	.L336		@,
 @ C_Code.c:728:         if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)
 	cmp	r4, #128	@ _15,
-	beq	.L343		@,
+	beq	.L344		@,
 @ C_Code.c:739:         if (!TimedHitsDifficultyRam->alwaysA)
-	ldr	r4, .L344	@ tmp139,
+	ldr	r4, .L345	@ tmp139,
 	ldr	r4, [r4]	@ TimedHitsDifficultyRam.25_21, TimedHitsDifficultyRam
 @ C_Code.c:739:         if (!TimedHitsDifficultyRam->alwaysA)
 	ldrb	r4, [r4]	@ *TimedHitsDifficultyRam.25_21, *TimedHitsDifficultyRam.25_21
 @ C_Code.c:739:         if (!TimedHitsDifficultyRam->alwaysA)
 	lsls	r5, r4, #26	@ tmp169, *TimedHitsDifficultyRam.25_21,
-	bmi	.L338		@,
+	bmi	.L339		@,
 @ C_Code.c:741:             if ((TimedHitsDifficultyRam->difficulty >= DifficultyThreshold) ||
-	ldr	r5, .L344+4	@ tmp149,
+	ldr	r5, .L345+4	@ tmp149,
 	ldr	r5, [r5]	@ DifficultyThreshold.27_26, DifficultyThreshold
 @ C_Code.c:741:             if ((TimedHitsDifficultyRam->difficulty >= DifficultyThreshold) ||
 	lsls	r4, r4, #27	@ tmp154, *TimedHitsDifficultyRam.25_21,
 	lsrs	r4, r4, #27	@ tmp155, tmp154,
 @ C_Code.c:741:             if ((TimedHitsDifficultyRam->difficulty >= DifficultyThreshold) ||
 	cmp	r4, r5	@ tmp155, DifficultyThreshold.27_26
-	bge	.L339		@,
+	bge	.L340		@,
 @ C_Code.c:742:                 (NumberOfRandomButtons >= DifficultyThreshold))
-	ldr	r4, .L344+8	@ tmp157,
+	ldr	r4, .L345+8	@ tmp157,
 @ C_Code.c:741:             if ((TimedHitsDifficultyRam->difficulty >= DifficultyThreshold) ||
 	ldr	r4, [r4]	@ NumberOfRandomButtons, NumberOfRandomButtons
 	cmp	r5, r4	@ DifficultyThreshold.27_26, NumberOfRandomButtons
-	bgt	.L338		@,
-.L339:
+	bgt	.L339		@,
+.L340:
 @ C_Code.c:744:                 return BonusDamagePercent + DifficultyBonusPercent;
-	ldr	r4, .L344+12	@ tmp159,
-	ldr	r5, .L344+16	@ tmp160,
+	ldr	r4, .L345+12	@ tmp159,
+	ldr	r5, .L345+16	@ tmp160,
 	ldr	r4, [r4]	@ BonusDamagePercent, BonusDamagePercent
 	ldr	r5, [r5]	@ DifficultyBonusPercent, DifficultyBonusPercent
 	adds	r4, r4, r5	@ _19, BonusDamagePercent, DifficultyBonusPercent
-	b	.L337		@
-.L335:
+	b	.L338		@
+.L336:
 @ C_Code.c:749:     if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)
 	cmp	r4, #128	@ _15,
-	beq	.L341		@,
+	beq	.L342		@,
 @ C_Code.c:753:     return FailedHitDamagePercent;
-	ldr	r4, .L344+20	@ tmp164,
+	ldr	r4, .L345+20	@ tmp164,
 	ldr	r4, [r4]	@ _19,
-.L337:
+.L338:
 @ C_Code.c:766:     AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);
 	str	r4, [sp, #4]	@ _19,
 	ldr	r4, [sp, #24]	@ tmp174, round
@@ -2532,29 +2538,29 @@ AdjustDamageWithGetter:
 	pop	{r4, r5}
 	pop	{r0}
 	bx	r0
-.L343:
+.L344:
 @ C_Code.c:730:             if (BlockingEnabled)
-	ldr	r4, .L344+24	@ tmp136,
+	ldr	r4, .L345+24	@ tmp136,
 @ C_Code.c:730:             if (BlockingEnabled)
 	ldr	r4, [r4]	@ BlockingEnabled, BlockingEnabled
 	cmp	r4, #0	@ BlockingEnabled,
-	beq	.L341		@,
+	beq	.L342		@,
 @ C_Code.c:732:                 return ReducedDamagePercent;
-	ldr	r4, .L344+28	@ tmp138,
+	ldr	r4, .L345+28	@ tmp138,
 	ldr	r4, [r4]	@ _19,
-	b	.L337		@
-.L338:
+	b	.L338		@
+.L339:
 @ C_Code.c:747:         return BonusDamagePercent;
-	ldr	r4, .L344+12	@ tmp163,
+	ldr	r4, .L345+12	@ tmp163,
 	ldr	r4, [r4]	@ _19,
-	b	.L337		@
-.L341:
+	b	.L338		@
+.L342:
 @ C_Code.c:736:                 return 100;
 	movs	r4, #100	@ _19,
-	b	.L337		@
-.L345:
+	b	.L338		@
+.L346:
 	.align	2
-.L344:
+.L345:
 	.word	TimedHitsDifficultyRam
 	.word	DifficultyThreshold
 	.word	NumberOfRandomButtons
@@ -2581,7 +2587,7 @@ DoStuffIfHit:
 	mov	lr, r10	@,
 	movs	r4, r0	@ proc, tmp296
 @ C_Code.c:103:     if (gBattleStats.config &
-	ldr	r0, .L383	@ tmp174,
+	ldr	r0, .L384	@ tmp174,
 @ C_Code.c:103:     if (gBattleStats.config &
 	ldrh	r5, [r0]	@ gBattleStats, gBattleStats
 	movs	r0, #252	@ tmp178,
@@ -2595,15 +2601,15 @@ DoStuffIfHit:
 	sub	sp, sp, #8	@,,
 @ C_Code.c:103:     if (gBattleStats.config &
 	tst	r5, r0	@ gBattleStats, tmp178
-	bne	.L346		@,
+	bne	.L347		@,
 @ C_Code.c:109:     if (TimedHitsDifficultyRam->off)
-	ldr	r3, .L383+4	@ tmp183,
+	ldr	r3, .L384+4	@ tmp183,
 	ldr	r3, [r3]	@ TimedHitsDifficultyRam, TimedHitsDifficultyRam
 	ldrb	r3, [r3]	@ *TimedHitsDifficultyRam.0_13, *TimedHitsDifficultyRam.0_13
 @ C_Code.c:109:     if (TimedHitsDifficultyRam->off)
 	lsls	r3, r3, #25	@ tmp305, *TimedHitsDifficultyRam.0_13,
-	bpl	.L379		@,
-.L346:
+	bpl	.L380		@,
+.L347:
 @ C_Code.c:719: }
 	add	sp, sp, #8	@,,
 	@ sp needed	@
@@ -2614,21 +2620,21 @@ DoStuffIfHit:
 	pop	{r4, r5, r6, r7}
 	pop	{r0}
 	bx	r0
-.L379:
+.L380:
 @ C_Code.c:113:     return !CheckFlag(DisabledFlag);
-	ldr	r3, .L383+8	@ tmp193,
+	ldr	r3, .L384+8	@ tmp193,
 	ldr	r0, [r3]	@ DisabledFlag, DisabledFlag
-	ldr	r3, .L383+12	@ tmp195,
+	ldr	r3, .L384+12	@ tmp195,
 	bl	.L10		@
 @ C_Code.c:615:     if (!AreTimedHitsEnabled())
 	cmp	r0, #0	@ tmp299,
-	bne	.L346		@,
+	bne	.L347		@,
 @ C_Code.c:619:     if (round->hpChange < 0)
 	ldrb	r3, [r6, #3]	@ tmp200,
 	cmp	r3, #127	@ tmp200,
-	bhi	.L346		@,
+	bhi	.L347		@,
 @ C_Code.c:623:     u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;
-	ldr	r3, .L383+16	@ tmp201,
+	ldr	r3, .L384+16	@ tmp201,
 @ C_Code.c:623:     u32 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;
 	ldrh	r2, [r3, #8]	@ tmp204,
 	ldrh	r3, [r3, #4]	@ tmp206,
@@ -2643,12 +2649,12 @@ DoStuffIfHit:
 	mov	r8, r2	@ keys, tmp204
 @ C_Code.c:628:     if (x > 119)
 	cmp	r5, #119	@ x,
-	bgt	.LCB2145	@
-	b	.L350	@long jump	@
-.LCB2145:
+	bgt	.LCB2152	@
+	b	.L351	@long jump	@
+.LCB2152:
 @ C_Code.c:630:         x -= 40;
 	subs	r5, r5, #40	@ x,
-.L351:
+.L352:
 @ C_Code.c:636:     struct BattleUnit * active_bunit = proc->active_bunit;
 	ldr	r3, [r4, #60]	@ active_bunit, proc_8(D)->active_bunit
 	mov	r9, r3	@ active_bunit, active_bunit
@@ -2660,16 +2666,16 @@ DoStuffIfHit:
 @ C_Code.c:639:     if (hitTime)
 	ldrb	r3, [r4, r3]	@ tmp211,
 	cmp	r3, #0	@ tmp211,
-	bne	.L353		@,
+	bne	.L354		@,
 @ C_Code.c:642:         if (proc->timer2 == 0xFF)
 	movs	r2, #68	@ tmp212,
 @ C_Code.c:642:         if (proc->timer2 == 0xFF)
 	ldrb	r1, [r4, r2]	@ tmp213,
 	cmp	r1, #255	@ tmp213,
-	bne	.LCB2160	@
-	b	.L380	@long jump	@
-.LCB2160:
-.L354:
+	bne	.LCB2167	@
+	b	.L381	@long jump	@
+.LCB2167:
+.L355:
 @ C_Code.c:646:         SaveInputFrame(proc, keys);
 	mov	r1, r8	@, keys
 	movs	r0, r4	@, proc
@@ -2682,31 +2688,31 @@ DoStuffIfHit:
 @ C_Code.c:648:         if (!proc->adjustedDmg)
 	ldrb	r2, [r4, r3]	@ tmp218,
 	cmp	r2, #0	@ tmp218,
-	bne	.L353		@,
+	bne	.L354		@,
 @ C_Code.c:528:     return (gPlaySt.unk1F & 0x80); // 202BD0F
-	ldr	r2, .L383+20	@ tmp219,
+	ldr	r2, .L384+20	@ tmp219,
 @ C_Code.c:533:     if (CheatCodeOn())
 	ldrb	r2, [r2, #31]	@ tmp222,
 	cmp	r2, #127	@ tmp222,
-	bls	.LCB2174	@
-	b	.L356	@long jump	@
-.LCB2174:
+	bls	.LCB2181	@
+	b	.L357	@long jump	@
+.LCB2181:
 @ C_Code.c:537:     if (AlwaysWork)
-	ldr	r2, .L383+24	@ tmp223,
+	ldr	r2, .L384+24	@ tmp223,
 @ C_Code.c:537:     if (AlwaysWork)
 	ldr	r2, [r2]	@ AlwaysWork, AlwaysWork
 	cmp	r2, #0	@ AlwaysWork,
-	beq	.LCB2178	@
-	b	.L356	@long jump	@
-.LCB2178:
+	beq	.LCB2185	@
+	b	.L357	@long jump	@
+.LCB2185:
 @ C_Code.c:541:     return proc->hitOnTime;
 	adds	r2, r2, #69	@ tmp225,
 @ C_Code.c:650:             if (DidWeHitOnTime(proc))
 	ldrb	r2, [r4, r2]	@ tmp226,
 	cmp	r2, #0	@ tmp226,
-	beq	.LCB2182	@
-	b	.L356	@long jump	@
-.LCB2182:
+	beq	.LCB2189	@
+	b	.L357	@long jump	@
+.LCB2189:
 @ C_Code.c:657:                 proc->adjustedDmg = true;
 	movs	r2, #1	@ tmp232,
 	strb	r2, [r4, r3]	@ tmp232, proc_8(D)->adjustedDmg
@@ -2718,13 +2724,13 @@ DoStuffIfHit:
 	ands	r3, r2	@ tmp236, tmp234
 @ C_Code.c:749:     if (UNIT_FACTION(&active_bunit->unit) == FACTION_RED)
 	cmp	r3, #128	@ tmp236,
-	bne	.LCB2191	@
-	b	.L368	@long jump	@
-.LCB2191:
+	bne	.LCB2198	@
+	b	.L369	@long jump	@
+.LCB2198:
 @ C_Code.c:753:     return FailedHitDamagePercent;
-	ldr	r3, .L383+28	@ tmp237,
+	ldr	r3, .L384+28	@ tmp237,
 	ldr	r3, [r3]	@ _85, FailedHitDamagePercent
-.L358:
+.L359:
 @ C_Code.c:766:     AdjustDamageByPercent(proc, HpProc, active_bunit, opp_bunit, round, percent);
 	str	r3, [sp, #4]	@ _85,
 	mov	r2, r9	@, active_bunit
@@ -2733,91 +2739,91 @@ DoStuffIfHit:
 	movs	r0, r4	@, proc
 	str	r6, [sp]	@ round,
 	bl	AdjustDamageByPercent		@
-.L353:
+.L354:
 @ C_Code.c:668:     if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) ||
 	movs	r3, #74	@ tmp238,
 @ C_Code.c:668:     if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) ||
 	ldrb	r0, [r4, r3]	@ tmp239,
-	ldr	r3, .L383+32	@ tmp240,
+	ldr	r3, .L384+32	@ tmp240,
 	bl	.L10		@
 @ C_Code.c:669:         (proc->timer2 != 0xFF))
 	movs	r3, #68	@ tmp243,
 	ldrb	r6, [r4, r3]	@ pretmp_16,
 @ C_Code.c:668:     if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) ||
 	cmp	r0, #0	@ tmp241,
-	bne	.L360		@,
+	bne	.L361		@,
 @ C_Code.c:668:     if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) ||
 	adds	r3, r3, #8	@ tmp245,
 	ldrh	r2, [r4, r3]	@ MEM <struct TimedHitsProc> [(void *)proc_8(D)], MEM <struct TimedHitsProc> [(void *)proc_8(D)]
-	ldr	r3, .L383+36	@ tmp247,
+	ldr	r3, .L384+36	@ tmp247,
 	cmp	r2, r3	@ MEM <struct TimedHitsProc> [(void *)proc_8(D)], tmp247
-	beq	.L381		@,
-.L360:
+	beq	.L382		@,
+.L361:
 @ C_Code.c:528:     return (gPlaySt.unk1F & 0x80); // 202BD0F
-	ldr	r3, .L383+20	@ tmp248,
+	ldr	r3, .L384+20	@ tmp248,
 @ C_Code.c:533:     if (CheatCodeOn())
 	ldrb	r3, [r3, #31]	@ tmp251,
 	cmp	r3, #127	@ tmp251,
-	bhi	.L362		@,
+	bhi	.L363		@,
 @ C_Code.c:537:     if (AlwaysWork)
-	ldr	r3, .L383+24	@ tmp252,
+	ldr	r3, .L384+24	@ tmp252,
 @ C_Code.c:537:     if (AlwaysWork)
 	ldr	r3, [r3]	@ AlwaysWork, AlwaysWork
 	cmp	r3, #0	@ AlwaysWork,
-	bne	.L362		@,
+	bne	.L363		@,
 @ C_Code.c:541:     return proc->hitOnTime;
 	adds	r3, r3, #69	@ tmp254,
 @ C_Code.c:671:         if (DidWeHitOnTime(proc))
 	ldrb	r3, [r4, r3]	@ tmp255,
 	cmp	r3, #0	@ tmp255,
-	bne	.L362		@,
+	bne	.L363		@,
 @ C_Code.c:690:         else if (proc->timer2 < 20)
 	cmp	r6, #19	@ pretmp_16,
-	bhi	.L364		@,
+	bhi	.L365		@,
 @ C_Code.c:692:             if (ChangePaletteWhenButtonIsPressed)
-	ldr	r2, .L383+40	@ tmp282,
+	ldr	r2, .L384+40	@ tmp282,
 @ C_Code.c:546:     if (!DisplayPress)
-	ldr	r3, .L383+44	@ tmp281,
+	ldr	r3, .L384+44	@ tmp281,
 @ C_Code.c:692:             if (ChangePaletteWhenButtonIsPressed)
 	ldr	r2, [r2]	@ ChangePaletteWhenButtonIsPressed, ChangePaletteWhenButtonIsPressed
 @ C_Code.c:546:     if (!DisplayPress)
 	ldr	r3, [r3]	@ pretmp_105, DisplayPress
 @ C_Code.c:692:             if (ChangePaletteWhenButtonIsPressed)
 	cmp	r2, #0	@ ChangePaletteWhenButtonIsPressed,
-	beq	.L365		@,
+	beq	.L366		@,
 @ C_Code.c:546:     if (!DisplayPress)
 	cmp	r3, #0	@ pretmp_105,
-	bne	.L382		@,
-.L364:
+	bne	.L383		@,
+.L365:
 @ C_Code.c:701:         proc->roundEnd = true;
 	movs	r3, #78	@ tmp284,
 	movs	r2, #1	@ tmp285,
 	strb	r2, [r4, r3]	@ tmp285, proc_8(D)->roundEnd
-	b	.L346		@
-.L362:
+	b	.L347		@
+.L363:
 @ C_Code.c:682:             if (((y > (-16)) && (y < (161))))
 	movs	r3, #63	@ tmp256,
 	subs	r3, r3, r6	@ tmp257, tmp256, pretmp_16
 @ C_Code.c:682:             if (((y > (-16)) && (y < (161))))
 	cmp	r3, #175	@ tmp257,
-	bhi	.L364		@,
+	bhi	.L365		@,
 @ C_Code.c:684:                 if (!gBanimDoneFlag[proc->side])
 	movs	r2, #74	@ tmp259,
 	ldrb	r2, [r4, r2]	@ tmp260,
 @ C_Code.c:684:                 if (!gBanimDoneFlag[proc->side])
-	ldr	r3, .L383+48	@ tmp258,
+	ldr	r3, .L384+48	@ tmp258,
 	lsls	r2, r2, #2	@ tmp261, tmp260,
 @ C_Code.c:684:                 if (!gBanimDoneFlag[proc->side])
 	ldr	r3, [r2, r3]	@ gBanimDoneFlag[_56], gBanimDoneFlag[_56]
 	cmp	r3, #0	@ gBanimDoneFlag[_56],
-	bne	.L364		@,
+	bne	.L365		@,
 @ C_Code.c:678:             x += xPos[Mod(clock, sizeof(xPos) + 1)];
 	movs	r1, #31	@,
 	movs	r0, r6	@, pretmp_16
-	ldr	r3, .L383+52	@ tmp263,
+	ldr	r3, .L384+52	@ tmp263,
 	bl	.L10		@
 @ C_Code.c:678:             x += xPos[Mod(clock, sizeof(xPos) + 1)];
-	ldr	r3, .L383+56	@ tmp264,
+	ldr	r3, .L384+56	@ tmp264,
 	movs	r2, #104	@ tmp265,
 	adds	r3, r3, r0	@ tmp266, tmp264, tmp301
 @ C_Code.c:681:             y -= clock;
@@ -2838,60 +2844,60 @@ DoStuffIfHit:
 	lsls	r0, r0, #8	@ tmp277, tmp277,
 	lsls	r1, r1, #23	@ tmp276, x,
 	str	r0, [sp]	@ tmp277,
-	ldr	r3, .L383+60	@ tmp269,
+	ldr	r3, .L384+60	@ tmp269,
 	movs	r0, #0	@,
-	ldr	r5, .L383+64	@ tmp278,
+	ldr	r5, .L384+64	@ tmp278,
 	lsrs	r1, r1, #23	@ tmp275, tmp276,
 	bl	.L28		@
-	b	.L364		@
-.L350:
+	b	.L365		@
+.L351:
 @ C_Code.c:632:     else if (x > 40)
 	cmp	r5, #40	@ x,
-	bgt	.LCB2290	@
-	b	.L351	@long jump	@
-.LCB2290:
+	bgt	.LCB2297	@
+	b	.L352	@long jump	@
+.LCB2297:
 @ C_Code.c:634:         x -= 20;
 	subs	r5, r5, #20	@ x,
-	b	.L351		@
-.L381:
+	b	.L352		@
+.L382:
 @ C_Code.c:668:     if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) ||
 	cmp	r6, #255	@ pretmp_16,
-	bne	.L360		@,
+	bne	.L361		@,
 @ C_Code.c:705:         if (proc->timer < 1)
 	ldr	r3, [r4, #52]	@ proc_8(D)->timer, proc_8(D)->timer
 	cmp	r3, #0	@ proc_8(D)->timer,
-	bgt	.L366		@,
+	bgt	.L367		@,
 @ C_Code.c:707:             proc->frame = 0;
 	movs	r3, #75	@ tmp288,
 	strb	r0, [r4, r3]	@ tmp241, proc_8(D)->frame
-.L367:
+.L368:
 @ C_Code.c:714:         if (!proc->roundEnd)
 	movs	r3, #78	@ tmp291,
 @ C_Code.c:714:         if (!proc->roundEnd)
 	ldrb	r3, [r4, r3]	@ tmp292,
 	cmp	r3, #0	@ tmp292,
-	beq	.LCB2308	@
-	b	.L346	@long jump	@
-.LCB2308:
+	beq	.LCB2315	@
+	b	.L347	@long jump	@
+.LCB2315:
 @ C_Code.c:546:     if (!DisplayPress)
-	ldr	r3, .L383+44	@ tmp293,
+	ldr	r3, .L384+44	@ tmp293,
 @ C_Code.c:546:     if (!DisplayPress)
 	ldr	r3, [r3]	@ DisplayPress, DisplayPress
 	cmp	r3, #0	@ DisplayPress,
-	bne	.LCB2312	@
-	b	.L346	@long jump	@
-.LCB2312:
+	bne	.LCB2319	@
+	b	.L347	@long jump	@
+.LCB2319:
 	movs	r3, #15	@,
 	movs	r2, #24	@,
 	movs	r1, r5	@, x
 	movs	r0, r4	@, proc
 	bl	DrawButtonsToPress.part.0		@
-	b	.L346		@
-.L380:
+	b	.L347		@
+.L381:
 @ C_Code.c:644:             proc->timer2 = 0;
 	strb	r3, [r4, r2]	@ tmp211, proc_8(D)->timer2
-	b	.L354		@
-.L356:
+	b	.L355		@
+.L357:
 @ C_Code.c:652:                 proc->adjustedDmg = true;
 	movs	r3, #1	@ tmp228,
 	movs	r2, #71	@ tmp227,
@@ -2906,37 +2912,37 @@ DoStuffIfHit:
 	mov	r3, r10	@, opp_bunit
 	str	r6, [sp]	@ round,
 	bl	AdjustDamageWithGetter		@
-	b	.L353		@
-.L365:
+	b	.L354		@
+.L366:
 @ C_Code.c:546:     if (!DisplayPress)
 	cmp	r3, #0	@ pretmp_105,
-	beq	.L364		@,
+	beq	.L365		@,
 	movs	r3, #14	@,
 	movs	r2, #24	@,
 	movs	r1, r5	@, x
 	movs	r0, r4	@, proc
 	bl	DrawButtonsToPress.part.0		@
-	b	.L364		@
-.L382:
+	b	.L365		@
+.L383:
 	movs	r3, #15	@,
 	movs	r2, #24	@,
 	movs	r1, r5	@, x
 	movs	r0, r4	@, proc
 	bl	DrawButtonsToPress.part.0		@
-	b	.L364		@
-.L366:
+	b	.L365		@
+.L367:
 @ C_Code.c:712:             SaveInputFrame(proc, keys);
 	mov	r1, r8	@, keys
 	movs	r0, r4	@, proc
 	bl	SaveInputFrame		@
-	b	.L367		@
-.L368:
+	b	.L368		@
+.L369:
 @ C_Code.c:736:                 return 100;
 	movs	r3, #100	@ _85,
-	b	.L358		@
-.L384:
+	b	.L359		@
+.L385:
 	.align	2
-.L383:
+.L384:
 	.word	gBattleStats
 	.word	TimedHitsDifficultyRam
 	.word	DisabledFlag
@@ -2974,23 +2980,23 @@ LoopTimedHitsProc:
 	sub	sp, sp, #12	@,,
 @ C_Code.c:297:     if (!proc->anim)
 	cmp	r3, #0	@ proc_29(D)->anim,
-	beq	.L385		@,
+	beq	.L386		@,
 @ C_Code.c:302:     struct ProcEkrBattle * battleProc = gpProcEkrBattle;
-	ldr	r3, .L411	@ tmp144,
+	ldr	r3, .L412	@ tmp144,
 	ldr	r5, [r3]	@ battleProc, gpProcEkrBattle
 @ C_Code.c:304:     if (!battleProc)
 	cmp	r5, #0	@ battleProc,
-	beq	.L385		@,
+	beq	.L386		@,
 @ C_Code.c:308:     if (!proc->anim2)
 	ldr	r3, [r0, #48]	@ proc_29(D)->anim2, proc_29(D)->anim2
 	cmp	r3, #0	@ proc_29(D)->anim2,
-	beq	.L385		@,
+	beq	.L386		@,
 @ C_Code.c:312:     if (gEkrBattleEndFlag)
-	ldr	r3, .L411+4	@ tmp146,
+	ldr	r3, .L412+4	@ tmp146,
 @ C_Code.c:312:     if (gEkrBattleEndFlag)
 	ldr	r3, [r3]	@ gEkrBattleEndFlag, gEkrBattleEndFlag
 	cmp	r3, #0	@ gEkrBattleEndFlag,
-	bne	.L410		@,
+	bne	.L411		@,
 @ C_Code.c:319:     if (proc->timer2 != 0xFF)
 	movs	r2, #68	@ tmp151,
 @ C_Code.c:318:     proc->timer++;
@@ -3001,11 +3007,11 @@ LoopTimedHitsProc:
 	ldrb	r3, [r0, r2]	@ _6,
 @ C_Code.c:319:     if (proc->timer2 != 0xFF)
 	cmp	r3, #255	@ _6,
-	beq	.L390		@,
+	beq	.L391		@,
 @ C_Code.c:321:         proc->timer2++;
 	adds	r3, r3, #1	@ tmp152,
 	strb	r3, [r0, r2]	@ tmp152, proc_29(D)->timer2
-.L390:
+.L391:
 @ C_Code.c:326:     if (proc->EkrEfxIsUnitHittedNowFrames != 0xFF)
 	movs	r6, #79	@ tmp155,
 	ldrb	r3, [r4, r6]	@ _8,
@@ -3013,31 +3019,31 @@ LoopTimedHitsProc:
 	ldr	r7, [r4, #56]	@ currentRound, proc_29(D)->currentRound
 @ C_Code.c:326:     if (proc->EkrEfxIsUnitHittedNowFrames != 0xFF)
 	cmp	r3, #255	@ _8,
-	beq	.L391		@,
+	beq	.L392		@,
 @ C_Code.c:328:         proc->EkrEfxIsUnitHittedNowFrames++;
 	adds	r3, r3, #1	@ tmp156,
 	strb	r3, [r4, r6]	@ tmp156, proc_29(D)->EkrEfxIsUnitHittedNowFrames
-.L392:
+.L393:
 @ C_Code.c:336:     struct NewProcEfxHPBar * HpProc = Proc_Find(gProcScr_efxHPBarResire);
-	ldr	r3, .L411+8	@ tmp167,
-	ldr	r6, .L411+12	@ tmp169,
+	ldr	r3, .L412+8	@ tmp167,
+	ldr	r6, .L412+12	@ tmp169,
 	ldr	r0, [r3]	@ gProcScr_efxHPBarResire, gProcScr_efxHPBarResire
-	bl	.L413		@
+	bl	.L414		@
 	subs	r2, r0, #0	@ HpProc, tmp187,
 @ C_Code.c:337:     if (!HpProc)
-	beq	.L393		@,
+	beq	.L394		@,
 @ C_Code.c:341:     DoStuffIfHit(proc, battleProc, HpProc, currentRound);
 	movs	r3, r7	@, currentRound
 	movs	r1, r5	@, battleProc
 	movs	r0, r4	@, proc
 	bl	DoStuffIfHit		@
-.L394:
+.L395:
 @ C_Code.c:288:     if (proc->EkrEfxIsUnitHittedNowFrames)
 	movs	r3, #79	@ tmp173,
 @ C_Code.c:288:     if (proc->EkrEfxIsUnitHittedNowFrames)
 	ldrb	r3, [r4, r3]	@ tmp174,
 	cmp	r3, #0	@ tmp174,
-	bne	.L385		@,
+	bne	.L386		@,
 @ C_Code.c:345:         int x = DisplayDamage2(proc->anim2, 0, 0, 0, proc->roundId);
 	movs	r6, #70	@ tmp176,
 @ C_Code.c:345:         int x = DisplayDamage2(proc->anim2, 0, 0, 0, proc->roundId);
@@ -3045,7 +3051,7 @@ LoopTimedHitsProc:
 	movs	r1, #0	@,
 	movs	r2, #0	@,
 	ldr	r0, [r4, #48]	@ proc_29(D)->anim2, proc_29(D)->anim2
-	ldr	r5, .L411+16	@ tmp178,
+	ldr	r5, .L412+16	@ tmp178,
 	str	r3, [sp]	@ tmp177,
 	movs	r3, #0	@,
 	bl	.L28		@
@@ -3058,38 +3064,38 @@ LoopTimedHitsProc:
 	str	r1, [sp]	@ tmp181,
 	movs	r1, #1	@,
 	bl	.L28		@
-.L385:
+.L386:
 @ C_Code.c:348: }
 	add	sp, sp, #12	@,,
 	@ sp needed	@
 	pop	{r4, r5, r6, r7}
 	pop	{r0}
 	bx	r0
-.L410:
+.L411:
 @ C_Code.c:314:         Proc_End(proc);
-	ldr	r3, .L411+20	@ tmp148,
+	ldr	r3, .L412+20	@ tmp148,
 	bl	.L10		@
 @ C_Code.c:315:         return;
-	b	.L385		@
-.L391:
+	b	.L386		@
+.L392:
 @ C_Code.c:330:     else if (EkrEfxIsUnitHittedNow(proc->side))
 	movs	r3, #74	@ tmp159,
 @ C_Code.c:330:     else if (EkrEfxIsUnitHittedNow(proc->side))
 	ldrb	r0, [r4, r3]	@ tmp160,
-	ldr	r3, .L411+24	@ tmp161,
+	ldr	r3, .L412+24	@ tmp161,
 	bl	.L10		@
 @ C_Code.c:330:     else if (EkrEfxIsUnitHittedNow(proc->side))
 	cmp	r0, #0	@ tmp186,
-	beq	.L392		@,
+	beq	.L393		@,
 @ C_Code.c:332:         proc->EkrEfxIsUnitHittedNowFrames = 0;
 	movs	r3, #0	@ tmp165,
 	strb	r3, [r4, r6]	@ tmp165, proc_29(D)->EkrEfxIsUnitHittedNowFrames
-	b	.L392		@
-.L393:
+	b	.L393		@
+.L394:
 @ C_Code.c:339:         HpProc = Proc_Find(gProcScr_efxHPBar);
-	ldr	r3, .L411+28	@ tmp170,
+	ldr	r3, .L412+28	@ tmp170,
 	ldr	r0, [r3]	@ gProcScr_efxHPBar, gProcScr_efxHPBar
-	bl	.L413		@
+	bl	.L414		@
 @ C_Code.c:341:     DoStuffIfHit(proc, battleProc, HpProc, currentRound);
 	movs	r3, r7	@, currentRound
 @ C_Code.c:339:         HpProc = Proc_Find(gProcScr_efxHPBar);
@@ -3101,11 +3107,11 @@ LoopTimedHitsProc:
 	bl	DoStuffIfHit		@
 @ C_Code.c:283:     if (!HpProc)
 	cmp	r6, #0	@ HpProc,
-	bne	.L394		@,
-	b	.L385		@
-.L412:
+	bne	.L395		@,
+	b	.L386		@
+.L413:
 	.align	2
-.L411:
+.L412:
 	.word	gpProcEkrBattle
 	.word	gEkrBattleEndFlag
 	.word	gProcScr_efxHPBarResire
@@ -3131,7 +3137,7 @@ GetBattleAnimPreconfType:
 @ C_Code.c:1046: {
 	push	{r4, lr}	@
 @ C_Code.c:1047:     int result = gPlaySt.config.animationType;
-	ldr	r3, .L426	@ tmp164,
+	ldr	r3, .L427	@ tmp164,
 	ldrb	r0, [r3, r2]	@ gPlaySt, gPlaySt
 @ C_Code.c:1048:     if (!CheatCodeOn())
 	ldrb	r2, [r3, #31]	@ tmp139,
@@ -3141,26 +3147,26 @@ GetBattleAnimPreconfType:
 	lsrs	r0, r0, #30	@ <retval>, tmp134,
 @ C_Code.c:1048:     if (!CheatCodeOn())
 	cmp	r2, #127	@ tmp139,
-	bhi	.L415		@,
+	bhi	.L416		@,
 @ C_Code.c:1050:         if (ForceAnimsOn)
-	ldr	r2, .L426+4	@ tmp140,
+	ldr	r2, .L427+4	@ tmp140,
 @ C_Code.c:1050:         if (ForceAnimsOn)
 	ldr	r2, [r2]	@ ForceAnimsOn, ForceAnimsOn
 	cmp	r2, #0	@ ForceAnimsOn,
-	beq	.L415		@,
+	beq	.L416		@,
 @ C_Code.c:1052:             if (result == 2)
 	cmp	r0, #2	@ <retval>,
-	beq	.L414		@,
-.L418:
+	beq	.L415		@,
+.L419:
 @ C_Code.c:1058:                 return 1;
 	movs	r0, #1	@ <retval>,
-.L414:
+.L415:
 @ C_Code.c:1081: }
 	@ sp needed	@
 	pop	{r4}
 	pop	{r1}
 	bx	r1
-.L415:
+.L416:
 @ C_Code.c:1063:     if (gPlaySt.config.animationType != PLAY_ANIMCONF_SOLO_ANIM)
 	movs	r2, #66	@ tmp143,
 	ldrb	r2, [r3, r2]	@ gPlaySt, gPlaySt
@@ -3168,15 +3174,15 @@ GetBattleAnimPreconfType:
 	movs	r3, #6	@ tmp149,
 	ands	r3, r2	@ tmp150, gPlaySt
 	cmp	r3, #4	@ tmp150,
-	bne	.L414		@,
+	bne	.L415		@,
 @ C_Code.c:1067:     if (UNIT_FACTION(&gBattleActor.unit) == FACTION_BLUE)
 	movs	r1, #11	@ tmp154,
 @ C_Code.c:1068:         if (UNIT_FACTION(&gBattleTarget.unit) == FACTION_BLUE)
 	movs	r4, #11	@ pretmp_25,
 @ C_Code.c:1067:     if (UNIT_FACTION(&gBattleActor.unit) == FACTION_BLUE)
-	ldr	r0, .L426+8	@ tmp153,
+	ldr	r0, .L427+8	@ tmp153,
 @ C_Code.c:1068:         if (UNIT_FACTION(&gBattleTarget.unit) == FACTION_BLUE)
-	ldr	r2, .L426+12	@ tmp152,
+	ldr	r2, .L427+12	@ tmp152,
 @ C_Code.c:1067:     if (UNIT_FACTION(&gBattleActor.unit) == FACTION_BLUE)
 	ldrsb	r1, [r0, r1]	@ tmp154,
 	adds	r3, r3, #188	@ tmp155,
@@ -3184,19 +3190,19 @@ GetBattleAnimPreconfType:
 	ldrsb	r4, [r2, r4]	@ pretmp_25,* pretmp_25
 @ C_Code.c:1067:     if (UNIT_FACTION(&gBattleActor.unit) == FACTION_BLUE)
 	tst	r3, r1	@ tmp155, tmp154
-	beq	.L425		@,
+	beq	.L426		@,
 @ C_Code.c:1073:         if (UNIT_FACTION(&gBattleTarget.unit) != FACTION_BLUE)
 	tst	r3, r4	@ tmp155, pretmp_25
-	bne	.L418		@,
+	bne	.L419		@,
 @ C_Code.c:1080:         return GetSoloAnimPreconfType(&gBattleTarget.unit);
 	movs	r0, r2	@, tmp152
-.L425:
-	ldr	r3, .L426+16	@ tmp162,
-	bl	.L10		@
-	b	.L414		@
-.L427:
-	.align	2
 .L426:
+	ldr	r3, .L427+16	@ tmp162,
+	bl	.L10		@
+	b	.L415		@
+.L428:
+	.align	2
+.L427:
 	.word	gPlaySt
 	.word	ForceAnimsOn
 	.word	gBattleActor
@@ -3358,7 +3364,7 @@ gEkrBg2QuakeVec:
 	bx	r4
 .L28:
 	bx	r5
-.L413:
+.L414:
 	bx	r6
 .L71:
 	bx	r10

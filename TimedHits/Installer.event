@@ -74,6 +74,9 @@ WORD 10 // +10% more damage if on hard mode
 #ifndef EnrageID 
 	#define EnrageID 255 
 #endif 
+#ifndef MiracleID
+	#define MiracleID 255 
+#endif 
 
 
 SkillExceptionsTable:
@@ -82,7 +85,8 @@ FILL 256
 // skills that won't stack with timed hits
 NoSkill(VengeanceID)
 NoSkill(AstraID)
-NoSkill(EnrageID) // unknown if works 
+NoSkill(EnrageID)
+NoSkill(MiracleID)
 
 ALIGN 4 
 Press_Image:

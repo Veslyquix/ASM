@@ -467,7 +467,7 @@ int PressedSpecificKeys(TimedHitsProc * proc, u32 keys)
     if (ABS(count - CountKeysPressed(keys)) > 1)
     {
         return false;
-    }                 // you pressed more than 1 extra key. Shame on you.
+    } // you pressed more than 1 extra key. Shame on you.
     reqKeys &= ~keys; // only 0 if we hit all the correct keys (and possibly 1 extra)
     return (!reqKeys);
 }
@@ -1023,8 +1023,8 @@ void AdjustDamageByPercent(
         (proc->currentRound->skillID))
     {
         // only update hp if no skill proc'd ?
-        newDamage = oldDamage;
-        newHp = hp - oldDamage;
+        newDamage = round->hpChange; // actual oldDamage without choosing between displayed / round dmg
+        newHp = hp - round->hpChange;
     }
     // else { if (percent != 100) { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); } }
     // else { UpdateHP(proc, HpProc, opp_bunit, newHp, side, newDamage); }
