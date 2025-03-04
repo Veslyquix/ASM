@@ -17,6 +17,8 @@ SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
 
 SET_DATA pPromoJidLut, 0x80cc7d0 
+SET_DATA Pal_SpinningArrow, 0x8a1a084 
+SET_DATA PrepItemSuppyTexts, 0x2013648
 SET_FUNC SetBlendConfig, 0x8001ea1
 SET_DATA gProcScr_TerrainDisplay, 0x8a018ac
 SET_DATA sTilesetConfig, 0x2030b8c

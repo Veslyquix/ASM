@@ -278,6 +278,7 @@ void EditSupportsInit(DebuggerProc * proc);
 void EditSupportsIdle(DebuggerProc * proc);
 void DebuggerListInit(DebuggerProc * proc);
 void DebuggerListIdle(DebuggerProc * proc);
+void ClearSomeGfx(DebuggerProc * proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -433,10 +434,12 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(ListLabel), // List
-    PROC_CALL(LockGame),
+    // PROC_CALL(LockGame),
     PROC_CALL(DebuggerListInit),
-    PROC_REPEAT(DebuggerListIdle),
-    PROC_CALL(UnlockGame),
+    PROC_SLEEP(1),
+    PROC_CALL(ClearSomeGfx),
+    // PROC_REPEAT(DebuggerListIdle),
+    // PROC_CALL(UnlockGame),
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(EndLabel),
@@ -445,11 +448,233 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_END,
 };
 
-void DebuggerListInit(DebuggerProc * proc)
+extern void SetBlendConfig(u16 effect, u8 coeffA, u8 coeffB, u8 blendY);
+extern u16 Pal_SpinningArrow[];
+struct PrepItemSuppyText
+{
+    /* 00 */ struct Font font;
+    /* 18 */ struct Text th[18];
+};
+extern struct PrepItemSuppyText PrepItemSuppyTexts;
+#define _PrepItemSuppyTexts ((struct Unknown02013648 *)&PrepItemSuppyTexts)
+
+// extern void RefreshBMapGraphics(void); // 80292dd 802E368
+void ClearSomeGfx(DebuggerProc * proc)
+{
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_Fill(gBG1TilemapBuffer, 0);
+    BG_Fill(gBG2TilemapBuffer, 0);
+    BG_Fill(gBG3TilemapBuffer, 0);
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT | BG3_SYNC_BIT);
+    SetupBackgrounds(0);
+    BMapDispResume();
+    RefreshBMapGraphics();
+}
+
+void DebuggerPrepItemList_InitGfx(struct PrepItemListProc * proc)
+{
+    int i;
+    const char * str;
+
+    gLCDControlBuffer.dispcnt.mode = 0;
+
+    SetupBackgrounds(NULL);
+
+    BG_Fill(BG_GetMapBuffer(0), 0);
+    BG_Fill(BG_GetMapBuffer(1), 0);
+    BG_Fill(BG_GetMapBuffer(2), 0);
+
+    gLCDControlBuffer.bg0cnt.priority = 1;
+    gLCDControlBuffer.bg1cnt.priority = 2;
+    gLCDControlBuffer.bg2cnt.priority = 0;
+    gLCDControlBuffer.bg3cnt.priority = 3;
+
+    ResetFaces();
+    ResetText();
+    ResetIconGraphics_();
+    LoadUiFrameGraphics();
+    LoadObjUIGfx();
+
+    BG_SetPosition(0, 0, 0);
+    BG_SetPosition(1, 0, 0);
+    BG_SetPosition(2, 0, proc->yOffsetPerPage[proc->currentPage] - 40);
+
+    LoadHelpBoxGfx((void *)0x06012000, -1);
+    LoadIconPalettes(4);
+
+    RestartMuralBackground();
+
+    PutImg_PrepItemUseUnk(0x5000, 5);
+
+    Decompress(gUnknown_08A1B9EC, gGenericBuffer);
+    CallARM_FillTileRect(gBG1TilemapBuffer, gGenericBuffer, 0x1000);
+
+    BG_EnableSyncByMask(7);
+
+    StartUiCursorHand(proc);
+
+    ResetSysHandCursor(proc);
+    DisplaySysHandCursorTextShadow(0x600, 1);
+
+    gLCDControlBuffer.dispcnt.win0_on = 1;
+    gLCDControlBuffer.dispcnt.win1_on = 0;
+    gLCDControlBuffer.dispcnt.objWin_on = 0;
+
+    gLCDControlBuffer.win0_left = 128;
+    gLCDControlBuffer.win0_top = 40;
+    gLCDControlBuffer.win0_right = 224;
+    gLCDControlBuffer.win0_bottom = 152;
+
+    gLCDControlBuffer.wincnt.win0_enableBg0 = 1;
+    gLCDControlBuffer.wincnt.win0_enableBg1 = 1;
+    gLCDControlBuffer.wincnt.win0_enableBg2 = 1;
+    gLCDControlBuffer.wincnt.win0_enableBg3 = 1;
+    gLCDControlBuffer.wincnt.win0_enableObj = 1;
+
+    gLCDControlBuffer.wincnt.wout_enableBg0 = 1;
+    gLCDControlBuffer.wincnt.wout_enableBg1 = 1;
+    gLCDControlBuffer.wincnt.wout_enableBg2 = 0;
+    gLCDControlBuffer.wincnt.wout_enableBg3 = 1;
+    gLCDControlBuffer.wincnt.wout_enableObj = 1;
+
+    StartGreenText(proc);
+
+    StartHelpPromptSprite(195, 147, 9, proc);
+
+    InitText(PrepItemSuppyTexts.th + 0, 6);
+    InitText(PrepItemSuppyTexts.th + 1, 5);
+
+    InitText(PrepItemSuppyTexts.th + 15, 4);
+
+    for (i = 0; i < UNIT_ITEM_COUNT; i++)
+    {
+        InitText(PrepItemSuppyTexts.th + 2 + i, 7);
+    }
+
+    for (i = 0; i < 8; i++)
+    {
+        InitTextDb(PrepItemSuppyTexts.th + 7 + i, 7);
+    }
+
+    StoreConvoyWeaponIconGraphics(0x4000, 6);
+
+    sub_809D8D4(gBG0TilemapBuffer + 0x6F, 0x4000, 6);
+
+    Decompress(gUnknown_08A19CCC, (void *)0x06015000);
+    ApplyPalette(Pal_SpinningArrow, 0x14);
+    // return;
+
+    StartMenuScrollBarExt(proc, 225, 47, 0x5800, 9);
+    sub_8097668();
+    // return;
+    SomethingPrepListRelated(proc->unit, proc->currentPage, 3);
+    // sub_809F5F4(proc); // breaks stuff atm
+
+    sub_809D300(
+        PrepItemSuppyTexts.th + 7, gBG2TilemapBuffer + 0xF, (proc->yOffsetPerPage[proc->currentPage]) >> 4, proc->unit);
+
+    BG_EnableSyncByMask(4);
+    // return;
+
+    DrawPrepScreenItems(gBG0TilemapBuffer + 0x6F + 0xb3, PrepItemSuppyTexts.th + 2, proc->unit, 0);
+    sub_809EBF0();
+
+    StartUiSpinningArrows(proc);
+    LoadUiSpinningArrowGfx(0, 0x280, 2);
+    SetUiSpinningArrowPositions(0x78, 0x18, 0xe9, 0x18);
+    SetUiSpinningArrowConfig(3);
+
+    StartParallelWorker(List_PutHighlightedCategorySprites, proc);
+
+    StartFace2(
+        0, GetUnitPortraitId(proc->unit), 64, -4, FACE_DISP_KIND(FACE_96x80_FLIPPED) | FACE_DISP_HLAYER(FACE_HLAYER_3));
+
+    str = GetStringFromIndex(proc->unit->pCharacterData->nameTextId);
+
+    StartSysBrownBox(0xd, 0xe00, 0xf, 0xc00, 0x400, proc);
+
+    EnableSysBrownBox(0, -40, -1, 1);
+    EnableSysBrownBox(1, 0x98, 6, 2);
+
+    SetBlendConfig(1, 0xe, 4, 0);
+    SetBlendTargetA(0, 0, 0, 0, 0);
+    SetBlendTargetB(0, 0, 0, 1, 0);
+
+    PutDrawText(PrepItemSuppyTexts.th, gBG0TilemapBuffer, 0, GetStringTextCenteredPos(48, str), 0, str);
+
+    PrepItemList_DrawCurrentOwnerText(proc);
+
+    return;
+}
+
+struct ProcCmd const DebuggerProcScr_PrepItemListScreen[] = {
+    PROC_SLEEP(0),
+    PROC_CALL(PrepItemList_Init),
+
+    PROC_LABEL(0),
+    PROC_CALL(DebuggerPrepItemList_InitGfx),
+
+    PROC_GOTO(9),
+    PROC_CALL_ARG(NewFadeIn, 16),
+    PROC_WHILE(FadeInExists),
+
+    // fallthrough
+
+    PROC_LABEL(1),
+    PROC_CALL(sub_809F5F4),
+
+    // fallthrough
+
+    PROC_LABEL(2),
+    PROC_REPEAT(PrepItemList_Loop_MainKeyHandler),
+
+    // fallthrough
+
+    PROC_LABEL(6),
+    PROC_CALL_ARG(NewFadeOut, 16),
+    PROC_WHILE(FadeOutExists),
+
+    PROC_CALL(PrepItemList_OnEnd),
+    PROC_CALL(PrepItemList_StartTradeScreen),
+    PROC_SLEEP(0),
+
+    PROC_GOTO(0),
+
+    PROC_LABEL(7),
+    PROC_CALL(PrepItemList_SwitchToUnitInventory),
+    PROC_REPEAT(PrepItemList_Loop_UnitInvKeyHandler),
+
+    PROC_GOTO(1),
+
+    PROC_LABEL(3),
+    PROC_REPEAT(PrepItemList_SwitchPageLeft),
+
+    // fallthrough
+
+    PROC_LABEL(4),
+    PROC_REPEAT(PrepItemList_SwitchPageRight),
+
+    // fallthrough
+
+    PROC_LABEL(8),
+    PROC_CALL_ARG(NewFadeOut, 16),
+    PROC_WHILE(FadeOutExists),
+
+    // fallthrough
+
+    PROC_LABEL(9),
+    PROC_CALL(PrepItemList_OnEnd),
+
+    PROC_END,
+};
+
+void DebuggerListInit(DebuggerProc * parent)
 {
     MU_EndAll();
 
-    StartPrepItemListScreenProc(gActiveUnit, proc);
+    struct PrepItemListProc * proc = Proc_StartBlocking(DebuggerProcScr_PrepItemListScreen, parent);
+    proc->unit = gActiveUnit;
 }
 void DebuggerListIdle(DebuggerProc * proc)
 {
