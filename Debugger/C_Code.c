@@ -243,7 +243,7 @@ int ArenaAction(DebuggerProc * proc);
 int LevelupAction(DebuggerProc * proc);
 int UnitActionFunc(DebuggerProc * proc);
 void CallPlayerPhase_FinishAction(DebuggerProc * proc);
-void ClearActiveUnitStuff(DebuggerProc * proc);
+int ClearActiveUnitStuff(DebuggerProc * proc);
 void PlayerPhase_FinishActionNoCanto(ProcPtr proc);
 void CallPlayerPhase_FinishAction(DebuggerProc * proc);
 int PlayerPhase_PrepareActionBasic(DebuggerProc * proc);
@@ -276,6 +276,8 @@ void EditWExpInit(DebuggerProc * proc);
 void EditWExpIdle(DebuggerProc * proc);
 void EditSupportsInit(DebuggerProc * proc);
 void EditSupportsIdle(DebuggerProc * proc);
+void DebuggerListInit(DebuggerProc * proc);
+void DebuggerListIdle(DebuggerProc * proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
@@ -299,7 +301,8 @@ u8 CanActiveUnitPromote(void);
 #define WExpLabel 16
 #define SupportLabel 17
 #define SupplyLabel 18
-#define LoopLabel 19
+#define ListLabel 19
+#define LoopLabel 20
 #define EndLabel 99
 
 #define ActionID_Promo 1
@@ -331,6 +334,7 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_WHILE(DoesBMXFADEExist),
     PROC_CALL(SetAllUnitNotBackSprite),
     PROC_CALL(RefreshUnitSprites),
+    PROC_CALL_2(ClearActiveUnitStuff), // in case we didn't refresh units before restarting
     PROC_CALL(RestartDebuggerMenu),
     PROC_LABEL(LoopLabel), // Loop indefinitely
     PROC_REPEAT(LoopDebuggerProc),
@@ -428,11 +432,29 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_LABEL(SupplyLabel), // Supply
     PROC_GOTO(EndLabel),
 
+    PROC_LABEL(ListLabel), // List
+    PROC_CALL(LockGame),
+    PROC_CALL(DebuggerListInit),
+    PROC_REPEAT(DebuggerListIdle),
+    PROC_CALL(UnlockGame),
+    PROC_GOTO(EndLabel),
+
     PROC_LABEL(EndLabel),
-    PROC_CALL(ClearActiveUnitStuff),
+    PROC_CALL_2(ClearActiveUnitStuff),
     PROC_CALL(SaveProcVarsToIdler),
     PROC_END,
 };
+
+void DebuggerListInit(DebuggerProc * proc)
+{
+    MU_EndAll();
+
+    StartPrepItemListScreenProc(gActiveUnit, proc);
+}
+void DebuggerListIdle(DebuggerProc * proc)
+{
+    return;
+}
 
 // const char* UnitStats
 #define NumberOfOptions 9
@@ -3294,7 +3316,6 @@ void ChooseTileIdle(DebuggerProc * proc)
         gActionData.xMove = gActiveUnitMoveOrigin.x;
         gActionData.yMove = gActiveUnitMoveOrigin.y;
         PlayerPhase_ApplyUnitMovementWithoutMenu(proc);
-        ClearActiveUnitStuff(proc);
         ClearTilesetRow(proc);
         PlaySoundEffect(0x6B);
         Proc_Goto(proc, RestartLabel);
@@ -3420,7 +3441,6 @@ void PickupUnitIdle(DebuggerProc * proc)
         gActiveUnitMoveOrigin.x = gBmSt.playerCursor.x;
         gActiveUnitMoveOrigin.y = gBmSt.playerCursor.y;
         PlayerPhase_ApplyUnitMovementWithoutMenu(proc);
-        ClearActiveUnitStuff(proc);
         PlaySoundEffect(0x6B);
         Proc_Goto(proc, RestartLabel);
         return;
@@ -3431,7 +3451,6 @@ void PickupUnitIdle(DebuggerProc * proc)
         gActionData.xMove = gActiveUnitMoveOrigin.x;
         gActionData.yMove = gActiveUnitMoveOrigin.y;
         PlayerPhase_ApplyUnitMovementWithoutMenu(proc);
-        ClearActiveUnitStuff(proc);
         PlaySoundEffect(0x6B);
         Proc_Goto(proc, RestartLabel);
         return;
@@ -3441,7 +3460,7 @@ void PickupUnitIdle(DebuggerProc * proc)
         IsUnitSpriteHoverEnabledAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y) ? 3 : 0);
 }
 
-void ClearActiveUnitStuff(DebuggerProc * proc)
+int ClearActiveUnitStuff(DebuggerProc * proc)
 {
     MU_EndAll();
     if (gActiveUnit)
@@ -3451,8 +3470,8 @@ void ClearActiveUnitStuff(DebuggerProc * proc)
         gActiveUnit->state &= ~(US_HIDDEN | US_UNSELECTABLE | US_CANTOING);
         //}
     }
-
-    EnsureCameraOntoPositionIfValid(proc, gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
+    s8 cameraReturn = EnsureCameraOntoPositionIfValid(proc, gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
+    cameraReturn ^= 1;
     SetCursorMapPositionIfValid(gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
     gBmSt.gameStateBits &= ~BM_FLAG_3;
 
@@ -3461,10 +3480,7 @@ void ClearActiveUnitStuff(DebuggerProc * proc)
     RefreshEntityBmMaps();
     RefreshUnitSprites();
     RenderBmMap();
-
-    // PlaySoundEffect(0x6B);
-
-    // Proc_Goto(proc, 9);
+    return cameraReturn;
 }
 
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc * proc)
@@ -3811,6 +3827,13 @@ u8 SupplyNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     Proc_Goto(proc, SupplyLabel);
     // gActionData.unitActionType = UNIT_ACTION_TRADED_1D;
     StartBmSupply(gActiveUnit, NULL);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+u8 ListNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, ListLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
@@ -4313,7 +4336,6 @@ void BmMain_StartPhase(ProcPtr proc)
 
 void RestartDebuggerMenu(DebuggerProc * proc)
 {
-    ClearActiveUnitStuff(proc);      // in case we didn't refresh units before restarting
     struct Unit * unit = proc->unit; // GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
     if (!unit)
     {
