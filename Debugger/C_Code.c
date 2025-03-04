@@ -472,152 +472,44 @@ void ClearSomeGfx(DebuggerProc * proc)
     RefreshBMapGraphics();
 }
 
-void DebuggerPrepItemList_InitGfx(struct PrepItemListProc * proc)
+void Debugger_PrepItemList_Init(struct PrepItemListProc * proc)
 {
     int i;
-    const char * str;
 
-    gLCDControlBuffer.dispcnt.mode = 0;
+    proc->unk_36 = 0;
+    proc->unk_34 = 0xff;
+    proc->currentPage = 0;
 
-    SetupBackgrounds(NULL);
+    proc->scrollAmount = 4;
+    proc->unitInvIdx = 0;
 
-    BG_Fill(BG_GetMapBuffer(0), 0);
-    BG_Fill(BG_GetMapBuffer(1), 0);
-    BG_Fill(BG_GetMapBuffer(2), 0);
-
-    gLCDControlBuffer.bg0cnt.priority = 1;
-    gLCDControlBuffer.bg1cnt.priority = 2;
-    gLCDControlBuffer.bg2cnt.priority = 0;
-    gLCDControlBuffer.bg3cnt.priority = 3;
-
-    ResetFaces();
-    ResetText();
-    ResetIconGraphics_();
-    LoadUiFrameGraphics();
-    LoadObjUIGfx();
-
-    BG_SetPosition(0, 0, 0);
-    BG_SetPosition(1, 0, 0);
-    BG_SetPosition(2, 0, proc->yOffsetPerPage[proc->currentPage] - 40);
-
-    LoadHelpBoxGfx((void *)0x06012000, -1);
-    LoadIconPalettes(4);
-
-    RestartMuralBackground();
-
-    PutImg_PrepItemUseUnk(0x5000, 5);
-
-    Decompress(gUnknown_08A1B9EC, gGenericBuffer);
-    CallARM_FillTileRect(gBG1TilemapBuffer, gGenericBuffer, 0x1000);
-
-    BG_EnableSyncByMask(7);
-
-    StartUiCursorHand(proc);
-
-    ResetSysHandCursor(proc);
-    DisplaySysHandCursorTextShadow(0x600, 1);
-
-    gLCDControlBuffer.dispcnt.win0_on = 1;
-    gLCDControlBuffer.dispcnt.win1_on = 0;
-    gLCDControlBuffer.dispcnt.objWin_on = 0;
-
-    gLCDControlBuffer.win0_left = 128;
-    gLCDControlBuffer.win0_top = 40;
-    gLCDControlBuffer.win0_right = 224;
-    gLCDControlBuffer.win0_bottom = 152;
-
-    gLCDControlBuffer.wincnt.win0_enableBg0 = 1;
-    gLCDControlBuffer.wincnt.win0_enableBg1 = 1;
-    gLCDControlBuffer.wincnt.win0_enableBg2 = 1;
-    gLCDControlBuffer.wincnt.win0_enableBg3 = 1;
-    gLCDControlBuffer.wincnt.win0_enableObj = 1;
-
-    gLCDControlBuffer.wincnt.wout_enableBg0 = 1;
-    gLCDControlBuffer.wincnt.wout_enableBg1 = 1;
-    gLCDControlBuffer.wincnt.wout_enableBg2 = 0;
-    gLCDControlBuffer.wincnt.wout_enableBg3 = 1;
-    gLCDControlBuffer.wincnt.wout_enableObj = 1;
-
-    StartGreenText(proc);
-
-    StartHelpPromptSprite(195, 147, 9, proc);
-
-    InitText(PrepItemSuppyTexts.th + 0, 6);
-    InitText(PrepItemSuppyTexts.th + 1, 5);
-
-    InitText(PrepItemSuppyTexts.th + 15, 4);
-
-    for (i = 0; i < UNIT_ITEM_COUNT; i++)
+    for (i = 0; i < 9; i++)
     {
-        InitText(PrepItemSuppyTexts.th + 2 + i, 7);
+        proc->idxPerPage[i] = 0;
+        proc->yOffsetPerPage[i] = 0;
     }
 
-    for (i = 0; i < 8; i++)
-    {
-        InitTextDb(PrepItemSuppyTexts.th + 7 + i, 7);
-    }
+    return;
+}
 
-    StoreConvoyWeaponIconGraphics(0x4000, 6);
+void Debugger_PrepItemList_OnEnd(struct PrepItemListProc * proc)
+{
 
-    sub_809D8D4(gBG0TilemapBuffer + 0x6F, 0x4000, 6);
-
-    Decompress(gUnknown_08A19CCC, (void *)0x06015000);
-    ApplyPalette(Pal_SpinningArrow, 0x14);
-    // return;
-
-    StartMenuScrollBarExt(proc, 225, 47, 0x5800, 9);
-    sub_8097668();
-    // return;
-    SomethingPrepListRelated(proc->unit, proc->currentPage, 3);
-    // sub_809F5F4(proc); // breaks stuff atm
-
-    sub_809D300(
-        PrepItemSuppyTexts.th + 7, gBG2TilemapBuffer + 0xF, (proc->yOffsetPerPage[proc->currentPage]) >> 4, proc->unit);
-
-    BG_EnableSyncByMask(4);
-    // return;
-
-    DrawPrepScreenItems(gBG0TilemapBuffer + 0x6F + 0xb3, PrepItemSuppyTexts.th + 2, proc->unit, 0);
-    sub_809EBF0();
-
-    StartUiSpinningArrows(proc);
-    LoadUiSpinningArrowGfx(0, 0x280, 2);
-    SetUiSpinningArrowPositions(0x78, 0x18, 0xe9, 0x18);
-    SetUiSpinningArrowConfig(3);
-
-    StartParallelWorker(List_PutHighlightedCategorySprites, proc);
-
-    StartFace2(
-        0, GetUnitPortraitId(proc->unit), 64, -4, FACE_DISP_KIND(FACE_96x80_FLIPPED) | FACE_DISP_HLAYER(FACE_HLAYER_3));
-
-    str = GetStringFromIndex(proc->unit->pCharacterData->nameTextId);
-
-    StartSysBrownBox(0xd, 0xe00, 0xf, 0xc00, 0x400, proc);
-
-    EnableSysBrownBox(0, -40, -1, 1);
-    EnableSysBrownBox(1, 0x98, 6, 2);
-
-    SetBlendConfig(1, 0xe, 4, 0);
-    SetBlendTargetA(0, 0, 0, 0, 0);
-    SetBlendTargetB(0, 0, 0, 1, 0);
-
-    PutDrawText(PrepItemSuppyTexts.th, gBG0TilemapBuffer, 0, GetStringTextCenteredPos(48, str), 0, str);
-
-    PrepItemList_DrawCurrentOwnerText(proc);
+    EndAllProcChildren(proc);
+    EndFaceById(0);
+    EndMuralBackground_();
 
     return;
 }
 
 struct ProcCmd const DebuggerProcScr_PrepItemListScreen[] = {
     PROC_SLEEP(0),
-    PROC_CALL(PrepItemList_Init),
-
+    PROC_CALL(BMapDispSuspend),
+    PROC_CALL(Debugger_PrepItemList_Init),
     PROC_LABEL(0),
-    PROC_CALL(DebuggerPrepItemList_InitGfx),
-
-    PROC_GOTO(9),
-    PROC_CALL_ARG(NewFadeIn, 16),
-    PROC_WHILE(FadeInExists),
+    PROC_CALL(StartFastFadeToBlack),
+    PROC_REPEAT(WaitForFade),
+    PROC_CALL(PrepItemList_InitGfx),
 
     // fallthrough
 
@@ -635,7 +527,7 @@ struct ProcCmd const DebuggerProcScr_PrepItemListScreen[] = {
     PROC_CALL_ARG(NewFadeOut, 16),
     PROC_WHILE(FadeOutExists),
 
-    PROC_CALL(PrepItemList_OnEnd),
+    PROC_CALL(Debugger_PrepItemList_OnEnd),
     PROC_CALL(PrepItemList_StartTradeScreen),
     PROC_SLEEP(0),
 
@@ -664,7 +556,7 @@ struct ProcCmd const DebuggerProcScr_PrepItemListScreen[] = {
     // fallthrough
 
     PROC_LABEL(9),
-    PROC_CALL(PrepItemList_OnEnd),
+    PROC_CALL(Debugger_PrepItemList_OnEnd),
 
     PROC_END,
 };
