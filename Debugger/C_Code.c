@@ -558,6 +558,44 @@ void FixCursorOverflow(void)
     }
 }
 
+int IsCoordinateValid(int x, int y)
+{
+    if (x < 0)
+    {
+        return false;
+    }
+    if (y < 0)
+    {
+        return false;
+    }
+    if (x >= gBmMapSize.x)
+    {
+        return false;
+    }
+    if (y >= gBmMapSize.y)
+    {
+        return false;
+    }
+    return true;
+}
+
+s8 EnsureCameraOntoPositionIfValid(ProcPtr proc, int x, int y)
+{
+    if (!IsCoordinateValid(x, y))
+    {
+        return 0;
+    }
+    return EnsureCameraOntoPosition(proc, x, y);
+}
+void SetCursorMapPositionIfValid(int x, int y)
+{
+    if (!IsCoordinateValid(x, y))
+    {
+        return;
+    }
+    SetCursorMapPosition(x, y);
+}
+
 void SomeMenuInit(DebuggerProc * proc)
 {
     ResetTextFont();
@@ -3414,8 +3452,8 @@ void ClearActiveUnitStuff(DebuggerProc * proc)
         //}
     }
 
-    EnsureCameraOntoPosition(proc, gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
-    SetCursorMapPosition(gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
+    EnsureCameraOntoPositionIfValid(proc, gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
+    SetCursorMapPositionIfValid(gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
     gBmSt.gameStateBits &= ~BM_FLAG_3;
 
     HideMoveRangeGraphics();
@@ -3442,7 +3480,7 @@ int PlayerPhase_PrepareActionBasic(DebuggerProc * proc)
     s8 cameraReturn;
     SetupUnitFunc();
 
-    cameraReturn = EnsureCameraOntoPosition(
+    cameraReturn = EnsureCameraOntoPositionIfValid(
         proc, GetUnit(gActionData.subjectIndex)->xPos, GetUnit(gActionData.subjectIndex)->yPos);
     cameraReturn ^= 1;
     // if ((gActionData.unitActionType != UNIT_ACTION_WAIT) &&
@@ -4390,7 +4428,7 @@ void PlayerPhase_FinishActionNoCanto(ProcPtr proc)
         RenderBmMap();
     }
 
-    SetCursorMapPosition(gActiveUnit->xPos, gActiveUnit->yPos);
+    SetCursorMapPositionIfValid(gActiveUnit->xPos, gActiveUnit->yPos);
 
     gPlaySt.xCursor = gBmSt.playerCursor.x;
     gPlaySt.yCursor = gBmSt.playerCursor.y;
