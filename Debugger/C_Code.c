@@ -298,7 +298,8 @@ u8 CanActiveUnitPromote(void);
 #define ChStateLabel 15
 #define WExpLabel 16
 #define SupportLabel 17
-#define LoopLabel 18
+#define SupplyLabel 18
+#define LoopLabel 19
 #define EndLabel 99
 
 #define ActionID_Promo 1
@@ -422,6 +423,9 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_LABEL(SupportLabel), // Supports
     PROC_CALL(EditSupportsInit),
     PROC_REPEAT(EditSupportsIdle),
+    PROC_GOTO(EndLabel),
+
+    PROC_LABEL(SupplyLabel), // Supply
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(EndLabel),
@@ -3760,6 +3764,15 @@ u8 EditSupportNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
     Proc_Goto(proc, SupportLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+u8 SupplyNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, SupplyLabel);
+    // gActionData.unitActionType = UNIT_ACTION_TRADED_1D;
+    StartBmSupply(gActiveUnit, NULL);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 

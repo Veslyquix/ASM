@@ -53,7 +53,7 @@ FILL(256 * 4)
 
 #define Counter 0 
 #define MenuCommand1(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; POIN PageIdler|1; WORD 0 0; PUSH; ORG gDebuggerMenuText + (2 * ((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItems) / 9); POIN NameLabel DescLabel; POP"
-#define MenuCommand2(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; POIN PageIdler|1; WORD 0 0; PUSH; ORG gDebuggerMenuText2 + (2 * ((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItemsPage2) / 9); POIN NameLabel DescLabel; POP"
+// #define MenuCommand2(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; POIN PageIdler|1; WORD 0 0; PUSH; ORG gDebuggerMenuText2 + (2 * ((CURRENTOFFSET - (9 * 4)) - gDebuggerMenuItemsPage2) / 9); POIN NameLabel DescLabel; POP"
 //#define MenuCommand(NameLabel, DescLabel,colour,usability,draw, effect) "WORD $80d7d94; SHORT 0x505 0x505; BYTE colour $4e; SHORT 0; POIN usability|1; POIN draw|1; POIN effect|1; WORD 0 0 0; "
     
 ALIGN 4 
@@ -98,6 +98,7 @@ ALIGN 4
 gDebuggerMenuItemsPage3: // must be immediately after gDebuggerMenuItemsPage2 
 MenuCommand1(WExpText,WExpDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditWExpNow)
 MenuCommand1(SupportMenuText,SupportMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditSupportNow)
+MenuCommand1(SupplyMenuText,SupplyMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, SupplyNow)
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
 //MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)
@@ -215,4 +216,10 @@ SupportMenuText:
 SupportMenuDesc:
     String("Edit support levels"); NL
     String("for the unit."); EndText 
+
+SupplyMenuText:
+    String(" Supply"); EndText 
+SupplyMenuDesc:
+    String("Open the convoy"); NL
+    String("to access items."); EndText 
 
