@@ -3465,10 +3465,13 @@ int ClearActiveUnitStuff(DebuggerProc * proc)
     MU_EndAll();
     if (gActiveUnit)
     {
-        // if (UNIT_FACTION(gActiveUnit) == gPlaySt.faction) { // if turn of the
-        // actor, refresh EndAllMus();
-        gActiveUnit->state &= ~(US_HIDDEN | US_UNSELECTABLE | US_CANTOING);
-        //}
+        if (!(gActiveUnit->state & (US_DEAD | US_NOT_DEPLOYED | US_BIT16)))
+        {
+            // if (UNIT_FACTION(gActiveUnit) == gPlaySt.faction) { // if turn of the
+            // actor, refresh EndAllMus();
+            gActiveUnit->state &= ~(US_HIDDEN | US_UNSELECTABLE | US_CANTOING);
+            //}
+        }
     }
     s8 cameraReturn = EnsureCameraOntoPositionIfValid(proc, gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
     cameraReturn ^= 1;
