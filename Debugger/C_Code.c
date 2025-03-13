@@ -7,7 +7,6 @@ int Mod(int a, int b) PUREFUNC;
 #define favTilesAmount 15
 #define tmpSize 15
 
-
 char * GetStringFromIndexSafe(int index)
 {
     if ((index > 0x4000) || (index <= 0))
@@ -458,8 +457,6 @@ struct PrepItemSuppyText
     /* 00 */ struct Font font;
     /* 18 */ struct Text th[18];
 };
-
-
 
 int ShouldAIControlRemainingUnits(void)
 {
@@ -4530,6 +4527,7 @@ void InitProc(DebuggerProc * proc)
     proc->editing = false;
     proc->actionID = 0;
     proc->godMode = 0;
+    proc->autoplay = 0;
     proc->lastFlag = 1;
     proc->tileID = 1;
     proc->id = 0;
