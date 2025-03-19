@@ -32,12 +32,59 @@ ReclassTable:
 FILL(6*256)  
 
 
-#define Reclass(currentClass, n1) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 0 0 0 0 0; POP" 
-#define Reclass(currentClass, n1, n2) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 0 0 0 0; POP" 
-#define Reclass(currentClass, n1, n2, n3) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 0 0 0; POP" 
-#define Reclass(currentClass, n1, n2, n3, n4) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 0 0; POP" 
-#define Reclass(currentClass, n1, n2, n3, n4, n5) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 n5 0; POP" 
-#define Reclass(currentClass, n1, n2, n3, n4, n5, n6) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 n5 n6; POP" 
+#define ReclassEx(currentClass, n1) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 0 0 0 0 0; POP" 
+#define ReclassEx(currentClass, n1, n2) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 0 0 0 0; POP" 
+#define ReclassEx(currentClass, n1, n2, n3) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 0 0 0; POP" 
+#define ReclassEx(currentClass, n1, n2, n3, n4) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 0 0; POP" 
+#define ReclassEx(currentClass, n1, n2, n3, n4, n5) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 n5 0; POP" 
+#define ReclassEx(currentClass, n1, n2, n3, n4, n5, n6) "PUSH; ORG ReclassTable + (currentClass * 6); BYTE n1 n2 n3 n4 n5 n6; POP" 
+
+
+
+#define Reclass(n0, n1, n2, n3, n4, n5, n6) \
+    "PUSH; ORG ReclassTable + (n0 * 6); BYTE n1 n2 n3 n4 n5 n6; \
+    ORG ReclassTable + (n1 * 6); BYTE n0 n2 n3 n4 n5 n6; \
+    ORG ReclassTable + (n2 * 6); BYTE n0 n1 n3 n4 n5 n6; \
+    ORG ReclassTable + (n3 * 6); BYTE n0 n1 n2 n4 n5 n6; \
+    ORG ReclassTable + (n4 * 6); BYTE n0 n1 n2 n3 n5 n6; \
+    ORG ReclassTable + (n5 * 6); BYTE n0 n1 n2 n3 n4 n6; \
+    ORG ReclassTable + (n6 * 6); BYTE n0 n1 n2 n3 n4 n5; \
+    POP"
+
+#define Reclass(n0, n1, n2, n3, n4, n5) \
+    "PUSH; ORG ReclassTable + (n0 * 6); BYTE n1 n2 n3 n4 n5 0; \
+    ORG ReclassTable + (n1 * 6); BYTE n0 n2 n3 n4 n5 0; \
+    ORG ReclassTable + (n2 * 6); BYTE n0 n1 n3 n4 n5 0; \
+    ORG ReclassTable + (n3 * 6); BYTE n0 n1 n2 n4 n5 0; \
+    ORG ReclassTable + (n4 * 6); BYTE n0 n1 n2 n3 n5 0; \
+    ORG ReclassTable + (n5 * 6); BYTE n0 n1 n2 n3 n4 0; \
+    POP"
+
+#define Reclass(n0, n1, n2, n3, n4) \
+    "PUSH; ORG ReclassTable + (n0 * 6); BYTE n1 n2 n3 n4 0 0; \
+    ORG ReclassTable + (n1 * 6); BYTE n0 n2 n3 n4 0 0; \
+    ORG ReclassTable + (n2 * 6); BYTE n0 n1 n3 n4 0 0; \
+    ORG ReclassTable + (n3 * 6); BYTE n0 n1 n2 n4 0 0; \
+    ORG ReclassTable + (n4 * 6); BYTE n0 n1 n2 n3 0 0; \
+    POP"
+
+#define Reclass(n0, n1, n2, n3) \
+    "PUSH; ORG ReclassTable + (n0 * 6); BYTE n1 n2 n3 0 0 0; \
+    ORG ReclassTable + (n1 * 6); BYTE n0 n2 n3 0 0 0; \
+    ORG ReclassTable + (n2 * 6); BYTE n0 n1 n3 0 0 0; \
+    ORG ReclassTable + (n3 * 6); BYTE n0 n1 n2 0 0 0; \
+    POP"
+
+#define Reclass(n0, n1, n2) \
+    "PUSH; ORG ReclassTable + (n0 * 6); BYTE n1 n2 0 0 0 0; \
+    ORG ReclassTable + (n1 * 6); BYTE n0 n2 0 0 0 0; \
+    ORG ReclassTable + (n2 * 6); BYTE n0 n1 0 0 0 0; \
+    POP"
+
+#define Reclass(n0, n1) \
+    "PUSH; ORG ReclassTable + (n0 * 6); BYTE n1 0 0 0 0 0; \
+    ORG ReclassTable + (n1 * 6); BYTE n0 0 0 0 0 0; \
+    POP"
 
 
 
