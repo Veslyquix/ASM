@@ -15,44 +15,26 @@ pop {r3}
 bx r3 
 .ltorg 
 
-GetFaceDisplayBits_New:
-push {r4, lr} 
-mov r4, r0 
+.global MaybeDisplayBlueArrowInConvo
+.type MaybeDisplayBlueArrowInConvo, %function 
+MaybeDisplayBlueArrowInConvo:
+push {lr} 
+mov r5, r0 
+ldr r3, =0x8000D28 @ GetGameClock 
+mov lr, r3 
+.short 0xF800 
+lsr r4, r0, #1 
 bl ShouldDisplayOnlyBG
-lsl r1, r0, #10 @ blend  
-ldr r1, =0x400
-ldr r0, [r4, #0x30] 
-orr r0, r1 
-pop {r4} 
+cmp r0, #0 
+bne AltExit 
 pop {r3} 
+ldr r3, =0x8007C59
+bx r3 
+AltExit: 
+pop {r3} 
+ldr r3, =0x8007CAD
 bx r3 
 .ltorg 
-
-.global HookGetFaceDisplayBits
-.type HookGetFaceDisplayBits, %function 
-HookGetFaceDisplayBits: 
-push {lr} 
-bl GetFaceDisplayBits_New
-pop {r3} 
-bx r3 
-.ltorg 
-
-
-.global HookGetFaceDisplayBitsById
-.type HookGetFaceDisplayBitsById, %function 
-HookGetFaceDisplayBitsById: 
-push {lr} 
-ldr r1, =0x80057BC 
-ldr r1, [r1] 
-lsl r0, #2 
-add r0, r1 
-ldr r0, [r0] 
-bl GetFaceDisplayBits_New
-pop {r3} 
-bx r3 
-.ltorg 
-
-
 
 
 
