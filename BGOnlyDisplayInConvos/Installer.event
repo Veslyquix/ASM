@@ -1,0 +1,29 @@
+
+
+ALIGN 4 
+DisplayOnlyBG_Flag:
+WORD 0x27 
+
+PUSH 
+ORG $7CAC 
+callHackNew(ToggleSpritesWithSelect)
+ORG $CEA0
+callHackNew(EventEngine_MaybeShowOnlyBG)
+ORG $E5EC 
+// callHackNew(TalkEngine_MaybeSetSpriteBlend) 
+
+ORG $57A4 
+SHORT $E004 $46C0 
+jumpToHack(HookGetFaceDisplayBitsById)
+jumpToHack(HookGetFaceDisplayBits)
+
+
+
+POP 
+
+#include "Asm.lyn.event" 
+#include "C_Code.lyn.event" 
+
+
+
+
