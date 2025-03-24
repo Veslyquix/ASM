@@ -4,7 +4,7 @@ ALIGN 4
 DisplayOnlyBG_Flag:
 WORD 0x27 
 SpriteTransparency: // between 0 (no transparency) and 16 (16 = cannot see portraits at all) 
-WORD 4
+WORD 12
 
 PUSH 
 ORG $7C50 
