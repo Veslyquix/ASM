@@ -2,13 +2,13 @@ Custom Game Opening
 -
 By Meteo, AetherDust, and Vesly 
 
-New method: 
+Less reliable method for buildfiles: 
 1. Use Meteo 1.5.0 - Mod.exe to generate video.gba 
 2. Change the file extension to make it video.dmp 
 3. Use Installer.event 
 
 
-Old method: 
+Reliable method: 
 1. Use Meteo 1.5.0 - Mod.exe to generate video.gba 
 2. Put Project.gba in folder 
 3. Open `open.s` and change `.definelabel HijackPos,0x9800000` to free space address 
