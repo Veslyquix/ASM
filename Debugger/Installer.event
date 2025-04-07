@@ -2,8 +2,35 @@
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
-#include "Hooks.lyn.event" 
-#include "C_Code.lyn.event" 
+
+#ifdef _FE8_ 
+#include "Data/FE8_AsmHooks.lyn.event" 
+#include "Data/FE8.lyn.event" 
+PUSH 
+ORG 0x1ca0c
+callHackNew(CallDebuggerProc)
+POP 
+#endif 
+
+#ifdef _FE7_ 
+#include "Data/FE7_AsmHooks.lyn.event" 
+#include "Data/FE7.lyn.event" 
+PUSH 
+// ORG 0x1ca0c
+// callHackNew(CallDebuggerProc)
+POP 
+#endif 
+
+#ifdef _FE6_ 
+#include "Data/FE6_AsmHooks.lyn.event" 
+#include "Data/FE6.lyn.event" 
+PUSH 
+// ORG 0x1ca0c
+// callHackNew(CallDebuggerProc)
+POP 
+#endif 
+
+
 
 ALIGN 4 
 DebuggerTurnedOff_Flag:
@@ -28,10 +55,7 @@ ALIGN 4
 KonamiCodeEnabled:
 WORD 1 // if 0, it is disabled 
 
-PUSH 
-ORG 0x1ca0c
-callHackNew(CallDebuggerProc)
-POP 
+
 
 #ifndef UNIT_MENU_DEFINITIONS
     #define MenuCommand(name,description,colour,usability,effect) "WORD $80d7d94; SHORT name description; BYTE colour $4e; SHORT 0; POIN usability|1; WORD 0; POIN effect|1; WORD 0 0 0"
