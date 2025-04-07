@@ -132,8 +132,66 @@ SET_FUNC CpuFastSet, 0x809DCD9
 SET_FUNC CopyToPaletteBuffer, 0x800105D
 SET_FUNC RegisterDataMove, 0x8002B05
 SET_FUNC EndFaceById, 0x8008581
+
+SET_FUNC MU_EndAll, 0x8067AF1 
+SET_FUNC HideUnitSprite, 0x8022A39
+SET_FUNC MuExists, 0x800C2C9
+SET_FUNC MU_SetDefaultFacing_Auto, 0x805FC55
+SET_FUNC SetAllUnitNotBackSprite, 0x801809D
+SET_DATA gActiveUnitMoveOrigin, 0x202AB74 
+SET_DATA gActiveUnitId, 0x202AB70
+SET_DATA gBmMapSize, 0x202D200
+SET_DATA gActionData, 0x203956C
+SET_FUNC EnsureCameraOntoPosition, 0x80161C1
+SET_FUNC SetCursorMapPosition, 0x801600D
+SET_FUNC HideMoveRangeGraphics, 0x801C061
+SET_FUNC RefreshEntityBmMaps, 0x80190F5
+SET_FUNC RefreshUnitSprites, 0x8022095
+@SET_FUNC NewBMXFADE, 0x801C39D
+SET_FUNC DoesBMXFADEExist, 0x8093445
+SET_FUNC Proc_End, 0x8004265
+SET_FUNC HandlePlayerCursorMovement, 0x801B04D
+SET_FUNC IsUnitSpriteHoverEnabledAt, 0x8022725
+SET_FUNC PutMapCursor, 0x8015F1D
+SET_FUNC Text_DrawString, 0x8005da5
+@ PlayerPhase_ApplyUnitMovement 1BAF0 
+SET_FUNC UnitFinalizeMovement, 0x8017C61
+SET_FUNC ResetUnitSpriteHover, 0x8022629
+SET_FUNC sub_802C334, 0x8025781
+SET_DATA gProcScr_TerrainWindowMaker, 0x8678174
+SET_DATA gKeyStatusPtr, 0x858E578
+
 .endif 
 .if FE7 == true 
+SET_FUNC MU_EndAll, 0x806CCB9 
+SET_FUNC HideUnitSprite, 0x8026575
+SET_FUNC MuExists, 0x8009FB9
+SET_FUNC MU_SetDefaultFacing_Auto, 0x806BFE1
+SET_FUNC SetAllUnitNotBackSprite, 0x80183F5
+SET_DATA gActiveUnitId, 0x202BD48
+SET_DATA gBmMapSize, 0x202E3D8
+SET_DATA gActionData, 0x203A85C
+SET_FUNC EnsureCameraOntoPosition, 0x8015CE1
+SET_FUNC SetCursorMapPosition, 	0x8015A91
+SET_FUNC HideMoveRangeGraphics, 	0x801D2D5
+SET_FUNC RefreshEntityBmMaps, 	0x8019abd
+SET_FUNC RefreshUnitSprites, 0x8025725
+SET_FUNC DoesBMXFADEExist, 0x801D635
+SET_FUNC Proc_End, 0x800486D
+SET_FUNC HandlePlayerCursorMovement, 0x801C195
+SET_FUNC IsUnitSpriteHoverEnabledAt, 0x8026065
+SET_FUNC PutMapCursor, 0x801596D
+SET_FUNC Text_DrawString, 0x8005719
+SET_FUNC UnitFinalizeMovement, 0x8017F29
+SET_FUNC ResetUnitSpriteHover, 0x8025F9D
+SET_FUNC sub_802C334, 0x8029D6D
+SET_DATA gProcScr_TerrainWindowMaker, 0x8CC2C00
+SET_DATA gKeyStatusPtr, 0x8B857F8
+@ 
+@ 80180EC UnitBeginAction for ram 
+
+
+
 @SET_FUNC ClearText, 0x80054E1, 55fc 
 @SET_DATA sUnknown_085911C4, 0x80059C8
 @SET_DATA gProcScr_HelpPromptSpr, 0x80059C8
@@ -326,6 +384,7 @@ SET_FUNC __aeabi_idiv, 0x809DCE1
 @SET_FUNC Mod, 0x809DCE5
 SET_FUNC SetFlag, 0x806BA49
 SET_FUNC UnsetFlag, 0x806BA75
+SET_FUNC ClearFlag, 0x806BA75
 SET_FUNC CheckFlag, 0x806bA5D
  
 SET_FUNC GetItemMight, 0x80171e9
@@ -474,6 +533,7 @@ SET_FUNC __aeabi_idiv, 0x80BFA15
 @SET_FUNC Mod, 0x80BFA19
 SET_FUNC SetFlag, 0x80798E5 
 SET_FUNC UnsetFlag, 0x8079911 
+SET_FUNC ClearFlag, 0x8079911 
 SET_FUNC CheckFlag, 0x80798F9
 SET_FUNC GetItemMight, 0x80172E1
 SET_FUNC GetItemHit, 0x80172F9

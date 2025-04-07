@@ -4,30 +4,36 @@
 #endif 
 
 #ifdef _FE8_ 
-#include "Data/FE8_AsmHooks.lyn.event" 
-#include "Data/FE8.lyn.event" 
-PUSH 
-ORG 0x1ca0c
-callHackNew(CallDebuggerProc)
-POP 
+    #include "Data/FE8_AsmHooks.lyn.event" 
+    #include "Data/FE8.lyn.event" 
+    PUSH 
+    ORG 0x1ca0c
+    callHackNew(CallDebuggerProc)
+    POP 
+    #define MenuAlwaysEnabled 0x804f449
+    #define MenuNeverEnabled  0x804f451 
 #endif 
 
 #ifdef _FE7_ 
-#include "Data/FE7_AsmHooks.lyn.event" 
-#include "Data/FE7.lyn.event" 
-PUSH 
-// ORG 0x1ca0c
-// callHackNew(CallDebuggerProc)
-POP 
+    #include "Data/FE7_AsmHooks.lyn.event" 
+    #include "Data/FE7.lyn.event" 
+    PUSH 
+    ORG 0x1c304
+    callHackNew(CallDebuggerProc_FE7)
+    POP 
+    #define MenuAlwaysEnabled 0x804A8F9
+    #define MenuNeverEnabled  0x804A901
 #endif 
 
 #ifdef _FE6_ 
-#include "Data/FE6_AsmHooks.lyn.event" 
-#include "Data/FE6.lyn.event" 
-PUSH 
-// ORG 0x1ca0c
-// callHackNew(CallDebuggerProc)
-POP 
+    #include "Data/FE6_AsmHooks.lyn.event" 
+    #include "Data/FE6.lyn.event" 
+    PUSH 
+    ORG 0x1b190
+    callHackNew(CallDebuggerProc_FE6)
+    POP 
+    #define MenuAlwaysEnabled 0x8041E6D
+    #define MenuNeverEnabled  0x8041E71
 #endif 
 
 
@@ -69,8 +75,7 @@ WORD 1 // if 0, it is disabled
     #define BlackText 0x5
 #endif 
 
-#define MenuAlwaysEnabled 0x804f449
-#define MenuNeverEnabled  0x804f451 
+
 ALIGN 4 
 gDebuggerMenuText: 
 FILL(256 * 4) 
@@ -82,7 +87,11 @@ FILL(256 * 4)
     
 ALIGN 4 
 NumberOfPages:
+#ifdef _FE8_ 
 WORD 3
+#else 
+WORD 1 
+#endif 
 
 ggDebuggerMenuItems:
 POIN gDebuggerMenuItems gDebuggerMenuItemsPage2 gDebuggerMenuItemsPage3 
@@ -91,6 +100,7 @@ WORD 0
 ALIGN 4 
 gDebuggerMenuItems: 
 MenuCommand1(PickupText, PickupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, PickupUnitNow)
+#ifdef _FE8_ 
 MenuCommand1(PromoteText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
 MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
 MenuCommand1(LevelupText,LevelupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LevelupNow)
@@ -98,6 +108,7 @@ MenuCommand1(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, Debugge
 MenuCommand1(EditMiscText,EditMiscDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMiscNow)
 MenuCommand1(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
 MenuCommand1(EditStateText,EditStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStateNow)
+#endif 
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 
 
@@ -106,6 +117,7 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 
 ALIGN 4 
 gDebuggerMenuItemsPage2: // must be immediately after gDebuggerMenuItems 
+#ifdef _FE8_ 
 MenuCommand1(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
 MenuCommand1(ControlAiText,ControlAiDesc, NormalText, MenuAlwaysEnabled, ControlAiDrawText, ControlAiNow)
 MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
@@ -113,6 +125,7 @@ MenuCommand1(ChStateText,ChStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMen
 MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
 MenuCommand1(LoadUnitsText,LoadUnitsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LoadUnitsNow)
 MenuCommand1(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, BootmodeDrawText, ToggleBootNow)
+#endif 
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
 //MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)
@@ -120,11 +133,13 @@ MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
 ALIGN 4 
 gDebuggerMenuItemsPage3: // must be immediately after gDebuggerMenuItemsPage2 
+#ifdef _FE8_ 
 MenuCommand1(WExpText,WExpDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditWExpNow)
 MenuCommand1(SupportMenuText,SupportMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditSupportNow)
 MenuCommand1(SupplyMenuText,SupplyMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, SupplyNow)
 MenuCommand1(ListMenuText,ListMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, ListNow) 
 MenuCommand1(AiControlRemainingUnitsText,AiControlRemainingUnitsDesc, NormalText, MenuAlwaysEnabled, AiControlRemainingUnitsDrawText, AiControlRemainingUnitsNow) 
+#endif 
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
 //MenuCommand(EditSkillsText,EditSkillsDesc, OrangeText, $04F449,DebuggerMenuItemDraw, SkillDebugCommand_OnSelect)

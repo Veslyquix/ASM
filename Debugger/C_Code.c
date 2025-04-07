@@ -968,7 +968,7 @@ void EditStatsIdle(DebuggerProc * proc)
 
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
@@ -1206,7 +1206,7 @@ void EditWExpIdle(DebuggerProc * proc)
 
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & B_BUTTON)
     { // press B to not save WExp
         ClearTilesetRow(proc);
@@ -1407,7 +1407,7 @@ void EditSupportsIdle(DebuggerProc * proc)
 
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & B_BUTTON)
     { // press B to not save Supports
         Proc_Goto(proc, RestartLabel);
@@ -1624,7 +1624,7 @@ void SaveState(DebuggerProc * proc)
 
 void StateIdle(DebuggerProc * proc)
 {
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if ((keys & START_BUTTON) || (keys & B_BUTTON))
     { // press B or Start to update state and continue
 
@@ -1789,7 +1789,7 @@ void EditItemsIdle(DebuggerProc * proc)
 {
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
@@ -2236,7 +2236,7 @@ void ChStateIdle(DebuggerProc * proc)
 {
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & B_BUTTON)
     { // press B to not save ch state
         Proc_Goto(proc, RestartLabel);
@@ -2696,7 +2696,7 @@ void EditMiscIdle(DebuggerProc * proc)
 {
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
@@ -3324,7 +3324,7 @@ void LoadUnitsIdle(DebuggerProc * proc)
 {
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
-    u16 keys = sKeyStatusBuffer.repeatedKeys;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
@@ -4643,12 +4643,8 @@ void RestartDebuggerMenu(DebuggerProc * proc)
         }
     }
 
-    // UnpackUiFramePalette(3);
+    // page number graphic ?
     Decompress(gUnknown_08A02274, (void *)(VRAM + 0x10000 + 0x240 * 0x20));
-
-    // RefreshBMapGraphics(); // should not happen on the same frame as starting a
-    // menu, or black boxes occur
-    //  perhaps they both use the generic buffer
 }
 
 void LoopDebuggerProc(DebuggerProc * proc)
