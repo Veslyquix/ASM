@@ -1,7 +1,6 @@
 #define FE6
 
-#include "../C_Code.h" // headers
-
+#include "../C_code.h"
 // #include "../C_code.c"
 
 #define tmpSize 15
@@ -37,7 +36,7 @@
 
 typedef struct
 {
-    /* 00 */ PROC_HEADER;
+    PROC_HEADER;
     s16 tileID;
     u16 lastTileHovered;
     s8 editing;
@@ -56,7 +55,7 @@ typedef struct
 
 typedef struct
 {
-    /* 00 */ PROC_HEADER;
+    PROC_HEADER;
     int id;
 } CheatCodeKeyListenerProc;
 
@@ -189,23 +188,24 @@ void InitProc(DebuggerProc * proc)
 
 void CopyProcVariables(DebuggerProc * dst, DebuggerProc * src)
 {
-    // dst->tileID = src->tileID;
-    // dst->mainID = src->mainID;
-    // dst->lastTileHovered = src->lastTileHovered;
-    // dst->editing = src->editing;
-    // dst->actionID = src->actionID;
-    // dst->id = src->id;
-    // dst->digit = src->digit;
-    // dst->godMode = src->godMode;
-    // dst->page = src->page;
-    // dst->lastFlag = src->lastFlag;
-    // dst->gold = src->gold;
-    // dst->autoplay = src->autoplay;
-    // for (int i = 0; i < tmpSize; ++i)
-    // {
-    // dst->tmp[i] = src->tmp[i];
-    // }
-    // dst->unit = src->unit;
+
+    dst->tileID = src->tileID;
+    dst->mainID = src->mainID;
+    dst->lastTileHovered = src->lastTileHovered;
+    dst->editing = src->editing;
+    dst->actionID = src->actionID;
+    dst->id = src->id;
+    dst->digit = src->digit;
+    dst->godMode = src->godMode;
+    dst->page = src->page;
+    dst->lastFlag = src->lastFlag;
+    dst->gold = src->gold;
+    dst->autoplay = src->autoplay;
+    for (int i = 0; i < tmpSize; ++i)
+    {
+        dst->tmp[i] = src->tmp[i];
+    }
+    dst->unit = src->unit;
 }
 
 void LoopDebuggerProc(DebuggerProc * proc)
@@ -561,7 +561,7 @@ void RestartDebuggerMenu(DebuggerProc * proc)
     }
 
     // page number graphic ?
-    // Decompress(gUnknown_08A02274, (void *)(VRAM + 0x10000 + 0x240 * 0x20));
+    Decompress(gUnknown_08A02274, (void *)(VRAM + 0x10000 + 0x240 * 0x20)); //
 }
 
 void PageMenuItemDrawSprites(struct MenuProc * menu)
@@ -569,12 +569,18 @@ void PageMenuItemDrawSprites(struct MenuProc * menu)
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
     int chr = 0x289;
+    int chr2 = 0x289;
+#ifndef FE8
+    chr = 0x2A4;
+    chr2 = 0x245;
+#endif
+    // fe7: / is 0x245, numbers 0x2A5-0x2A9
     int x = (menu->menuItems[menu->itemCount - 1]->xTile * 8) + 6 + (8 * 3);
     int y = (menu->menuItems[menu->itemCount - 1]->yTile * 8) + 4;
 
     PutSprite(0, x, y, gObject_8x8, TILEREF(chr, 0) + OAM2_LAYER(0) + proc->page + 1);
     x += 8;
-    PutSprite(0, x, y, gObject_8x8, TILEREF(chr, 0) + OAM2_LAYER(0));
+    PutSprite(0, x, y, gObject_8x8, TILEREF(chr2, 0) + OAM2_LAYER(0));
     x += 8;
     PutSprite(0, x, y, gObject_8x8, TILEREF(chr, 0) + OAM2_LAYER(0) + NumberOfPages);
     x += 8;
@@ -606,7 +612,6 @@ int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
     PutText(&menuItem->text, BG_GetMapBuffer2(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
-    // PageMenuItemDrawSprites(menuItem);
     return 0;
 }
 
@@ -823,66 +828,18 @@ int StartKeyListenerProc(void)
     return true;
 }
 
-/*
-extern const struct ProcCmd gProcScr_TerrainDisplay[];
-struct ProcCmd const gProcScr_TerrainWindowMaker[] = {
-    PROC_WHILE(DoesBMXFADEExist),
-
-    PROC_CALL(InitPlayerPhaseTerrainWindow),
-
-    PROC_END,
-};
-void InitPlayerPhaseTerrainWindow()
+u8 MenuAutoHelpBoxSelect(struct MenuProc * menu)
 {
-
-    gLCDControlBuffer.dispcnt.win0_on = 0;
-    gLCDControlBuffer.dispcnt.win1_on = 0;
-    gLCDControlBuffer.dispcnt.objWin_on = 0;
-
-    gLCDControlBuffer.wincnt.wout_enableBg0 = 1;
-    gLCDControlBuffer.wincnt.wout_enableBg1 = 1;
-    gLCDControlBuffer.wincnt.wout_enableBg2 = 1;
-    gLCDControlBuffer.wincnt.wout_enableBg3 = 1;
-    gLCDControlBuffer.wincnt.wout_enableObj = 1;
-    gLCDControlBuffer.wincnt.wout_enableBlend = 1;
-
-    BG_SetPosition(0, 0, 0);
-    BG_SetPosition(1, 0, 0);
-    BG_SetPosition(2, 0, 0);
-
-    SetBlendConfig(1, 0xD, 3, 0);
-
-    SetBlendTargetA(0, 1, 0, 0, 0);
-
-    SetBlendBackdropA(0);
-
-    SetBlendTargetB(0, 0, 1, 1, 1);
-
-    Decompress(gGfx_PlayerInterfaceFontTiles, (void *)(VRAM + 0x2000));
-    Decompress(gGfx_PlayerInterfaceNumbers, (void *)(VRAM + 0x15C00));
-
-    CpuFastSet((void *)(VRAM + 0x2EA0), (void *)(VRAM + 0x15D40), 8);
-
-    ApplyPalette(gPaletteBuffer, 0x18);
-
-    LoadIconPalette(1, 2);
-
-    ResetTextFont();
-
-    if (gPlaySt.config.disableTerrainDisplay == 0)
-    {
-        Proc_Start(gProcScr_TerrainDisplay, PROC_TREE_3);
-    }
-
-    return;
+    // Proc_GotoScript(menu, sProc_MenuAutoHelpBox);
+    return 0;
+}
+u8 DebuggerHelpBox(struct MenuProc * menu, struct MenuItemProc * item)
+{
+    // DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
+    // StartHelpBoxString(item->xTile * 8, item->yTile * 8, GetDebuggerMenuDesc(procIdler, item->itemNumber));
+    return 0;
 }
 
-void StartPlayerPhaseTerrainWindow()
-{
-    Proc_Start(gProcScr_TerrainWindowMaker, PROC_TREE_3);
-    return;
-}
-*/
 u8 MenuCancelSelectResumePlayerPhase(struct MenuProc * menu, struct MenuItemProc * item)
 {
     DebuggerProc * proc;

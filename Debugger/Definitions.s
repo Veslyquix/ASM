@@ -133,10 +133,13 @@ SET_FUNC CopyToPaletteBuffer, 0x800105D
 SET_FUNC RegisterDataMove, 0x8002B05
 SET_FUNC EndFaceById, 0x8008581
 
-SET_FUNC MU_EndAll, 0x8067AF1 
+SET_FUNC MU_EndAll, 0x80608D5 
 SET_FUNC HideUnitSprite, 0x8022A39
-SET_FUNC MuExists, 0x800C2C9
+SET_FUNC MU_Exists, 0x800C2C9
 SET_FUNC MU_SetDefaultFacing_Auto, 0x805FC55
+SET_FUNC MU_Create, 0x805F875
+@SET_FUNC MenuAutoHelpBoxSelect, 0x804a9D5
+SET_FUNC StartOrphanMenuAdjusted, 0x80417E9
 SET_FUNC SetAllUnitNotBackSprite, 0x801809D
 SET_DATA gActiveUnitMoveOrigin, 0x202AB74 
 SET_DATA gActiveUnitId, 0x202AB70
@@ -159,15 +162,22 @@ SET_FUNC UnitFinalizeMovement, 0x8017C61
 SET_FUNC ResetUnitSpriteHover, 0x8022629
 SET_FUNC sub_802C334, 0x8025781
 SET_DATA gProcScr_TerrainWindowMaker, 0x8678174
+SET_DATA gProcScr_PlayerPhase, 0x85C56A8
 SET_DATA gKeyStatusPtr, 0x858E578
+SET_DATA gUnknown_08A02274, 0x83080D0
 
 .endif 
 .if FE7 == true 
+SET_DATA gUnknown_08A02274, 0x83FCE8C
 SET_FUNC MU_EndAll, 0x806CCB9 
 SET_FUNC HideUnitSprite, 0x8026575
-SET_FUNC MuExists, 0x8009FB9
+SET_FUNC MU_Exists, 0x8009FB9
 SET_FUNC MU_SetDefaultFacing_Auto, 0x806BFE1
+SET_FUNC MU_Create, 0x806BAF1
+SET_FUNC MenuAutoHelpBoxSelect, 0x804a9D5
+SET_FUNC StartOrphanMenuAdjusted, 0x804a225
 SET_FUNC SetAllUnitNotBackSprite, 0x80183F5
+SET_DATA gActiveUnitMoveOrigin, 0x202BBF8
 SET_DATA gActiveUnitId, 0x202BD48
 SET_DATA gBmMapSize, 0x202E3D8
 SET_DATA gActionData, 0x203A85C
@@ -185,7 +195,10 @@ SET_FUNC Text_DrawString, 0x8005719
 SET_FUNC UnitFinalizeMovement, 0x8017F29
 SET_FUNC ResetUnitSpriteHover, 0x8025F9D
 SET_FUNC sub_802C334, 0x8029D6D
+SET_FUNC PutText, 0x8005591
+SET_FUNC Text_SetColor, 0x8005581
 SET_DATA gProcScr_TerrainWindowMaker, 0x8CC2C00
+SET_DATA gProcScr_PlayerPhase, 0x8B93374
 SET_DATA gKeyStatusPtr, 0x8B857F8
 @ 
 @ 80180EC UnitBeginAction for ram 
@@ -507,6 +520,7 @@ SET_DATA gUiTmScratchA, 0x2003238 @ might be wrong
 SET_DATA gUiTmScratchC, 0x2003C38 
 SET_FUNC DrawStatBarGfx, 0x806E999
 SET_DATA gActiveUnit, 0x30044B0
+SET_DATA gActiveUnit_, 0x30044B0
 @ 202AA08 gBmSt https://github.com/StanHash/fe6/blob/5430c7ea15313a5754ddb466916b1d2946e72c4a/include/bm.h#L90C8-L90C12
 @ 801E2C0	801FFE0	801FB78	0	0	ChapterIntro_InitMapDisplay
 SET_DATA weatherId, 0x202AA5D
@@ -676,6 +690,7 @@ SET_FUNC DrawStatBarGfx, 0x807F849 @ 806E998
 SET_DATA gLCDControlBuffer, 0x3002870
 SET_DATA ProcScr_GotItem, 0x8B91DC4
 SET_DATA gActiveUnit, 0x3004690
+SET_DATA gActiveUnit_, 0x3004690
 SET_DATA gProcScr_Shop, 0x8CE6FC0
 SET_DATA gLCGRNValue, 0x3000008 
 SET_DATA sPrevHandClockFrame, 0x203DCF0

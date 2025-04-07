@@ -4274,7 +4274,6 @@ int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
-    // PageMenuItemDrawSprites(menuItem);
     return 0;
 }
 

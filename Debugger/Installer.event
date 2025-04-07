@@ -150,6 +150,22 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 #define NL "BYTE 0x1" 
 #define EndText "BYTE 0x0" 
 
+#ifdef _FE6_ 
+#inctbl "FE6TR" "Data/fe6_tr.tbl"
+
+PickupText:
+STRING "Pickup" "FE6TR" ; BYTE 0 0 
+PickupDesc:
+STRING "Pickup" "FE6TR" ; BYTE 0 0 
+PageText:
+STRING "Page" "FE6TR" ; BYTE 0 0 
+PageDesc:
+STRING "Pickup" "FE6TR" ; BYTE 0 0 
+
+#else 
+
+
+
 PickupText:
     String(" Pickup"); EndText 
 PickupDesc:
@@ -275,5 +291,5 @@ AiControlRemainingUnitsText:
 AiControlRemainingUnitsDesc:
     String("Open the list"); NL
     String("of everyone's items."); EndText 
-
+#endif 
 
