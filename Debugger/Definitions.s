@@ -161,7 +161,7 @@ SET_FUNC Text_DrawString, 0x8005da5
 SET_FUNC UnitFinalizeMovement, 0x8017C61
 SET_FUNC ResetUnitSpriteHover, 0x8022629
 SET_FUNC sub_802C334, 0x8025781
-SET_DATA gProcScr_TerrainWindowMaker, 0x8678174
+SET_DATA gProcScr_TerrainDisplay, 0x8678174
 SET_DATA gProcScr_PlayerPhase, 0x85C56A8
 SET_DATA gKeyStatusPtr, 0x858E578
 SET_DATA gUnknown_08A02274, 0x83080D0
@@ -197,7 +197,7 @@ SET_FUNC ResetUnitSpriteHover, 0x8025F9D
 SET_FUNC sub_802C334, 0x8029D6D
 SET_FUNC PutText, 0x8005591
 SET_FUNC Text_SetColor, 0x8005581
-SET_DATA gProcScr_TerrainWindowMaker, 0x8CC2C00
+SET_DATA gProcScr_TerrainDisplay, 0x8CC2C00
 SET_DATA gProcScr_PlayerPhase, 0x8B93374
 SET_DATA gKeyStatusPtr, 0x8B857F8
 @ 
@@ -536,10 +536,30 @@ SET_FUNC StartBlockingPrepShop, 0x8095df1
 SET_FUNC ApplyUnitDefaultPromotion, 0x8029819
 SET_FUNC Decompress, 0x8013CA5
 SET_FUNC memcpy, 0x809F991
+SET_FUNC ClearBg0Bg1, 0x8041679
+SET_FUNC UnitRemoveInvalidItems, 0x80174cd
+SET_FUNC Text_GetColor, 0x8005a61
+SET_FUNC PutUiWindowFrame, 0x8041359
+SET_FUNC DrawIcon, 0x8004cf9
+SET_FUNC GetItemIconId, 0x80172d9
+SET_FUNC LoadIconPalettes, 0x8004aa5
+SET_FUNC ResetIconGraphics, 0x8004a55
+@SET_DATA sStatusNameTextIdLookup, 0x85C526C
+
+
 .endif
 
 
 .if FE7 == true 
+@ SET_DATA sStatusNameTextIdLookup, 0x85C526C 
+SET_FUNC ResetIconGraphics, 0x8004ce9
+SET_FUNC LoadIconPalettes, 0x8004d2d
+SET_FUNC GetItemIconId, 0x8017401
+SET_FUNC DrawIcon, 0x8004e29 @ maybe 
+SET_FUNC PutUiWindowFrame, 0x8049CE5
+SET_FUNC Text_GetColor, 0x8005585
+SET_FUNC UnitRemoveInvalidItems, 0x8017689
+SET_FUNC ClearBg0Bg1, 0x804a041
 SET_FUNC ApplyUnitDefaultPromotion, 0x8029819
 SET_DATA TacticianName, 0x202BC18
 SET_FUNC __aeabi_idiv, 0x80BFA15 

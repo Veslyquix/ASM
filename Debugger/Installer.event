@@ -104,11 +104,11 @@ MenuCommand1(PickupText, PickupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenu
 MenuCommand1(PromoteText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
 MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
 MenuCommand1(LevelupText,LevelupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LevelupNow)
+#endif 
 MenuCommand1(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
 MenuCommand1(EditMiscText,EditMiscDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMiscNow)
 MenuCommand1(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
 MenuCommand1(EditStateText,EditStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStateNow)
-#endif 
 MenuCommand1(PageText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 
 
@@ -150,20 +150,8 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 #define NL "BYTE 0x1" 
 #define EndText "BYTE 0x0" 
 
-#ifdef _FE6_ 
-#inctbl "FE6TR" "Data/fe6_tr.tbl"
-
-PickupText:
-STRING "Pickup" "FE6TR" ; BYTE 0 0 
-PickupDesc:
-STRING "Pickup" "FE6TR" ; BYTE 0 0 
-PageText:
-STRING "Page" "FE6TR" ; BYTE 0 0 
-PageDesc:
-STRING "Pickup" "FE6TR" ; BYTE 0 0 
-
-#else 
-
+ 
+#ifndef _FE6_ 
 
 
 PickupText:
@@ -291,5 +279,128 @@ AiControlRemainingUnitsText:
 AiControlRemainingUnitsDesc:
     String("Open the list"); NL
     String("of everyone's items."); EndText 
+    
+   
+    
+    
+#else  
+ 
+#inctbl "FE6TR2" "Data/fe6_tr.tbl"
+
+PickupText:
+PickupDesc:
+STRING " Pickup" "FE6TR2" ; BYTE 0 0 
+PageText:
+PageDesc:
+STRING " Page" "FE6TR2" ; BYTE 0 0 
+
+EditStatsText:
+EditStatsDesc:
+STRING " Stats" "FE6TR2" ; BYTE 0 0 
+
+EditItemsText:
+EditItemsDesc:
+STRING " Items" "FE6TR2" ; BYTE 0 0 
+
+EditStateText:
+EditStateDesc:
+STRING " State" "FE6TR2" ; BYTE 0 0 
+
+EditMiscText:
+EditMiscDesc:
+STRING " Misc" "FE6TR2" ; BYTE 0 0 
+
+LevelupText:
+LevelupDesc:
+STRING " Levelup" "FE6TR2" ; BYTE 0 0 
+
+ALIGN 32 
+states:
+STRING "Acting" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Acted" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING        "Dead" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING       "Undeployed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING  "Rescuing" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING  "Rescued" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING     "Cantoed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Under roof" "FE6TR2"; BYTE 0 0; 
+ALIGN 32 ; STRING "Spotted" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Concealed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "AI decided" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "In ballista" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Drop item" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Afa's drops" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Solo anim1" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Solo anim2" "FE6TR2"; BYTE 0 0; 
+ALIGN 32 ; STRING "Escaped" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Arena 1" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING      "Arena 2" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Super arena" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Unk 25" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Benched" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING     "Scene unit" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Portrait+1" "FE6TR2"; BYTE 0 0; 
+ALIGN 32 ; STRING "Shake" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING   "Can't deploy" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Departed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING   "4th palette" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Unk 35" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Unk 36" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING      "Capture" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Unk 38" "FE6TR2"; BYTE 0 0; 
+ALIGN 32; 
+
+ALIGN 16 
+LevelText: 
+STRING "Level" "FE6TR2"; BYTE 0 0 
+ExpText:
+STRING "Exp" "FE6TR2"; BYTE 0 0 
+BonusConText:
+STRING "Bonus Con" "FE6TR2"; BYTE 0 0 
+BonusMovText:
+STRING "Bonus Mov" "FE6TR2"; BYTE 0 0 
+StatusText:
+STRING "Status" "FE6TR2"; BYTE 0 0 
+
+
+MaxHPText:
+STRING "Max HP" "FE6TR2"; BYTE 0 0 
+HPText:
+STRING "HP" "FE6TR2"; BYTE 0 0 
+StrText:
+STRING "Str" "FE6TR2"; BYTE 0 0 
+SklText:
+STRING "Skl" "FE6TR2"; BYTE 0 0 
+SpdText:
+STRING "Spd" "FE6TR2"; BYTE 0 0 
+DefText:
+STRING "Def" "FE6TR2"; BYTE 0 0 
+ResText:
+STRING "Res" "FE6TR2"; BYTE 0 0 
+LckText:
+STRING "Lck" "FE6TR2"; BYTE 0 0 
+MagText:
+STRING "Mag" "FE6TR2"; BYTE 0 0 
+BlankString:
+STRING " " "FE6TR2"; BYTE 0 0 
+
 #endif 
+
+#ifdef _FE7_ 
+ALIGN 32 
+states:
+STRING "Acting" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Acted" ; ; ; BYTE 0 0 ; ALIGN 32; STRING        "Dead" ; ; ; BYTE 0 0 ; ALIGN 32; STRING       "Undeployed" ; ; ; BYTE 0 0 ; ALIGN 32; STRING  "Rescuing" ; ; ; BYTE 0 0 ; ALIGN 32; STRING  "Rescued" ; ; ; BYTE 0 0 ; ALIGN 32; STRING     "Cantoed" ; ; ; BYTE 0 0 ; ALIGN 32; STRING    "Under roof" ; ; ; BYTE 0 0; 
+ALIGN 32 ; STRING "Spotted" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Concealed" ; ; ; BYTE 0 0 ; ALIGN 32; STRING    "AI decided" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "In ballista" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Drop item" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Afa's drops" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Solo anim1" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Solo anim2" ; ; ; BYTE 0 0; 
+ALIGN 32 ; STRING "Escaped" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Arena 1" ; ; ; BYTE 0 0 ; ALIGN 32; STRING      "Arena 2" ; ; ; BYTE 0 0 ; ALIGN 32; STRING    "Super arena" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Unk 25" ; ; ; BYTE 0 0 ; ALIGN 32; STRING    "Benched" ; ; ; BYTE 0 0 ; ALIGN 32; STRING     "Scene unit" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Portrait+1" ; ; ; BYTE 0 0; 
+ALIGN 32 ; STRING "Shake" ; ; ; BYTE 0 0 ; ALIGN 32; STRING   "Can't deploy" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Departed" ; ; ; BYTE 0 0 ; ALIGN 32; STRING   "4th palette" ; ; ; BYTE 0 0 ; ALIGN 32; STRING "Unk 35" ; ; ; BYTE 0 0 ; ALIGN 32; STRING    "Unk 36" ; ; ; BYTE 0 0 ; ALIGN 32; STRING      "Capture" ; ; ; BYTE 0 0 ; ALIGN 32; STRING    "Unk 38" ; ; ; BYTE 0 0; 
+ALIGN 32; 
+
+ALIGN 16 
+LevelText: 
+STRING "Level" ; ; ; BYTE 0 0 
+ExpText:
+STRING "Exp" ; ; ; BYTE 0 0 
+BonusConText:
+STRING "Bonus Con" ; ; ; BYTE 0 0 
+BonusMovText:
+STRING "Bonus Mov" ; ; ; BYTE 0 0 
+StatusText:
+STRING "Status" ; ; ; BYTE 0 0 
+
+
+MaxHPText:
+STRING "Max HP" ; ; ; BYTE 0 0 
+HPText:
+STRING "HP" ; ; ; BYTE 0 0 
+StrText:
+STRING "Str" ; ; ; BYTE 0 0 
+SklText:
+STRING "Skl" ; ; ; BYTE 0 0 
+SpdText:
+STRING "Spd" ; ; ; BYTE 0 0 
+DefText:
+STRING "Def" ; ; ; BYTE 0 0 
+ResText:
+STRING "Res" ; ; ; BYTE 0 0 
+LckText:
+STRING "Lck" ; ; ; BYTE 0 0 
+MagText:
+STRING "Mag" ; ; ; BYTE 0 0 
+BlankString:
+STRING " " ; ; ; BYTE 0 0 
+#endif 
+
+
 

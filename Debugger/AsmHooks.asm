@@ -177,5 +177,32 @@ pop {r3}
 BX r3
 
 .ltorg 
+.global Mod
+.type Mod, %function 
+__aeabi_idivmod:
+Mod: 
+cmp r1, #0 
+bne ContinueMod 
+mov r0, #0 
+bx lr 
+ContinueMod: 
+swi 6
+mov r0, r1
+bx lr
+.ltorg 
 
+@.global __aeabi_idiv
+@.type __aeabi_idiv, %function 
+.global Div1
+.type Div1, %function 
+__aeabi_idiv: 
+Div1: 
+cmp r1, #0 
+bne ContinueDiv 
+mov r0, #0 
+bx lr 
+ContinueDiv: 
+swi 6
+bx lr 
+.ltorg 
 

@@ -1,4 +1,3 @@
-#define FE6
 
 // #define USE_CCODE
 
