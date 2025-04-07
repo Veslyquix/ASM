@@ -1440,7 +1440,7 @@ int GetMiscMax(int id)
 #ifdef FE6
             result = 4;
 #else
-            result = 15;
+            result = 10;
 #endif
             break;
         } // status
