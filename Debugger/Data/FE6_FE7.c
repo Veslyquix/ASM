@@ -1123,6 +1123,7 @@ void AdjustWEXPForClass(struct Unit * unit, int classID)
     const struct ClassData * table = GetClassData(classID);
     unit->pClassData = table;
     int classRank;
+    int charRank;
     for (int i = 0; i < 8; ++i)
     {
         classRank = table->baseRanks[i];
@@ -1137,9 +1138,14 @@ void AdjustWEXPForClass(struct Unit * unit, int classID)
             unit->ranks[i] = 0; // zero out wexp
             // }
         }
-        if (classRank > unit->ranks[i])
+        else if (classRank > unit->ranks[i])
         {
             unit->ranks[i] = classRank;
+            charRank = unit->pCharacterData->baseRanks[i];
+            if (charRank > unit->ranks[i])
+            {
+                unit->ranks[i] = charRank;
+            }
         }
     }
 }
