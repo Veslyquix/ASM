@@ -1114,12 +1114,42 @@ void EditItemsIdle(DebuggerProc * proc)
 #define NumberOfMisc 7
 #define MiscNameWidth 8
 
+void AdjustWEXPForClass(struct Unit * unit, int classID)
+{
+    if (unit->pClassData->number == classID)
+    {
+        return;
+    }
+    const struct ClassData * table = GetClassData(classID);
+    unit->pClassData = table;
+    int classRank;
+    for (int i = 0; i < 8; ++i)
+    {
+        classRank = table->baseRanks[i];
+        if (!classRank) // new class has no rank
+        {
+            // if (unit->pCharacterData->baseRanks[i] >= unit->ranks[i])
+            // {
+            // unit->ranks[i] = unit->pCharacterData->baseRanks[i]; // set to character wexp if higher than current
+            // }
+            // else
+            // {
+            unit->ranks[i] = 0; // zero out wexp
+            // }
+        }
+        if (classRank > unit->ranks[i])
+        {
+            unit->ranks[i] = classRank;
+        }
+    }
+}
+
 void SaveMisc(DebuggerProc * proc)
 {
 
     struct Unit * unit = proc->unit;
     unit->pCharacterData = GetCharacterData(proc->tmp[0]);
-    unit->pClassData = GetClassData(proc->tmp[1]);
+    AdjustWEXPForClass(unit, proc->tmp[1]);
     unit->level = proc->tmp[2];
     unit->exp = proc->tmp[3] & 0xFF;
     unit->conBonus = proc->tmp[4];

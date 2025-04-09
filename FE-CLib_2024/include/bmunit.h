@@ -98,10 +98,12 @@ struct ClassData
 
     /* 22 */ u8 promotionHp;
     /* 23 */ u8 promotionPow;
+	#ifndef FE6
     /* 24 */ u8 promotionSkl;
     /* 25 */ u8 promotionSpd;
     /* 26 */ u8 promotionDef;
     /* 27 */ u8 promotionRes;
+	#endif 
 
     /* 28 */ u32 attributes;
 
