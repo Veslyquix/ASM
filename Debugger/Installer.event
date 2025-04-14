@@ -333,6 +333,14 @@ BonusMovText:
 STRING "Bonus Mov" "FE6TR2"; BYTE 0 0 
 StatusText:
 STRING "Status" "FE6TR2"; BYTE 0 0 
+AllegianceText:
+STRING "Allegiance" "FE6TR2"; BYTE 0 0 
+PlayerText:
+STRING "  Player" "FE6TR2"; BYTE 0 0 
+NPCText: 
+STRING "  NPC" "FE6TR2"; BYTE 0 0 
+EnemyText: 
+STRING "  Enemy" "FE6TR2"; BYTE 0 0 
 
 
 MaxHPText:

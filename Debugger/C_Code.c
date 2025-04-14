@@ -2419,8 +2419,8 @@ void ChStateIdle(DebuggerProc * proc)
     }
 }
 
-#define NumberOfMisc 7
-#define MiscNameWidth 8
+#define NumberOfMisc 8
+#define MiscNameWidth 6
 
 void AdjustWEXPForClass(struct Unit * unit, int classID)
 {
@@ -2458,10 +2458,32 @@ void AdjustWEXPForClass(struct Unit * unit, int classID)
     }
 }
 
+struct Unit * GetFreeUnitByFaction(int faction)
+{
+    int i = faction, last = faction + 0x40;
+    if (!i)
+        i = 1;
+
+    for (; i < last; ++i)
+    {
+        struct Unit * unit = GetUnit(i);
+
+        if (unit->pCharacterData == NULL)
+            return unit;
+    }
+
+    return NULL;
+}
+
+void UnitBeginActionInit(struct Unit * unit);
+// void memcpy(const void * src, void * dst, int size);
+#include <string.h>                        // for memcpy
+extern void ClearUnit(struct Unit * unit); // 17508 17394
 void SaveMisc(DebuggerProc * proc)
 {
 
     struct Unit * unit = proc->unit;
+
     unit->pCharacterData = GetCharacterData(proc->tmp[0]);
     AdjustWEXPForClass(unit, proc->tmp[1]);
 
@@ -2477,6 +2499,23 @@ void SaveMisc(DebuggerProc * proc)
     if (unit->statusIndex)
     {
         unit->statusDuration = 5;
+    }
+    if (proc->tmp[7] != (unit->index & 0xC0))
+    {
+        struct Unit * newUnit = GetFreeUnitByFaction(proc->tmp[7] << 6);
+        if (!newUnit)
+        {
+            return;
+        }
+        int deploymentID = newUnit->index;
+        memcpy((void *)newUnit, (void *)unit, sizeof(struct Unit));
+        ClearUnit(unit);
+
+        newUnit->index = deploymentID; // copy unit into a free slot in unit struct ram
+
+        UnitBeginActionInit(newUnit);
+        proc->unit = newUnit;
+        // PlayerPhase_FinishActionNoCanto(proc);
     }
 }
 
@@ -2497,10 +2536,11 @@ void EditMiscInit(DebuggerProc * proc)
     proc->tmp[4] = unit->conBonus;
     proc->tmp[5] = unit->movBonus;
     proc->tmp[6] = unit->statusIndex;
+    proc->tmp[7] = (unit->index & 0xC0) >> 6;
 
-    int x = NUMBER_X - MiscNameWidth - 1;
+    int x = NUMBER_X - MiscNameWidth - 2;
     int y = Y_HAND - 1;
-    int w = MiscNameWidth + (START_X - NUMBER_X) + 3;
+    int w = MiscNameWidth + (START_X - NUMBER_X) + 4;
     int h = (NumberOfMisc * 2) + 2;
 
     DrawUiFrame(
@@ -2509,7 +2549,7 @@ void EditMiscInit(DebuggerProc * proc)
 
     struct Text * th = gStatScreen.text;
 
-    for (int i = 0; i < NumberOfMisc; ++i)
+    for (int i = 0; i <= NumberOfMisc; ++i)
     {
         InitText(&th[i], MiscNameWidth);
     }
@@ -2529,7 +2569,7 @@ void RedrawMiscMenu(DebuggerProc * proc)
     // struct Unit* unit = proc->unit;
     struct Text * th = gStatScreen.text;
     int i = 0;
-    for (i = 0; i < NumberOfMisc; ++i)
+    for (i = 0; i <= NumberOfMisc; ++i)
     {
         ClearText(&th[i]);
     }
@@ -2559,16 +2599,40 @@ void RedrawMiscMenu(DebuggerProc * proc)
         Text_DrawString(&th[i], GetStringFromIndexSafe(sStatusNameTextIdLookup[proc->tmp[6]]));
         i++;
     }
+    Text_DrawString(&th[i], "Allegiance");
+    // i++;
 
-    int x = NUMBER_X - (MiscNameWidth);
+    int x = NUMBER_X - (MiscNameWidth)-1;
+
+    if (proc->tmp[7] == 0)
+    {
+
+        Text_DrawString(&th[8], "  Player");
+    }
+    else if (proc->tmp[7] == 1)
+    {
+        Text_DrawString(&th[8], "  NPC");
+    }
+    else if (proc->tmp[7] == 2)
+    {
+        Text_DrawString(&th[8], "  Enemy");
+    }
+    PutText(&th[8], gBG0TilemapBuffer + TILEMAP_INDEX(START_X - 3, Y_HAND + (i * 2)));
+
     for (i = 0; i < NumberOfMisc; ++i)
     {
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i * 2)));
     }
+
     for (i = 0; i < NumberOfMisc; ++i)
     {
         //
-        if (i < 2)
+        if (i == 7)
+        {
+            continue;
+        }
+
+        else if (i < 2)
         {
             PutNumberHex(
                 gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
@@ -2629,6 +2693,11 @@ int GetMiscMin(int id)
             result = 0;
             break;
         } // status
+        case 7:
+        {
+            result = 0;
+            break;
+        }
         default:
     }
     return result;
@@ -2724,6 +2793,11 @@ int GetMiscMax(int id)
             result = 15;
             break;
         } // status
+        case 7:
+        {
+            result = 2;
+            break;
+        }
         default:
     }
     return result;
@@ -2745,6 +2819,7 @@ void EditMiscIdle(DebuggerProc * proc)
         Proc_Goto(proc, RestartLabel);
         m4aSongNumStart(0x6B);
     };
+
     if (proc->editing)
     {
         DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8);
@@ -2824,16 +2899,44 @@ void EditMiscIdle(DebuggerProc * proc)
     }
     else
     {
-        DisplayUiHand(CursorLocationTable[0].x - ((MiscNameWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
-        if (keys & DPAD_RIGHT)
+        DisplayUiHand(CursorLocationTable[0].x - ((MiscNameWidth + 3) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (proc->id == (NumberOfMisc - 1))
         {
-            proc->digit = 1;
-            proc->editing = true;
+            int val = proc->tmp[proc->id];
+            if (keys & DPAD_RIGHT)
+            {
+                val++;
+            }
+            else if (keys & DPAD_LEFT)
+            {
+                val--;
+            }
+            if (val < 0)
+            {
+                val = 2;
+            }
+            if (val > 2)
+            {
+                val = 0;
+            }
+            if (val != proc->tmp[proc->id])
+            {
+                proc->tmp[proc->id] = val;
+                RedrawMiscMenu(proc);
+            }
         }
-        if (keys & DPAD_LEFT)
+        else
         {
-            proc->digit = 0;
-            proc->editing = true;
+            if (keys & DPAD_RIGHT)
+            {
+                proc->digit = 1;
+                proc->editing = true;
+            }
+            if (keys & DPAD_LEFT)
+            {
+                proc->digit = 0;
+                proc->editing = true;
+            }
         }
 
         if (keys & DPAD_UP)
@@ -2862,7 +2965,6 @@ void EditMiscIdle(DebuggerProc * proc)
 #define LoadNameWidth 12
 
 extern struct Unit * LoadUnit(const struct UnitDefinition * uDef); // 17788 17598
-extern void ClearUnit(struct Unit * unit);                         // 17508 17394
 static void InitUnitDef(struct UnitDefinition * uDef, struct Unit * unit, const struct CharacterData * data)
 {
 
