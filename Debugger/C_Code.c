@@ -233,6 +233,22 @@ void GameControl_CallEraseSaveEventWithKeyCombo(ProcPtr aproc)
     // 8 = resume
     //
 }
+void BackPressSFX(void)
+{
+    int id;
+#ifdef FE8
+    id = 0x6B;
+    m4aSongNumStart(id);
+#endif
+}
+void ConfirmPressSFX(void)
+{
+    int id;
+#ifdef FE8
+    id = 0x6A;
+    PlaySoundEffect(id);
+#endif
+}
 
 extern int NumberOfPages;
 void RestartDebuggerMenu(DebuggerProc * proc);
@@ -972,13 +988,13 @@ void EditStatsIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update stats and continue
         SaveStats(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if (proc->editing)
     {
@@ -1211,14 +1227,14 @@ void EditWExpIdle(DebuggerProc * proc)
     { // press B to not save WExp
         ClearTilesetRow(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update WExp and continue
         SaveWExp(proc);
         ClearTilesetRow(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if (proc->editing)
     {
@@ -1411,13 +1427,13 @@ void EditSupportsIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save Supports
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update Supports and continue
         SaveSupports(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if (proc->editing)
     {
@@ -1629,7 +1645,7 @@ void StateIdle(DebuggerProc * proc)
     { // press B or Start to update state and continue
 
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     }
     u32 id = proc->id;
     if ((keys & A_BUTTON))
@@ -1793,13 +1809,13 @@ void EditItemsIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update stats and continue
         SaveItems(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if (proc->editing)
     {
@@ -2240,7 +2256,7 @@ void ChStateIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save ch state
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update ch state and continue
@@ -2248,7 +2264,7 @@ void ChStateIdle(DebuggerProc * proc)
         if (proc->id != 6)
         {
             Proc_Goto(proc, RestartLabel);
-            m4aSongNumStart(0x6B);
+            BackPressSFX();
         }
         else
         { // flags
@@ -2811,13 +2827,13 @@ void EditMiscIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update stats and continue
         SaveMisc(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
 
     if (proc->editing)
@@ -3467,13 +3483,13 @@ void LoadUnitsIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update stats and continue
         SaveLoadUnits(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        BackPressSFX();
     };
     if (proc->editing)
     {
@@ -3654,7 +3670,7 @@ void ChooseTileIdle(DebuggerProc * proc)
         gActionData.yMove = gActiveUnitMoveOrigin.y;
         PlayerPhase_ApplyUnitMovementWithoutMenu(proc);
         ClearTilesetRow(proc);
-        PlaySoundEffect(0x6B);
+        BackPressSFX();
         Proc_Goto(proc, RestartLabel);
     }
     if (keys & DPAD_LEFT)
@@ -3749,19 +3765,19 @@ void EditMapIdle(DebuggerProc * proc)
         RenderBmMap();
         ProcPtr terrainDispProc = Proc_Find(gProcScr_TerrainDisplay);
         Proc_Goto(terrainDispProc, 0); // new terrain
-        // PlaySoundEffect(0x6A);
+        // ConfirmPressSFX();
         return;
     }
 
     if (gKeyStatusPtr->newKeys & B_BUTTON)
     {
-        PlaySoundEffect(0x6A);
+        ConfirmPressSFX();
         Proc_Goto(proc, ChooseTileLabel);
         return;
     }
     if (gKeyStatusPtr->newKeys & (R_BUTTON | START_BUTTON))
     {
-        PlaySoundEffect(0x6A);
+        ConfirmPressSFX();
         Proc_Goto(proc, ChooseTileLabel);
         return;
     }

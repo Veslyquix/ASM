@@ -263,6 +263,10 @@ u16 * const BgTilemapBuffers[] = {
 
 u16 * BG_GetMapBuffer(int bg)
 {
+    if (bg > 3)
+    {
+        bg = 0;
+    }
     return BgTilemapBuffers[bg];
 }
 
@@ -434,6 +438,33 @@ int GetMostSignificantDigit(int val, int type)
     return result;
 }
 
+void BackPressSFX(void)
+{
+#ifdef FE8
+    int id = 0x6B;
+    m4aSongNumStart(id);
+#endif
+#ifdef FE7
+
+#endif
+#ifdef FE6
+
+#endif
+}
+void ConfirmPressSFX(void)
+{
+#ifdef FE8
+    int id = 0x6A;
+    PlaySoundEffect(id);
+#endif
+#ifdef FE7
+
+#endif
+#ifdef FE6
+
+#endif
+}
+
 void EditStatsIdle(DebuggerProc * proc)
 {
 
@@ -443,13 +474,13 @@ void EditStatsIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        ConfirmPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update stats and continue
         SaveStats(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        ConfirmPressSFX();
     };
     if (proc->editing)
     {
@@ -667,7 +698,7 @@ void StateIdle(DebuggerProc * proc)
     { // press B or Start to update state and continue
 
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        ConfirmPressSFX();
     }
     u32 id = proc->id;
     if ((keys & A_BUTTON))
@@ -919,13 +950,13 @@ void EditItemsIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        ConfirmPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update stats and continue
         SaveItems(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        ConfirmPressSFX();
     };
     if (proc->editing)
     {
@@ -1592,13 +1623,13 @@ void EditMiscIdle(DebuggerProc * proc)
     if (keys & B_BUTTON)
     { // press B to not save stats
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        ConfirmPressSFX();
     };
     if ((keys & START_BUTTON) || (keys & A_BUTTON))
     { // press A or Start to update stats and continue
         SaveMisc(proc);
         Proc_Goto(proc, RestartLabel);
-        m4aSongNumStart(0x6B);
+        ConfirmPressSFX();
     };
     if (proc->editing)
     {
@@ -1854,7 +1885,7 @@ void PickupUnitIdle(DebuggerProc * proc)
         gActiveUnitMoveOrigin.x = gBmSt.playerCursor.x;
         gActiveUnitMoveOrigin.y = gBmSt.playerCursor.y;
         PlayerPhase_ApplyUnitMovementWithoutMenu(proc);
-        PlaySoundEffect(0x6B);
+        BackPressSFX();
         Proc_Goto(proc, RestartLabel);
         return;
     }
@@ -1864,7 +1895,7 @@ void PickupUnitIdle(DebuggerProc * proc)
         gActionData.xMove = gActiveUnitMoveOrigin.x;
         gActionData.yMove = gActiveUnitMoveOrigin.y;
         PlayerPhase_ApplyUnitMovementWithoutMenu(proc);
-        PlaySoundEffect(0x6B);
+        BackPressSFX();
         Proc_Goto(proc, RestartLabel);
         return;
     }
@@ -1919,7 +1950,7 @@ int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
 
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
-    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    PutText(&menuItem->text, BG_GetMapBuffer(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 }
 
@@ -2154,7 +2185,7 @@ int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     }
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
-    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    PutText(&menuItem->text, BG_GetMapBuffer(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 }
 
