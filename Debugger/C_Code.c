@@ -5261,3 +5261,30 @@ void PutNumberHex(u16 * tm, int color, int number)
         tm--;
     }
 }
+
+void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
+{
+    proc->unk48 += proc->unk44;
+
+    if (GetAnimPosition(proc->anim) == 0)
+    {
+        proc->anim2->xPosition = proc->unk32 - (proc->unk48 >> 8);
+    }
+    else
+    {
+        proc->anim2->xPosition = (proc->unk48 >> 8) + proc->unk32;
+    }
+
+    proc->anim2->yPosition = (proc->unk48 >> 8) + proc->unk3A;
+
+    proc->timer++;
+
+    if ((proc->timer == proc->terminator) || (proc->timer > 30))
+    {
+        gEfxBgSemaphore--;
+        AnimDelete(proc->anim2);
+        Proc_Break(proc);
+    }
+
+    return;
+}
