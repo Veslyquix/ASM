@@ -40,7 +40,15 @@
 
 ALIGN 4 
 DebuggerTurnedOff_Flag:
+#ifdef _FE8_ 
 WORD 0xEC // if this flag is on, the debugger is off 
+#endif 
+#ifdef _FE7_ 
+WORD 0xA1
+#endif 
+#ifdef _FE6_ 
+WORD 0xA1 
+#endif 
 
 #define A_BUTTON        0x0001
 #define B_BUTTON        0x0002
