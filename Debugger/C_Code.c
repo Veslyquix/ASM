@@ -5289,7 +5289,7 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
     return;
 }
 
-struct QuintessenceFxProc
+struct CloudsFxProc
 {
     /* 00 */ PROC_HEADER;
     /* 29 */ STRUCT_PAD(0x29, 0x4C);
@@ -5299,52 +5299,28 @@ struct QuintessenceFxProc
     /* 4E */ STRUCT_PAD(0x4E, 0x58);
 
     /* 58 */ int bg2_offset;
+    /* 5C */ int bg3_offset;
 };
 
-extern u16 Pal_QuintessenceFx[];
-// TODO: We could import the palette from FE7, but this is close enough
-#define Pal_QuintessenceFx Pal_GameOverText1
-// Defined in EA
-extern u8 Tsa_QuintessenceFx[];
-
-// void QuintessenceFx_OnHBlank(void)
-// {
-// u16 vcount = REG_VCOUNT;
-
-// if (vcount >= DISPLAY_HEIGHT)
-// {
-// gManimActiveScanlineBuf = gManimScanlineBufs[0];
-// vcount = 0;
-// }
-// else
-// {
-// vcount++;
-// }
-
-// if ((vcount & 1) != 0)
-// {
-// REG_BG2HOFS = gManimActiveScanlineBuf[DISPLAY_HEIGHT + vcount] + gLCDControlBuffer.bgoffset[BG_2].x;
-// REG_BG2VOFS = gManimActiveScanlineBuf[vcount] + gLCDControlBuffer.bgoffset[BG_2].y;
-// }
-// }
-
-void QuintFxBg2_Init(struct QuintessenceFxProc * proc)
+void CloudsFxBg_Init(struct CloudsFxProc * proc)
 {
     proc->bg2_offset = 0;
+    proc->bg3_offset = 0;
 }
 
-void QuintFxBg2_Loop(struct QuintessenceFxProc * proc)
+void CloudsFxBg_Loop(struct CloudsFxProc * proc)
 {
     proc->bg2_offset++;
+    proc->bg3_offset--;
     BG_SetPosition(BG_2, proc->bg2_offset >> 2, proc->bg2_offset >> 1);
+    BG_SetPosition(BG_3, proc->bg3_offset >> 2, proc->bg2_offset >> 1);
 }
 
 // clang-format off
 
-const struct ProcCmd ProcScr_QuintessenceFxBg2Scroll[] = {
-    PROC_CALL(QuintFxBg2_Init),
-    PROC_REPEAT(QuintFxBg2_Loop),
-
+const struct ProcCmd ProcScr_CloudsFxBgScroll[] = {
+    PROC_CALL(CloudsFxBg_Init),
+    PROC_REPEAT(CloudsFxBg_Loop),
     PROC_END,
 };
 
@@ -5354,7 +5330,22 @@ extern u8 const Grey_Clouds[];
 extern u8 const White_Clouds[];
 extern u16 const Grey_Clouds_pal[];
 extern u16 const White_Clouds_pal[];
-void QuintessenceFx_Init_Main(struct QuintessenceFxProc * proc)
+
+void CloudsFx_ResetBlend(struct CloudsFxProc * proc)
+{
+    gLCDControlBuffer.bldcnt.effect = 1;
+
+    gLCDControlBuffer.blendCoeffA = 8;
+    gLCDControlBuffer.blendCoeffB = 8;
+    gLCDControlBuffer.blendY = 0;
+
+    SetBlendTargetA(0, 0, 1, 0, 0);
+    SetBlendTargetB(0, 0, 0, 1, 1);
+
+    proc->timer = 0;
+}
+
+void CloudsFx_Init_Main(struct CloudsFxProc * proc)
 {
     gLCDControlBuffer.bldcnt.effect = 1;
 
@@ -5365,23 +5356,33 @@ void QuintessenceFx_Init_Main(struct QuintessenceFxProc * proc)
     SetBlendTargetA(0, 0, 1, 0, 0);
     SetBlendTargetB(0, 0, 0, 1, 0);
 
-    // ApplyPalette(Pal_QuintessenceFx, 5);
+    // ApplyPalette(Pal_CloudsFx, 5);
     // Decompress(Img_ChapterIntroFog, (void *)0x06004000);
-    // CallARM_FillTileRect(gBG2TilemapBuffer, Tsa_QuintessenceFx, 0x5200);
+    // CallARM_FillTileRect(gBG2TilemapBuffer, Tsa_CloudsFx, 0x5200);
     // CallARM_FillTileRect(gBG2TilemapBuffer, gUnknown_085A647C, 0x5200);
     // CallARM_FillTileRect(gBG2TilemapBuffer, Tsa_OpAnimWorldMapFog, tileref);
 
     int palNum = 5;
     ApplyPalette(Grey_Clouds_pal, palNum);
+    ApplyPalette(White_Clouds_pal, palNum + 1);
     SetBackgroundTileDataOffset(BG_2, 0x8000);
+    SetBackgroundTileDataOffset(BG_3, 0xC000);
     // SetBackgroundMapDataOffset(BG_2, 0x7000); // ?
     // SetBackgroundScreenSize(BG_2, 0);
     // BG_SetPosition(BG_2, 0, 0);
     CpuFastCopy(Grey_Clouds, (void *)0x6008000, 0x4000);
+    CpuFastCopy(White_Clouds, (void *)0x600C000, 0x4000);
     // CpuFastCopy(Grey_Clouds, (void *)0x600C000, 0x4000);
-    int tileref = 0x00 | (palNum << 12); // 4 bpp, pal
+    int tileref = 0x00 | (palNum << 12);
 
     u16 * vram = (void *)gBG2TilemapBuffer;
+    for (int i = 0; i < 0x400; ++i)
+    {
+        *vram = tileref + (i & 0x1FF);
+        vram++;
+    }
+    tileref = 0x00 | ((palNum + 1) << 12);
+    vram = (void *)gBG3TilemapBuffer;
     for (int i = 0; i < 0x400; ++i)
     {
         *vram = tileref + (i & 0x1FF);
@@ -5390,48 +5391,40 @@ void QuintessenceFx_Init_Main(struct QuintessenceFxProc * proc)
 
     BG_EnableSyncByMask(BG2_SYNC_BIT | BG3_SYNC_BIT);
     BG_SetPosition(BG_2, 0, 0);
+    BG_SetPosition(BG_3, 0, 0);
 
     proc->timer = 0;
     proc->bg2_offset = 0;
+    proc->bg3_offset = 0;
+    CloudsFx_ResetBlend(proc);
 
     // InitScanline();
 
-    // SetPrimaryHBlankHandler(QuintessenceFx_OnHBlank);
+    // SetPrimaryHBlankHandler(CloudsFx_OnHBlank);
 
-    Proc_Start(ProcScr_QuintessenceFxBg2Scroll, PROC_TREE_VSYNC);
+    Proc_Start(ProcScr_CloudsFxBgScroll, PROC_TREE_VSYNC);
 }
 
-// void QuintessenceFx_ResetBlend(struct QuintessenceFxProc * proc)
-// {
-// gLCDControlBuffer.bldcnt.effect = 1;
-
-// gLCDControlBuffer.blendCoeffA = 16;
-// gLCDControlBuffer.blendCoeffB = 0;
-// gLCDControlBuffer.blendY = 0;
-
-// SetBlendTargetA(0, 0, 1, 0, 0);
-// SetBlendTargetB(0, 0, 0, 1, 1);
-
-// proc->timer = 0;
-// }
-
-void QuintessenceFx_Loop_B(struct QuintessenceFxProc * proc)
+void CloudsFx_Loop_B(struct CloudsFxProc * proc)
 {
     return;
 }
 
-void QuintessenceFx_OnEnd(void)
+void CloudsFx_OnEnd(void)
 {
-    Proc_End(Proc_Find(ProcScr_QuintessenceFxBg2Scroll));
+    Proc_End(Proc_Find(ProcScr_CloudsFxBgScroll));
 
     // SetPrimaryHBlankHandler(NULL);
 
     SetBackgroundTileDataOffset(BG_2, 0x4000);
+    SetBackgroundTileDataOffset(BG_3, 0x8000);
     BG_SetPosition(BG_2, 0, 0);
-    RegisterBlankTile(0x400);
+    BG_SetPosition(BG_3, 0, 0);
+    // RegisterBlankTile(0x400);
     BG_Fill(gBG2TilemapBuffer, 0);
+    BG_Fill(gBG3TilemapBuffer, 0);
 
-    BG_EnableSyncByMask(BG2_SYNC_BIT);
+    BG_EnableSyncByMask(BG2_SYNC_BIT | BG3_SYNC_BIT);
 
     gLCDControlBuffer.bg0cnt.priority = 0;
     gLCDControlBuffer.bg1cnt.priority = 1;
@@ -5441,24 +5434,24 @@ void QuintessenceFx_OnEnd(void)
 
 // clang-format off
 
-const struct ProcCmd ProcScr_QuintessenceFx[] = {
-    PROC_SET_END_CB(QuintessenceFx_OnEnd),
-    PROC_CALL(QuintessenceFx_Init_Main),
-    PROC_REPEAT(QuintessenceFx_Loop_B),
-    PROC_BLOCK,
+const struct ProcCmd ProcScr_CloudsFx[] = {
+    PROC_SET_END_CB(CloudsFx_OnEnd),
+    PROC_CALL(CloudsFx_Init_Main),
+    PROC_REPEAT(CloudsFx_Loop_B),
+    // PROC_BLOCK,
     PROC_END,
 };
 
 // clang-format on
 
-void StartQuintessenceStealEffect(struct Proc * parent)
+void StartCloudsEffect(struct Proc * parent)
 {
-    Proc_Start(ProcScr_QuintessenceFx, parent);
+    Proc_Start(ProcScr_CloudsFx, parent);
 }
 
-void EndQuintessenceStealEffect(void)
+void EndCloudsEffect(void)
 {
-    struct Proc * proc = Proc_Find(ProcScr_QuintessenceFx);
+    struct Proc * proc = Proc_Find(ProcScr_CloudsFx);
     if (proc)
     {
         Proc_End(proc);
