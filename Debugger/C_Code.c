@@ -5304,151 +5304,29 @@ struct QuintessenceFxProc
 extern u16 Pal_QuintessenceFx[];
 // TODO: We could import the palette from FE7, but this is close enough
 #define Pal_QuintessenceFx Pal_GameOverText1
-
 // Defined in EA
 extern u8 Tsa_QuintessenceFx[];
 
-extern void TryLockParentProc(ProcPtr);   // FE8U: 0x080854E4
-extern void TryUnlockParentProc(ProcPtr); // FE8U: 0x080854F0
+// void QuintessenceFx_OnHBlank(void)
+// {
+// u16 vcount = REG_VCOUNT;
 
-// Translation between FE7J and FE8U
-#define fe7j_sub_8013BA0 GetPalFadeStClkEnd1
-#define fe7j_sub_8013BAC GetPalFadeStClkEnd2
-#define fe7j_sub_8013BBC GetPalFadeStClkEnd3
+// if (vcount >= DISPLAY_HEIGHT)
+// {
+// gManimActiveScanlineBuf = gManimScanlineBufs[0];
+// vcount = 0;
+// }
+// else
+// {
+// vcount++;
+// }
 
-// =========================================
-// Various other functions
-// =========================================
-
-// TODO: Nonmatching, but this seems to be close enough
-// https://decomp.me/scratch/EoXm2
-
-void fe7j_sub_80781C8(u16 * buf, s16 phase, s16 amplitude, s16 frequency, s16 param_5, s16 param_6, s16 param_7)
-{
-    int i;
-
-    buf++;
-
-    for (i = 1; i < DISPLAY_HEIGHT; i += 2)
-    {
-        *buf = ((SIN((i * frequency + phase)) * amplitude * param_7 * ABS(i - param_6)) >> 0x14) + param_5;
-        buf += 2;
-    }
-}
-
-u16 * fe7j_sub_8077CEC(int buf_id, int scanline)
-{
-    return gManimScanlineBufs[buf_id] + scanline;
-}
-
-void QuintessenceFx_OnHBlank(void)
-{
-    u16 vcount = REG_VCOUNT;
-
-    if (vcount >= DISPLAY_HEIGHT)
-    {
-        gManimActiveScanlineBuf = gManimScanlineBufs[0];
-        vcount = 0;
-    }
-    else
-    {
-        vcount++;
-    }
-
-    if ((vcount & 1) != 0)
-    {
-        REG_BG2HOFS = gManimActiveScanlineBuf[DISPLAY_HEIGHT + vcount] + gLCDControlBuffer.bgoffset[BG_2].x;
-        REG_BG2VOFS = gManimActiveScanlineBuf[vcount] + gLCDControlBuffer.bgoffset[BG_2].y;
-    }
-}
-
-// =========================================
-// Event shims as ASMCs
-// =========================================
-
-struct Proc08C01654
-{
-    /* 00 */ PROC_HEADER;
-    /* 29 */ STRUCT_PAD(0x29, 0x30);
-    /* 30 */ int unk_30;
-    /* 34 */ int unk_34;
-    /* 38 */ int unk_38;
-    /* 3C */ int unk_3c;
-    /* 40 */ int unk_40;
-    /* 44 */ int unk_44;
-    /* 48 */ int unk_48;
-    /* 4C */ int unk_4c;
-    /* 50 */ int unk_50;
-};
-
-void fe7j_sub_80120D8(struct Proc08C01654 * proc)
-{
-    proc->unk_38 = 0;
-    return;
-}
-
-void fe7j_sub_80120E0(struct Proc08C01654 * proc)
-{
-    proc->unk_38 += proc->unk_34;
-
-    if (proc->unk_38 > 0xff)
-    {
-        Proc_Break(proc);
-        proc->unk_38 = 0x100;
-    }
-
-    // clang-format off
-    WriteFadedPaletteFromArchive(
-        (proc->unk_3c * (0x100 - proc->unk_38) + proc->unk_38 * proc->unk_48) / 0x100,
-        (proc->unk_40 * (0x100 - proc->unk_38) + proc->unk_38 * proc->unk_4c) / 0x100,
-        (proc->unk_44 * (0x100 - proc->unk_38) + proc->unk_38 * proc->unk_50) / 0x100,
-        proc->unk_30
-    );
-    // clang-format on
-
-    return;
-}
-
-// clang-format off
-
-const struct ProcCmd ProcScr_FE7J_08C01654[] = {
-    PROC_YIELD,
-    PROC_CALL(fe7j_sub_80120D8),
-    PROC_REPEAT(fe7j_sub_80120E0),
-    PROC_END,
-};
-
-// clang-format on
-
-void fe7j_sub_8012150(int a, int b, int c, int d, int e, ProcPtr parent)
-{
-    struct Proc08C01654 * proc = Proc_StartBlocking(ProcScr_FE7J_08C01654, parent);
-
-    proc->unk_34 = (b & 0xff) == 0x80 ? 0x100 : b & 0xff;
-    proc->unk_3c = fe7j_sub_8013BA0();
-    proc->unk_40 = fe7j_sub_8013BAC();
-    proc->unk_44 = fe7j_sub_8013BBC();
-    proc->unk_30 = a;
-    proc->unk_48 = c;
-    proc->unk_4c = d;
-    proc->unk_50 = e;
-
-    return;
-}
-
-// =========================================
-// Core Quintessence Effect proc functions
-// =========================================
-
-void QuintessenceFx_ParallelWorker(struct QuintessenceFxProc * proc)
-{
-    proc->bg2_offset++;
-
-    fe7j_sub_80781C8(fe7j_sub_8077CEC(1, 0), proc->bg2_offset, 3, 2, 0, 60, 16);
-    fe7j_sub_80781C8(fe7j_sub_8077CEC(1, 160), proc->bg2_offset, 2, 4, 0, 60, 16);
-
-    SwapScanlineBufs();
-}
+// if ((vcount & 1) != 0)
+// {
+// REG_BG2HOFS = gManimActiveScanlineBuf[DISPLAY_HEIGHT + vcount] + gLCDControlBuffer.bgoffset[BG_2].x;
+// REG_BG2VOFS = gManimActiveScanlineBuf[vcount] + gLCDControlBuffer.bgoffset[BG_2].y;
+// }
+// }
 
 void QuintFxBg2_Init(struct QuintessenceFxProc * proc)
 {
@@ -5496,7 +5374,7 @@ void QuintessenceFx_Init_Main(struct QuintessenceFxProc * proc)
     int palNum = 5;
     ApplyPalette(Grey_Clouds_pal, palNum);
     SetBackgroundTileDataOffset(BG_2, 0x8000);
-    SetBackgroundMapDataOffset(BG_2, 0x7000); // ?
+    // SetBackgroundMapDataOffset(BG_2, 0x7000); // ?
     // SetBackgroundScreenSize(BG_2, 0);
     // BG_SetPosition(BG_2, 0, 0);
     CpuFastCopy(Grey_Clouds, (void *)0x6008000, 0x4000);
@@ -5516,69 +5394,41 @@ void QuintessenceFx_Init_Main(struct QuintessenceFxProc * proc)
     proc->timer = 0;
     proc->bg2_offset = 0;
 
-    InitScanline();
+    // InitScanline();
 
-    SetPrimaryHBlankHandler(QuintessenceFx_OnHBlank);
-    // StartParallelWorker(QuintessenceFx_ParallelWorker, proc);
+    // SetPrimaryHBlankHandler(QuintessenceFx_OnHBlank);
 
     Proc_Start(ProcScr_QuintessenceFxBg2Scroll, PROC_TREE_VSYNC);
 }
 
-void QuintessenceFx_Loop_A(struct QuintessenceFxProc * proc)
-{
-    int bld_amt = proc->timer++ >> 1;
+// void QuintessenceFx_ResetBlend(struct QuintessenceFxProc * proc)
+// {
+// gLCDControlBuffer.bldcnt.effect = 1;
 
-    gLCDControlBuffer.bldcnt.effect = 1;
+// gLCDControlBuffer.blendCoeffA = 16;
+// gLCDControlBuffer.blendCoeffB = 0;
+// gLCDControlBuffer.blendY = 0;
 
-    gLCDControlBuffer.blendCoeffA = bld_amt;
-    gLCDControlBuffer.blendCoeffB = 16 - bld_amt;
-    gLCDControlBuffer.blendY = 0;
+// SetBlendTargetA(0, 0, 1, 0, 0);
+// SetBlendTargetB(0, 0, 0, 1, 1);
 
-    if (bld_amt == 16)
-    {
-        Proc_Break(proc);
-    }
-}
-
-void QuintessenceFx_ResetBlend(struct QuintessenceFxProc * proc)
-{
-    gLCDControlBuffer.bldcnt.effect = 1;
-
-    gLCDControlBuffer.blendCoeffA = 16;
-    gLCDControlBuffer.blendCoeffB = 0;
-    gLCDControlBuffer.blendY = 0;
-
-    SetBlendTargetA(0, 0, 1, 0, 0);
-    SetBlendTargetB(0, 0, 0, 1, 1);
-
-    proc->timer = 0;
-}
+// proc->timer = 0;
+// }
 
 void QuintessenceFx_Loop_B(struct QuintessenceFxProc * proc)
 {
     return;
-    int bld_amt = proc->timer++ >> 2;
-
-    gLCDControlBuffer.bldcnt.effect = 1;
-
-    gLCDControlBuffer.blendCoeffA = 16 - bld_amt;
-    gLCDControlBuffer.blendCoeffB = bld_amt;
-    gLCDControlBuffer.blendY = 0;
-
-    if (bld_amt == 10)
-    {
-        Proc_Break(proc);
-    }
 }
 
 void QuintessenceFx_OnEnd(void)
 {
     Proc_End(Proc_Find(ProcScr_QuintessenceFxBg2Scroll));
 
-    SetPrimaryHBlankHandler(NULL);
+    // SetPrimaryHBlankHandler(NULL);
 
     SetBackgroundTileDataOffset(BG_2, 0x4000);
     BG_SetPosition(BG_2, 0, 0);
+    RegisterBlankTile(0x400);
     BG_Fill(gBG2TilemapBuffer, 0);
 
     BG_EnableSyncByMask(BG2_SYNC_BIT);
@@ -5593,20 +5443,8 @@ void QuintessenceFx_OnEnd(void)
 
 const struct ProcCmd ProcScr_QuintessenceFx[] = {
     PROC_SET_END_CB(QuintessenceFx_OnEnd),
-
-    // PROC_CALL(TryLockParentProc),
     PROC_CALL(QuintessenceFx_Init_Main),
-    // PROC_REPEAT(QuintessenceFx_Loop_A),
-    // PROC_CALL(TryUnlockParentProc),
-
-    PROC_BLOCK,
-
-PROC_LABEL(0),
-    // PROC_CALL(TryLockParentProc),
-    // PROC_CALL(QuintessenceFx_ResetBlend),
     PROC_REPEAT(QuintessenceFx_Loop_B),
-    // PROC_CALL(TryUnlockParentProc),
-
     PROC_BLOCK,
     PROC_END,
 };
