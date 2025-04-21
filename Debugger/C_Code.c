@@ -5312,12 +5312,6 @@ extern void TryLockParentProc(ProcPtr);   // FE8U: 0x080854E4
 extern void TryUnlockParentProc(ProcPtr); // FE8U: 0x080854F0
 
 // Translation between FE7J and FE8U
-#define TmFill BG_Fill
-#define InitScanlineEffect InitScanline
-#define SetBgOffset BG_SetPosition
-#define SetOnHBlankA SetPrimaryHBlankHandler
-#define EnableBgSync BG_EnableSyncByMask
-#define TmApplyTsa_thm CallARM_FillTileRect
 #define fe7j_sub_8013BA0 GetPalFadeStClkEnd1
 #define fe7j_sub_8013BAC GetPalFadeStClkEnd2
 #define fe7j_sub_8013BBC GetPalFadeStClkEnd3
@@ -5464,7 +5458,7 @@ void QuintFxBg2_Init(struct QuintessenceFxProc * proc)
 void QuintFxBg2_Loop(struct QuintessenceFxProc * proc)
 {
     proc->bg2_offset++;
-    SetBgOffset(BG_2, proc->bg2_offset >> 2, proc->bg2_offset >> 1);
+    BG_SetPosition(BG_2, proc->bg2_offset >> 2, proc->bg2_offset >> 1);
 }
 
 // clang-format off
@@ -5506,26 +5500,26 @@ void QuintessenceFx_Init_Main(struct QuintessenceFxProc * proc)
     // SetBackgroundScreenSize(BG_2, 0);
     // BG_SetPosition(BG_2, 0, 0);
     CpuFastCopy(Grey_Clouds, (void *)0x6008000, 0x4000);
-    CpuFastCopy(Grey_Clouds, (void *)0x600C000, 0x4000);
-    int tileref = 0x400 | (palNum << 12); // 4 bpp, pal
+    // CpuFastCopy(Grey_Clouds, (void *)0x600C000, 0x4000);
+    int tileref = 0x00 | (palNum << 12); // 4 bpp, pal
 
     u16 * vram = (void *)gBG2TilemapBuffer;
     for (int i = 0; i < 0x400; ++i)
     {
-        *vram = tileref + i;
+        *vram = tileref + (i & 0x1FF);
         vram++;
     }
 
-    EnableBgSync(BG2_SYNC_BIT | BG3_SYNC_BIT);
-    SetBgOffset(BG_2, 0, 0);
+    BG_EnableSyncByMask(BG2_SYNC_BIT | BG3_SYNC_BIT);
+    BG_SetPosition(BG_2, 0, 0);
 
     proc->timer = 0;
     proc->bg2_offset = 0;
 
-    InitScanlineEffect();
+    InitScanline();
 
-    SetOnHBlankA(QuintessenceFx_OnHBlank);
-    StartParallelWorker(QuintessenceFx_ParallelWorker, proc);
+    SetPrimaryHBlankHandler(QuintessenceFx_OnHBlank);
+    // StartParallelWorker(QuintessenceFx_ParallelWorker, proc);
 
     Proc_Start(ProcScr_QuintessenceFxBg2Scroll, PROC_TREE_VSYNC);
 }
@@ -5562,6 +5556,7 @@ void QuintessenceFx_ResetBlend(struct QuintessenceFxProc * proc)
 
 void QuintessenceFx_Loop_B(struct QuintessenceFxProc * proc)
 {
+    return;
     int bld_amt = proc->timer++ >> 2;
 
     gLCDControlBuffer.bldcnt.effect = 1;
@@ -5576,32 +5571,17 @@ void QuintessenceFx_Loop_B(struct QuintessenceFxProc * proc)
     }
 }
 
-void QuintessenceFx_Loop_C(struct QuintessenceFxProc * proc)
-{
-    int bld_amt = proc->timer++ >> 2;
-
-    gLCDControlBuffer.bldcnt.effect = 1;
-
-    gLCDControlBuffer.blendCoeffA = 16 - bld_amt;
-    gLCDControlBuffer.blendCoeffB = bld_amt;
-    gLCDControlBuffer.blendY = 0;
-
-    if (bld_amt == 16)
-    {
-        Proc_Break(proc);
-    }
-}
-
 void QuintessenceFx_OnEnd(void)
 {
     Proc_End(Proc_Find(ProcScr_QuintessenceFxBg2Scroll));
 
-    SetOnHBlankA(NULL);
+    SetPrimaryHBlankHandler(NULL);
 
-    SetBgOffset(BG_2, 0, 0);
-    TmFill(gBG2TilemapBuffer, 0);
+    SetBackgroundTileDataOffset(BG_2, 0x4000);
+    BG_SetPosition(BG_2, 0, 0);
+    BG_Fill(gBG2TilemapBuffer, 0);
 
-    EnableBgSync(BG2_SYNC_BIT);
+    BG_EnableSyncByMask(BG2_SYNC_BIT);
 
     gLCDControlBuffer.bg0cnt.priority = 0;
     gLCDControlBuffer.bg1cnt.priority = 1;
@@ -5616,14 +5596,14 @@ const struct ProcCmd ProcScr_QuintessenceFx[] = {
 
     // PROC_CALL(TryLockParentProc),
     PROC_CALL(QuintessenceFx_Init_Main),
-    PROC_REPEAT(QuintessenceFx_Loop_A),
+    // PROC_REPEAT(QuintessenceFx_Loop_A),
     // PROC_CALL(TryUnlockParentProc),
 
     PROC_BLOCK,
 
 PROC_LABEL(0),
     // PROC_CALL(TryLockParentProc),
-    PROC_CALL(QuintessenceFx_ResetBlend),
+    // PROC_CALL(QuintessenceFx_ResetBlend),
     PROC_REPEAT(QuintessenceFx_Loop_B),
     // PROC_CALL(TryUnlockParentProc),
 
