@@ -147,6 +147,9 @@ MenuCommand1(SupportMenuText,SupportMenuDesc, NormalText, MenuAlwaysEnabled, Deb
 MenuCommand1(SupplyMenuText,SupplyMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, SupplyNow)
 MenuCommand1(ListMenuText,ListMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, ListNow) 
 MenuCommand1(AiControlRemainingUnitsText,AiControlRemainingUnitsDesc, NormalText, MenuAlwaysEnabled, AiControlRemainingUnitsDrawText, AiControlRemainingUnitsNow) 
+#ifdef VeslyBuildfile 
+MenuCommand1(EditSkillsText,EditSkillsDesc, NormalText, $04F449,DebuggerMenuItemDraw, DebugSkillsNow) // This is external - it is located in skillsystems folders 
+#endif 
 #endif 
 MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
@@ -154,6 +157,11 @@ MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemD
 #endif 
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
 
+
+#ifndef VeslyBuildfile 
+SkillDebugCommand_OnSelect:
+SHORT $4770 // bx lr 
+#endif 
 
 #define NL "BYTE 0x1" 
 #define EndText "BYTE 0x0" 

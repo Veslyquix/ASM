@@ -2,6 +2,7 @@
 
 #include "C_Code.h" // headers
 #define PUREFUNC __attribute__((pure))
+#define brk asm("mov r11, r11");
 int Mod(int a, int b) PUREFUNC;
 #define xTilesAmount 15
 #define favTilesAmount 15
@@ -13,7 +14,12 @@ char * GetStringFromIndexSafe(int index)
     {
         return GetStringFromIndex(1);
     }
-    return GetStringFromIndex(index);
+    char * result = GetStringFromIndex(index);
+    if (!result)
+    {
+        result = " ";
+    }
+    return result;
 }
 
 typedef struct
@@ -327,6 +333,7 @@ u8 CanActiveUnitPromote(void);
 #define ActionID_Promo 1
 #define ActionID_Arena 2
 #define ActionID_Levelup 3
+#define ActionID_DebugSkills 4
 
 const struct ProcCmd DebuggerProcCmdIdler[] = {
     PROC_NAME("DebuggerProcIdler"),
@@ -452,12 +459,9 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(ListLabel), // List
-    // PROC_CALL(LockGame),
     PROC_CALL(DebuggerListInit),
     PROC_SLEEP(1),
     PROC_CALL(ClearSomeGfx),
-    // PROC_REPEAT(DebuggerListIdle),
-    // PROC_CALL(UnlockGame),
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(EndLabel),
@@ -1785,9 +1789,11 @@ void RedrawItemMenu(DebuggerProc * proc)
     }
 
     int icon;
+
     for (int i = 0; i < NumberOfItems; ++i)
     {
-        icon = GetItemIconId(proc->tmp[i]);
+        icon =
+            GetItemIconId(proc->tmp[i] & 0xFFFF); // 0xFFFF because Durability based items expects short, not word fsr
         if (icon >= 0)
         {
             if (proc->tmp[i])
@@ -3872,6 +3878,7 @@ void CallPlayerPhase_FinishAction(DebuggerProc * proc)
     Proc_Goto(playerPhaseProc, 0);
 }
 
+extern void SkillDebugCommand_OnSelect(DebuggerProc * proc);
 int UnitActionFunc(DebuggerProc * proc)
 {
     switch (proc->actionID)
@@ -3889,6 +3896,11 @@ int UnitActionFunc(DebuggerProc * proc)
         case ActionID_Levelup:
         {
             LevelupAction(proc);
+            break;
+        }
+        case ActionID_DebugSkills:
+        {
+            SkillDebugCommand_OnSelect(proc);
             break;
         }
 
@@ -4192,6 +4204,16 @@ u8 ListNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     Proc_Goto(proc, ListLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
+
+u8 DebugSkillsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    proc->actionID = ActionID_DebugSkills;
+    Proc_Goto(proc, UnitActionLabel); // 0xb7
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 u8 AiControlRemainingUnitsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
