@@ -108,11 +108,11 @@ WORD 0
 ALIGN 4 
 gDebuggerMenuItems: 
 MenuCommand1(PickupText, PickupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, PickupUnitNow)
-#ifdef _FE8_ 
+// #ifdef _FE8_ 
 MenuCommand1(PromoteCommandText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
 MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
 MenuCommand1(LevelupText,LevelupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LevelupNow)
-#endif 
+// #endif 
 MenuCommand1(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
 MenuCommand1(EditMiscText,EditMiscDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMiscNow)
 MenuCommand1(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)

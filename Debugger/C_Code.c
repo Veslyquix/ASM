@@ -269,7 +269,6 @@ int UnitActionFunc(DebuggerProc * proc);
 void CallPlayerPhase_FinishAction(DebuggerProc * proc);
 int ClearActiveUnitStuff(DebuggerProc * proc);
 void PlayerPhase_FinishActionNoCanto(ProcPtr proc);
-void CallPlayerPhase_FinishAction(DebuggerProc * proc);
 int PlayerPhase_PrepareActionBasic(DebuggerProc * proc);
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc * proc);
 void EditMapIdle(DebuggerProc * proc);

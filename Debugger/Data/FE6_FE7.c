@@ -95,7 +95,6 @@ int UnitActionFunc(DebuggerProc * proc);
 void CallPlayerPhase_FinishAction(DebuggerProc * proc);
 int ClearActiveUnitStuff(DebuggerProc * proc);
 void PlayerPhase_FinishActionNoCanto(ProcPtr proc);
-void CallPlayerPhase_FinishAction(DebuggerProc * proc);
 int PlayerPhase_PrepareActionBasic(DebuggerProc * proc);
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc * proc);
 void EditMapIdle(DebuggerProc * proc);
@@ -130,6 +129,7 @@ void DebuggerListInit(DebuggerProc * proc);
 void DebuggerListIdle(DebuggerProc * proc);
 void RedrawUnitStatsMenu(DebuggerProc * proc);
 void ClearSomeGfx(DebuggerProc * proc);
+u8 CanActiveUnitPromote(void);
 const struct MenuDef gDebuggerMenuDef;
 const struct MenuDef gDebuggerMenuDefPage2;
 const struct MenuDef gDebuggerMenuDefPage3;
@@ -164,6 +164,20 @@ const struct ProcCmd DebuggerProcCmd[] = {
 
     PROC_LABEL(LoopLabel), // Loop indefinitely
     PROC_REPEAT(LoopDebuggerProc),
+
+    PROC_LABEL(UnitActionLabel),
+    PROC_CALL(PlayerPhase_ApplyUnitMovementWithoutMenu),
+    PROC_WHILE_EXISTS(gProcScr_CamMove),
+    PROC_CALL_2(PlayerPhase_PrepareActionBasic),
+    PROC_SLEEP(1),
+    PROC_CALL_2(UnitActionFunc),
+
+    PROC_LABEL(PostActionLabel), // after action
+    PROC_CALL_2(HandlePostActionTraps),
+    PROC_CALL_2(RunPotentialWaitEvents),
+    PROC_CALL_2(EnsureCameraOntoActiveUnitPosition),
+    PROC_CALL(CallPlayerPhase_FinishAction),
+    PROC_GOTO(EndLabel),
 
     PROC_LABEL(PickupUnitLabel), // Pickup
     // PROC_CALL(StartPlayerPhaseTerrainWindow),
@@ -1912,7 +1926,37 @@ u8 PickupUnitNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     Proc_Goto(proc, PickupUnitLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
-
+u8 StartPromotionNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    // SetupUnitFunc();
+    if (CanActiveUnitPromote() != 1)
+    {
+        return MENU_ACT_SKIPCURSOR | MENU_ACT_SND6B;
+    }
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    proc->actionID = ActionID_Promo;
+    Proc_Goto(proc, UnitActionLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+u8 StartArenaNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    // SetupUnitFunc();
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    proc->actionID = ActionID_Arena;
+    Proc_Goto(proc, UnitActionLabel); // 0xb7
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+u8 LevelupNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    // SetupUnitFunc();
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    proc->actionID = ActionID_Levelup;
+    Proc_Goto(proc, UnitActionLabel); // 0xb7
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
 u8 EditStatsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
@@ -2549,3 +2593,183 @@ void PutNumberHex(u16 * tm, int color, int number)
 }
 
 #endif
+
+int PromoAction(DebuggerProc * proc)
+{
+    StartBmPromotion(proc);
+    Proc_Goto(proc, PostActionLabel);
+    return 0;
+}
+int ArenaAction(DebuggerProc * proc)
+{
+    StartArenaScreen();
+    Proc_Goto(proc, PostActionLabel);
+    return 0;
+}
+extern const struct ProcCmd sProcScr_BattleAnimSimpleLock[];
+int LevelupAction(DebuggerProc * proc)
+{
+
+    gActiveUnit->exp = 99;
+    InitBattleUnit(&gBattleActor, gActiveUnit);
+    // if (UNIT_FACTION(&gBattleActor.unit) != FACTION_BLUE)
+    // return;
+
+    if (CanBattleUnitGainLevels(&gBattleActor))
+    { // see BattleApplyMiscAction
+        if (!(gPlaySt.chapterStateBits & PLAY_FLAG_EXTRA_MAP))
+        {
+
+            gBattleActor.expGain = 1;
+            gBattleActor.unit.exp += 1;
+
+            CheckBattleUnitLevelUp(&gBattleActor);
+
+            // Proc_StartBlocking(sProcScr_BattleAnimSimpleLock, proc);
+            MU_EndAll();
+            ResetText();
+
+            gBattleActor.weaponBefore = 1; // see BeginMapAnimForSummon
+
+            gManimSt.hp_changing = 0;
+            gManimSt.u62 = 0;
+            gManimSt.actorCount_maybe = 1;
+
+            gManimSt.subjectActorId = 0;
+            gManimSt.targetActorId = 1;
+
+            SetupMapBattleAnim(&gBattleActor, &gBattleTarget, gBattleHitArray);
+            // Proc_Start(ProcScr_MapAnimSummon, PROC_TREE_3);
+            Proc_Goto(proc, LevelupLabel);
+            return 0;
+        }
+    }
+    Proc_Goto(proc, PostActionLabel);
+
+    return 0;
+}
+
+void SetupUnitFunc(void)
+{
+    gBattleActor.weaponBefore = gBattleTarget.weaponBefore =
+        GetUnit(gActionData.subjectIndex)->items[gActionData.itemSlotIndex];
+
+    gBattleActor.weapon = gBattleTarget.weapon = GetUnitEquippedWeapon(GetUnit(gActionData.subjectIndex));
+    gBattleActor.hasItemEffectTarget = 0;
+    gBattleTarget.statusOut = -1;
+    gActionData.unitActionType = 1;
+    UnitBeginAction(gActiveUnit);
+}
+
+int PlayerPhase_PrepareActionBasic(DebuggerProc * proc)
+{
+    s8 cameraReturn;
+    SetupUnitFunc();
+
+    cameraReturn = EnsureCameraOntoPositionIfValid(
+        proc, GetUnit(gActionData.subjectIndex)->xPos, GetUnit(gActionData.subjectIndex)->yPos);
+    cameraReturn ^= 1;
+    // if ((gActionData.unitActionType != UNIT_ACTION_WAIT) &&
+    // !gBmSt.just_resumed)
+    //{
+    //     gActionData.suspendPointType = SUSPEND_POINT_DURINGACTION;
+    //     WriteSuspendSave(SAVE_ID_SUSPEND);
+    // }
+
+    return cameraReturn;
+}
+
+int UnitActionFunc(DebuggerProc * proc)
+{
+    switch (proc->actionID)
+    {
+        case ActionID_Promo:
+        {
+            PromoAction(proc);
+            break;
+        }
+        case ActionID_Arena:
+        {
+            ArenaAction(proc);
+            break;
+        }
+        case ActionID_Levelup:
+        {
+            LevelupAction(proc);
+            break;
+        }
+
+        default:
+    }
+    proc->actionID = 0;
+    return 0;
+}
+
+void PlayerPhase_FinishActionNoCanto(ProcPtr proc)
+{
+    if (gPlaySt.chapterVisionRange != 0)
+    {
+        RenderBmMapOnBg2();
+
+        MoveActiveUnit(gActionData.xMove, gActionData.yMove);
+
+        RefreshEntityBmMaps();
+        RenderBmMap();
+
+        NewBMXFADE(0);
+
+        RefreshUnitSprites();
+    }
+    else
+    {
+        MoveActiveUnit(gActionData.xMove, gActionData.yMove);
+
+        RefreshEntityBmMaps();
+        RenderBmMap();
+    }
+
+    SetCursorMapPositionIfValid(gActiveUnit->xPos, gActiveUnit->yPos);
+
+    gPlaySt.xCursor = gBmSt.playerCursor.x;
+    gPlaySt.yCursor = gBmSt.playerCursor.y;
+
+    MU_EndAll();
+
+    return;
+}
+
+void CallPlayerPhase_FinishAction(DebuggerProc * proc)
+{
+    PlayerPhase_FinishActionNoCanto(proc);
+    ProcPtr playerPhaseProc = Proc_Find(gProcScr_PlayerPhase);
+    Proc_Goto(playerPhaseProc, 0);
+}
+u8 CanActiveUnitPromote(void)
+{
+    if (UNIT_FACTION(gActiveUnit) != gPlaySt.faction)
+    {
+        return 2;
+    }
+    // int classNumber = gActiveUnit->pClassData->number;
+    int promoted = UNIT_CATTRIBUTES(gActiveUnit) & CA_PROMOTED;
+    if (promoted)
+    {
+        return 2;
+    }
+    int promotionClass = gActiveUnit->pClassData->promotion;
+    if (!promotionClass)
+    {
+        return 2;
+    }
+
+    return 1;
+}
+u8 CanActiveUnitPromoteMenu(const struct MenuItemDef * def, int number)
+{
+    return CanActiveUnitPromote();
+}
+
+u8 CallArenaIsUnitAllowed(const struct MenuItemDef * def, int number)
+{
+    return ArenaIsUnitAllowed(gActiveUnit);
+}
