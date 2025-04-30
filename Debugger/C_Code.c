@@ -155,7 +155,7 @@ void SetBootType(int id)
 {
     struct GlobalSaveInfo info;
     ReadGlobalSaveInfo(&info);
-    info.charKnownFlags[0x10] = id;
+    info.charKnownFlags[0x1F] = id;
     WriteGlobalSaveInfoNoChecksum(&info);
 }
 

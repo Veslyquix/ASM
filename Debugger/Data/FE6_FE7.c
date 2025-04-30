@@ -1912,6 +1912,7 @@ u8 PickupUnitNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     Proc_Goto(proc, PickupUnitLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
+
 u8 EditStatsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
