@@ -3,6 +3,20 @@
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
 
+#ifdef _FE6_ 
+    #inctbl "fe6TR" "Data/fe6_tr.tbl"
+    #ifndef txt
+        #define txt(string2) STRING string2 "fe6TR"; BYTE 0 0; // fe6 version 
+    #endif 
+#else 
+    #inctbl "fe8TR" "Data/fe8_tr.tbl"
+    #ifndef txt
+        #define txt(string2) STRING string2 "fe8TR"; BYTE 0 0; // fe6 version 
+    #endif 
+#endif 
+
+
+
 #ifdef _FE8_ 
     #include "Data/FE8_AsmHooks.lyn.event" 
     #include "Data/FE8.lyn.event" 
@@ -163,222 +177,168 @@ SkillDebugCommand_OnSelect:
 SHORT $4770 // bx lr 
 #endif 
 
-#define NL "BYTE 0x1" 
-#define EndText "BYTE 0x0" 
-
- 
-#ifndef _FE6_ 
-
 
 PickupText:
-    String(" Pickup"); EndText 
+    txt(" Pickup");
 PickupDesc:
-    String("Pickup a unit and"); NL
-    String("place them anywhere."); EndText 
+    txt("Pickup a unit and\place them anywhere."); 
 
 PromoteCommandText:
-    String(" Promote"); EndText 
+    txt(" Promote");
 PromoteDesc:
-    String("Promote the unit"); NL
-    String("into an advanced"); NL 
-    String("class."); EndText 
+    txt("Promote the unit\into an advanced\class."); 
     
 ArenaText:
-    String(" Arena"); EndText 
+    txt(" Arena");
 ArenaDesc: 
-    String("Enter the arena"); NL
-    String("and fight for glory."); EndText 
+    txt("Enter the arena\and fight for glory.");
 
 ClearChText:
-    String(" Clear Ch."); EndText 
+    txt(" Clear Ch.");
 ClearChDesc:
-    String("Clear the current"); NL
-    String("chapter."); EndText 
+    txt("Clear the current\chapter.");
     
 ChStateText:
-    String(" Ch. State"); EndText 
+    txt(" Ch. State");
 ChStateDesc:
-    String("Edit things about"); NL
-    String("the chapter."); EndText 
+    txt("Edit things about\the chapter.");
 
 EditMapText:
-    String(" Edit Map"); EndText 
+    txt(" Edit Map");
 EditMapDesc:
-    String("Edit tiles on the"); NL
-    String("map with the tileset."); EndText 
+    txt("Edit tiles on the\map with the tileset.");
 
 EditStatsText:
-    String(" Stats"); EndText 
+    txt(" Stats");
 EditStatsDesc:
-    String("Edit a unit's stats."); EndText
+    txt("Edit a unit's stats.");
 
 EditItemsText:
-    String(" Items"); EndText 
+    txt(" Items");
 EditItemsDesc:
-    String("Edit a unit's items."); EndText
+    txt("Edit a unit's items.");
 
 EditSkillsText:
-    String(" Skills"); EndText 
+    txt(" Skills");
 EditSkillsDesc:
-    String("Edit a unit's"); NL
-    String("learned skills."); EndText 
+    txt("Edit a unit's\learned skills."); 
 
 GodmodeText:
-    String(" Godmode off"); EndText 
+    txt(" Godmode off"); 
 GodmodeDesc:
-    String("Make your units"); NL
-    String("win every battle."); EndText 
+    txt("Make your units\win every battle."); 
 
 ControlAiText:
-    String(" AI is on"); EndText 
+    txt(" AI is on"); 
 ControlAiDesc:
-    String("Control just players"); NL
-    String("or control everyone."); EndText 
+    txt("Control just players\or control everyone."); 
 
 PageNumText:
-    String(" Page"); EndText 
+    txt(" Page"); 
 PageDesc:
-    String("Swap pages in"); NL
-    String("this debugger."); EndText 
+    txt("Swap pages in\this debugger."); 
 
 
 EditMiscText:
-    String(" Misc"); EndText 
+    txt(" Misc"); 
 EditMiscDesc:
-    String("Edit unit's ID, class,"); NL
-    String("bonuses, and more."); EndText 
+    txt("Edit unit's ID, class,\bonuses, and more."); 
 
 LoadUnitsText:
-    String(" Load units"); EndText 
+    txt(" Load units"); 
 LoadUnitsDesc:
-    String("Load units."); NL
-    String("Possibly useful."); EndText 
+    txt("Load units.\Possibly useful."); 
 
 LevelupText:
-    String(" Level up"); EndText 
+    txt(" Level up"); 
 LevelupDesc:
-    String("Level up"); NL
-    String("the unit."); EndText 
+    txt("Level up\the unit."); 
 
 EditStateText:
-    String(" State"); EndText 
+    txt(" State"); 
 EditStateDesc:
-    String("Level up"); NL
-    String("the unit."); EndText 
+    txt("Level up\the unit."); 
 
 WExpText:
-    String(" WExp"); EndText 
+    txt(" WExp"); 
 WExpDesc:
-    String("Edit WExp"); NL
-    String("for the unit."); EndText 
+    txt("Edit WExp\for the unit."); 
 
 SupportMenuText:
-    String(" Supports"); EndText 
+    txt(" Supports"); 
 SupportMenuDesc:
-    String("Edit support levels"); NL
-    String("for the unit."); EndText 
+    txt("Edit support levels\for the unit."); 
 
 SupplyMenuText:
-    String(" Supply"); EndText 
+    txt(" Supply"); 
 SupplyMenuDesc:
-    String("Open the convoy"); NL
-    String("to access items."); EndText 
+    txt("Open the convoy\to access items."); 
 
 ListMenuText:
-    String(" List"); EndText 
+    txt(" List"); 
 ListMenuDesc:
-    String("Open the list"); NL
-    String("of everyone's items."); EndText 
+    txt("Open the list\of everyone's items."); 
 
 AiControlRemainingUnitsText:
-    String(" Autoplay off"); EndText 
+    txt(" Autoplay off"); 
 AiControlRemainingUnitsDesc:
-    String("Open the list"); NL
-    String("of everyone's items."); EndText 
+    txt("Open the list\of everyone's items."); 
     
    
     
     
-#else  
- 
-#inctbl "FE6TR2" "Data/fe6_tr.tbl"
+#ifdef _FE6_  
 
-PickupText:
-PickupDesc:
-STRING " Pickup" "FE6TR2" ; BYTE 0 0 
-PageNumText:
-PageDesc:
-STRING " Page" "FE6TR2" ; BYTE 0 0 
-
-EditStatsText:
-EditStatsDesc:
-STRING " Stats" "FE6TR2" ; BYTE 0 0 
-
-EditItemsText:
-EditItemsDesc:
-STRING " Items" "FE6TR2" ; BYTE 0 0 
-
-EditStateText:
-EditStateDesc:
-STRING " State" "FE6TR2" ; BYTE 0 0 
-
-EditMiscText:
-EditMiscDesc:
-STRING " Misc" "FE6TR2" ; BYTE 0 0 
-
-LevelupText:
-LevelupDesc:
-STRING " Levelup" "FE6TR2" ; BYTE 0 0 
 
 ALIGN 32 
 states:
-STRING "Acting" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Acted" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING        "Dead" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING       "Undeployed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING  "Rescuing" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING  "Rescued" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING     "Cantoed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Under roof" "FE6TR2"; BYTE 0 0; 
-ALIGN 32 ; STRING "Spotted" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Concealed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "AI decided" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "In ballista" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Drop item" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Afa's drops" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Solo anim1" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Solo anim2" "FE6TR2"; BYTE 0 0; 
-ALIGN 32 ; STRING "Escaped" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Arena 1" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING      "Arena 2" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Super arena" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Unk 25" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Benched" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING     "Scene unit" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Portrait+1" "FE6TR2"; BYTE 0 0; 
-ALIGN 32 ; STRING "Shake" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING   "Can't deploy" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Departed" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING   "4th palette" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING "Unk 35" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Unk 36" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING      "Capture" "FE6TR2"; BYTE 0 0 ; ALIGN 32; STRING    "Unk 38" "FE6TR2"; BYTE 0 0; 
+STRING "Acting" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Acted" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING        "Dead" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING       "Undeployed" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING  "Rescuing" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING  "Rescued" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING     "Cantoed" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "Under roof" "fe6TR"; BYTE 0 0; 
+ALIGN 32 ; STRING "Spotted" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Concealed" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "AI decided" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "In ballista" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Drop item" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Afa's drops" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Solo anim1" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Solo anim2" "fe6TR"; BYTE 0 0; 
+ALIGN 32 ; STRING "Escaped" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Arena 1" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING      "Arena 2" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "Super arena" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Unk 25" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "Benched" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING     "Scene unit" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Portrait+1" "fe6TR"; BYTE 0 0; 
+ALIGN 32 ; STRING "Shake" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING   "Can't deploy" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Departed" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING   "4th palette" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Unk 35" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "Unk 36" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING      "Capture" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "Unk 38" "fe6TR"; BYTE 0 0; 
 ALIGN 32; 
 
 ALIGN 16 
 LevelText: 
-STRING "Level" "FE6TR2"; BYTE 0 0 
+STRING "Level" "fe6TR"; BYTE 0 0 
 ExpText:
-STRING "Exp" "FE6TR2"; BYTE 0 0 
+STRING "Exp" "fe6TR"; BYTE 0 0 
 BonusConText:
-STRING "Bonus Con" "FE6TR2"; BYTE 0 0 
+STRING "Bonus Con" "fe6TR"; BYTE 0 0 
 BonusMovText:
-STRING "Bonus Mov" "FE6TR2"; BYTE 0 0 
+STRING "Bonus Mov" "fe6TR"; BYTE 0 0 
 StatusText:
-STRING "Status" "FE6TR2"; BYTE 0 0 
+STRING "Status" "fe6TR"; BYTE 0 0 
 AllegianceText:
-STRING "Allegiance" "FE6TR2"; BYTE 0 0 
+STRING "Allegiance" "fe6TR"; BYTE 0 0 
 PlayerText:
-STRING "  Player" "FE6TR2"; BYTE 0 0 
+STRING "  Player" "fe6TR"; BYTE 0 0 
 NPCText: 
-STRING "  NPC" "FE6TR2"; BYTE 0 0 
+STRING "  NPC" "fe6TR"; BYTE 0 0 
 EnemyText: 
-STRING "  Enemy" "FE6TR2"; BYTE 0 0 
+STRING "  Enemy" "fe6TR"; BYTE 0 0 
 
 
 MaxHPText:
-STRING "Max HP" "FE6TR2"; BYTE 0 0 
+STRING "Max HP" "fe6TR"; BYTE 0 0 
 HPText:
-STRING "HP" "FE6TR2"; BYTE 0 0 
+STRING "HP" "fe6TR"; BYTE 0 0 
 StrText:
-STRING "Str" "FE6TR2"; BYTE 0 0 
+STRING "Str" "fe6TR"; BYTE 0 0 
 SklText:
-STRING "Skl" "FE6TR2"; BYTE 0 0 
+STRING "Skl" "fe6TR"; BYTE 0 0 
 SpdText:
-STRING "Spd" "FE6TR2"; BYTE 0 0 
+STRING "Spd" "fe6TR"; BYTE 0 0 
 DefText:
-STRING "Def" "FE6TR2"; BYTE 0 0 
+STRING "Def" "fe6TR"; BYTE 0 0 
 ResText:
-STRING "Res" "FE6TR2"; BYTE 0 0 
+STRING "Res" "fe6TR"; BYTE 0 0 
 LckText:
-STRING "Lck" "FE6TR2"; BYTE 0 0 
+STRING "Lck" "fe6TR"; BYTE 0 0 
 MagText:
-STRING "Mag" "FE6TR2"; BYTE 0 0 
+STRING "Mag" "fe6TR"; BYTE 0 0 
 BlankString:
-STRING " " "FE6TR2"; BYTE 0 0 
+STRING " " "fe6TR"; BYTE 0 0 
 
 #endif 
 

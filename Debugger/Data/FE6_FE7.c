@@ -3,9 +3,15 @@
 
 #include "../C_code.h"
 
-#ifdef USE_CCODE
-#include "../C_code.c"
+#ifdef FE6
+#define hidden 2
+#define greyed 1
+#define usable 0
 #else
+#define hidden 3
+#define greyed 2
+#define usable 1
+#endif
 
 int Mod(int a, int b);
 extern const char BlankString[];
@@ -178,6 +184,21 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_CALL_2(EnsureCameraOntoActiveUnitPosition),
     PROC_CALL(CallPlayerPhase_FinishAction),
     PROC_GOTO(EndLabel),
+
+    PROC_LABEL(LevelupLabel), // Levelup
+    // ProcScr_EndManim 664E4C @
+    // https://github.com/FireEmblemUniverse/fireemblem6j/blob/c0065f139f1cbe2aa974046448898427ecc5a021/src/manim.c#L159
+    PROC_SLEEP(5),
+    PROC_WHILE(BattleEventEngineExists),  // IsEventRunning
+    PROC_CALL(DeleteBattleAnimInfoThing), // EndManimInfoWindow
+    PROC_SLEEP(0x1),
+    PROC_CALL(MapAnimProc_DisplayExpBar), // Manim_ExpBar
+    PROC_YIELD,
+    PROC_CALL(MapAnim_MoveCameraOntoSubject), // Manim_WatchActorA
+    PROC_SLEEP(0x2),
+    PROC_CALL(UpdateActorFromBattle),
+    PROC_CALL(MapAnim_Cleanup), // Manim_Finish
+    PROC_GOTO(RestartLabel),
 
     PROC_LABEL(PickupUnitLabel), // Pickup
     // PROC_CALL(StartPlayerPhaseTerrainWindow),
@@ -1214,7 +1235,7 @@ struct Unit * GetFreeUnitByFaction(int faction)
 
 void UnitBeginActionInit(struct Unit * unit);
 // void memcpy(const void * src, void * dst, int size);
-#include <string.h> // for memcpy
+#include <string.h>                        // for memcpy
 extern void ClearUnit(struct Unit * unit); // 17508 17394
 
 void SaveMisc(DebuggerProc * proc)
@@ -1929,7 +1950,7 @@ u8 PickupUnitNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 u8 StartPromotionNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     // SetupUnitFunc();
-    if (CanActiveUnitPromote() != 1)
+    if (CanActiveUnitPromote() != usable)
     {
         return MENU_ACT_SKIPCURSOR | MENU_ACT_SND6B;
     }
@@ -1988,7 +2009,7 @@ u8 EditStateNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 
 int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
-    if (menuItem->availability == MENU_DISABLED)
+    if (menuItem->availability == greyed)
     {
         Text_SetColor(&menuItem->text, 1);
     }
@@ -2224,7 +2245,7 @@ u8 PageIncrementNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 
 int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
-    if (menuItem->availability == MENU_DISABLED)
+    if (menuItem->availability == greyed)
     {
         Text_SetColor(&menuItem->text, 1);
     }
@@ -2592,8 +2613,6 @@ void PutNumberHex(u16 * tm, int color, int number)
     PutNumber(tm, color, number);
 }
 
-#endif
-
 int PromoAction(DebuggerProc * proc)
 {
     StartBmPromotion(proc);
@@ -2609,11 +2628,9 @@ int ArenaAction(DebuggerProc * proc)
 extern const struct ProcCmd sProcScr_BattleAnimSimpleLock[];
 int LevelupAction(DebuggerProc * proc)
 {
-
+    // MapAnimState same in fe6/7/8
     gActiveUnit->exp = 99;
     InitBattleUnit(&gBattleActor, gActiveUnit);
-    // if (UNIT_FACTION(&gBattleActor.unit) != FACTION_BLUE)
-    // return;
 
     if (CanBattleUnitGainLevels(&gBattleActor))
     { // see BattleApplyMiscAction
@@ -2744,25 +2761,26 @@ void CallPlayerPhase_FinishAction(DebuggerProc * proc)
     ProcPtr playerPhaseProc = Proc_Find(gProcScr_PlayerPhase);
     Proc_Goto(playerPhaseProc, 0);
 }
+
 u8 CanActiveUnitPromote(void)
 {
     if (UNIT_FACTION(gActiveUnit) != gPlaySt.faction)
     {
-        return 2;
+        return greyed;
     }
     // int classNumber = gActiveUnit->pClassData->number;
     int promoted = UNIT_CATTRIBUTES(gActiveUnit) & CA_PROMOTED;
     if (promoted)
     {
-        return 2;
+        return greyed;
     }
     int promotionClass = gActiveUnit->pClassData->promotion;
     if (!promotionClass)
     {
-        return 2;
+        return greyed;
     }
 
-    return 1;
+    return usable;
 }
 u8 CanActiveUnitPromoteMenu(const struct MenuItemDef * def, int number)
 {
@@ -2771,5 +2789,9 @@ u8 CanActiveUnitPromoteMenu(const struct MenuItemDef * def, int number)
 
 u8 CallArenaIsUnitAllowed(const struct MenuItemDef * def, int number)
 {
-    return ArenaIsUnitAllowed(gActiveUnit);
+    if (ArenaIsUnitAllowed(gActiveUnit))
+    {
+        return usable;
+    }
+    return greyed;
 }

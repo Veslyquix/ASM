@@ -17,22 +17,6 @@
 .endm
 
 .if FE6 == true 
-
-.global strlen 
-.type strlen, %function 
-strlen: 
-@mov r11, r11 
-mov r2, #0 
-loop_strlen:
-ldrb r1, [r0, r2]
-add r2, #1  
-cmp r1, #0 
-bne loop_strlen 
-sub r2, #1 
-mov r0, r2 
-bx lr 
-
-
 SET_FUNC GetPidStats, 0x8084F4D
 SET_FUNC ReadGlobalSaveInfo, 0x80842E9
 SET_FUNC StartBgmExt, 0x809C8D9
@@ -166,7 +150,6 @@ SET_FUNC SetCursorMapPosition, 0x801600D
 SET_FUNC HideMoveRangeGraphics, 0x801C061
 SET_FUNC RefreshEntityBmMaps, 0x80190F5
 SET_FUNC RefreshUnitSprites, 0x8022095
-@SET_FUNC NewBMXFADE, 0x801C39D
 SET_FUNC DoesBMXFADEExist, 0x8093445
 SET_FUNC Proc_End, 0x8004265
 SET_FUNC HandlePlayerCursorMovement, 0x801B04D
@@ -181,108 +164,58 @@ SET_DATA gProcScr_TerrainDisplay, 0x8678174
 SET_DATA gProcScr_PlayerPhase, 0x85C56A8
 SET_DATA gKeyStatusPtr, 0x858E578
 SET_DATA gUnknown_08A02274, 0x83080D0
+SET_FUNC RenderBmMapOnBg2, 0x8018E11 
+SET_FUNC MoveActiveUnit, 0x801BAF1
+SET_FUNC NewBMXFADE, 0x801C39D
+SET_FUNC HandlePostActionTraps, 0x80273BD
+SET_FUNC RunPotentialWaitEvents, 0x801B9B1
+SET_FUNC EnsureCameraOntoActiveUnitPosition, 0x801B9CD
+@SET_FUNC StartBmPromotion, 0x802529D @ UnitPromote ?? 
+SET_FUNC StartBmPromotion, 0x08027ccd
+SET_FUNC StartArenaScreen, 0x8097e85
+SET_FUNC GetUnitEquippedWeapon, 0x8016959
+SET_FUNC InitBattleUnit, 0x80243F9
+SET_FUNC SetupMapBattleAnim, 0x8062891
+SET_FUNC UnitBeginAction, 0x8017df9
+SET_DATA gProcScr_CamMove, 0x85c5234 
+@SET_DATA gManimSt, 0x30026B0 
+SET_DATA gManimSt, 0x203cde4 @ from MapAnimProc_DisplayExpBar
+SET_DATA gBattleHitArray, 0x203930C  @ from SetupMapBattleAnim 
 
-SET_DATA sMutableHbi, 0x0203D3E0 @ in StartHelpBox 
-SET_DATA sLastHbi, 0x203D3FC 
-SET_DATA sHbOrigin, 0x203D400 @ in StartHelpBox 
+@ ProcScr_BattleManim 664DA4 
+@ ProcScr_EndManim 664E4C @ https://github.com/FireEmblemUniverse/fireemblem6j/blob/c0065f139f1cbe2aa974046448898427ecc5a021/src/manim.c#L159
 
-SET_DATA gHelpBoxSt, 0x203D40C
-SET_DATA gProcScr_HelpBox, 0x8677720  @ StartHelpBox
-SET_DATA ProcScr_HelpBoxIntro, 0x8677FF8 @ StartHelpBox
-SET_FUNC ApplyHelpBoxContentSize, 0x8070a31
-@SET_FUNC StringInsertSpecialPrefixByCtrl, 0x8012CBD
-SET_FUNC GetHelpBoxItemInfoKind, 0x8070b31
-SET_FUNC LoadHelpBoxGfx, 0x8070E71
-SET_FUNC SpriteText_DrawBackground, 0x80066f9
-SET_FUNC GetStringTextBox, 0x8005D05
-SET_FUNC ApplyHelpBoxPosition, 0x8070A71
-SET_FUNC SetHelpBoxInitPosition, 0x8070AFD
-SET_FUNC ResetHelpBoxInitSize, 0x8070B21
-SET_FUNC CloseHelpBox, 0x807089D
-SET_FUNC HelpBoxSetupstringLines, 0x08071375 @ ? 
-SET_FUNC HelpBoxDrawstring, 0x080713dd @? 
-SET_FUNC HelpBoxIntroDrawTexts, 0x8071411
-SET_DATA gProcScr_HelpBoxTextScroll, 0x8677FD0
-SET_FUNC UnpackUiWindowFrameImg2, 0x8041309
-SET_FUNC ApplyUiWindowFramePal, 0x8041285
-SET_FUNC SetBackgroundTileDataOffset, 0x8001351
-SET_FUNC SetPrimaryHBlankHandler, 0x8002A29
-SET_FUNC PidStatsAddActAmt, 0x8084b85 
-SET_FUNC PidStatsAddStatViewAmt, 0x8084bb9 
-SET_FUNC PidStatsAddDeployAmt, 0x8084bed
-SET_FUNC PidStatsAddSquaresMoved, 0x8084c31 
-SET_FUNC PidStatsAddExpGained, 0x8084c85 
-@ 08084cd8 T PidStatsCountTotalBattles	/Users/laqieer/Projects/FEHRR/include/decomp/src/save_stats.c:282
-@ 08084cfc T PidStatsCountTotalWins	/Users/laqieer/Projects/FEHRR/include/decomp/src/save_stats.c:292
-@ 08084d1c T PidStatsCountTotalLosses	/Users/laqieer/Projects/FEHRR/include/decomp/src/save_stats.c:302
-SET_FUNC PidStatsGetTotalLevel, 0x8084d35 
-@ 08084d64 T PidStatsUpdateFromBattleOutcome	/Users/laqieer/Projects/FEHRR/include/decomp/src/save_stats.c:322
-SET_FUNC SetupMapSpritesPalettes, 0x8021B99 
-SET_FUNC ResetUnitSprites, 0x8021BD1 
-SET_FUNC ResetUnitSpriteHover, 0x8022629  
-SET_FUNC ForceSyncUnitSpriteSheet, 0x8021FE9   
-SET_FUNC PutBlendWindowUnitSprite, 0x8022941 
-SET_FUNC UseUnitSprite, 0x8021C39 
-SET_FUNC func_fe6_08022A2C, 0x8022A2D 
-SET_FUNC ReadLastGameSaveId, 0x8084f95  
-SET_FUNC ReadGameSave, 0x80851b5  
-SET_FUNC CpuSet, 0x809DCDD 
-SET_FUNC WriteGlobalSaveInfoNoChecksum, 0x8084389  
+SET_FUNC BattleEventEngineExists, 0x8011f71
+SET_FUNC DeleteBattleAnimInfoThing, 0x8062cf1
+SET_FUNC MapAnimProc_DisplayExpBar, 0x8061d01
+SET_FUNC MapAnim_MoveCameraOntoSubject, 0x8061B81
+SET_FUNC MapAnim_Cleanup, 0x80619b1
+SET_FUNC UpdateActorFromBattle, 0x80254CD @ BattleApplyUnitUpdates
 
-.endif 
+.endif     
 .if FE7 == true 
-SET_FUNC WriteGlobalSaveInfoNoChecksum, 0x809EFB1 
-SET_FUNC CpuSet, 0x80BFA11 
-SET_FUNC ReadGameSave, 0x80A08ED  
-SET_FUNC ReadLastGameSaveId, 0x80A05F5  
-SET_FUNC PutUnitSpriteForClassId, 0x802619D   
-SET_FUNC ForceSyncUnitSpriteSheet, 0x8025581   
-SET_FUNC ResetUnitSpriteHover, 0x8025F9D  
-SET_FUNC ResetUnitSprites, 0x8024CF9  
-SET_FUNC StartUiSMS, 0x8024D61 
-SET_FUNC SetupMapSpritesPalettes, 0x8024C99 
-SET_FUNC PidStatsAddActAmt, 0x809FF6D
-SET_FUNC PidStatsAddStatViewAmt, 0x80A91D1 
-SET_FUNC PidStatsAddDeployAmt, 0x809FFED
-SET_FUNC PidStatsAddSquaresMoved, 0x80A003D
-SET_FUNC PidStatsAddExpGained, 0x80A009D
-SET_FUNC PidStatsSubFavval08, 0x80A00FD
-SET_FUNC PidStatsSubFavval100, 0x80A0111
-SET_FUNC PidStatsGetTotalLevel, 0x80A0191
-SET_FUNC PidStatsGetTotalExpGain, 0x80A01BD @ ? 
-SET_FUNC PidStatsGetExpGain, 0x80A01DD
-SET_FUNC PidStatsGetFavval, 0x80A0211
-SET_FUNC PidStatsAddFavval, 0x80A0249
+SET_FUNC RenderBmMapOnBg2, 0x8019585  
+SET_FUNC MoveActiveUnit, 0x801CDBD 
+SET_FUNC NewBMXFADE, 0x8082015
+SET_FUNC HandlePostActionTraps, 0x8034521
+SET_FUNC RunPotentialWaitEvents, 0x801CC4D
+SET_FUNC EnsureCameraOntoActiveUnitPosition, 0x801CC69
+SET_FUNC StartBmPromotion, 0x0802cc69 
+SET_FUNC StartArenaScreen, 0x80b267D
+SET_FUNC GetUnitEquippedWeapon, 0x8016765
+SET_FUNC InitBattleUnit, 0x80285D5
+SET_FUNC SetupMapBattleAnim, 0x806F30D
+SET_FUNC UnitBeginAction, 0x80180ED 
+SET_DATA gProcScr_CamMove, 0x8B92E38 
+SET_FUNC BattleEventEngineExists, 0x800F08D
+@SET_FUNC EventEngineExists, 0x8001BC9
+SET_FUNC MapAnimProc_DisplayExpBar, 0x806E7C5
+SET_FUNC MapAnim_MoveCameraOntoSubject, 0x806E645
+SET_FUNC MapAnim_Cleanup, 0x806E475
+SET_FUNC UpdateActorFromBattle, 0x8029A71 @ BattleApplyUnitUpdates
 
-SET_FUNC StartHelpPromptSprite, 0x8081FBD
-SET_FUNC strlen, 0x80C0115
-SET_DATA gProcScr_HelpPromptSpr, 0x8CC209C 
-SET_FUNC SetPrimaryHBlankHandler, 0x8002F15
-SET_FUNC SetBackgroundTileDataOffset, 0x8001435
-SET_FUNC ApplyUiWindowFramePal, 0x8049A95
-SET_FUNC UnpackUiWindowFrameImg2, 0x8049B25
-SET_DATA sMutableHbi, 0x203E674 @ in StartHelpBox 
-SET_DATA sLastHbi, 0x203E690 
-SET_DATA sHbOrigin, 0x203E694 @ in StartHelpBox 
-SET_DATA gHelpBoxSt, 0x203E6A0
-SET_DATA gProcScr_HelpBox, 0x8CC2014 @ StartHelpBox
-SET_DATA ProcScr_HelpBoxIntro, 0x8CC29BC @ StartHelpBox
-SET_FUNC HelpBoxIntroDrawTexts, 0x8082C8d
-SET_FUNC ApplyHelpBoxContentSize, 0x8081CDD
-SET_FUNC StringInsertSpecialPrefixByCtrl, 0x8012CBD
-SET_FUNC GetHelpBoxItemInfoKind, 0x8081E01
-@SET_FUNC SetMsgTerminator, 0x8012c11
-SET_FUNC LoadHelpBoxGfx, 0x8082529
-SET_FUNC SpriteText_DrawBackground, 0x8005C99
-SET_FUNC GetStringTextLen, 0x80055FD
-SET_FUNC GetStringTextBox, 0x80056C5
-SET_FUNC ApplyHelpBoxPosition, 0x8081D41
-SET_FUNC SetHelpBoxInitPosition, 0x8081DCD
-SET_FUNC ResetHelpBoxInitSize, 0x8081DF1
-SET_FUNC CloseHelpBox, 0x8081B45
-SET_FUNC HelpBoxSetupstringLines, 0x8082BD9
-SET_FUNC HelpBoxDrawstring, 0x8082C4D
-SET_DATA gProcScr_HelpBoxTextScroll, 0x8CC2994
+
+
 SET_DATA gUnknown_08A02274, 0x83FCE8C
 SET_FUNC MU_EndAll, 0x806CCB9 
 SET_FUNC HideUnitSprite, 0x8026575
@@ -313,7 +246,7 @@ SET_FUNC sub_802C334, 0x8029D6D
 SET_FUNC PutText, 0x8005591
 SET_FUNC Text_SetColor, 0x8005581
 SET_DATA gProcScr_TerrainDisplay, 0x8CC2C00
-SET_DATA gProcScr_PlayerPhase, 0x8B93374
+SET_DATA gProcScr_PlayerPhase, 0x8B93374 
 SET_DATA gKeyStatusPtr, 0x8B857F8
 @ 
 @ 80180EC UnitBeginAction for ram 
@@ -438,9 +371,6 @@ SET_FUNC HbPopulate_SSCharacter, 0x80816FD
 
 .endif 
 .if FE8 == true 
-SET_FUNC StartUiSMS, 0x80266f1
-SET_FUNC UnpackUiWindowFrameImg2, 0x804E169
-SET_FUNC ApplyUiWindowFramePal, 0x804E0A9
 SET_DATA pPromoJidLut, 0x80cc7d0 
 SET_DATA Pal_SpinningArrow, 0x8a1a084 
 SET_DATA PrepItemSuppyTexts, 0x2013648
