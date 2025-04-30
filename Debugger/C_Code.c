@@ -163,7 +163,7 @@ int GetBootType(void)
 {
     struct GlobalSaveInfo info;
     ReadGlobalSaveInfo(&info);
-    return info.charKnownFlags[0x10];
+    return info.charKnownFlags[0x1F];
 }
 
 void EventCallGameOverExt(ProcPtr proc)
