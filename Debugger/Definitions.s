@@ -178,7 +178,6 @@ SET_FUNC InitBattleUnit, 0x80243F9
 SET_FUNC SetupMapBattleAnim, 0x8062891
 SET_FUNC UnitBeginAction, 0x8017df9
 SET_DATA gProcScr_CamMove, 0x85c5234 
-@SET_DATA gManimSt, 0x30026B0 
 SET_DATA gManimSt, 0x203cde4 @ from MapAnimProc_DisplayExpBar
 SET_DATA gBattleHitArray, 0x203930C  @ from SetupMapBattleAnim 
 
@@ -207,8 +206,12 @@ SET_FUNC InitBattleUnit, 0x80285D5
 SET_FUNC SetupMapBattleAnim, 0x806F30D
 SET_FUNC UnitBeginAction, 0x80180ED 
 SET_DATA gProcScr_CamMove, 0x8B92E38 
+SET_DATA gManimSt, 0x203e0fc @ from MapAnimProc_DisplayExpBar
+SET_DATA gBattleHitArray, 0x203a4f0  @ from SetupMapBattleAnim 
+
 SET_FUNC BattleEventEngineExists, 0x800F08D
 @SET_FUNC EventEngineExists, 0x8001BC9
+SET_FUNC DeleteBattleAnimInfoThing, 0x806F76D
 SET_FUNC MapAnimProc_DisplayExpBar, 0x806E7C5
 SET_FUNC MapAnim_MoveCameraOntoSubject, 0x806E645
 SET_FUNC MapAnim_Cleanup, 0x806E475
