@@ -1,23 +1,7 @@
 #include "C_Code.h" // headers 
 
-//#define VANILLA_VERSION 
-
-#ifdef VANILLA_VERSION 
-	// Speed*2 + luck 
-void ComputeBattleUnitAvoidRate(struct BattleUnit* bu) {
-    bu->battleAvoidRate = (bu->battleSpeed * 2) + bu->terrainAvoid + (bu->unit.lck);
-
-    if (bu->battleAvoidRate < 0)
-        bu->battleAvoidRate = 0;
+void GameOverScreen_LoopIdle(struct ProcGameOverScreen *proc)
+{
+    if ((A_BUTTON | B_BUTTON | START_BUTTON) & gKeyStatusPtr->newKeys)
+        Proc_Goto(proc, 0x63);
 }
-
-#else 
-	// Speed + (1/2 luck) 
-void ComputeBattleUnitAvoidRate(struct BattleUnit* bu) {
-    bu->battleAvoidRate = (bu->battleSpeed) + bu->terrainAvoid + (bu->unit.lck / 2);
-
-    if (bu->battleAvoidRate < 0)
-        bu->battleAvoidRate = 0;
-}
-
-#endif 
