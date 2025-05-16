@@ -97,6 +97,10 @@ ORG $2F9E0 // ExecJunaFruitItem
 replaceWithHack(StartBmReclass)
 ORG $A190F0 // ProcScr_PrepItemUseJunaFruit
 POIN PrepScreenReclassProc 
+
+ORG $1D210 
+BYTE $B7 // Don't suspend when using HeartSeal 
+
 POP 
 
 setText(0x402, ReclassItemName) // Originally "Juna Fruit"

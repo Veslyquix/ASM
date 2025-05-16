@@ -1037,6 +1037,10 @@ static const void * sUiGoldBox[] = {
 const u8 * GetUiGoldBox(void)
 {
     int id = GetUI_id();
+    if (!id)
+    {
+        return poinImg_ShopGoldBox;
+    }
     return sUiGoldBox[id];
 }
 

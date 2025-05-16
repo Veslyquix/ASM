@@ -1472,8 +1472,6 @@ int StartBmReclass(ProcPtr proc)
     gActiveUnit = unit;
     gActiveUnitId = unit->index;
 
-    gActiveUnitMoveOrigin.x = unit->xPos;
-    gActiveUnitMoveOrigin.y = unit->yPos;
     gActionData.xMove = unit->xPos;
     gActionData.yMove = unit->yPos;
 
