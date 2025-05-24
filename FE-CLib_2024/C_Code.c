@@ -1,7 +1,10 @@
-#include "C_Code.h" // headers 
-
-void GameOverScreen_LoopIdle(struct ProcGameOverScreen *proc)
+#include "c_code.h"
+void ComputeBattleUnitAvoidRate(struct BattleUnit * bu)
 {
-    if ((A_BUTTON | B_BUTTON | START_BUTTON) & gKeyStatusPtr->newKeys)
-        Proc_Goto(proc, 0x63);
+    bu->battleAvoidRate = (bu->battleSpeed * 2) + bu->terrainAvoid + (bu->unit.lck);
+
+    if (bu->battleAvoidRate < 0)
+        bu->battleAvoidRate = 0;
+
+    // bu->battleAvoidRate = 73; // Commented test case
 }
