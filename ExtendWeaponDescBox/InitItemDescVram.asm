@@ -15,6 +15,7 @@
 @.equ ProcFind, 0x8002DEC		@{J}
 
 .set InitItemDescVramDoubleProcExceptionsList, ProcExceptionsList+4
+.set Proc_IgnoreExceptionsList, InitItemDescVramDoubleProcExceptionsList+4
 
 push {r4-r7, lr} 
 
@@ -40,6 +41,22 @@ blh InitVramRow
 mov r0, r4 
 add r0, #0x28 
 blh InitVramRow 
+
+
+ldr r4, Proc_IgnoreExceptionsList @ if these procs are active, always allocate extra vram regardless of exceptions list 
+sub r4, #4 
+Loop1:
+add r4, #4 
+ldr r0, [r4] 
+cmp r0, #0 
+beq ExceptionsListStart
+blh ProcFind 
+cmp r0, #0 
+beq Loop1
+b BreakLoop
+
+
+ExceptionsListStart:
 
 ldr r4, ProcExceptionsList @ if any of these procs are running, then don't allocate extra vram 
 sub r4, #4 

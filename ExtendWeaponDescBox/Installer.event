@@ -15,6 +15,7 @@
 #define gProc_PrepSomethingUnknown $A1898C 
 #define gProc_PrepSomethingUnknown2 $A18944 // backup 
 #define gProc_PrepScreenPickUnitsMenu $A18E8C
+#define gProcScr_PrepWMShopSell $A19528
 #define gProc_BG3HSlide $A006E4
 
 ALIGN 4 
@@ -30,6 +31,12 @@ InitItemDescVramDoubleProcExceptionsList:
 POIN gProc_PrepScreenPickUnitsMenu gProc_BG3HSlide
 WORD 0 //Terminator
 
+ALIGN 4 
+Proc_IgnoreExceptionsList: 
+POIN gProcScr_PrepWMShopSell
+WORD 0 
+
+
 #ifndef callHackNew 
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
@@ -40,6 +47,7 @@ InitItemDescVram:
 #incbin "InitItemDescVram.dmp" 
 POIN ProcExceptionsList
 POIN InitItemDescVramDoubleProcExceptionsList
+POIN Proc_IgnoreExceptionsList
 
 ALIGN 4 
 InitProcTextHandles:
@@ -58,7 +66,28 @@ ALIGN 4
 LoadDialogueBoxGfxHook:
 #incbin "LoadDialogueBoxGfxHook.dmp" 
 
+ALIGN 4 
+WMSell_Hook:
+#incbin "WMSell_Hook.dmp" 
+POIN WMSell_FaceVramEntry
+
+ALIGN 4 
+WMSell_FaceVramEntry: 
+WORD 0x6800 
+WORD 6 
+
 PUSH 
+
+ORG $9fdf4 
+BYTE 0xF0 // sub_809FDD4 move "Sell unwanted items" 
+ORG $9fdcc 
+BYTE 0xC0 // WmSell_DrawSupplyDialogueSpriteText 809FDA0 "Sell unwanted items" sprite text 
+
+ORG 0xA015C 
+callHackNew(WMSell_Hook|1) 
+
+
+
 
 ORG $9C63C
 //ORG 0x09E8E2    //{J}
@@ -100,11 +129,11 @@ PROTECT $8980C $8980C+12	//{U}
 
 ORG $899BC		//{U}
 //ORG $8BCDA		//{J}
-BYTE (4)<<4
+BYTE (5)<<4
 
 ORG $899C0		//{U}
 //ORG $8BCDE		//{J}
-BYTE (4)<<4
+BYTE (5)<<4
 
 
 // [203E7C4]!!
@@ -149,7 +178,7 @@ SHORT 0x42C0 // 4240 vanilla
 ORG $354D4 // from 0x803547C called by 356BC Procs BottomHelpText CallASM
 POIN SomeNewOAMTable
 
-//Make scrolling help text only clear space for one line. (It doesn't seem to need it anyway.
+//Make scrolling help text only clear space for one line. (It doesn't seem to need it anyway)
 //https://discord.com/channels/144670830150811649/725478895226191892/1219846780590751845
 ORG $3552A	//{U}
 //ORG $35432	//{J}
