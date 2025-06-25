@@ -4618,6 +4618,9 @@ void UnitBeginActionInit(struct Unit * unit)
 {
     gActiveUnit = unit;
     gActiveUnitId = unit->index;
+    InitBattleUnit(&gBattleActor, unit);
+    ClearUnit(&gBattleTarget.unit); // so a previous unit isn't affected
+    gBattleTarget.unit.index = 0;   // (fixed bug of promote -> levelup with another char)
 
     gActiveUnitMoveOrigin.x = unit->xPos;
     gActiveUnitMoveOrigin.y = unit->yPos;

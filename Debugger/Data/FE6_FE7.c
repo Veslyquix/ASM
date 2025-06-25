@@ -1,6 +1,6 @@
 
 // #define USE_CCODE
-
+#define brk asm("mov r11, r11");
 #include "../C_code.h"
 
 #ifdef FE6
@@ -2050,6 +2050,9 @@ void UnitBeginActionInit(struct Unit * unit)
 {
     gActiveUnit = unit;
     gActiveUnitId = unit->index;
+    InitBattleUnit(&gBattleActor, unit);
+    ClearUnit(&gBattleTarget.unit); // so a previous unit isn't affected
+    gBattleTarget.unit.index = 0;   // (fixed bug of promote -> levelup with another char)
 
     gActiveUnitMoveOrigin.x = unit->xPos;
     gActiveUnitMoveOrigin.y = unit->yPos;
@@ -2744,6 +2747,8 @@ void PlayerPhase_FinishActionNoCanto(ProcPtr proc)
         RefreshEntityBmMaps();
         RenderBmMap();
     }
+    if (gActiveUnit->curHP != 0)
+        gActiveUnit->state = gActiveUnit->state & ~US_HIDDEN;
 
     SetCursorMapPositionIfValid(gActiveUnit->xPos, gActiveUnit->yPos);
 
