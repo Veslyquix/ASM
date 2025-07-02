@@ -14,6 +14,8 @@ ORG $32EE0
 callHackNew(UpdateIconsOnEnemiesWhoCanAttackTile)
 SHORT $46c0 
 
+ORG $15E2c // 8015e0c EnsureCameraOntoPosition 
+callHackNew(Hook_EnsureCameraOntoPosition) 
 
 POP 
 
