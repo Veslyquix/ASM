@@ -1,5 +1,5 @@
 
-// #define OVERWRITE_LIGHTRUNE_PAL 
+#define OVERWRITE_LIGHTRUNE_PAL 
 // #define _VERTICAL_ // Make shaking map sprites bob up and down instead of horizontally 
 #define ShakeSpeed 3 // 0 = fastest, 1 = very fast, 2 = fast, 3 = normal, 4 = slow, 5 = very slow 
 
@@ -9,7 +9,7 @@ ShakeSpeed_Link:
 WORD ShakeSpeed 
 
 ShakeIt:
-WORD 1 
+WORD 1
 Pal_4th:
 WORD 1 
 
@@ -20,13 +20,22 @@ WORD 1
 
 #ifndef callHackNew
 	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
 #endif 
 
 
-
+// [801c8a8]?
 PUSH 
 ORG $1cc20 
-callHackNew(Hook_PlayerPhase_InitUnitMovementSelect)
+callHackNew(Hook_PlayerPhase_InitUnitMovementSelect) // Finish danger bones if needed 
+
+// ORG $37750
+// callHackNew(Hook_HandlePostActionTraps)
+
+
+ORG $1c894
+jumpToHack(Hook_PlayerPhase_Suspend) 
+
 
 ORG $32EE0 
 callHackNew(UpdateIconsOnEnemiesWhoCanAttackTile)
@@ -41,7 +50,7 @@ SHORT $46c0
 
 #ifdef OVERWRITE_LIGHTRUNE_PAL
 ORG $59eec0
-BYTE $30 $36 $CD $24 $58 $52 $3C $67 $2E $25 $F6 $21 $9F $5F $4C $04 $75 $08 $1C $00 $FF $18 $E7 $0E $9F $17 $D0 $2D $9F $73 $88 $10
+BYTE $90 $1D $0D $00 $18 $25 $DC $2D $0E $00 $F6 $00 $5F $36 $0C $00 $15 $00 $1C $00 $1F $00 $C7 $01 $5F $01 $50 $00 $1F $46 $08 $00
 #endif
 
 #ifdef _VERTICAL_ 

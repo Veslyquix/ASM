@@ -16,13 +16,58 @@ mov r0, #2
 orr r0, r1 
 strb r0, [r5, #4] 
 
-bl GenerateDangerBonesRange
+bl FinishDangerBonesRange
 
 ldr r4, =0x3004e50 @gActiveUnit 
 ldr r0, [r4] 
 pop {r3} 
 bx r3 
 .ltorg 
+
+
+.global Hook_PlayerPhase_Suspend
+.type Hook_PlayerPhase_Suspend, %function 
+Hook_PlayerPhase_Suspend:
+push {lr} 
+bl StartDangerBonesRange
+ldr r1, =0x203a958 
+mov r0, #0
+strb r0, [r1, #0x16]
+mov r0, #3 
+ldr r3, =0x801C89F 
+bx r3 
+.ltorg 
+
+.global Hook_HandlePostActionTraps
+.type Hook_HandlePostActionTraps, %function 
+Hook_HandlePostActionTraps:
+push {lr} 
+push {r0}
+
+bl StartDangerBonesRange
+
+pop {r0}
+cmp r0, #0 
+ble Exit2
+
+ldr r2, [r4]
+ldr r0, [r2]
+ldr r1, [r2, #4] 
+ldr r0, [r0, #0x28]
+
+
+
+
+pop {r3} 
+bx r3 
+.ltorg 
+
+Exit2:
+pop {r3} 
+ldr r3, =0x803775d 
+bx r3 
+.ltorg 
+
 
 .global Hook_EnsureCameraOntoPosition
 .type Hook_EnsureCameraOntoPosition, %function 
