@@ -17,7 +17,8 @@ SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
 
 SET_DATA classTablePoin, 0x8017AB8 
-SET_DATA DangerLinesBuffer, 0x20099c8	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
+SET_DATA DangerLinesBuffer, 0x201c8d0 @ gTmA_Banim
+@SET_DATA DangerLinesBuffer, 0x20099c8	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
  @ gUnknown_0200A2D8 @ op movie 
  @ gUnknown_0200A300 @ op movie 
  @ gUnknown_0200AF00 @ world map moving map sprite graphics 
