@@ -1,8 +1,8 @@
 #include "c_code.h"
 
 #define brk asm("mov r11, r11");
-extern u8 DangerLinesBuffer[];
-#define DangerLinesBufferSize 0x3000
+extern u8 DangerBonesBuffer[];
+#define DangerBonesBufferSize 0x3000
 
 extern int ShakeIt;
 extern int Pal_4th;
@@ -84,7 +84,7 @@ void UpdateIconsOnEnemiesWhoCanAttackTile(void)
     RemoveEnemyShaking();
 
     int deploymentID;
-    u8 * row = &DangerLinesBuffer[y * gBmMapSize.x * enemySize];
+    u8 * row = &DangerBonesBuffer[y * gBmMapSize.x * enemySize];
 
     for (int i = 0; i < enemySize; i++) // Loop over bytes
     {
@@ -125,7 +125,7 @@ void CopyAttackRangeIntoBuffer(int i, int xSize, int ySize)
     for (int y = 0; y < ySize; y++)
     {
         // rangeMapY = gBmMapRange[y];
-        buf = &DangerLinesBuffer[y * xSize * enemySize];
+        buf = &DangerBonesBuffer[y * xSize * enemySize];
         for (int x = 0; x < xSize; x++)
         {
             if (!gBmMapRange[y][x])
@@ -138,14 +138,14 @@ void CopyAttackRangeIntoBuffer(int i, int xSize, int ySize)
     }
 }
 
-void GenerateDangerLineRange(void)
+void GenerateDangerBonesRange(void)
 {
     brk;
     // register int dummy_r12 __asm__("r12");
     u8 savedUnitId;
     int xSize = gBmMapSize.x; //- 1;
     int ySize = gBmMapSize.y; //- 1;
-    CpuFill16(0, DangerLinesBuffer, DangerLinesBufferSize);
+    CpuFill16(0, DangerBonesBuffer, DangerBonesBufferSize);
 
     for (int i = 0x80; i < 0xC0; ++i) // Enemy only
     {

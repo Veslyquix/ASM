@@ -16,7 +16,7 @@ mov r0, #2
 orr r0, r1 
 strb r0, [r5, #4] 
 
-bl GenerateDangerLineRange
+bl GenerateDangerBonesRange
 
 ldr r4, =0x3004e50 @gActiveUnit 
 ldr r0, [r4] 
