@@ -1,5 +1,11 @@
 
 .thumb 
+.macro blh to, reg=r3
+  ldr \reg, =\to
+  mov lr, \reg
+  .short 0xf800
+.endm
+
 @ in 1CC1C
 .global Hook_PlayerPhase_InitUnitMovementSelect
 .type Hook_PlayerPhase_InitUnitMovementSelect, %function 
@@ -34,6 +40,27 @@ pop {r3}
 bx r3 
 .ltorg 
 
+.global Hook_PutUnitSpritesOam
+.type Hook_PutUnitSpritesOam, %function 
+Hook_PutUnitSpritesOam: 
+push {lr} 
+mov r3, #0 
+cmp r0, #0 
+beq Exit_PutUnitSpritesOam 
+blh 0x8000D28 @ GetGameClock 
+mov r3, r0 
+mov r0, #0x1
+ldr r1, =ShakeSpeed_Link 
+ldr r1, [r1] 
+lsl r0, r1 
+
+and r3, r0 
+lsr r3, r1 
+Exit_PutUnitSpritesOam: 
+
+pop {r2} 
+bx r2 
+.ltorg 
 
 
 
