@@ -14,6 +14,7 @@ extern u8 DangerBonesBuffer[];
 
 extern int ShakeIt;
 extern int Pal_4th;
+extern int DangerBonesDisabledFlag;
 
 int IsUnitInvalid(struct Unit * unit)
 {
@@ -38,6 +39,10 @@ int IsUnitInvalid(struct Unit * unit)
 
 void RemoveEnemyShaking(void)
 {
+    if (CheckFlag(DangerBonesDisabledFlag))
+    {
+        return;
+    }
     struct Unit * unit;
     int unitState = 0;
     if (ShakeIt)
@@ -68,6 +73,10 @@ void UpdateIconsOnEnemiesWhoCanAttackTile(void)
     int y = gBmSt.playerCursor.y;
     SetLastCoords(x, y);             // vanilla
     SetWorkingBmMap(gBmMapMovement); // vanilla
+    if (CheckFlag(DangerBonesDisabledFlag))
+    {
+        return;
+    }
     u8 savedUnitId = gBmMapUnit[y][x];
     gBmMapUnit[y][x] = 0;
 
@@ -249,6 +258,10 @@ void StartDangerBonesRange(void)
     {
         return;
     }
+    if (CheckFlag(DangerBonesDisabledFlag))
+    {
+        return;
+    }
     CpuFill16(0, DangerBonesBuffer, DangerBonesBufferSize);
     BmMapFill(gBmMapUnit, 0);
 
@@ -267,6 +280,10 @@ void StartDangerBonesRange(void)
 
 void FinishDangerBonesRange(void) // if proc didn't finish yet, calc the rest now
 {
+    if (CheckFlag(DangerBonesDisabledFlag))
+    {
+        return;
+    }
     DangerBonesProc * proc = Proc_Find((ProcPtr)&DangerBonesProcCmd);
     int id = 0x80;
     if (proc)

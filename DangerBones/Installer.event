@@ -12,7 +12,8 @@ ShakeIt:
 WORD 1
 Pal_4th:
 WORD 1 
-
+DangerBonesDisabledFlag:
+WORD 0x128
 
 
 #include "C_Code.lyn.event" 
