@@ -33,6 +33,11 @@ callHackNew(Hook_PlayerPhase_InitUnitMovementSelect) // Finish danger bones if n
 // ORG $37750
 // callHackNew(Hook_HandlePostActionTraps)
 
+#ifdef OVERWRITE_LIGHTRUNE_PAL
+ORG $2733c 
+callHackNew(Hook_RefreshUnitSprites)
+#endif 
+
 
 ORG $1c894
 jumpToHack(Hook_PlayerPhase_Suspend) 

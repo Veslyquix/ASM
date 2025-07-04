@@ -85,6 +85,30 @@ pop {r3}
 bx r3 
 .ltorg 
 
+.global Hook_RefreshUnitSprites
+.type Hook_RefreshUnitSprites, %function 
+Hook_RefreshUnitSprites: 
+push {lr} 
+lsl r2, r0, #16 
+lsr r2, #24 
+cmp r2, #0xC0 
+bge DoNothing 
+mov r2, #0x10 
+lsl r2, #8 
+add r0, r2 
+DoNothing: 
+strh r0, [r5, #8] 
+mov r2, r9 
+ldrh r0, [r2] 
+strb r0, [r5, #0xB] 
+add r4, #8 
+ldrb r0, [r4, #2] 
+pop {r3} 
+bx r3 
+.ltorg 
+
+
+
 .global Hook_PutUnitSpritesOam
 .type Hook_PutUnitSpritesOam, %function 
 Hook_PutUnitSpritesOam: 
