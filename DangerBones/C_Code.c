@@ -263,7 +263,9 @@ void StartDangerBonesRange(void)
         return;
     }
     CpuFill16(0, DangerBonesBuffer, DangerBonesBufferSize);
+#ifdef EMPTY_BmUnit
     BmMapFill(gBmMapUnit, 0);
+#endif
 
     DangerBonesProc * proc = Proc_Find((ProcPtr)&DangerBonesProcCmd);
     if (proc)
