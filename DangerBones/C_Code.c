@@ -24,7 +24,7 @@ int IsUnitInvalid(struct Unit * unit)
     }
     if (gPlaySt.chapterVisionRange)
     {
-        if (gBmMapFog[unit->yPos][unit->xPos] != 0)
+        if (gBmMapFog[unit->yPos][unit->xPos] == 0)
         {
             return true; // in the fog
         }
