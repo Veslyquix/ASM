@@ -16,6 +16,19 @@ extern int ShakeIt;
 extern int Pal_4th;
 extern int DangerBonesDisabledFlag;
 
+int ShouldDangerBonesNotRun(void)
+{
+    if (gPlaySt.faction)
+    {
+        return true;
+    }
+    if (CheckFlag(DangerBonesDisabledFlag))
+    {
+        return true;
+    }
+    return false;
+}
+
 int IsUnitInvalid(struct Unit * unit)
 {
     if (!UNIT_IS_VALID(unit))
@@ -39,7 +52,7 @@ int IsUnitInvalid(struct Unit * unit)
 
 void RemoveEnemyShaking(void)
 {
-    if (CheckFlag(DangerBonesDisabledFlag))
+    if (ShouldDangerBonesNotRun())
     {
         return;
     }
@@ -67,13 +80,13 @@ void RemoveEnemyShaking(void)
     RefreshUnitSprites();
 }
 
-void UpdateIconsOnEnemiesWhoCanAttackTile(void)
+void UpdateVisualsForEnemiesWhoCanAttackTile(void)
 {
     int x = gBmSt.playerCursor.x;
     int y = gBmSt.playerCursor.y;
     SetLastCoords(x, y);             // vanilla
     SetWorkingBmMap(gBmMapMovement); // vanilla
-    if (CheckFlag(DangerBonesDisabledFlag))
+    if (ShouldDangerBonesNotRun())
     {
         return;
     }
@@ -140,7 +153,6 @@ void CopyAttackRangeIntoBuffer(int i, int xSize, int ySize)
             {
                 continue;
             }
-
             buf[(x * enemySize) + byteID] |= i;
         }
     }
@@ -159,6 +171,7 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
 
     int xSize = gBmMapSize.x;
     int ySize = gBmMapSize.y;
+
     int counter = 0;
     if (proc->id >= 0xC0)
     {
@@ -254,11 +267,7 @@ void GenerateDangerBonesRangeAll(int i) // Causes noticable lag if done for 0x80
 
 void StartDangerBonesRange(void)
 {
-    if (gPlaySt.faction)
-    {
-        return;
-    }
-    if (CheckFlag(DangerBonesDisabledFlag))
+    if (ShouldDangerBonesNotRun())
     {
         return;
     }
@@ -282,7 +291,7 @@ void StartDangerBonesRange(void)
 
 void FinishDangerBonesRange(void) // if proc didn't finish yet, calc the rest now
 {
-    if (CheckFlag(DangerBonesDisabledFlag))
+    if (ShouldDangerBonesNotRun())
     {
         return;
     }

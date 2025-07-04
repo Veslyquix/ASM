@@ -39,7 +39,7 @@ jumpToHack(Hook_PlayerPhase_Suspend)
 
 
 ORG $32EE0 
-callHackNew(UpdateIconsOnEnemiesWhoCanAttackTile)
+callHackNew(UpdateVisualsForEnemiesWhoCanAttackTile)
 SHORT $46c0 
 
 ORG $15E2c // 8015e0c EnsureCameraOntoPosition 
