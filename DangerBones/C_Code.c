@@ -1,9 +1,13 @@
 #include "c_code.h"
 
 #define brk asm("mov r11, r11");
-extern u8 DangerBonesBuffer[];
-#define DangerBonesBufferSize 0x3000
+#define DangerBonesBufferSize 0x2878
 #define enemySize (50 + 7) >> 3
+#define MaxTiles DangerBonesBufferSize / enemySize
+// x*y = 1480 or smaller eg. up to around a 38x38 map
+
+extern u8 DangerBonesBuffer[DangerBonesBufferSize];
+
 #define US_BIT_SHAKE (1 << 24)
 #define US_BIT_PAL (1 << 27)
 
@@ -106,11 +110,20 @@ void UpdateVisualsForEnemiesWhoCanAttackTile(void)
     struct Unit * unit;
     RemoveEnemyShaking();
 
+    int mightExceedBuffer = gBmMapSize.x * gBmMapSize.y > MaxTiles;
+
     int deploymentID;
     u8 * row = &DangerBonesBuffer[y * gBmMapSize.x * enemySize];
 
     for (int i = 0; i < enemySize; i++) // Loop over bytes
     {
+        if (mightExceedBuffer)
+        {
+            if (((y * gBmMapSize.x * enemySize) + (x * enemySize) + i) > DangerBonesBufferSize)
+            {
+                continue;
+            }
+        }
         u8 byte = row[(x * enemySize) + i];
         for (int bit = 0; bit < 8; bit++)
         {
@@ -136,6 +149,7 @@ void UpdateVisualsForEnemiesWhoCanAttackTile(void)
 
 void CopyAttackRangeIntoBuffer(int i, int xSize, int ySize)
 {
+    int mightExceedBuffer = xSize * ySize > MaxTiles;
     i &= 0x3F;
     int byteID = i >> 3; // Which byte of the buffer to write to
     i &= 7;
@@ -152,6 +166,13 @@ void CopyAttackRangeIntoBuffer(int i, int xSize, int ySize)
             if (!rangeMapY[x])
             {
                 continue;
+            }
+            if (mightExceedBuffer)
+            {
+                if (((y * xSize * enemySize) + (x * enemySize) + byteID) > DangerBonesBufferSize)
+                {
+                    continue;
+                }
             }
             buf[(x * enemySize) + byteID] |= i;
         }
