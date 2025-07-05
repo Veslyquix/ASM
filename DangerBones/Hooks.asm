@@ -101,9 +101,10 @@ strh r0, [r5, #8]
 mov r2, r9 
 ldrh r0, [r2] 
 strb r0, [r5, #0xB] 
-add r4, #8 
-ldrb r0, [r4, #2] 
+@add r4, #8 
+@ldrb r0, [r4, #2] 
 pop {r3} 
+ldr r3, =0x8027345 
 bx r3 
 .ltorg 
 

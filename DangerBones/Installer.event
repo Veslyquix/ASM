@@ -35,7 +35,7 @@ callHackNew(Hook_PlayerPhase_InitUnitMovementSelect) // Finish danger bones if n
 
 #ifdef OVERWRITE_LIGHTRUNE_PAL
 ORG $2733c 
-callHackNew(Hook_RefreshUnitSprites)
+jumpToHack(Hook_RefreshUnitSprites)
 #endif 
 
 
