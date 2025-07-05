@@ -14,7 +14,7 @@ extern u8 DangerBonesBuffer[DangerBonesBufferSize];
 // #define EMPTY_BmUnit
 
 // break point on buffer
-// [0x201c8d0..0x201c8d0+0x3000]!!
+// [0x201c8d0..0x201c8d0+0x2878]!!
 
 extern int ShakeIt;
 extern int Pal_4th;
@@ -81,7 +81,7 @@ void RemoveEnemyShaking(void)
 
         unit->state &= ~unitState;
     }
-    RefreshUnitSprites();
+    // RefreshUnitSprites(); // displays SMS under MMS when killing
 }
 
 void UpdateVisualsForEnemiesWhoCanAttackTile(void)
@@ -189,6 +189,7 @@ extern void RefreshUnitsOnBmMap(void);
 void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to spread out the lag
 {
     u8 savedUnitId;
+    struct Unit * activeUnit = gActiveUnit;
 
     int xSize = gBmMapSize.x;
     int ySize = gBmMapSize.y;
@@ -210,7 +211,6 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
         {
             BmMapFill(gBmMapRange, 0);
             BmMapFill(gBmMapMovement, 0);
-            RefreshUnitSprites();
         }
         proc->id = i + 1;
 
@@ -222,19 +222,40 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
         BmMapFill(gBmMapUnit, 0);
 #endif
         counter++;
+        gActiveUnit = unit;
 
         BmMapFill(gBmMapRange, 0);
+        BmMapFill(gBmMapOther, 0);
         GenerateUnitMovementMap(unit);
 
         savedUnitId = gBmMapUnit[unit->yPos][unit->xPos];
         gBmMapUnit[unit->yPos][unit->xPos] = 0;
 
         SetWorkingBmMap(gBmMapRange);
+        brk;
+        // gWorkingBmMap 30049a0
         GenerateUnitCompleteAttackRange(unit);
+        // SetWorkingBmMap(gBmMapRange);
+
+        if (activeUnit)
+        {
+            for (int y = 0; y < gBmMapSize.y; ++y)
+            {
+                for (int x = 0; x < gBmMapSize.x; ++x)
+                {
+                    if (gBmMapRange[y][x])
+                    {
+                        brk;
+                    }
+                }
+            }
+        }
+
         CopyAttackRangeIntoBuffer(i & 0x3F, xSize, ySize);
 
         gBmMapUnit[unit->yPos][unit->xPos] = savedUnitId;
     }
+    gActiveUnit = activeUnit;
 #ifdef EMPTY_BmUnit
     RefreshUnitsOnBmMap();
 #endif
@@ -251,6 +272,7 @@ void GenerateDangerBonesRangeAll(int i) // Causes noticable lag if done for 0x80
 {
     // brk;
     u8 savedUnitId;
+    struct Unit * activeUnit = gActiveUnit;
     int xSize = gBmMapSize.x;
     int ySize = gBmMapSize.y;
 #ifdef EMPTY_BmUnit
@@ -265,7 +287,7 @@ void GenerateDangerBonesRangeAll(int i) // Causes noticable lag if done for 0x80
         {
             continue;
         }
-
+        gActiveUnit = unit;
         BmMapFill(gBmMapRange, 0);
         GenerateUnitMovementMap(unit);
 
@@ -280,6 +302,7 @@ void GenerateDangerBonesRangeAll(int i) // Causes noticable lag if done for 0x80
     }
     BmMapFill(gBmMapRange, 0);
     BmMapFill(gBmMapMovement, 0);
+    gActiveUnit = activeUnit;
 #ifdef EMPTY_BmUnit
     RefreshUnitsOnBmMap();
 #endif
