@@ -19,12 +19,14 @@ WORD 0x128
 #include "Data/FE8_AsmHooks.lyn.event" 
 #endif 
 #ifdef _FE7_ 
-WORD 0xA9 
+WORD 0xA1
 #include "Data/FE7.lyn.event" 
 #include "Data/FE7_AsmHooks.lyn.event" 
 #endif 
 #ifdef _FE6_ 
-WORD 0xA9 
+WORD 0xA1 
+gPal_DangerBones:
+BYTE $90 $1D $0D $00 $18 $25 $DC $2D $0E $00 $F6 $00 $5F $36 $0C $00 $15 $00 $1C $00 $1F $00 $C7 $01 $5F $01 $50 $00 $1F $46 $08 $00
 #include "Data/FE6.lyn.event" 
 #include "Data/FE6_AsmHooks.lyn.event" 
 #endif 

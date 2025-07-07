@@ -50,6 +50,7 @@ bx r3
 Hook_PlayerPhase_Suspend_FE6:
 push {lr} 
 bl StartDangerBonesRange
+
 ldr r1, =gActionData 
 mov r0, #0
 strb r0, [r1, #0x16]

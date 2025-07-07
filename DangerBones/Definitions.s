@@ -276,15 +276,28 @@ SET_FUNC SetWorkingBmMap, 0x801A559
 SET_FUNC BmMapFill, 0x8018961
 SET_FUNC GenerateUnitMovementMap, 0x8019345 @ "MapFlood_UpToMove" 
 SET_FUNC GenerateUnitCompleteAttackRange, 0x8019B39  
-SET_DATA DangerBonesBuffer, 0x201C8BC @ gTmA_Banim from sub_80559B0 at 8047C4C
 SET_FUNC MuExists 0x805FCB5 
+SET_FUNC GetUnitDisplayedSpritePalette_FE6, 0x8022049
+SET_FUNC GetUnitSpritePalette, 0x08022065
+SET_FUNC GenerateUnitStandingReachRange, 0x801a211 
+SET_FUNC GetUnitWeaponReachBits, 0x8016EAD
+
+
+SET_DATA DangerBonesBuffer, 0x20099c0	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
+SET_DATA DangerBonesPalBuffer, 0x200c130	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
+@ smaller free ram in fe6 
+@SET_DATA DangerBonesBuffer,    0x201C8BC @ gTmA_Banim from sub_80559B0 at 8047C4C
+@ 201F0E8 gGenericBuffer ?? 8085F4C SramChecksum32 
+@SET_DATA DangerBonesPalBuffer, 0x201f12c@ 8 bytes at the end gTmA_Banim from sub_80559B0 at 8047C4C
 
 .endif     
 .if FE7 == true 
-
+SET_FUNC GetUnitWeaponReachBits, 0x8016EbD 
 SET_FUNC MuExists 0x806C041 
 SET_DATA DangerBonesBuffer, 0x201C8C4 @ gTmA_Banim from sub_80559B0 at 8050798
+@SET_DATA DangerBonesBuffer, 0x20099c8	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
 SET_FUNC GenerateUnitCompleteAttackRange, 0x801A4D5  
+SET_FUNC GenerateUnitStandingReachRange, 0x801AC61 
 SET_FUNC GenerateUnitMovementMap, 0x8019BA1 
 SET_FUNC BmMapFill, 0x80190AD
 SET_FUNC SetWorkingBmMap, 0x801B191
