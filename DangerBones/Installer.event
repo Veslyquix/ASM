@@ -16,8 +16,8 @@ DangerBonesDisabledFlag:
 WORD 0x128
 
 
-#include "C_Code.lyn.event" 
-#include "Hooks.lyn.event" 
+#include "Data/FE8.lyn.event" 
+#include "Data/FE8_AsmHooks.lyn.event" 
 
 #ifndef callHackNew
 	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
@@ -25,13 +25,10 @@ WORD 0x128
 #endif 
 
 
-// [801c8a8]?
 PUSH 
 ORG $1cc20 
 callHackNew(Hook_PlayerPhase_InitUnitMovementSelect) // Finish danger bones if needed 
 
-// ORG $37750
-// callHackNew(Hook_HandlePostActionTraps)
 
 #ifdef OVERWRITE_LIGHTRUNE_PAL
 ORG $2733c 
@@ -58,7 +55,7 @@ SHORT $46c0
 ORG $59eec0
 BYTE $90 $1D $0D $00 $18 $25 $DC $2D $0E $00 $F6 $00 $5F $36 $0C $00 $15 $00 $1C $00 $1F $00 $C7 $01 $5F $01 $50 $00 $1F $46 $08 $00
 ORG $1C068C
-#incbin "Fourth_Allegiance_Light_Rune_Topazlight-stand.dmp"
+#incbin "Data/Fourth_Allegiance_Light_Rune_Topazlight-stand.dmp"
 #endif
 
 #ifdef _VERTICAL_ 
