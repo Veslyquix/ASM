@@ -52,7 +52,6 @@ SET_DATA gPaletteBuffer, 0x2021708
 SET_DATA gCursorX, 0x202AA1C
 SET_DATA gCursorY, 0x202AA1E
 SET_DATA BattleAttackerSideBool, 0x203CCFE
-SET_DATA gBmMapUnit, 0x202D204
 SET_DATA gProcScr_StatScreen, 0x8677680
 SET_DATA gProc_ekrBattleDeamon, 0x85CB508
 SET_DATA gProcScr_UnitDisplay_MinimugBox, 0x86781D4
@@ -96,7 +95,6 @@ SET_FUNC NextRN_N, 0x8000E09
 SET_FUNC GenerateExtendedMovementMap, 0x8019425
 SET_DATA TerrainTable_MovCost_BerserkerNormal, 0x860C714
 SET_DATA TerrainTable_MovCost_BerserkerRain, 0x860C714
-SET_DATA gBmMapMovement, 0x202D20C
 SET_DATA gPhase, 0x202AA57
 SET_DATA gTurn, 0x202AA58
 SET_DATA gSfx, 0x202AA65
@@ -162,7 +160,6 @@ SET_FUNC StartOrphanMenuAdjusted, 0x80417E9
 SET_FUNC SetAllUnitNotBackSprite, 0x801809D
 SET_DATA gActiveUnitMoveOrigin, 0x202AB74 
 SET_DATA gActiveUnitId, 0x202AB70
-SET_DATA gBmMapSize, 0x202D200
 SET_DATA gActionData, 0x203956C
 SET_FUNC EnsureCameraOntoPosition, 0x80161C1
 SET_FUNC SetCursorMapPosition, 0x801600D
@@ -264,8 +261,44 @@ SET_FUNC RegisterDataMove, 0x8002B05
 SET_DATA gFrameTmRegisterConfig, 0x2023B34
 SET_DATA gFrameTmRegister, 0x2023B3C 
 SET_DATA SRRBuffer, 0x2025B8C	@ normally used by debug printing 
+
+
+SET_DATA gBmMapSize, 0x202D200
+SET_DATA gBmMapUnit, 0x202D204
+SET_DATA gBmMapTerrain, 0x202D208 
+SET_DATA gBmMapMovement, 0x202D20C
+SET_DATA gBmMapRange, 0x202D210 
+SET_DATA gBmMapFog, 0x202D214 
+SET_DATA gBmMapTrick, 0x202d218 
+SET_DATA gBmMapOther, 0x202d21c 
+SET_FUNC SetLastCoords, 0x802a861
+SET_FUNC SetWorkingBmMap, 0x801A559
+SET_FUNC BmMapFill, 0x8018961
+SET_FUNC GenerateUnitMovementMap, 0x8019345 @ "MapFlood_UpToMove" 
+SET_FUNC GenerateUnitCompleteAttackRange, 0x8019B39  
+SET_DATA DangerBonesBuffer, 0x201C8BC @ gTmA_Banim from sub_80559B0 at 8047C4C
+SET_FUNC MuExists 0x805FCB5 
+
 .endif     
 .if FE7 == true 
+
+SET_FUNC MuExists 0x806C041 
+SET_DATA DangerBonesBuffer, 0x201C8C4 @ gTmA_Banim from sub_80559B0 at 8050798
+SET_FUNC GenerateUnitCompleteAttackRange, 0x801A4D5  
+SET_FUNC GenerateUnitMovementMap, 0x8019BA1 
+SET_FUNC BmMapFill, 0x80190AD
+SET_FUNC SetWorkingBmMap, 0x801B191
+SET_FUNC SetLastCoords, 0x802fab9 
+
+SET_DATA gBmMapSize, 0x202E3D8
+SET_DATA gBmMapUnit, 0x202E3DC
+SET_DATA gBmMapTerrain, 0x202E3E0
+SET_DATA gBmMapMovement, 0x202e3e4 
+SET_DATA gBmMapRange, 0x202e3e8 
+SET_DATA gBmMapFog, 0x202e3ec 
+SET_DATA gBmMapTrick, 0x202e3f0 
+SET_DATA gBmMapOther, 0x202e3f4 
+
 SET_DATA gFrameTmRegisterConfig, 0x2024C94  
 SET_DATA gFrameTmRegister, 0x2024C9C 
 SET_FUNC RegisterDataMove, 0x8003079
@@ -358,7 +391,6 @@ SET_FUNC StartOrphanMenuAdjusted, 0x804a225
 SET_FUNC SetAllUnitNotBackSprite, 0x80183F5
 SET_DATA gActiveUnitMoveOrigin, 0x202BBF8
 SET_DATA gActiveUnitId, 0x202BD48
-SET_DATA gBmMapSize, 0x202E3D8
 SET_DATA gActionData, 0x203A85C
 SET_FUNC EnsureCameraOntoPosition, 0x8015CE1
 SET_FUNC SetCursorMapPosition, 	0x8015A91
@@ -433,7 +465,6 @@ SET_FUNC IsItemStealable, 0x8016D39
 SET_FUNC CallARM_PushToSecondaryOAM, 0x8004389
 SET_FUNC CallEndEvent, 0x8079A39 
 SET_DATA BattleAttackerSideBool, 0x203E014
-SET_DATA gBmMapUnit, 0x202E3DC
 SET_DATA gProcScr_StatScreen, 0x8CC1F6C
 SET_DATA gProc_ekrBattleDeamon, 0x8B9A99C
 SET_DATA gProcScr_UnitDisplay_MinimugBox, 0x8CC2C60
@@ -473,7 +504,6 @@ SET_FUNC NextRN_N, 0x8000E31
 SET_FUNC GenerateExtendedMovementMap, 0x8019C81
 SET_DATA TerrainTable_MovCost_BerserkerNormal, 0x8BE398C
 SET_DATA TerrainTable_MovCost_BerserkerRain, 0x8BE3DDD
-SET_DATA gBmMapMovement, 0x202E3E4
 SET_DATA gPhase, 0x202BC07
 SET_DATA gTurn, 0x202BC08
 SET_DATA gSfx, 0x202BC39
@@ -717,7 +747,6 @@ SET_DATA gActiveUnit_, 0x30044B0
 SET_DATA weatherId, 0x202AA5D
 SET_DATA gPlaySt, 0x202AA48
 SET_DATA gCh, 0x202AA56
-SET_DATA gBmMapTerrain, 0x202D208
 SET_DATA gProcScr_Shop, 0x8690F00
 SET_DATA sPrevHandClockFrame, 0x203C9D8
 SET_DATA sPrevHandScreenPosition, 0x203C9D4
@@ -906,8 +935,7 @@ SET_DATA gProcScr_Shop, 0x8CE6FC0
 SET_DATA gLCGRNValue, 0x3000008 
 SET_DATA sPrevHandClockFrame, 0x203DCF0
 SET_DATA sPrevHandScreenPosition, 0x203DCEC
-SET_DATA Ballista_TerrainTable, 0x8BEC398 
-SET_DATA gBmMapTerrain, 0x202E3E0
+SET_DATA Ballista_TerrainTable, 0x8BEC398
 SET_DATA weatherId, 0x202BC0D
 SET_DATA gPlaySt, 0x202BBF8
 SET_DATA gCh, 0x202BC06

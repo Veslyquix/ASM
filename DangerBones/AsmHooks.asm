@@ -6,6 +6,73 @@
   .short 0xf800
 .endm
 
+
+.global Hook_PlayerPhase_InitUnitMovementSelect_FE6
+.type Hook_PlayerPhase_InitUnitMovementSelect_FE6, %function 
+Hook_PlayerPhase_InitUnitMovementSelect_FE6:
+push {lr} 
+bl FinishDangerBonesRange
+blh MuExists 
+cmp r0, #0 
+bne Exit2_Hook_PlayerPhase_InitUnitMovementSelect_FE6
+
+pop {r3} 
+ldr r3, =0x801B409
+bx r3 
+.ltorg 
+Exit2_Hook_PlayerPhase_InitUnitMovementSelect_FE6:
+pop {r3} 
+ldr r3, =0x801B439
+bx r3 
+.ltorg 
+
+.global Hook_PlayerPhase_InitUnitMovementSelect_FE7
+.type Hook_PlayerPhase_InitUnitMovementSelect_FE7, %function 
+Hook_PlayerPhase_InitUnitMovementSelect_FE7:
+push {lr} 
+bl FinishDangerBonesRange
+blh MuExists 
+cmp r0, #0 
+bne Exit2_Hook_PlayerPhase_InitUnitMovementSelect_FE7
+
+pop {r3} 
+ldr r3, =0x801C589
+bx r3 
+.ltorg 
+Exit2_Hook_PlayerPhase_InitUnitMovementSelect_FE7:
+pop {r3} 
+ldr r3, =0x801C5B9
+bx r3 
+.ltorg 
+
+.global Hook_PlayerPhase_Suspend_FE6
+.type Hook_PlayerPhase_Suspend_FE6, %function 
+Hook_PlayerPhase_Suspend_FE6:
+push {lr} 
+bl StartDangerBonesRange
+ldr r1, =gActionData 
+mov r0, #0
+strb r0, [r1, #0x16]
+mov r0, #3 
+ldr r3, =0x801b03F  
+bx r3 
+.ltorg 
+
+
+.global Hook_PlayerPhase_Suspend_FE7
+.type Hook_PlayerPhase_Suspend_FE7, %function 
+Hook_PlayerPhase_Suspend_FE7:
+push {lr} 
+bl StartDangerBonesRange
+ldr r1, =gActionData 
+mov r0, #0
+strb r0, [r1, #0x16]
+mov r0, #3 
+ldr r3, =0x801548F  
+bx r3 
+.ltorg 
+
+
 @ in 1CC1C
 .global Hook_PlayerPhase_InitUnitMovementSelect
 .type Hook_PlayerPhase_InitUnitMovementSelect, %function 
@@ -18,7 +85,7 @@ strb r0, [r5, #4]
 
 bl FinishDangerBonesRange
 
-ldr r4, =0x3004e50 @gActiveUnit 
+ldr r4, =gActiveUnit 
 ldr r0, [r4] 
 pop {r3} 
 bx r3 
@@ -30,41 +97,11 @@ bx r3
 Hook_PlayerPhase_Suspend:
 push {lr} 
 bl StartDangerBonesRange
-ldr r1, =0x203a958 
+ldr r1, =gActionData 
 mov r0, #0
 strb r0, [r1, #0x16]
 mov r0, #3 
 ldr r3, =0x801C89F 
-bx r3 
-.ltorg 
-
-.global Hook_HandlePostActionTraps
-.type Hook_HandlePostActionTraps, %function 
-Hook_HandlePostActionTraps:
-push {lr} 
-push {r0}
-
-bl StartDangerBonesRange
-
-pop {r0}
-cmp r0, #0 
-ble Exit2
-
-ldr r2, [r4]
-ldr r0, [r2]
-ldr r1, [r2, #4] 
-ldr r0, [r0, #0x28]
-
-
-
-
-pop {r3} 
-bx r3 
-.ltorg 
-
-Exit2:
-pop {r3} 
-ldr r3, =0x803775d 
 bx r3 
 .ltorg 
 
@@ -76,7 +113,7 @@ push {lr}
 lsl r0, #0x10 
 lsr r6, r0, #0x10 
 bl RemoveEnemyShaking
-ldr r1, =0x202BCb0 @ gGameState 
+ldr r1, =gBmSt @ gGameState / gBmSt 
 mov r2, #0xC 
 ldsh r0, [r1, r2] 
 cmp r7, r0 
@@ -109,6 +146,28 @@ bx r3
 .ltorg 
 
 
+.global Hook_PutUnitSpritesOam_FE7
+.type Hook_PutUnitSpritesOam_FE7, %function 
+Hook_PutUnitSpritesOam_FE7: 
+push {lr} 
+mov r3, #0 
+cmp r0, #0 
+beq Exit_PutUnitSpritesOam_FE7 
+blh GetGameClock
+mov r3, r0 
+mov r0, #0x1
+ldr r1, =ShakeSpeed_Link 
+ldr r1, [r1] 
+lsl r0, r1 
+
+and r3, r0 
+lsr r3, r1 
+Exit_PutUnitSpritesOam_FE7: 
+
+pop {r2} 
+ldr r2, =0x802596F 
+bx r2 
+.ltorg 
 
 .global Hook_PutUnitSpritesOam
 .type Hook_PutUnitSpritesOam, %function 
@@ -117,7 +176,7 @@ push {lr}
 mov r3, #0 
 cmp r0, #0 
 beq Exit_PutUnitSpritesOam 
-blh 0x8000D28 @ GetGameClock 
+blh GetGameClock
 mov r3, r0 
 mov r0, #0x1
 ldr r1, =ShakeSpeed_Link 
