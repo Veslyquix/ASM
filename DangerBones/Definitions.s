@@ -293,7 +293,7 @@ SET_DATA DangerBonesPalBuffer, 0x200c130	@ size: 0x3A18+ gBanimOamr2 - b anims f
 .endif     
 .if FE7 == true 
 SET_FUNC GetUnitWeaponReachBits, 0x8016EbD 
-SET_FUNC MuExists 0x806C041 
+SET_FUNC MuExists, 0x806C041 
 SET_DATA DangerBonesBuffer, 0x201C8C4 @ gTmA_Banim from sub_80559B0 at 8050798
 @SET_DATA DangerBonesBuffer, 0x20099c8	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
 SET_FUNC GenerateUnitCompleteAttackRange, 0x801A4D5  
@@ -553,7 +553,7 @@ SET_DATA DangerBonesBuffer, 0x201c8d0 @ gTmA_Banim
 @ by 7743 
 
 SET_DATA SRRBuffer, 0x2026Ec0	@ size: 0x1f98	- normally used by debug printing
-
+SET_FUNC MuExists, 0x8078721 
 SET_FUNC StartUiSMS, 0x80266f1
 SET_FUNC UnpackUiWindowFrameImg2, 0x804E169
 SET_FUNC ApplyUiWindowFramePal, 0x804E0A9
