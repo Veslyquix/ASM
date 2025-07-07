@@ -294,8 +294,8 @@ SET_DATA DangerBonesPalBuffer, 0x200c130	@ size: 0x3A18+ gBanimOamr2 - b anims f
 .if FE7 == true 
 SET_FUNC GetUnitWeaponReachBits, 0x8016EbD 
 SET_FUNC MuExists, 0x806C041 
-SET_DATA DangerBonesBuffer, 0x201C8C4 @ gTmA_Banim from sub_80559B0 at 8050798
-@SET_DATA DangerBonesBuffer, 0x20099c8	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
+@SET_DATA DangerBonesBuffer, 0x201C8C4 @ gTmA_Banim from sub_80559B0 at 8050798
+SET_DATA DangerBonesBuffer, 0x20099c8	@ size: 0x3A18+ gBanimOamr2 - b anims free to 200d3e0 B gSortedUnitsBuf
 SET_FUNC GenerateUnitCompleteAttackRange, 0x801A4D5  
 SET_FUNC GenerateUnitStandingReachRange, 0x801AC61 
 SET_FUNC GenerateUnitMovementMap, 0x8019BA1 
