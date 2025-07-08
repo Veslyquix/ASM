@@ -1,7 +1,7 @@
 #include "C_Code.h"
 
 extern const u8 PreventTradingList[];
-int CanItemGoToSupply(int id)
+int CanItemBeTraded(int id)
 {
     id &= 0xFF;
     // asm("mov r11, r11");
@@ -25,7 +25,7 @@ u8 SendToConvoyMenu_NormalEffect(struct MenuProc * proc_menu, struct MenuItemPro
 {
     int item = gActiveUnit->items[proc_cmd->itemNumber];
 
-    if (CanItemGoToSupply(item))
+    if (CanItemBeTraded(item))
     {
         AddItemToConvoy(item);
         gActionData.item = item;
@@ -41,7 +41,7 @@ u8 MenuCommand_SendItemToConvoy(struct MenuProc * proc_menu, struct MenuItemProc
 {
     int item = gBmSt.um_tmp_item;
 
-    if (CanItemGoToSupply(item))
+    if (CanItemBeTraded(item))
     {
         AddItemToConvoy(gBmSt.um_tmp_item);
         gActionData.item = gBmSt.um_tmp_item;
@@ -54,7 +54,7 @@ u8 MenuCommand_SendItemToConvoy(struct MenuProc * proc_menu, struct MenuItemProc
 u8 SendToConvoyMenu_Selected(struct MenuProc * proc_menu, struct MenuItemProc * proc_cmd)
 {
     int item = gActiveUnit->items[proc_cmd->itemNumber];
-    if (CanItemGoToSupply(item))
+    if (CanItemBeTraded(item))
     {
 
         gActionData.item = item;
@@ -72,7 +72,7 @@ u8 SendToConvoyMenu_Selected2(struct MenuProc * proc_menu, struct MenuItemProc *
 {
     int item = gBmSt.um_tmp_item;
 
-    if (CanItemGoToSupply(item))
+    if (CanItemBeTraded(item))
     {
         gActionData.item = item;
         gActionData.unk08 = UNIT_ITEM_COUNT;
@@ -103,7 +103,7 @@ s8 PrepItemScreen_GiveAll(struct Unit * unit)
     for (i = 0; (i < unitItemCount) && (i + convoyItemCount < ConvoyCapacity); i++)
     {
         item = unit->items[skippedItems];
-        if (CanItemGoToSupply(item))
+        if (CanItemBeTraded(item))
         {
 
             AddItemToConvoy(item);
@@ -123,7 +123,7 @@ s8 PrepItemScreen_GiveAll(struct Unit * unit)
 
 void TrySendItemSupplyViaPrep(int item, struct PrepItemSupplyProc * proc)
 {
-    if (!CanItemGoToSupply(item))
+    if (!CanItemBeTraded(item))
     {
         PlayErrorSfx();
         return;
@@ -140,7 +140,7 @@ void TradeMenu_ApplyItemSwap(struct TradeMenuProc * proc)
     u16 * pItemA = &proc->units[proc->hoverColumn]->items[proc->hoverRow];
     u16 * pItemB = &proc->units[proc->selectedColumn]->items[proc->selectedRow];
 
-    if (!CanItemGoToSupply(*pItemA) || !CanItemGoToSupply(*pItemB))
+    if (!CanItemBeTraded(*pItemA) || !CanItemBeTraded(*pItemB))
     {
         if (&proc->units[proc->hoverColumn] != &proc->units[proc->selectedColumn])
         {
@@ -166,7 +166,7 @@ void TradeMenu_ApplyItemSwap(struct TradeMenuProc * proc)
 void PrepItemTrade_ApplyItemSwap(struct Unit * unitA, int itemSlotA, struct Unit * unitB, int itemSlotB)
 {
 
-    if (!CanItemGoToSupply(unitA->items[itemSlotA]) || !CanItemGoToSupply(unitB->items[itemSlotB]))
+    if (!CanItemBeTraded(unitA->items[itemSlotA]) || !CanItemBeTraded(unitB->items[itemSlotB]))
     {
         if (unitA != unitB)
         {
