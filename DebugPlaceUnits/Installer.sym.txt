@@ -1,6 +1,0 @@
-DecideToHideActiveUnitRangeDisplay=$1000089
-InsertEventOnTileSelect=$10000B9
-TeleportActiveUnit=$10000D9
-ToggleFlagAA=$1000189
-DisplayIfFlagAB=$10001B9
-SetNoActiveUnitEvent=$1000224
