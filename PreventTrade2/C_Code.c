@@ -82,7 +82,7 @@ u8 SendToConvoyMenu_Selected2(struct MenuProc * proc_menu, struct MenuItemProc *
 // return AddItemToConvoy(gBmSt.itemUnk2E);
 // }
 
-extern const int ConvoyCapacity;
+extern const u8 ConvoyCapacity;
 s8 PrepItemScreen_GiveAll(struct Unit * unit)
 {
     int i;
@@ -115,14 +115,16 @@ s8 PrepItemScreen_GiveAll(struct Unit * unit)
 
 void TrySendItemSupplyViaPrep(int item, struct PrepItemSupplyProc * proc)
 {
-    if (CanItemGoToSupply(item))
+    if (!CanItemGoToSupply(item))
     {
-        proc->unit->items[proc->unitInvIdx] = 0;
-        UnitRemoveInvalidItems(proc->unit);
-
-        proc->currentPage = GetPrepPageForItem(item);
-        AddItemToConvoy(item);
+        m4aSongNumStart(0x6B);
+        return;
     }
+    proc->unit->items[proc->unitInvIdx] = 0;
+    UnitRemoveInvalidItems(proc->unit);
+
+    proc->currentPage = GetPrepPageForItem(item);
+    AddItemToConvoy(item);
 }
 
 void TradeMenu_ApplyItemSwap(struct TradeMenuProc * proc)
@@ -132,8 +134,11 @@ void TradeMenu_ApplyItemSwap(struct TradeMenuProc * proc)
 
     if (!CanItemGoToSupply(*pItemA) || !CanItemGoToSupply(*pItemB))
     {
-        m4aSongNumStart(0x6B);
-        return;
+        if (&proc->units[proc->hoverColumn] != &proc->units[proc->selectedColumn])
+        {
+            m4aSongNumStart(0x6B);
+            return;
+        }
     }
 
     u16 swp = *pItemA;
@@ -155,8 +160,11 @@ void PrepItemTrade_ApplyItemSwap(struct Unit * unitA, int itemSlotA, struct Unit
 
     if (!CanItemGoToSupply(unitA->items[itemSlotA]) || !CanItemGoToSupply(unitB->items[itemSlotB]))
     {
-        m4aSongNumStart(0x6B);
-        return;
+        if (unitA != unitB)
+        {
+            m4aSongNumStart(0x6B);
+            return;
+        }
     }
 
     u16 itemTmp = unitA->items[itemSlotA];

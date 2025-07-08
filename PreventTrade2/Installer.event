@@ -1,7 +1,5 @@
 
-ALIGN 4 
-ConvoyCapacity:
-WORD 100 
+
 PreventTradingList:
 BYTE 0x9	//Rapier
 BYTE 0x6c	//Vulnerary
@@ -15,6 +13,8 @@ BYTE 0
 
 PUSH 
 
+ORG $31528
+ConvoyCapacity: 
 
 // revert everything to vanilla 
 ORG 0xe1908
