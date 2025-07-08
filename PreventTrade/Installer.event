@@ -63,6 +63,13 @@ SHORT $46c0
 ORG $9e898 
 SHORT $46c0 $46c0 
 
+
+ORG $2DA57; BYTE $E0 // B instead of beq 
+
+// ORG $99848; SHORT $E03C // b 0x80998c4 (sfx moved into our code) 
+ORG $9bc81; BYTE $E0 
+
+
 // 1E188 SendToConvoyMenu_NormalEffect is replaced anyway 
 ORG 0x1e19e
 BYTE 0xc3 0xf0 0xe1 0xfb // FEBuilder patch recognition 

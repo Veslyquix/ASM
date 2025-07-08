@@ -21,6 +21,12 @@ void PlayErrorSfx(void)
         m4aSongNumStart(0x6C);
 }
 
+void PlaySuccessSfx(void)
+{
+    if (!(gPlaySt.config.disableSoundEffects))
+        m4aSongNumStart(0x6A);
+}
+
 u8 SendToConvoyMenu_NormalEffect(struct MenuProc * proc_menu, struct MenuItemProc * proc_cmd)
 {
     int item = gActiveUnit->items[proc_cmd->itemNumber];
@@ -115,8 +121,11 @@ s8 PrepItemScreen_GiveAll(struct Unit * unit)
         }
     }
 
-    if (i > 0)
+    if (i > skippedItems)
+    {
+
         return true;
+    }
 
     return false;
 }
@@ -161,6 +170,7 @@ void TradeMenu_ApplyItemSwap(struct TradeMenuProc * proc)
     UnitRemoveInvalidItems(proc->units[1]);
 
     TradeMenu_RefreshItemText(proc);
+    PlaySuccessSfx();
 }
 
 void PrepItemTrade_ApplyItemSwap(struct Unit * unitA, int itemSlotA, struct Unit * unitB, int itemSlotB)
@@ -181,6 +191,65 @@ void PrepItemTrade_ApplyItemSwap(struct Unit * unitA, int itemSlotA, struct Unit
 
     UnitRemoveInvalidItems(unitA);
     UnitRemoveInvalidItems(unitB);
+    PlaySuccessSfx();
+    return;
+}
+
+struct PrepItemSuppyText
+{
+    /* 00 */ struct Font font;
+    /* 18 */ struct Text th[18];
+};
+extern struct PrepItemSuppyText PrepItemSuppyTexts;
+
+//! FE8U = 0x0809E85C
+void PrepItemSupply_GiveItemToSupply(struct PrepItemSupplyProc * proc)
+{
+    int unitItemCount;
+
+    u16 item = proc->unit->items[proc->unitInvIdx];
+    GetUnitItemCount(proc->unit); // Necessary for match, but pointless
+
+    if (!CanItemBeTraded(item))
+    {
+        PlayErrorSfx();
+        return;
+    }
+    proc->unit->items[proc->unitInvIdx] = 0;
+    UnitRemoveInvalidItems(proc->unit);
+
+    proc->currentPage = GetPrepPageForItem(item);
+    AddItemToConvoy(item);
+
+    SomethingPrepListRelated(proc->unit, proc->currentPage, 1);
+    sub_809E100(proc);
+
+    ResetIconGraphics_();
+    DrawPrepScreenItems(gBG0TilemapBuffer + 0x122, &PrepItemSuppyTexts.th[2], proc->unit, 0);
+    sub_809D300(
+        &PrepItemSuppyTexts.th[7], gBG2TilemapBuffer + 0xF, proc->yOffsetPerPage[proc->currentPage] >> 4, proc->unit);
+    StartParallelFiniteLoop(sub_809E2BC, 1, proc);
+
+    BG_EnableSyncByMask(4);
+
+    unitItemCount = GetUnitItemCount(proc->unit);
+
+    gActionData.unitActionType = UNIT_ACTION_TRADED_SUPPLY;
+
+    if ((unitItemCount == 0) || (GetConvoyItemCount_() == ConvoyCapacity))
+    {
+        Proc_Goto(proc, 1);
+        PlaySoundEffect(0x6B);
+    }
+    else
+    {
+        PlaySoundEffect(0x6A);
+        if (unitItemCount <= proc->unitInvIdx)
+        {
+            proc->unitInvIdx = unitItemCount - 1;
+            ShowSysHandCursor(16, proc->unitInvIdx * 16 + 72, 0xb, 0x800);
+        }
+    }
 
     return;
 }
