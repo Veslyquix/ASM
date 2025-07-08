@@ -15,6 +15,11 @@ int CanItemGoToSupply(int id)
     return true;
 }
 
+void PlayErrorSfx(void) { 
+if (!(gPlaySt.optionBits & disableSoundEffects)) 
+m4aSongNumStart(0x6C);
+} 
+
 u8 SendToConvoyMenu_NormalEffect(struct MenuProc * proc_menu, struct MenuItemProc * proc_cmd)
 {
     int item = gActiveUnit->items[proc_cmd->itemNumber];
@@ -27,7 +32,8 @@ u8 SendToConvoyMenu_NormalEffect(struct MenuProc * proc_menu, struct MenuItemPro
         UnitAddItem(gActiveUnit, gBmSt.um_tmp_item);
         return MENU_ACT_ENDFACE | MENU_ACT_CLEAR | MENU_ACT_SND6A | MENU_ACT_END | MENU_ACT_SKIPCURSOR;
     }
-    return MENU_ACT_SND6B | MENU_ACT_SKIPCURSOR;
+    PlayErrorSfx();
+    return MENU_ACT_SKIPCURSOR;
 }
 
 u8 MenuCommand_SendItemToConvoy(struct MenuProc * proc_menu, struct MenuItemProc * proc_cmd)
@@ -40,7 +46,8 @@ u8 MenuCommand_SendItemToConvoy(struct MenuProc * proc_menu, struct MenuItemProc
         gActionData.item = gBmSt.um_tmp_item;
         return MENU_ACT_ENDFACE | MENU_ACT_CLEAR | MENU_ACT_SND6A | MENU_ACT_END | MENU_ACT_SKIPCURSOR;
     }
-    return MENU_ACT_SND6B | MENU_ACT_SKIPCURSOR;
+    PlayErrorSfx();
+    return MENU_ACT_SKIPCURSOR;
 }
 
 u8 SendToConvoyMenu_Selected(struct MenuProc * proc_menu, struct MenuItemProc * proc_cmd)
@@ -56,8 +63,8 @@ u8 SendToConvoyMenu_Selected(struct MenuProc * proc_menu, struct MenuItemProc * 
         sub_808AA04(0x8, proc_cmd->itemNumber * 0x10 + 0x20, 0x84B, proc_menu);
         return 0;
     }
-
-    return MENU_ACT_SND6B;
+PlayErrorSfx();
+    return 0;
 }
 
 u8 SendToConvoyMenu_Selected2(struct MenuProc * proc_menu, struct MenuItemProc * proc_cmd)
@@ -73,8 +80,8 @@ u8 SendToConvoyMenu_Selected2(struct MenuProc * proc_menu, struct MenuItemProc *
         sub_808AA04(0x8, proc_cmd->itemNumber * 0x10 + 0x20, 0x84B, proc_menu);
         return 0;
     }
-
-    return MENU_ACT_SND6B;
+PlayErrorSfx();
+    return 0;
 }
 
 // int ConvoyMenuProc_SendToConvoyReal(ProcPtr proc)
@@ -117,7 +124,7 @@ void TrySendItemSupplyViaPrep(int item, struct PrepItemSupplyProc * proc)
 {
     if (!CanItemGoToSupply(item))
     {
-        m4aSongNumStart(0x6B);
+        PlayErrorSfx();
         return;
     }
     proc->unit->items[proc->unitInvIdx] = 0;
@@ -136,7 +143,7 @@ void TradeMenu_ApplyItemSwap(struct TradeMenuProc * proc)
     {
         if (&proc->units[proc->hoverColumn] != &proc->units[proc->selectedColumn])
         {
-            m4aSongNumStart(0x6B);
+            PlayErrorSfx();
             return;
         }
     }
@@ -162,7 +169,7 @@ void PrepItemTrade_ApplyItemSwap(struct Unit * unitA, int itemSlotA, struct Unit
     {
         if (unitA != unitB)
         {
-            m4aSongNumStart(0x6B);
+            PlayErrorSfx();
             return;
         }
     }
