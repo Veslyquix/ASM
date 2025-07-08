@@ -15,10 +15,11 @@ int CanItemGoToSupply(int id)
     return true;
 }
 
-void PlayErrorSfx(void) { 
-if (!(gPlaySt.optionBits & disableSoundEffects)) 
-m4aSongNumStart(0x6C);
-} 
+void PlayErrorSfx(void)
+{
+    if (!(gPlaySt.config.disableSoundEffects))
+        m4aSongNumStart(0x6C);
+}
 
 u8 SendToConvoyMenu_NormalEffect(struct MenuProc * proc_menu, struct MenuItemProc * proc_cmd)
 {
@@ -63,7 +64,7 @@ u8 SendToConvoyMenu_Selected(struct MenuProc * proc_menu, struct MenuItemProc * 
         sub_808AA04(0x8, proc_cmd->itemNumber * 0x10 + 0x20, 0x84B, proc_menu);
         return 0;
     }
-PlayErrorSfx();
+    PlayErrorSfx();
     return 0;
 }
 
@@ -80,7 +81,7 @@ u8 SendToConvoyMenu_Selected2(struct MenuProc * proc_menu, struct MenuItemProc *
         sub_808AA04(0x8, proc_cmd->itemNumber * 0x10 + 0x20, 0x84B, proc_menu);
         return 0;
     }
-PlayErrorSfx();
+    PlayErrorSfx();
     return 0;
 }
 
