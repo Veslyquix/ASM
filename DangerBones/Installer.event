@@ -8,9 +8,9 @@ ALIGN 4
 ShakeSpeed_Link:
 WORD ShakeSpeed 
 
-ShakeIt:
+ShakeIt: // Enemies will shake if they could attack the tile you're moving to 
 WORD 1
-Pal_4th:
+Pal_4th: // Enemies will change palette if they could attack the tile you're moving to 
 WORD 1 
 DangerBonesDisabledFlag:
 #ifdef _FE8_ 
