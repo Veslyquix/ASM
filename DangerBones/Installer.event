@@ -1,7 +1,7 @@
 
 #define OVERWRITE_LIGHTRUNE_PAL 
 // #define _VERTICAL_ // Make shaking map sprites bob up and down instead of horizontally 
-#define ShakeSpeed 3 // 0 = fastest, 1 = very fast, 2 = fast, 3 = normal, 4 = slow, 5 = very slow 
+#define ShakeSpeed 4 // 0 = fastest, 1 = very fast, 2 = fast, 3 = normal, 4 = slow, 5 = very slow 
 #define DisableDangerBonesFlag 0x128 
 
 ALIGN 4 
