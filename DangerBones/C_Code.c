@@ -291,7 +291,11 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
         SetWorkingBmMap(gBmMapRange);
         if ((unit->ai3And4 & 0x2000) || (unit->ai1 == 3))
         { // boss ai: never move
+#ifndef FE8
             GenerateUnitStandingReachRange(unit, GetUnitWeaponReachBits(unit, -1));
+#else
+            GenerateUnitCompleteAttackRange(unit);
+#endif
         }
         else
         {
@@ -343,9 +347,14 @@ void GenerateDangerBonesRangeAll(int i) // Causes noticable lag if done for 0x80
         gBmMapUnit[unit->yPos][unit->xPos] = 0;
 
         SetWorkingBmMap(gBmMapRange);
+
         if ((unit->ai3And4 & 0x2000) || (unit->ai1 == 3))
         { // boss ai: never move
+#ifndef FE8
             GenerateUnitStandingReachRange(unit, GetUnitWeaponReachBits(unit, -1));
+#else
+            GenerateUnitCompleteAttackRange(unit);
+#endif
         }
         else
         {
