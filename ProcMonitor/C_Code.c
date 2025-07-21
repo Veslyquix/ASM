@@ -1,6 +1,10 @@
 #include "C_Code.h"
 #define EndLabel 99
 #define brk asm("mov r11, r11");
+
+extern int ProcsReqForErrorMsg;
+extern int EmergencyHandlingNum;
+
 extern const u16 EventScr_ErrorOccurred[];
 extern void * sProcAllocList[65];
 extern void * sProcAllocListHead;
@@ -139,48 +143,6 @@ void ProcMonitor_UpdateEachFrame(ProcMonitor * monitor, const char * str, u8 * c
     return;
 }
 
-/*
-const struct ProcCmd * ProcMonitor_UpdateEachFrame(ProcMonitor * monitor, const char * str, u8 * count)
-{
-    const struct ProcCmd * current = Proc_FindMostCommonDuplicate(str, count);
-    if (!current)
-        return current;
-
-    int i;
-    int minIndex = 0;
-    // Look for a match or empty spot
-    for (i = 0; i < MAX_TRACKED_PROCS; i++)
-    {
-        if (monitor->entries[i].proc == current)
-        {
-
-            if (count > monitor->entries[i].count)
-            {
-                monitor->entries[i].str = str;
-                monitor->entries[i].count = count;
-            }
-            // return current;
-        }
-        if (monitor->entries[i].proc == NULL)
-        {
-            monitor->entries[i].proc = current;
-            monitor->entries[i].str = str;
-            monitor->entries[i].count = 1;
-            // return current;
-        }
-        // Track lowest-count entry in case we need to replace it
-        if (monitor->entries[i].count < monitor->entries[minIndex].count)
-            minIndex = i;
-    }
-
-    // If we got here, we need to possibly replace an entry
-    // Optional: Only replace if count is 0 or 1 (to avoid churning)
-    monitor->entries[minIndex].proc = current;
-    monitor->entries[minIndex].str = str;
-    monitor->entries[minIndex].count = 1;
-    return current;
-}
-*/
 extern void EndPlayerPhaseSideWindows(void);
 void PrintErrorToScreen(ProcMonitor * proc)
 {
@@ -215,6 +177,43 @@ char * HexToStr(u32 value, char * outStr)
     return outStr;
 }
 
+static const int DigitDecimalTable[] = { 1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000 };
+
+const u8 decTable[] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+
+char * NumToStr(u32 value, char * outStr)
+{
+    int started = 0;
+    int outIndex = 0;
+
+    for (int i = 8; i >= 0; --i)
+    {
+        u32 place = DigitDecimalTable[i];
+        u8 digit = value / place;
+        if (digit || started)
+        {
+            outStr[outIndex++] = decTable[digit];
+            started = true;
+        }
+        value -= place * digit;
+    }
+
+    // Special case for 0
+    if (!started)
+        outStr[outIndex++] = '0';
+
+    outStr[outIndex] = '\0';
+    return outStr;
+}
+
+void KillProcsWhenOutOfSpace(ProcMonitor * proc)
+{
+    if ((int)sProcAllocListHead > (int)&sProcAllocList[EmergencyHandlingNum])
+    {
+        Proc_EndEach(proc->entries[0].proc);
+    }
+}
+
 void PrintErrorNumberToScreen(ProcMonitor * proc)
 {
     if (!EventEngineExists())
@@ -242,45 +241,33 @@ void PrintErrorNumberToScreen(ProcMonitor * proc)
     // char valueStr[9];
 
     // HexToStr(mostCommon, valueStr);
-    char countStr[9];
+    char countStr[12];
     // HexToStr(count[0], countStr);
     int x = 3;
     int y = 5;
+
+    int num = ((int)sProcAllocListHead - (int)&sProcAllocList[0]) / 4;
+    brk;
+    PrintDebugStringAsOBJ((x) << 3, (y - 1) << 3, NumToStr(num, countStr));
+    PrintDebugStringAsOBJ((x + 2) << 3, (y - 1) << 3, "/");
+    PrintDebugStringAsOBJ((x + 3) << 3, (y - 1) << 3, NumToStr(64, countStr));
     for (int i = 0; i < MAX_TRACKED_PROCS; ++i)
     {
         if (proc->entries[i].str)
         {
             PrintDebugStringAsOBJ((x) << 3, (y + (i * 2)) << 3, proc->entries[i].str);
         }
-        PrintDebugStringAsOBJ((x + 9) << 3, (y + (i * 2) + 1) << 3, HexToStr(proc->entries[i].count, countStr));
+        PrintDebugStringAsOBJ((x + 9) << 3, (y + (i * 2) + 1) << 3, NumToStr(proc->entries[i].count, countStr));
         PrintDebugStringAsOBJ((x) << 3, (y + (i * 2) + 1) << 3, HexToStr((int)proc->entries[i].proc, countStr));
     }
-    // PrintDebugStringAsOBJ(x << 3, y << 3, valueStr);
-    // PrintDebugStringAsOBJ((x + 9) << 3, y << 3, countStr);
-
-    // PutNumberHex(TILEMAP_LOCATED(gBG0TilemapBuffer, 10, 6), green, mostCommon);
-    // PutNumberHex(TILEMAP_LOCATED(gBG1TilemapBuffer, 10, 6), green, mostCommon);
-    // PutNumberHex(TILEMAP_LOCATED(gBG2TilemapBuffer, 10, 6), green, mostCommon);
-    // PutNumberHex(TILEMAP_LOCATED(gBG0TilemapBuffer, 14, 6), green, count[0]);
-    // PutNumberHex(TILEMAP_LOCATED(gBG1TilemapBuffer, 14, 6), green, count[0]);
-    // PutNumberHex(TILEMAP_LOCATED(gBG2TilemapBuffer, 14, 6), green, count[0]);
-
-    // PrintDebugStringAsOBJ(int a, int b, const char *str);
-    // PutNumberHex(TILEMAP_LOCATED(gBG1TilemapBuffer, 14, 6), green, count);
-    // PutNumberHex(TILEMAP_LOCATED(gBG2TilemapBuffer, 14, 6), green, count);
-    if (str)
-    {
-        // PrintDebugStringAsOBJ(x << 3, (y + 2) << 3, str);
-        // PutDrawText(gStatScreen.text, TILEMAP_LOCATED(gBG0TilemapBuffer, 10, 10), green, 0, 0, str);
-        // PutDrawText(gStatScreen.text, TILEMAP_LOCATED(gBG1TilemapBuffer, 10, 10), green, 0, 0, str);
-        // PutDrawText(gStatScreen.text, TILEMAP_LOCATED(gBG2TilemapBuffer, 10, 10), green, 0, 0, str);
-    }
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT | BG3_SYNC_BIT);
+
+    KillProcsWhenOutOfSpace(proc);
 }
 
 void CheckForProcSpace(ProcMonitor * proc)
 {
-    if ((int)sProcAllocListHead > (int)&sProcAllocList[40])
+    if ((int)sProcAllocListHead > (int)&sProcAllocList[ProcsReqForErrorMsg])
     {
         EndGreenText();
 
@@ -289,6 +276,7 @@ void CheckForProcSpace(ProcMonitor * proc)
         PrintErrorToScreen((void *)proc);
         CallEvent(EventScr_ErrorOccurred, 1);
         Proc_Goto((void *)proc, 1);
+        PrintErrorNumberToScreen(proc);
     }
 }
 

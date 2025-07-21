@@ -7,6 +7,11 @@
     #define ErrorOccurredMessageID 0x9df 
 #endif 
 
+ALIGN 4 
+ProcsReqForErrorMsg:
+WORD 58 // past 64 likely crashes the game 
+EmergencyHandlingNum: 
+WORD 63 // Kill the most common procs in hopes of avoiding a game crash 
 
 ALIGN 4 
 EventScr_ErrorOccurred: 
