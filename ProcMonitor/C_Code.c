@@ -298,7 +298,7 @@ const struct ProcCmd ProcMonitorCmd[] = {
     PROC_REPEAT(CheckForProcSpace),
     PROC_GOTO(EndLabel),
     PROC_LABEL(1),
-    PROC_SLEEP(10),
+    PROC_SLEEP(1),
     PROC_REPEAT(PrintErrorNumberToScreen),
     // PROC_WHILE(),
     PROC_CALL(ClearBg0Bg1),
