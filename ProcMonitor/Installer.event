@@ -3,8 +3,8 @@
 #include "EAstdlib.event" 
 
 #ifndef ErrorOccurredMessageID 
-    #define ErrorOccurredMessageID 0x1804 
-    // #define ErrorOccurredMessageID 0x9df 
+    // #define ErrorOccurredMessageID 0x1804 
+    #define ErrorOccurredMessageID 0x9df 
 #endif 
 
 
