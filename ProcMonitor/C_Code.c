@@ -292,9 +292,23 @@ void CheckForProcSpace(ProcMonitor * proc)
     }
 }
 
+void RestartProcMonitor(ProcMonitor * proc)
+{
+
+    proc->peak = 0;
+    for (int i = 0; i < MAX_TRACKED_PROCS; ++i)
+    {
+        proc->entries[i].str = NULL;
+        proc->entries[i].count = 0;
+        proc->entries[i].proc = NULL;
+    }
+    Proc_Goto(proc, 0);
+}
+
 const struct ProcCmd ProcMonitorCmd[] = {
     PROC_NAME("MonitorProcs"),
     PROC_YIELD,
+    PROC_LABEL(0),
     PROC_REPEAT(CheckForProcSpace),
     PROC_GOTO(EndLabel),
     PROC_LABEL(1),
@@ -305,22 +319,17 @@ const struct ProcCmd ProcMonitorCmd[] = {
     PROC_CALL(UnlockGame),
     PROC_CALL(BMapDispResume),
     PROC_LABEL(EndLabel),
+    PROC_CALL(RestartProcMonitor),
     PROC_END,
 };
 
 void StartProcMonitor(void)
 {
-    if (!Proc_Find(ProcMonitorCmd))
+    ProcMonitor * proc = Proc_Find(ProcMonitorCmd);
+    if (!proc)
     {
-        ProcMonitor * proc = Proc_Start(ProcMonitorCmd, (void *)3);
-
-        proc->peak = 0;
-        for (int i = 0; i < MAX_TRACKED_PROCS; ++i)
-        {
-            proc->entries[i].str = NULL;
-            proc->entries[i].count = 0;
-            proc->entries[i].proc = NULL;
-        }
+        proc = Proc_Start(ProcMonitorCmd, (void *)3);
+        RestartProcMonitor(proc);
     }
 }
 

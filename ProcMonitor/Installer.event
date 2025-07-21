@@ -11,7 +11,7 @@
 
 ALIGN 4 
 ProcsReqForErrorMsg:
-WORD 58 // past 64 likely crashes the game 
+WORD 60 // past 64 likely crashes the game 
 EmergencyHandlingNum: 
 WORD 63 // Kill the most common procs in hopes of avoiding a game crash 
 
