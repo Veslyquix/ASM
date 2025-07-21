@@ -1,0 +1,32 @@
+
+#include "C_Code.lyn.event" 
+#include "EAstdlib.event" 
+
+#ifndef ErrorOccurredMessageID 
+    #define ErrorOccurredMessageID 0x1804 
+    // #define ErrorOccurredMessageID 0x9df 
+#endif 
+
+
+ALIGN 4 
+EventScr_ErrorOccurred: 
+SCOORD 0xB [32, 4] 
+TUTORIALTEXTBOXSTART 
+TEXTSHOW ErrorOccurredMessageID
+TEXTEND 
+REMA 
+NoFade 
+ENDA 
+
+
+PUSH 
+ORG $975c 
+POIN ProcScr_ApProc_New
+ORG $97cc
+POIN ProcScr_ApProc_New
+ORG $97ec
+POIN ProcScr_ApProc_New
+POP 
+
+
+
