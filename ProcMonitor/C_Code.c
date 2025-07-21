@@ -247,7 +247,7 @@ void PrintErrorNumberToScreen(ProcMonitor * proc)
     int y = 5;
 
     int num = ((int)sProcAllocListHead - (int)&sProcAllocList[0]) / 4;
-    brk;
+    // brk;
     PrintDebugStringAsOBJ((x) << 3, (y - 1) << 3, NumToStr(num, countStr));
     PrintDebugStringAsOBJ((x + 2) << 3, (y - 1) << 3, "/");
     PrintDebugStringAsOBJ((x + 3) << 3, (y - 1) << 3, NumToStr(64, countStr));
