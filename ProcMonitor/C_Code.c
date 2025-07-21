@@ -313,7 +313,14 @@ void StartProcMonitor(void)
     if (!Proc_Find(ProcMonitorCmd))
     {
         ProcMonitor * proc = Proc_Start(ProcMonitorCmd, (void *)3);
+
         proc->peak = 0;
+        for (int i = 0; i < MAX_TRACKED_PROCS; ++i)
+        {
+            proc->entries[i].str = NULL;
+            proc->entries[i].count = 0;
+            proc->entries[i].proc = NULL;
+        }
     }
 }
 
