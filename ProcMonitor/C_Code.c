@@ -73,6 +73,7 @@ struct ProcTrackerEntry
 typedef struct
 {
     /* 00 */ PROC_HEADER;
+    u8 peak;
     struct ProcTrackerEntry entries[MAX_TRACKED_PROCS];
 } ProcMonitor;
 
@@ -244,13 +245,23 @@ void PrintErrorNumberToScreen(ProcMonitor * proc)
     char countStr[12];
     // HexToStr(count[0], countStr);
     int x = 3;
-    int y = 5;
+    int y = 7;
 
     int num = ((int)sProcAllocListHead - (int)&sProcAllocList[0]) / 4;
+    if (proc->peak < num)
+    {
+        proc->peak = num;
+    }
     // brk;
+    if (*gBuildDateTime)
+    {
+        PrintDebugStringAsOBJ((x) << 3, (y - 2) << 3, gBuildDateTime);
+    }
     PrintDebugStringAsOBJ((x) << 3, (y - 1) << 3, NumToStr(num, countStr));
     PrintDebugStringAsOBJ((x + 2) << 3, (y - 1) << 3, "/");
     PrintDebugStringAsOBJ((x + 3) << 3, (y - 1) << 3, NumToStr(64, countStr));
+    PrintDebugStringAsOBJ((x + 7) << 3, (y - 1) << 3, "Most: ");
+    PrintDebugStringAsOBJ((x + 13) << 3, (y - 1) << 3, NumToStr(proc->peak, countStr));
     for (int i = 0; i < MAX_TRACKED_PROCS; ++i)
     {
         if (proc->entries[i].str)
@@ -269,6 +280,7 @@ void CheckForProcSpace(ProcMonitor * proc)
 {
     if ((int)sProcAllocListHead > (int)&sProcAllocList[ProcsReqForErrorMsg])
     {
+
         EndGreenText();
 
         LockGame();
@@ -300,7 +312,8 @@ void StartProcMonitor(void)
 {
     if (!Proc_Find(ProcMonitorCmd))
     {
-        Proc_Start(ProcMonitorCmd, (void *)3);
+        ProcMonitor * proc = Proc_Start(ProcMonitorCmd, (void *)3);
+        proc->peak = 0;
     }
 }
 
