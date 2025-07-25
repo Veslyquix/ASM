@@ -3,6 +3,14 @@
 	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
 
+#ifndef TutText 
+    #define TutText(text) "SVAL 0xB 0xFFFFFFFF; TUTORIALTEXTBOXSTART; TEXTSHOW text; TEXTEND; REMA" // Centered 
+#endif 
+
+
+
+
+
 #ifdef _FE6_ 
     #inctbl "fe6TR" "Data/fe6_tr.tbl"
     #ifndef txt
@@ -14,6 +22,45 @@
         #define txt(string2) STRING string2 "fe8TR"; BYTE 0 0; // fe6 version 
     #endif 
 #endif 
+
+
+
+#ifndef DebuggerOnText
+    #define DebuggerOnText 0x9df 
+    // { 
+    // textLabel: 
+    // txt("Debugger turned on using\L + Left + Up")
+    // setText(DebuggerOnText, textLabel); } 
+#endif 
+#ifndef DebuggerOffText 
+    #define DebuggerOffText 0x9de 
+    // { 
+    // textLabel: 
+    // txt("Debugger turned off using\L + Left + Up")
+    // setText(DebuggerOffText, textLabel); } 
+#endif 
+
+#ifndef DebuggerFlag
+#define DebuggerFlag 0xEC
+#endif 
+
+
+#ifdef _FE8_ 
+ALIGN 4 
+DebuggerFlagEvent:
+CHECK_EVENTID DebuggerFlag 
+BNE 0 sC s0 
+TutText(DebuggerOnText)
+ENUF DebuggerFlag 
+GOTO 99 
+LABEL 0 // Off 
+TutText(DebuggerOffText) 
+ENUT DebuggerFlag 
+LABEL 99 
+NoFade 
+ENDA 
+#endif 
+
 
 
 
@@ -55,7 +102,7 @@
 ALIGN 4 
 DebuggerTurnedOff_Flag:
 #ifdef _FE8_ 
-WORD 0xEC // if this flag is on, the debugger is off 
+WORD DebuggerFlag // if this flag is on, the debugger is off 
 #endif 
 #ifdef _FE7_ 
 WORD 0xA1

@@ -52,6 +52,7 @@ const u16 KonamiCodeSequence[] = { DPAD_UP,   DPAD_UP,    DPAD_DOWN, DPAD_DOWN, 
 extern int DebuggerTurnedOff_Flag;
 extern int KeyComboToDisableFlag;
 extern int KonamiCodeEnabled;
+extern const EventListScr DebuggerFlagEvent[];
 
 void ToggleFlag(int flag)
 {
@@ -102,6 +103,7 @@ void CheckKeysForCheatCode(CheatCodeKeyListenerProc * proc)
         if ((keys & KEYS_MASK) == KeyComboToDisableFlag)
         {
             ToggleFlag(DebuggerTurnedOff_Flag);
+            CallEvent((u16 *)DebuggerFlagEvent, 1);
         }
     }
 }
