@@ -23,7 +23,7 @@ struct TimedHitsDifficultyStruct // 1 byte
     u8 cheats : 1;
 };
 
-int ShouldNotShowAnim(void)
+int ShouldReverseShowAnim(void)
 {
     u16 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;
     if (keys & HeldButton_AnimOff)
@@ -62,30 +62,71 @@ int ShouldSpeedupAnims(void)
 int GetSoloAnimPreconfType(struct Unit * unit)
 {
     // TODO: battle anim type constants
-    int result = PLAY_ANIMCONF_OFF;
+    int type = PLAY_ANIMCONF_OFF;
 
     if (unit->state & US_SOLOANIM_1)
-        result = PLAY_ANIMCONF_ON;
+        type = PLAY_ANIMCONF_ON;
 
     if (unit->state & US_SOLOANIM_2)
-        result = PLAY_ANIMCONF_ON_UNIQUE_BG;
+        type = PLAY_ANIMCONF_ON_UNIQUE_BG;
 
-    if (ShouldNotShowAnim())
-        result = PLAY_ANIMCONF_OFF;
+    if (ShouldReverseShowAnim())
+    {
+        switch (type)
+        {
+            case PLAY_ANIMCONF_OFF:
+            {
+                type = PLAY_ANIMCONF_ON;
+                break;
+            }
+            case PLAY_ANIMCONF_ON:
+            {
+                type = PLAY_ANIMCONF_OFF;
+                break;
+            }
+            case PLAY_ANIMCONF_ON_UNIQUE_BG:
+            {
+                type = PLAY_ANIMCONF_OFF;
+                break;
+            }
+            default:
+        }
+    }
 
-    return result;
+    return type;
 }
 
 int GetBattleAnimPreconfType(void)
 {
-    if (ShouldNotShowAnim())
-    {
-        return PLAY_ANIMCONF_OFF;
-    }
+    int type = gPlaySt.config.animationType;
 
     // If not solo anim, return global type
     if (gPlaySt.config.animationType != PLAY_ANIMCONF_SOLO_ANIM)
-        return gPlaySt.config.animationType;
+    {
+        if (ShouldReverseShowAnim())
+        {
+            switch (type)
+            {
+                case PLAY_ANIMCONF_OFF:
+                {
+                    type = PLAY_ANIMCONF_ON;
+                    break;
+                }
+                case PLAY_ANIMCONF_ON:
+                {
+                    type = PLAY_ANIMCONF_OFF;
+                    break;
+                }
+                case PLAY_ANIMCONF_ON_UNIQUE_BG:
+                {
+                    type = PLAY_ANIMCONF_OFF;
+                    break;
+                }
+                default:
+            }
+        }
+        return type;
+    }
 
     // If both units are players, use actor solo anim type
     if (UNIT_FACTION(&gBattleActor.unit) == FACTION_BLUE)
