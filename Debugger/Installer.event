@@ -111,6 +111,7 @@ WORD 0xA1
 WORD 0xA1 
 #endif 
 
+#ifndef A_BUTTON 
 #define A_BUTTON        0x0001
 #define B_BUTTON        0x0002
 #define SELECT_BUTTON   0x0004
@@ -121,6 +122,7 @@ WORD 0xA1
 #define DPAD_DOWN       0x0080
 #define R_BUTTON        0x0100
 #define L_BUTTON        0x0200
+#endif 
 
 ALIGN 4 
 KeyComboToDisableFlag:
