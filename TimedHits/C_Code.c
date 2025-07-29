@@ -1033,6 +1033,7 @@ void AdjustDamageByPercent(
     CheckForDeath(proc, HpProc, active_bunit, opp_bunit, round, newHp, newDamage);
 }
 
+/*
 extern int ForceAnimsOn;
 enum PlaySt_AnimConfType
 {
@@ -1079,3 +1080,4 @@ int GetBattleAnimPreconfType(void)
     else
         return GetSoloAnimPreconfType(&gBattleTarget.unit);
 }
+*/

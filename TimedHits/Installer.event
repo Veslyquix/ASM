@@ -45,8 +45,8 @@ NumberOfRandomButtons: // (half as many for non-magic)
 WORD 0 // if 0, will use TimedHitsDifficultyRam with minimum 1 
 AlwaysA:
 WORD 0 // true if 1, false if 0  
-ForceAnimsOn:
-WORD 0 
+// ForceAnimsOn: // This was used while developing for testing purposes and is no longer functional 
+// WORD 0 
 DisabledFlag:
 WORD 0xED
 BlockingEnabled:
