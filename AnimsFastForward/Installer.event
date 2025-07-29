@@ -1,8 +1,5 @@
 
 
-ALIGN 4 
-MaxFastForwardSpeed: 
-WORD 1 // or 0 for false 
 
 #ifdef _FE8_ 
     #ifndef VeslyBuildfile 
