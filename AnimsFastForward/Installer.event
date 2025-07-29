@@ -1,0 +1,83 @@
+
+
+ALIGN 4 
+MaxFastForwardSpeed: 
+WORD 1 // or 0 for false 
+
+#ifdef _FE8_ 
+    #ifndef VeslyBuildfile 
+        #define PlayerPhaseOnlyFlag_Def 0 // choose a flag if you want this functionality 
+        #define SpeedupAnimsFlag_Def 0    // choose a flag if you want this functionality 
+    #else 
+        #define PlayerPhaseOnlyFlag_Def 0x129
+        #define SpeedupAnimsFlag_Def 0x12A
+    #endif 
+#else // fe6/7
+    #define PlayerPhaseOnlyFlag_Def 0x9E // fe6/7 
+    #define SpeedupAnimsFlag_Def 0x9D 
+#endif 
+
+#ifndef A_BUTTON 
+#define A_BUTTON        0x0001
+#define B_BUTTON        0x0002
+#define SELECT_BUTTON   0x0004
+#define START_BUTTON    0x0008
+#define DPAD_RIGHT      0x0010
+#define DPAD_LEFT       0x0020
+#define DPAD_UP         0x0040
+#define DPAD_DOWN       0x0080
+#define R_BUTTON        0x0100
+#define L_BUTTON        0x0200
+#endif 
+
+ALIGN 4 
+HeldButton_AnimOff: 
+SHORT L_BUTTON|R_BUTTON // Holding any of these when battle starts will make the game do map anims instead 
+
+HeldButton_FastForwardAnims:
+SHORT L_BUTTON|A_BUTTON|B_BUTTON 
+
+PlayerPhaseOnlyFlag:
+SHORT PlayerPhaseOnlyFlag_Def 
+
+SpeedupAnimsFlag:
+SHORT SpeedupAnimsFlag_Def 
+
+
+TimedHitsDifficultyRam_Link: // it won't speed up battles from A/B/directions if timed hits is on 
+#ifdef TimedHitsRam 
+WORD TimedHitsRam
+#else 
+WORD 0 
+#endif 
+
+#ifndef callHackNew
+	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+#endif 
+
+
+PUSH 
+#ifdef _FE8_ 
+ORG 0x4FEC8 // fe8 
+#endif 
+#ifdef _FE7_ 
+ORG $4b30c // fe7 
+#endif 
+#ifdef _FE6_ 
+ORG $426E8 // fe6
+#endif 
+callHackNew(FastForwardBattles) 
+POP 
+
+#ifdef _FE8_ 
+#include "Data/FE8.lyn.event" 
+#endif 
+#ifdef _FE7_ 
+#include "Data/FE7.lyn.event" 
+#endif 
+#ifdef _FE6_ 
+#include "Data/FE6.lyn.event" 
+#endif 
+
+
