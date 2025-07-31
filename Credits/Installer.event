@@ -2,7 +2,11 @@
 #include "EAstdlib.event" 
 #include "C_Code.lyn.event" 
 
-
+ALIGN 4 
+HeldButtonSpeed: 
+WORD 1 
+DefaultSpeed:
+WORD 1 // 4 
 
 PUSH 
 ORG $8B0917

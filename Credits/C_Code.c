@@ -122,9 +122,37 @@ int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int 
     }
     return len;
 }
+
+extern int HeldButtonSpeed;
+extern int DefaultSpeed;
+extern struct KeyStatusBuffer sKeyStatusBuffer;
+int ShouldAdvanceFrame(BigTextProc * proc)
+{
+    u32 clock = GetGameClock();
+    u16 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;
+    int speed = DefaultSpeed;
+    if (keys & (B_BUTTON | A_BUTTON))
+    {
+        speed = HeldButtonSpeed;
+    }
+    if (keys & (START_BUTTON))
+    {
+        Proc_Break(proc);
+    }
+    if ((clock - proc->clock) >= speed)
+    {
+        proc->clock = clock;
+        return 1;
+    }
+    else
+    {
+        return false;
+    }
+}
+
 void BigTextLoop(BigTextProc * proc)
 {
-    proc->y -= (GetGameClock() - proc->clock) & CreditsSpeed;
+    proc->y -= ShouldAdvanceFrame(proc);
     if (proc->y < (-32))
     {
         proc->y += 32;
