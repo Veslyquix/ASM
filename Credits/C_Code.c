@@ -3,7 +3,9 @@
 extern ProcPtr StartClassNameIntroLetter(ProcPtr parent, u8 index);
 #define brk asm("mov r11, r11");
 
+#define CreditsSpeed 1
 #define NumOfStrs 5
+extern signed char * gCreditsText[];
 
 typedef struct
 {
@@ -12,6 +14,9 @@ typedef struct
     /* 29 */ u8 unk_29;
     u16 strID[5];
     u8 id;
+    u8 maxId;
+    s16 y;
+    u32 clock;
 } BigTextProc;
 
 #define BigText_VRAMTile 0x180
@@ -40,6 +45,11 @@ u16 BigFontInit(signed char * str, u16 offset)
         offset += 0x40;
         if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
             offset += 0xC00;       // Move to next text page
+
+        if ((offset + BigTextVRAM) >= 0x6018000)
+        {
+            offset = 0;
+        }
     }
 
     return offset;
@@ -49,15 +59,12 @@ const u16 strIDs[] = { 0x2c0, 0x2c1, 0, 0, 0 };
 void InitBigTextStr(BigTextProc * proc)
 {
     u16 vramOffset = 0;
-    int sid;
 
     for (int i = 0; i < NumOfStrs; ++i)
     {
-        sid = strIDs[i];
-        proc->strID[i] = sid;
-        if (sid)
+        signed char * str = gCreditsText[i + proc->id];
+        if (str)
         {
-            signed char * str = (void *)GetStringFromIndex(sid);
             vramOffset = BigFontInit(str, vramOffset);
         }
     }
@@ -68,7 +75,11 @@ extern void sub_80B2A14(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offs
 void PutBigLetter(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset) // based on sub_80B2A14
 {
     int palID = 0;
-
+    // if (x > 224)
+    if (x > 200)
+    {
+        return;
+    }
     if (yScale <= 8)
     {
         return;
@@ -80,42 +91,76 @@ void PutBigLetter(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset) //
     }
     int adjustedCharId = ((charId >> 4) * 0x30) + charId; // 16 letters per row
 
+    int matrixId = charId & 0x1F; // affine matrix index (0-31)
     SetObjAffine(
-        adjustedCharId, Div(+COS(0) << 4, xScale), Div(-SIN(0) << 4, yScale), Div(+SIN(0) << 4, xScale),
+        matrixId, Div(+COS(0) << 4, xScale), Div(-SIN(0) << 4, yScale), Div(+SIN(0) << 4, xScale),
         Div(+COS(0) << 4, yScale)); // unsure what this does, but it is needed
 
     int layer = 1; // sub_80B2A14 uses oam2 layer 1 for first letter and layer 2 after that
     int oam2 = adjustedCharId * 2 + OAM2_LAYER(layer) + OAM2_PAL(palID);
-    PutSpriteExt(4, (x & 0x1FF) + (adjustedCharId << 9), y & 0x1FF, sSprite_08A2EF48_new, oam2);
+    PutSpriteExt(4, (x & 0x1FF) + (matrixId << 9), y & 0x1FF, sSprite_08A2EF48_new, oam2);
 }
 #define Width_BigChar 12
 unsigned int strlen(const char *);
 int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int y)
 {
+    if (!str)
+    {
+        return 0;
+    }
+    if (y > 160)
+    {
+        return 0;
+    }
+    int ix;
     int len = strlen((void *)str);
 
     for (int i = 0; i < len; ++i)
     { // display each character in the string
-        PutBigLetter(index + i, x + (i * Width_BigChar), y, 0x100, 0x100, 0);
-        // sub_80B2A14(index + i, x + (i * Width_BigChar), y, 0x100, 0x100, 0);
+        ix = x + (i * Width_BigChar);
+        PutBigLetter(index + i, ix, y, 0x100, 0x100, 0);
     }
     return len;
 }
 void BigTextLoop(BigTextProc * proc)
 {
-    int x = 32;
-    int y = 16;
-    int offset = 0;
-    int sid;
-    for (int i = 0; i < NumOfStrs; ++i)
+    proc->y -= (GetGameClock() - proc->clock) & CreditsSpeed;
+    if (proc->y < (-32))
     {
-        sid = proc->strID[i];
-        if (sid)
+        proc->y += 32;
+        proc->id++;
+        if (proc->id > proc->maxId)
         {
-            offset = PrintBigString(proc, (void *)GetStringFromIndex(sid), offset, x, y + (i * 32));
+            proc->id = proc->maxId;
+            Proc_Break(proc);
+            return;
         }
     }
-    // offset = PrintBigString(proc, proc->str2, offset, x, y + 32);
+
+    int x = 0;
+    int offset = 0;
+
+    signed char * str;
+    for (int i = 0; i < proc->id; ++i)
+    {
+        str = gCreditsText[i];
+        offset += strlen((void *)str);
+    }
+
+    // for (int i = 0; i < NumOfStrs; ++i)
+    for (int i = 0; i < NumOfStrs; ++i)
+    {
+        str = gCreditsText[i + proc->id];
+        // str = gCreditsText[i];
+        if (str && *str)
+        {
+            offset += PrintBigString(proc, str, offset, x, proc->y + (i * 32));
+        }
+        else
+        {
+            proc->maxId = proc->id;
+        }
+    }
 }
 
 struct ProcCmd const ProcScr_BigText[] = {
@@ -138,4 +183,7 @@ void StartCreditsProc(ProcPtr parent)
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
     BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
     proc->id = 0;
+    proc->maxId = 255;
+    proc->y = 240;
+    proc->clock = GetGameClock();
 }

@@ -15,6 +15,27 @@ NoFade
 ENDA 
 POP 
 
+// #define CreditsText(header, body) "PUSH; POIN header body; POP"
+
+ALIGN 4 
+gCreditsText: 
+POIN header1 body1 
+POIN header2 body2 
+POIN header1 body1 
+
+WORD 0 0 // Terminator 
+
+header1: 
+String("Header"); BYTE 0 
+body1: 
+// String("This text is a test."); BYTE 0 
+String("This is text."); BYTE 0 
+
+header2: 
+String("zxcv"); BYTE 0 
+body2: 
+String("This asdf is a qwer."); BYTE 0 
+
 
 
 
