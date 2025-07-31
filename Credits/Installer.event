@@ -1,0 +1,21 @@
+
+#include "EAstdlib.event" 
+#include "C_Code.lyn.event" 
+
+
+
+PUSH 
+ORG $8B0917
+BYTE 0 // fade to map 
+
+ORG $9EEBFC
+ASMC StartCreditsProc
+STAL 30 
+NoFade 
+ENDA 
+POP 
+
+
+
+
+
