@@ -137,43 +137,54 @@ void InitCreditsBodyText(BigTextProc * proc)
     struct Text * th = gStatScreen.text;
     const char * str = (void *)gCreditsText[0].body;
     iter = str;
-
-    InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x0000, 0x11);
+    InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0, 0x11);
     SetTextFontGlyphs(1);
-
     ApplyPalette(gUnknown_0859EF20, 0x11);
 
-    for (line = 0; line < 2; line++)
+    for (int i = 0; i < NumOfStrs; ++i)
     {
-        InitSpriteText(&th[line]);
 
-        SpriteText_DrawBackgroundExt(&th[line], 0); // clears the vram obj behind the sprite text
-        Text_SetColor(&th[line], 0);
-    }
-
-    line = 0;
-    if (iter != 0)
-    {
-        while (*iter > 1)
+        th = &gStatScreen.text[i * 4]; // Max Number of lines
+        str = (void *)gCreditsText[i].body;
+        for (line = 0; line < 1; line++)
         {
-            iter = Text_DrawCharacter(&th[line], iter);
+            InitSpriteText(&th[line]);
 
-            if (Text_GetCursor(&th[line]) > 0xE0)
-            {
-
-                iter -= 2;
-                line++;
-
-                GetCharTextLen(iter, &width);
-
-                Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
-            }
+            SpriteText_DrawBackgroundExt(&th[line], 0); // clears the vram obj behind the sprite text
+            Text_SetColor(&th[line], 0);
         }
-
-        // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
-        // proc->textNum = proc->textCount - 1;
     }
 
+    for (int i = 0; i < NumOfStrs; ++i)
+    {
+
+        th = &gStatScreen.text[i * 4]; // Max Number of lines
+        str = (void *)gCreditsText[i].body;
+        iter = str;
+
+        line = 0;
+        if (iter != 0)
+        {
+            while (*iter > 1)
+            {
+                iter = Text_DrawCharacter(&th[line], iter);
+
+                if (Text_GetCursor(&th[line]) > 0xE0)
+                {
+
+                    iter -= 2;
+                    line++;
+
+                    GetCharTextLen(iter, &width);
+
+                    Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
+                }
+            }
+
+            // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
+            // proc->textNum = proc->textCount - 1;
+        }
+    }
     SetTextFont(0);
 
     return;
@@ -234,9 +245,9 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 void BigTextLoop(BigTextProc * proc)
 {
     proc->y -= ShouldAdvanceFrame(proc);
-    if (proc->y < (-32))
+    if (proc->y < (-64))
     {
-        proc->y += 32;
+        proc->y += 64;
         proc->id++;
     }
     if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
@@ -263,7 +274,7 @@ void BigTextLoop(BigTextProc * proc)
         // str = gCreditsText[i];
         if (str && *str)
         {
-            offset += PrintBigString(proc, str, offset, x, proc->y + (i * 32));
+            offset += PrintBigString(proc, str, offset, x, proc->y + (i * 64));
         }
     }
     for (int i = 0; i < NumOfStrs; ++i)
@@ -272,7 +283,7 @@ void BigTextLoop(BigTextProc * proc)
         // str = gCreditsText[i];
         if (str && *str)
         {
-            PutNormalSpriteText(2, x + 16, proc->y + (i * 32), gObject_32x16, OAM2_PAL(1));
+            PutNormalSpriteText(2, x + 16, proc->y + (i * 64) + 48, gObject_32x16, OAM2_PAL(1) + (i * 0x40));
         }
     }
 }
