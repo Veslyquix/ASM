@@ -2,24 +2,27 @@
 // //JOQUXY
 extern ProcPtr StartClassNameIntroLetter(ProcPtr parent, u8 index);
 #define brk asm("mov r11, r11");
+
+#define NumOfStrs 5
+
 typedef struct
 {
     /* 00 */ PROC_HEADER;
 
     /* 29 */ u8 unk_29;
-    signed char * str;
-    signed char * str2;
+    u16 strID[5];
+    u8 id;
 } BigTextProc;
 
-#define BigText_VRAMTile 0                                // 0x180
+#define BigText_VRAMTile 0x180
 #define BigTextVRAM (0x6010000 + (BigText_VRAMTile << 5)) // 0x6010000
 extern const u16 sSprite_08A2EF48[];
 u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
     {
-        1,                                  // number of entries
-        OAM0_SHAPE_32x32 | OAM0_DOUBLESIZE, // 0x8300, // oam0 size
-        OAM1_SIZE_32x32,                    // 0x8000, // oam1 size
-        0x400                               // OAM2_CHR(BigText_VRAMTile + 0x20),
+        1, // number of entries
+        OAM0_SHAPE_16x32 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE,
+        OAM1_SIZE_32x32,
+        OAM2_CHR(BigText_VRAMTile),
     };
 
 extern u8 * const gUnknown_08A2F2C0[];
@@ -34,85 +37,85 @@ u16 BigFontInit(signed char * str, u16 offset)
         Copy2dChr(gGenericBuffer, (void *)(offset + BigTextVRAM), 2, 4);
 
         str++;
-        offset += 0x40 + (((offset + 0x40) / 0x400) * 0xC00);
+        offset += 0x40;
+        if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
+            offset += 0xC00;       // Move to next text page
     }
 
     return offset;
 }
 
+const u16 strIDs[] = { 0x2c0, 0x2c1, 0, 0, 0 };
 void InitBigTextStr(BigTextProc * proc)
 {
     u16 vramOffset = 0;
-    signed char * str = (void *)GetStringFromIndex(0x2C0);
-    vramOffset = BigFontInit(str, vramOffset);
-    proc->str = str;
-    str = (void *)GetStringFromIndex(0x2C1);
-    vramOffset = BigFontInit(str, vramOffset);
-    proc->str2 = str;
+    int sid;
+
+    for (int i = 0; i < NumOfStrs; ++i)
+    {
+        sid = strIDs[i];
+        proc->strID[i] = sid;
+        if (sid)
+        {
+            signed char * str = (void *)GetStringFromIndex(sid);
+            vramOffset = BigFontInit(str, vramOffset);
+        }
+    }
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
 extern void sub_80B2A14(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset);
 void PutBigLetter(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset) // based on sub_80B2A14
 {
-    int i;
     int palID = 0;
 
-    // if (yScale <= 8)
-    // {
-    // return;
-    // }
+    if (yScale <= 8)
+    {
+        return;
+    }
 
-    // if (xScale < 8)
-    // {
-    // xScale = 8;
-    // }
+    if (xScale < 8)
+    {
+        xScale = 8;
+    }
+    int adjustedCharId = ((charId >> 4) * 0x30) + charId; // 16 letters per row
 
-    // SetObjAffine(
-    // charId, Div(+COS(0) << 4, xScale), Div(-SIN(0) << 4, yScale), Div(+SIN(0) << 4, xScale),
-    // Div(+COS(0) << 4, yScale));
+    SetObjAffine(
+        adjustedCharId, Div(+COS(0) << 4, xScale), Div(-SIN(0) << 4, yScale), Div(+SIN(0) << 4, xScale),
+        Div(+COS(0) << 4, yScale)); // unsure what this does, but it is needed
 
-    // if (offset != 0) {
-    int layer = 2;
-    // int oam2 = TILEREF(BigText_VRAMTile, 0) + OAM2_LAYER(layer);
-    int oam2 = charId * 2 + OAM2_LAYER(layer); // + 0x800;
-    // int oam2 = charId * 2 + (palID & 0xF) * 0x1000 + 0x800 + BigText_VRAMTile;
-    // PutSpriteExt(4, (x & 0x1FF) + (charId << 9), y & 0x1FF, sSprite_08A2EF48, oam2);
-
-    PutSpriteExt(4, (x & 0x1FF) + (charId << 9), y & 0x1FF, sSprite_08A2EF48, charId * 2 + (0 & 0xF) * 0x1000 + 0x400);
-    // }
-
-    // else { // first letter uses 0x400 instead of 0x800 for the oam2
-    // PutSpriteExt(
-    // 4,
-    // (x & 0x1FF) + (charId << 9),
-    // y & 0x1FF,
-    // sSprite_08A2EF48,
-    // charId * 2 + (k & 0xF) * 0x1000 + 0x400
-    // );
-    // }
+    int layer = 1; // sub_80B2A14 uses oam2 layer 1 for first letter and layer 2 after that
+    int oam2 = adjustedCharId * 2 + OAM2_LAYER(layer) + OAM2_PAL(palID);
+    PutSpriteExt(4, (x & 0x1FF) + (adjustedCharId << 9), y & 0x1FF, sSprite_08A2EF48_new, oam2);
 }
 #define Width_BigChar 12
-extern int StrLen(u8 * buf);
+unsigned int strlen(const char *);
 int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int y)
 {
-    // char * myStr = str;
-    int len = StrLen((void *)str);
+    int len = strlen((void *)str);
 
     for (int i = 0; i < len; ++i)
     { // display each character in the string
-        // PutBigLetter(index + i, x + (i * Width_BigChar), y, 0x100, 0x100, 0);
-        sub_80B2A14(index + i, x + (i * Width_BigChar), y, 0x100, 0x100, 0);
+        PutBigLetter(index + i, x + (i * Width_BigChar), y, 0x100, 0x100, 0);
+        // sub_80B2A14(index + i, x + (i * Width_BigChar), y, 0x100, 0x100, 0);
     }
     return len;
 }
 void BigTextLoop(BigTextProc * proc)
 {
     int x = 32;
-    int y = 32;
+    int y = 16;
     int offset = 0;
-    offset = PrintBigString(proc, proc->str, offset, x, y);
-    offset = PrintBigString(proc, proc->str2, offset, x, y + 32);
+    int sid;
+    for (int i = 0; i < NumOfStrs; ++i)
+    {
+        sid = proc->strID[i];
+        if (sid)
+        {
+            offset = PrintBigString(proc, (void *)GetStringFromIndex(sid), offset, x, y + (i * 32));
+        }
+    }
+    // offset = PrintBigString(proc, proc->str2, offset, x, y + 32);
 }
 
 struct ProcCmd const ProcScr_BigText[] = {
@@ -129,5 +132,10 @@ struct ProcCmd const ProcScr_BigText[] = {
 
 void StartCreditsProc(ProcPtr parent)
 {
+    RegisterBlankTile(0x400);
+    BG_Fill(gBG3TilemapBuffer, 0);
+    //
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
     BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
+    proc->id = 0;
 }
