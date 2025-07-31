@@ -6,7 +6,7 @@ ALIGN 4
 HeldButtonSpeed: 
 WORD 1 
 DefaultSpeed:
-WORD 1 // 4 
+WORD 2 // 4 
 
 PUSH 
 ORG $8B0917
@@ -27,7 +27,10 @@ POIN header1 body1
 POIN header2 body2 
 POIN header1 body1 
 
-WORD 0 0 // Terminator 
+WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator 
+
+
+
 
 header1: 
 String("Header"); BYTE 0 

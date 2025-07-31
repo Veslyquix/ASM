@@ -4,8 +4,13 @@ extern ProcPtr StartClassNameIntroLetter(ProcPtr parent, u8 index);
 #define brk asm("mov r11, r11");
 
 #define CreditsSpeed 1
-#define NumOfStrs 5
-extern signed char * gCreditsText[];
+#define NumOfStrs 4
+struct CreditsStruct
+{
+    signed char * header;
+    signed char * body;
+};
+extern struct CreditsStruct gCreditsText[];
 
 typedef struct
 {
@@ -14,6 +19,7 @@ typedef struct
     /* 29 */ u8 unk_29;
     u16 strID[5];
     u8 id;
+    u8 finished;
     u8 maxId;
     s16 y;
     u32 clock;
@@ -60,9 +66,9 @@ void InitBigTextStr(BigTextProc * proc)
 {
     u16 vramOffset = 0;
 
-    for (int i = 0; i < NumOfStrs; ++i)
+    for (int i = 0; i < NumOfStrs; i++)
     {
-        signed char * str = gCreditsText[i + proc->id];
+        signed char * str = gCreditsText[i + proc->id].header;
         if (str)
         {
             vramOffset = BigFontInit(str, vramOffset);
@@ -76,7 +82,7 @@ void PutBigLetter(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset) //
 {
     int palID = 0;
     // if (x > 224)
-    if (x > 200)
+    if (x > 240)
     {
         return;
     }
@@ -129,29 +135,27 @@ void InitCreditsBodyText(BigTextProc * proc)
     int line;
     u32 width;
     struct Text * th = gStatScreen.text;
-    const char * str = gCreditsText[1];
+    const char * str = (void *)gCreditsText[0].body;
     iter = str;
 
-    InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x0000, 0x14);
+    InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x0000, 0x11);
     SetTextFontGlyphs(1);
 
-    ApplyPalette(gUnknown_0859EF20, 0x14);
+    ApplyPalette(gUnknown_0859EF20, 0x11);
 
     for (line = 0; line < 2; line++)
     {
         InitSpriteText(&th[line]);
 
-        // SpriteText_DrawBackgroundExt(&th[line], 0);
+        SpriteText_DrawBackgroundExt(&th[line], 0); // clears the vram obj behind the sprite text
         Text_SetColor(&th[line], 0);
     }
 
     line = 0;
-
     if (iter != 0)
     {
         while (*iter > 1)
         {
-
             iter = Text_DrawCharacter(&th[line], iter);
 
             if (Text_GetCursor(&th[line]) > 0xE0)
@@ -202,6 +206,31 @@ int ShouldAdvanceFrame(BigTextProc * proc)
     }
 }
 
+// PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
+void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
+{ // see  PutSubtitleHelpText
+    if (y > 160)
+    {
+        return;
+    }
+    static u16 lut[] = {
+        0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58,
+    };
+
+    int i;
+    int ix;
+
+    for (i = 0; i < 9; i++)
+    {
+        // int x = (i * 32) - 32 + proc->textOffset;
+        // int index = (proc->textNum + i) % proc->textCount;
+        ix = x + (i * 32);
+
+        PutSprite(layer, ix, y, gObject_32x16, oam2 + lut[i]);
+    }
+
+    return;
+}
 void BigTextLoop(BigTextProc * proc)
 {
     proc->y -= ShouldAdvanceFrame(proc);
@@ -209,60 +238,51 @@ void BigTextLoop(BigTextProc * proc)
     {
         proc->y += 32;
         proc->id++;
-        if (proc->id > proc->maxId)
-        {
-            proc->id = proc->maxId;
-            Proc_Break(proc);
-            return;
-        }
     }
-    struct Text * th = gStatScreen.text;
+    if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
+    { // nothing left to display, so end
+        Proc_Break(proc);
+        return;
+    }
+    // struct Text * th = gStatScreen.text;
 
     int x = 0;
     int offset = 0;
 
     signed char * str;
-    for (int i = 0; i < proc->id; ++i)
+    for (int i = 0; i < proc->id; i++)
     {
-        str = gCreditsText[i];
+        str = gCreditsText[i].header;
         offset += strlen((void *)str);
     }
 
     // for (int i = 0; i < NumOfStrs; ++i)
     for (int i = 0; i < NumOfStrs; ++i)
     {
-        str = gCreditsText[i + proc->id];
+        str = gCreditsText[i + proc->id].header;
         // str = gCreditsText[i];
         if (str && *str)
         {
-            if (i & 1)
-            { // text body
-                // PutSprite(2, x+8, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
-                // Text_InsertDrawString(struct Text * text, int x, int colorId, const char * str);
-                Text_InsertDrawString(&th[0], 0, 0, str);
-            }
-            else
-            {
-                offset += PrintBigString(proc, str, offset, x, proc->y + (i * 32));
-            }
+            offset += PrintBigString(proc, str, offset, x, proc->y + (i * 32));
         }
-        else
+    }
+    for (int i = 0; i < NumOfStrs; ++i)
+    {
+        str = gCreditsText[i + proc->id].body;
+        // str = gCreditsText[i];
+        if (str && *str)
         {
-            proc->maxId = proc->id;
+            PutNormalSpriteText(2, x + 16, proc->y + (i * 32), gObject_32x16, OAM2_PAL(1));
         }
     }
 }
 
 struct ProcCmd const ProcScr_BigText[] = {
-    PROC_NAME("opinfo"),
-    PROC_SLEEP(0),
-    PROC_CALL(LockGame),
-    PROC_CALL(BMapDispSuspend),
-    PROC_CALL(InitBigTextStr),
-    PROC_REPEAT(BigTextLoop),
-    PROC_CALL(UnlockGame),
-    PROC_CALL(BMapDispResume),
-    PROC_END,
+    PROC_NAME("opinfo"),       PROC_SLEEP(0),
+    PROC_CALL(LockGame),       PROC_CALL(BMapDispSuspend),
+    PROC_CALL(InitBigTextStr), PROC_CALL(InitCreditsBodyText),
+    PROC_REPEAT(BigTextLoop),  PROC_CALL(UnlockGame),
+    PROC_CALL(BMapDispResume), PROC_END,
 };
 
 void StartCreditsProc(ProcPtr parent)
@@ -273,6 +293,7 @@ void StartCreditsProc(ProcPtr parent)
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
     BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
     proc->id = 0;
+    proc->finished = false;
     proc->maxId = 255;
     proc->y = 240;
     proc->clock = GetGameClock();
