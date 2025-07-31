@@ -123,6 +123,58 @@ int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int 
     return len;
 }
 
+void InitCreditsBodyText(BigTextProc * proc)
+{
+    const char * iter;
+    int line;
+    u32 width;
+    struct Text * th = gStatScreen.text;
+    const char * str = gCreditsText[1];
+    iter = str;
+
+    InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x0000, 0x14);
+    SetTextFontGlyphs(1);
+
+    ApplyPalette(gUnknown_0859EF20, 0x14);
+
+    for (line = 0; line < 2; line++)
+    {
+        InitSpriteText(&th[line]);
+
+        // SpriteText_DrawBackgroundExt(&th[line], 0);
+        Text_SetColor(&th[line], 0);
+    }
+
+    line = 0;
+
+    if (iter != 0)
+    {
+        while (*iter > 1)
+        {
+
+            iter = Text_DrawCharacter(&th[line], iter);
+
+            if (Text_GetCursor(&th[line]) > 0xE0)
+            {
+
+                iter -= 2;
+                line++;
+
+                GetCharTextLen(iter, &width);
+
+                Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
+            }
+        }
+
+        // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
+        // proc->textNum = proc->textCount - 1;
+    }
+
+    SetTextFont(0);
+
+    return;
+}
+
 extern int HeldButtonSpeed;
 extern int DefaultSpeed;
 extern struct KeyStatusBuffer sKeyStatusBuffer;
@@ -164,6 +216,7 @@ void BigTextLoop(BigTextProc * proc)
             return;
         }
     }
+    struct Text * th = gStatScreen.text;
 
     int x = 0;
     int offset = 0;
@@ -182,7 +235,16 @@ void BigTextLoop(BigTextProc * proc)
         // str = gCreditsText[i];
         if (str && *str)
         {
-            offset += PrintBigString(proc, str, offset, x, proc->y + (i * 32));
+            if (i & 1)
+            { // text body
+                // PutSprite(2, x+8, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
+                // Text_InsertDrawString(struct Text * text, int x, int colorId, const char * str);
+                Text_InsertDrawString(&th[0], 0, 0, str);
+            }
+            else
+            {
+                offset += PrintBigString(proc, str, offset, x, proc->y + (i * 32));
+            }
         }
         else
         {
