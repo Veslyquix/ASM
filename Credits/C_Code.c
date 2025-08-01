@@ -17,7 +17,8 @@ typedef struct
     /* 00 */ PROC_HEADER;
 
     /* 29 */ u8 unk_29;
-    u16 strID[5];
+    u8 bigTextOffset[5];
+    u8 bigTextLength[5];
     u8 id;
     u8 finished;
     u8 maxId;
@@ -81,8 +82,10 @@ void InitBigTextStr(BigTextProc * proc)
     }
 }
 
+static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
 void InitCreditsBodyText(BigTextProc * proc)
 {
+    brk;
     const char * str;
     const char * iter;
     int line;
@@ -95,7 +98,6 @@ void InitCreditsBodyText(BigTextProc * proc)
 
     for (int i = 0; i < NumOfStrs; ++i)
     {
-
         th = &gStatScreen.text[i * 4]; // Max Number of lines
         str = (void *)gCreditsText[i + proc->id].body;
         for (line = 0; line < 1; line++)
@@ -106,24 +108,25 @@ void InitCreditsBodyText(BigTextProc * proc)
             Text_SetColor(&th[line], 0);
         }
         iter = str;
-
         line = 0;
         if (iter != 0)
         {
+
             while (*iter > 1)
             {
-                iter = Text_DrawCharacter(&th[line], iter);
+                iter = Text_DrawCharacterAscii_BL(&th[line], iter); // 160k cycles
+                // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
 
-                if (Text_GetCursor(&th[line]) > 0xE0)
-                {
+                // if (Text_GetCursor(&th[line]) > 0xE0)
+                // {
 
-                    iter -= 2;
-                    line++;
+                // iter -= 2;
+                // line++;
 
-                    GetCharTextLen(iter, &width);
+                // GetCharTextLen(iter, &width);
 
-                    Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
-                }
+                // Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
+                // }
             }
 
             // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
@@ -131,13 +134,16 @@ void InitCreditsBodyText(BigTextProc * proc)
         }
     }
     SetTextFont(0);
-
+    brk;
     return;
 }
 void InitCreditsText(BigTextProc * proc)
 {
+    // brk;
     InitBigTextStr(proc);
+    // brk;
     InitCreditsBodyText(proc);
+    // brk;
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
@@ -241,12 +247,13 @@ void BigTextLoop(BigTextProc * proc)
         yDiff = GetYOffsetBetweenText(proc, proc->id);
         proc->y += yDiff;
         InitCreditsText(proc);
+        brk;
         proc->advanceId = false;
         // return;
     }
     if (TryAdvanceID(proc))
     {
-        return;
+        // return;
     }
     if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
     { // nothing left to display, so end
@@ -278,7 +285,6 @@ void BigTextLoop(BigTextProc * proc)
     for (int i = 0; i < NumOfStrs; ++i)
     {
         str = gCreditsText[i + proc->id].body;
-        // str = gCreditsText[i];
         if (str && *str)
         {
             PutNormalSpriteText(2, x + 16, proc->y + (i * yDiff) + 48, gObject_32x16, OAM2_PAL(1) + (i * 0x40));
@@ -345,4 +351,78 @@ int ShouldAdvanceFrame(BigTextProc * proc)
     {
         return false;
     }
+}
+
+extern struct Font * gActiveFont;
+inline void * GetSpriteTextDrawDest_BL(struct Text * text)
+{
+    int r1 = (text->db_id * text->tile_width + text->chr_position + text->x / 8);
+    return gActiveFont->vramDest + r1 * 32;
+}
+inline u16 * GetColorLut_BL(int color)
+{
+    return s2bppTo4bppLutTable[color];
+}
+static inline void DrawSpriteTextGlyph_BL(struct Text * text, struct Glyph * glyph)
+{
+    u64 bmpRow;
+    int i;
+    u32 * dest = GetSpriteTextDrawDest_BL(text);
+    int xoffset = text->x & 7;
+    u32 * bitmap = glyph->bitmap;
+    u16 * r8 = GetColorLut_BL(text->colorId);
+
+    for (i = 0; i < 8; i++)
+    {
+        // read one row of 32 bits from the bitmap
+        bmpRow = (u64)*bitmap << xoffset * 2;
+        bitmap++;
+        u32 val0 = bmpRow & 0xFF;
+        u32 val1 = (bmpRow >> 8) & 0xFF;
+        u32 val2 = (bmpRow >> 16) & 0xFF;
+        u32 val3 = (bmpRow >> 24) & 0xFF;
+        u32 val4 = (bmpRow >> 32) & 0xFF;
+        u32 val5 = (bmpRow >> 40) & 0xFF;
+
+        dest[0] |= r8[val0] | (r8[val1] << 16);
+        dest[8] |= r8[val2] | (r8[val3] << 16);
+        dest[16] |= r8[val4] | (r8[val5] << 16);
+
+        dest++;
+    }
+
+    dest = GetSpriteTextDrawDest_BL(text) + 0x400;
+
+    for (i = 0; i < 8; i++)
+    {
+        // read one row of 32 bits from the bitmap
+        bmpRow = (u64)*bitmap << xoffset * 2;
+        bitmap++;
+
+        u32 val0 = bmpRow & 0xFF;
+        u32 val1 = (bmpRow >> 8) & 0xFF;
+        u32 val2 = (bmpRow >> 16) & 0xFF;
+        u32 val3 = (bmpRow >> 24) & 0xFF;
+        u32 val4 = (bmpRow >> 32) & 0xFF;
+        u32 val5 = (bmpRow >> 40) & 0xFF;
+
+        dest[0] |= r8[val0] | (r8[val1] << 16);
+        dest[8] |= r8[val2] | (r8[val3] << 16);
+        dest[16] |= r8[val4] | (r8[val5] << 16);
+
+        dest++;
+    }
+
+    text->x += glyph->width;
+}
+
+static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str)
+{
+    struct Glyph * glyph = gActiveFont->glyphs[*str++];
+
+    if (glyph == NULL)
+        glyph = gActiveFont->glyphs['?'];
+
+    DrawSpriteTextGlyph_BL(th, glyph);
+    return str;
 }
