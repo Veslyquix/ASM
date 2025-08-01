@@ -18,6 +18,23 @@ extern u8 DangerBonesBuffer[DangerBonesBufferSize];
 extern u8 DangerBonesPalBuffer[8];
 #endif
 
+extern int ShakeIt;
+extern int Pal_4th;
+extern int DangerBonesDisabledFlag;
+
+int ShouldDangerBonesNotRun(void)
+{
+    if (gPlaySt.faction)
+    {
+        return true;
+    }
+    if (CheckFlag(DangerBonesDisabledFlag))
+    {
+        return true;
+    }
+    return false;
+}
+
 #ifdef FE6
 // fe6 has no bitflags for shaking / 4th palette, so make a buffer
 int IsDangerBonesSetForUnit(const struct Unit * unit)
@@ -26,6 +43,11 @@ int IsDangerBonesSetForUnit(const struct Unit * unit)
     {
         return false;
     }
+    if (ShouldDangerBonesNotRun())
+    {
+        return false;
+    }
+
     int id = unit->index & 0x3F;
     return DangerBonesPalBuffer[id >> 3] & (1 << (id & 7));
 }
@@ -64,23 +86,6 @@ void SetDangerBonesPalette(void)
 
 // break point on buffer
 // [0x201c8d0..0x201c8d0+0x2878]!!
-
-extern int ShakeIt;
-extern int Pal_4th;
-extern int DangerBonesDisabledFlag;
-
-int ShouldDangerBonesNotRun(void)
-{
-    if (gPlaySt.faction)
-    {
-        return true;
-    }
-    if (CheckFlag(DangerBonesDisabledFlag))
-    {
-        return true;
-    }
-    return false;
-}
 
 int IsUnitInvalid(struct Unit * unit)
 {

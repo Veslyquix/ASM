@@ -27,7 +27,7 @@ typedef struct
     u32 clock;
 } BigTextProc;
 
-#define BigText_VRAMTile 0x180
+#define BigText_VRAMTile 0x280
 #define BigTextVRAM (0x6010000 + (BigText_VRAMTile << 5)) // 0x6010000
 extern const u16 sSprite_08A2EF48[];
 u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
@@ -38,17 +38,37 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
         OAM2_CHR(BigText_VRAMTile),
     };
 
+int TextCountLines(signed char * str)
+{
+    signed char * tmp = str;
+    int i = 1;
+    while (*tmp)
+    {
+        while (*tmp > 1)
+        {
+            tmp++;
+        }
+        i++;
+        tmp++;
+    }
+    return i;
+}
+
+// 16y pixels per small text line
+// 48y for big text
+
 int GetYOffsetBetweenText(BigTextProc * proc, int id)
 {
-    return 64;
+    int result = 48;
+    result += TextCountLines(gCreditsText[id].body) * 16;
+    // return 64;
+    return result;
 }
 
 extern u8 * const gUnknown_08A2F2C0[];
 u16 BigFontInit(signed char * str, u16 offset)
 {
     ApplyPalette(gUnknown_08A37300, 0x10);
-    // ApplyPalette(gUnknown_08A30780, 0x1E);
-    // ApplyPalette(gUnknown_08A30780, 0x1F);
     while (*str != 0)
     {
         Decompress((gUnknown_08A2F2C0[*str] != 0) ? gUnknown_08A2F2C0[*str] : gUnknown_08A2F2C0[0x58], gGenericBuffer);
@@ -85,7 +105,6 @@ void InitBigTextStr(BigTextProc * proc)
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
 void InitCreditsBodyText(BigTextProc * proc)
 {
-    brk;
     const char * str;
     const char * iter;
     int line;
@@ -117,16 +136,16 @@ void InitCreditsBodyText(BigTextProc * proc)
                 iter = Text_DrawCharacterAscii_BL(&th[line], iter); // 160k cycles
                 // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
 
-                // if (Text_GetCursor(&th[line]) > 0xE0)
-                // {
+                if (Text_GetCursor(&th[line]) > 0xE0)
+                {
 
-                // iter -= 2;
-                // line++;
+                    iter -= 2;
+                    line++;
 
-                // GetCharTextLen(iter, &width);
+                    GetCharTextLen(iter, &width);
 
-                // Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
-                // }
+                    Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
+                }
             }
 
             // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
@@ -134,16 +153,7 @@ void InitCreditsBodyText(BigTextProc * proc)
         }
     }
     SetTextFont(0);
-    brk;
     return;
-}
-void InitCreditsText(BigTextProc * proc)
-{
-    // brk;
-    InitBigTextStr(proc);
-    // brk;
-    InitCreditsBodyText(proc);
-    // brk;
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
@@ -224,6 +234,18 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
     return;
 }
 
+void InitCreditsText(BigTextProc * proc)
+{
+    // while (REG_VCOUNT >= 160)
+    // ; // Wait for scanline 160+
+    // while (REG_VCOUNT < 160)
+    // ; // Wait for VBlank to begin
+    // brk;
+    // VBlankIntrWait();
+    InitBigTextStr(proc);
+    InitCreditsBodyText(proc);
+}
+
 int TryAdvanceID(BigTextProc * proc)
 {
     int yDiff = GetYOffsetBetweenText(proc, proc->id);
@@ -239,6 +261,7 @@ int TryAdvanceID(BigTextProc * proc)
 int ShouldAdvanceFrame(BigTextProc * proc);
 void BigTextLoop(BigTextProc * proc)
 {
+
     proc->y -= ShouldAdvanceFrame(proc);
     int yDiff = GetYOffsetBetweenText(proc, proc->id);
     if (proc->advanceId)
@@ -247,32 +270,24 @@ void BigTextLoop(BigTextProc * proc)
         yDiff = GetYOffsetBetweenText(proc, proc->id);
         proc->y += yDiff;
         InitCreditsText(proc);
-        brk;
         proc->advanceId = false;
-        // return;
     }
+
     if (TryAdvanceID(proc))
     {
-        // return;
+        return; // display nothing for a frame when redrawing stuff
     }
     if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
     { // nothing left to display, so end
         Proc_Break(proc);
         return;
     }
-    // struct Text * th = gStatScreen.text;
 
     int x = 0;
     int offset = 0;
 
     signed char * str;
-    // for (int i = 0; i < proc->id; i++)
-    // {
-    // str = gCreditsText[i].header;
-    // offset += strlen((void *)str);
-    // }
 
-    // for (int i = 0; i < NumOfStrs; ++i)
     for (int i = 0; i < NumOfStrs; ++i)
     {
         str = gCreditsText[i + proc->id].header;
