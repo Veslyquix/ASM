@@ -32,12 +32,20 @@ WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator
 
 
 #define NL "BYTE 1;"
-#define 2NL "BYTE 1 1;"
+#define NL2 "BYTE 1 1;"
 
 header1: 
 String("Header"); BYTE 0 
 body1: 
-// String("This text is a test."); BYTE 0 
+String("Title screen - redppr"); NL
+String("Most item icons - Lukirioh"); NL
+String("Portraits - Eden"); NL
+String("Map Sprites - redppr"); NL
+String("Pokemart Clerk, Beta Trainer Sprites, Choice Band, Muscle Band - Zaim"); NL
+String("Tileset water animations, Evolution stones, Jelly Donut, Drying Pan - N426"); NL
+String("Potions, Stat boosters, & various skill icons - Jester"); NL
+String("PMD Minimugs - Akim2007"); BYTE 0 
+
 String("This is text."); BYTE 0 
 
 header2: 
@@ -53,10 +61,10 @@ String("OK, others helped too."); BYTE 0
 header4: 
 String("Graphics"); BYTE 0 
 body4: 
-String("Title screen - redppr"); 2NL
-String("Most item icons - Lukirioh"); 2NL
-String("Portraits - Eden"); 2NL
-String("Map Sprites - redppr"); 2NL
+String("Title screen - redppr"); NL
+String("Most item icons - Lukirioh"); NL
+String("Portraits - Eden"); NL
+String("Map Sprites - redppr"); NL
 String("Pokemart Clerk, Beta Trainer Sprites, Choice Band, Muscle Band - Zaim"); NL
 String("Tileset water animations, Evolution stones, Jelly Donut, Drying Pan - N426"); NL
 String("Potions, Stat boosters, & various skill icons - Jester"); NL

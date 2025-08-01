@@ -38,7 +38,7 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
         OAM2_CHR(BigText_VRAMTile),
     };
 
-int TextCountLines(signed char * str)
+int CountTextLines(signed char * str)
 {
     signed char * tmp = str;
     int i = 1;
@@ -51,6 +51,10 @@ int TextCountLines(signed char * str)
         i++;
         tmp++;
     }
+    if (i > 4)
+    {
+        i = 4;
+    }
     return i;
 }
 
@@ -60,7 +64,7 @@ int TextCountLines(signed char * str)
 int GetYOffsetBetweenText(BigTextProc * proc, int id)
 {
     int result = 48;
-    result += TextCountLines(gCreditsText[id].body) * 16;
+    result += CountTextLines(gCreditsText[id].body) * 16;
     // return 64;
     return result;
 }
@@ -95,7 +99,7 @@ void InitBigTextStr(BigTextProc * proc)
     for (int i = 0; i < NumOfStrs; i++)
     {
         signed char * str = gCreditsText[i + proc->id].header;
-        if (str)
+        if (str && *str)
         {
             vramOffset = BigFontInit(str, vramOffset);
         }
@@ -107,7 +111,8 @@ void InitCreditsBodyText(BigTextProc * proc)
 {
     const char * str;
     const char * iter;
-    int line;
+    int line;  // current one
+    int lines; // how many
     u32 width;
     struct Text * th = gStatScreen.text;
 
@@ -115,41 +120,53 @@ void InitCreditsBodyText(BigTextProc * proc)
     SetTextFontGlyphs(1);
     ApplyPalette(gUnknown_0859EF20, 0x11);
 
-    for (int i = 0; i < NumOfStrs; ++i)
+    for (int i = 0; i < 1; ++i)
     {
         th = &gStatScreen.text[i * 4]; // Max Number of lines
         str = (void *)gCreditsText[i + proc->id].body;
-        for (line = 0; line < 1; line++)
-        {
-            InitSpriteText(&th[line]);
-
-            SpriteText_DrawBackgroundExt(&th[line], 0); // clears the vram obj behind the sprite text
-            Text_SetColor(&th[line], 0);
-        }
-        iter = str;
-        line = 0;
-        if (iter != 0)
+        if (str && *str)
         {
 
-            while (*iter > 1)
+            lines = CountTextLines(str);
+            for (line = 0; line < lines; line++)
             {
-                iter = Text_DrawCharacterAscii_BL(&th[line], iter); // 160k cycles
-                // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
+                InitSpriteText(&th[line]);
 
-                if (Text_GetCursor(&th[line]) > 0xE0)
-                {
-
-                    iter -= 2;
-                    line++;
-
-                    GetCharTextLen(iter, &width);
-
-                    Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
-                }
+                SpriteText_DrawBackgroundExt(&th[line], 0); // clears the vram obj behind the sprite text
+                Text_SetColor(&th[line], 0);
             }
+            iter = str;
+            line = 0;
+            if (iter != 0)
+            {
 
-            // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
-            // proc->textNum = proc->textCount - 1;
+                // while (*iter > 1)
+                while (*iter)
+                {
+                    if (line >= lines)
+                    {
+                        break;
+                    }
+
+                    if (Text_GetCursor(&th[line]) > 0xE0 || (*iter == 1))
+                    {
+
+                        // iter -= 2;
+                        iter++;
+                        line++;
+
+                        // GetCharTextLen(iter, &width);
+
+                        // Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
+                        Text_SetCursor(&th[line], 0);
+                    }
+                    iter = Text_DrawCharacterAscii_BL(&th[line], iter); // 160k cycles
+                    // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
+                }
+
+                // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
+                // proc->textNum = proc->textCount - 1;
+            }
         }
     }
     SetTextFont(0);
@@ -193,7 +210,7 @@ int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int 
     {
         return 0;
     }
-    if (y > 160)
+    if (y > 160 || y < (-48))
     {
         return 0;
     }
@@ -211,7 +228,7 @@ int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int 
 // PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
 void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 { // see  PutSubtitleHelpText
-    if (y > 160)
+    if (y > 160 || y < (-16))
     {
         return;
     }
@@ -267,42 +284,51 @@ void BigTextLoop(BigTextProc * proc)
     if (proc->advanceId)
     {
         proc->id++;
+        // brk;
         yDiff = GetYOffsetBetweenText(proc, proc->id);
         proc->y += yDiff;
         InitCreditsText(proc);
         proc->advanceId = false;
     }
-
+    if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
+    { // nothing left to display, so end
+        brk;
+        Proc_Break(proc);
+        return;
+    }
     if (TryAdvanceID(proc))
     {
         return; // display nothing for a frame when redrawing stuff
     }
-    if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
-    { // nothing left to display, so end
-        Proc_Break(proc);
-        return;
-    }
 
     int x = 0;
     int offset = 0;
+    int lines;
 
     signed char * str;
 
-    for (int i = 0; i < NumOfStrs; ++i)
+    // for (int i = 0; i < NumOfStrs; ++i)
+    for (int i = 0; i < 1; ++i)
     {
         str = gCreditsText[i + proc->id].header;
         // str = gCreditsText[i];
         if (str && *str)
         {
-            offset += PrintBigString(proc, str, offset, x, proc->y + (i * yDiff));
+            offset += PrintBigString(proc, str, offset, x, proc->y + yDiff); // (i * yDiff)
         }
     }
-    for (int i = 0; i < NumOfStrs; ++i)
+    // for (int i = 0; i < NumOfStrs; ++i)
+    for (int i = 0; i < 1; ++i)
     {
         str = gCreditsText[i + proc->id].body;
         if (str && *str)
         {
-            PutNormalSpriteText(2, x + 16, proc->y + (i * yDiff) + 48, gObject_32x16, OAM2_PAL(1) + (i * 0x40));
+            lines = CountTextLines(str);
+            for (int c = 0; c < lines; ++c)
+            {
+                PutNormalSpriteText(
+                    2, x + 16, proc->y + yDiff + (c * 16) + 48, gObject_32x16, OAM2_PAL(1) + (c * 0x40));
+            }
         }
     }
 }
