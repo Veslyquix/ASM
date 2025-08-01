@@ -6,7 +6,7 @@ ALIGN 4
 HeldButtonSpeed: 
 WORD 1 
 DefaultSpeed:
-WORD 2 // 4 
+WORD 4 // 4 
 
 PUSH 
 ORG $8B0917
@@ -25,7 +25,7 @@ ALIGN 4
 gCreditsText: 
 POIN header1 body1 
 POIN header2 body2 
-POIN header1 body1 
+POIN header3 body3 
 
 WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator 
 
@@ -43,9 +43,9 @@ String("Patches"); BYTE 0
 body2: 
 String("Vesly. 'Nuff said."); BYTE 0 
 
-header2: 
+header3: 
 String("More Patches"); BYTE 0 
-body2: 
+body3: 
 String("OK, others helped too."); BYTE 0 
 
 
