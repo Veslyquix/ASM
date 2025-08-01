@@ -363,55 +363,42 @@ inline u16 * GetColorLut_BL(int color)
 {
     return s2bppTo4bppLutTable[color];
 }
-static inline void DrawSpriteTextGlyph_BL(struct Text * text, struct Glyph * glyph)
+
+static inline u32 * DrawHalfRow(u32 * dest, u32 * bitmap, u16 * r8, int xoffset)
 {
     u64 bmpRow;
-    int i;
+    for (int i = 0; i < 8; i++)
+    {
+
+        // read one row of 32 bits from the bitmap
+        bmpRow = (u64)*bitmap << xoffset * 2;
+        bitmap++;
+        u32 val0 = bmpRow & 0xFF;
+        u32 val1 = (bmpRow >> 8) & 0xFF;
+        u32 val2 = (bmpRow >> 16) & 0xFF;
+        u32 val3 = (bmpRow >> 24) & 0xFF;
+        u32 val4 = (bmpRow >> 32) & 0xFF;
+        u32 val5 = (bmpRow >> 40) & 0xFF;
+
+        dest[0] |= r8[val0] | (r8[val1] << 16);
+        dest[8] |= r8[val2] | (r8[val3] << 16);
+        dest[16] |= r8[val4] | (r8[val5] << 16);
+
+        dest++;
+    }
+    return bitmap;
+}
+static inline void DrawSpriteTextGlyph_BL(struct Text * text, struct Glyph * glyph)
+{
     u32 * dest = GetSpriteTextDrawDest_BL(text);
     int xoffset = text->x & 7;
     u32 * bitmap = glyph->bitmap;
     u16 * r8 = GetColorLut_BL(text->colorId);
 
-    for (i = 0; i < 8; i++)
-    {
-        // read one row of 32 bits from the bitmap
-        bmpRow = (u64)*bitmap << xoffset * 2;
-        bitmap++;
-        u32 val0 = bmpRow & 0xFF;
-        u32 val1 = (bmpRow >> 8) & 0xFF;
-        u32 val2 = (bmpRow >> 16) & 0xFF;
-        u32 val3 = (bmpRow >> 24) & 0xFF;
-        u32 val4 = (bmpRow >> 32) & 0xFF;
-        u32 val5 = (bmpRow >> 40) & 0xFF;
-
-        dest[0] |= r8[val0] | (r8[val1] << 16);
-        dest[8] |= r8[val2] | (r8[val3] << 16);
-        dest[16] |= r8[val4] | (r8[val5] << 16);
-
-        dest++;
-    }
+    bitmap = DrawHalfRow(dest, bitmap, r8, xoffset);
 
     dest = GetSpriteTextDrawDest_BL(text) + 0x400;
-
-    for (i = 0; i < 8; i++)
-    {
-        // read one row of 32 bits from the bitmap
-        bmpRow = (u64)*bitmap << xoffset * 2;
-        bitmap++;
-
-        u32 val0 = bmpRow & 0xFF;
-        u32 val1 = (bmpRow >> 8) & 0xFF;
-        u32 val2 = (bmpRow >> 16) & 0xFF;
-        u32 val3 = (bmpRow >> 24) & 0xFF;
-        u32 val4 = (bmpRow >> 32) & 0xFF;
-        u32 val5 = (bmpRow >> 40) & 0xFF;
-
-        dest[0] |= r8[val0] | (r8[val1] << 16);
-        dest[8] |= r8[val2] | (r8[val3] << 16);
-        dest[16] |= r8[val4] | (r8[val5] << 16);
-
-        dest++;
-    }
+    bitmap = DrawHalfRow(dest, bitmap, r8, xoffset);
 
     text->x += glyph->width;
 }
