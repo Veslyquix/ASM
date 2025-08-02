@@ -37,14 +37,8 @@ WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator
 header1: 
 String("Header"); BYTE 0 
 body1: 
-String("Title screen - redppr"); NL
-String("Most item icons - Lukirioh"); NL
-String("Portraits - Eden"); NL
-String("Map Sprites - redppr"); NL
-String("Pokemart Clerk, Beta Trainer Sprites, Choice Band, Muscle Band - Zaim"); NL
-String("Tileset water animations, Evolution stones, Jelly Donut, Drying Pan - N426"); NL
-String("Potions, Stat boosters, & various skill icons - Jester"); NL
-String("PMD Minimugs - Akim2007"); BYTE 0 
+String("stuff - by people"); NL
+String("other stuff - by me"); BYTE 0 
 
 String("This is text."); BYTE 0 
 

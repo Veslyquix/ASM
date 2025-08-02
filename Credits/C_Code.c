@@ -4,7 +4,7 @@ extern ProcPtr StartClassNameIntroLetter(ProcPtr parent, u8 index);
 #define brk asm("mov r11, r11");
 
 #define CreditsSpeed 1
-#define NumOfStrs 4
+#define NumOfStrs 2
 struct CreditsStruct
 {
     signed char * header;
@@ -265,7 +265,8 @@ void InitCreditsText(BigTextProc * proc)
 
 int TryAdvanceID(BigTextProc * proc)
 {
-    int yDiff = GetYOffsetBetweenText(proc, proc->id);
+    int yDiff = GetYOffsetBetweenText(proc, proc->id) * 2;
+    // brk;
     if (proc->y < (-yDiff))
     {
 
@@ -292,7 +293,6 @@ void BigTextLoop(BigTextProc * proc)
     }
     if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
     { // nothing left to display, so end
-        brk;
         Proc_Break(proc);
         return;
     }
@@ -307,18 +307,18 @@ void BigTextLoop(BigTextProc * proc)
 
     signed char * str;
 
-    // for (int i = 0; i < NumOfStrs; ++i)
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < NumOfStrs; ++i)
+    // for (int i = 0; i < 1; ++i)
     {
         str = gCreditsText[i + proc->id].header;
         // str = gCreditsText[i];
         if (str && *str)
         {
-            offset += PrintBigString(proc, str, offset, x, proc->y + yDiff); // (i * yDiff)
+            offset += PrintBigString(proc, str, offset, x, proc->y + (i * yDiff)); // (i * yDiff)
         }
     }
-    // for (int i = 0; i < NumOfStrs; ++i)
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < NumOfStrs; ++i)
+    // for (int i = 0; i < 1; ++i)
     {
         str = gCreditsText[i + proc->id].body;
         if (str && *str)
@@ -327,7 +327,7 @@ void BigTextLoop(BigTextProc * proc)
             for (int c = 0; c < lines; ++c)
             {
                 PutNormalSpriteText(
-                    2, x + 16, proc->y + yDiff + (c * 16) + 48, gObject_32x16, OAM2_PAL(1) + (c * 0x40));
+                    2, x + 16, proc->y + (i * yDiff) + (c * 16) + 48, gObject_32x16, OAM2_PAL(1) + (c * 0x40));
             }
         }
     }

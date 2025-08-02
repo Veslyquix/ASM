@@ -86,6 +86,7 @@ ORG $25964
 jumpToHack(Hook_PutUnitSpritesOam_FE7) // Shake speed 
 SHORT $46C0 
 
+gPal_DangerBones:
 #ifdef OVERWRITE_LIGHTRUNE_PAL
 ORG $194634
 BYTE $90 $1D $0D $00 $18 $25 $DC $2D $0E $00 $F6 $00 $5F $36 $0C $00 $15 $00 $1C $00 $1F $00 $C7 $01 $5F $01 $50 $00 $1F $46 $08 $00
@@ -123,6 +124,7 @@ ORG $273F8
 callHackNew(Hook_PutUnitSpritesOam) // Shake speed 
 SHORT $46c0 
 
+gPal_DangerBones:
 #ifdef OVERWRITE_LIGHTRUNE_PAL
 ORG $59eec0
 BYTE $90 $1D $0D $00 $18 $25 $DC $2D $0E $00 $F6 $00 $5F $36 $0C $00 $15 $00 $1C $00 $1F $00 $C7 $01 $5F $01 $50 $00 $1F $46 $08 $00
