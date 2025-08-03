@@ -21,10 +21,10 @@ typedef struct
     /* 00 */ PROC_HEADER;
 
     /* 29 */ u8 unk_29;
-    s8 vramRow[TotalLines]; // indexed by stringID & 0xF;
-    u16 freeRows;           // bitfield of which obj vram lines are taken up or free to use
-    u16 textTypeBitfield;   // bitfield of which lines are header (unset) or body (set)
-    s8 textType;            // Header or Body
+    s8 lineIndex[TotalLines]; // indexed by stringID & 0xF;
+    u16 freeRows;             // bitfield of which obj vram lines are taken up or free to use
+    u16 textTypeBitfield;     // bitfield of which lines are header (unset) or body (set)
+    s8 textType;              // Header or Body
     s8 strID;
     s8 strLine;
     int firstLineIndex;
@@ -63,7 +63,7 @@ int GetYOffsetBetweenText(BigTextProc * proc, int id)
 }
 
 extern u8 * const gUnknown_08A2F2C0[];
-u32 BigFontInit(signed char * str, u16 offset2)
+u32 BigFontInit(signed char * str)
 {
     // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
     u16 offset = gActiveFont->chr_counter << 5;
@@ -280,15 +280,18 @@ void BigTextLoop(BigTextProc * proc)
     // offset += PrintBigString(proc, str, offset, x, proc->y + (i * yDiff)); // (i * yDiff)
     // }
     // }
-    int vramRow;
     for (int i = 0; i < LinesBuffered; ++i)
     {
-        vramRow = proc->vramRow[i];
-        if (vramRow < 0)
-        {
+        if (!(proc->freeRows & (1 << i)))
             continue;
+
+        int line = proc->lineIndex[i];
+        int spriteY = proc->y + (line * 16);
+
+        if (spriteY >= -16 && spriteY < 160)
+        {
+            PutNormalSpriteText(2, x + 16, spriteY, gObject_32x16, OAM2_PAL(1) + (i * 0x40));
         }
-        PutNormalSpriteText(2, x + 16, proc->y + (i * 16), gObject_32x16, OAM2_PAL(1) + (vramRow * 0x40));
     }
 }
 
@@ -324,7 +327,7 @@ int GetFreeRow(BigTextProc * proc)
 void FreeRow(BigTextProc * proc, int i)
 {
     i %= LinesBuffered;
-    proc->vramRow[i] = (-1);
+    proc->lineIndex[i] = (-1);
     proc->freeRows &= ~(1 << i); // unset the bit, as it is now free.
     CpuFastFill(0, (void *)(0x800 * i + OBJ_VRAM0), 0x800);
 }
@@ -467,8 +470,8 @@ signed char * GetNextStrLine(BigTextProc * proc)
             str = GetNextBodyLine(proc);
             if (proc->strLine == (-1))
             {
-                proc->textType = HeaderType; // next one will be body
-                proc->id++;                  // which gCreditsText[proc->id] entry we're on
+                // proc->textType = HeaderType; // next one will be body
+                proc->id++; // which gCreditsText[proc->id] entry we're on
             }
             // proc->textTypeBitfield &= ~(1<< strID); // set the bit for PutSprite to know it's a body
             return str;
@@ -497,25 +500,20 @@ int InitNextLine(BigTextProc * proc, int lineIndex)
 
     int slot = lineIndex % LinesBuffered;
     // If already initialized, skip
-    if (proc->vramRow[slot] >= 0)
+    if (proc->lineIndex[slot] >= 0)
         return false;
 
+    // proc->lineIndex[slot] = slot;
     int rowID = GetFreeRow(proc);
     if (rowID < 0)
         return false;
-
-    if (!lineIndex)
-    {
-        brk;
-        gActiveFont->chr_counter = 0;
-    }
-    proc->vramRow[slot] = rowID;
+    proc->lineIndex[slot] = lineIndex;
 
     switch (type)
     {
         case HeaderType: // current one is header
         {
-            BigFontInit(str, rowID * (LineChr << 8));
+            BigFontInit(str);
             return true;
             break;
         }
@@ -539,52 +537,25 @@ int TryAdvanceID(BigTextProc * proc)
 
         if (spriteY >= -16 && spriteY < 160)
         {
-            if (proc->vramRow[slot] < 0)
+            if (proc->lineIndex[slot] < 0)
             {
                 InitNextLine(proc, lineIndex);
             }
         }
 
-        if (spriteY < -16 && proc->vramRow[slot] >= 0)
+        if (spriteY < -16 && proc->lineIndex[slot] >= 0)
         {
             FreeRow(proc, slot);
-        }
-    }
-
-    return false;
-}
-
-/*
-int TryAdvanceID(BigTextProc * proc)
-{
-    int baseLine = -proc->y / 16;
-    for (int i = 0; i < LinesBuffered; ++i)
-    {
-        int lineIndex = baseLine + i;
-
-        int spriteY = proc->y + (lineIndex * 16);
-
-        if (spriteY >= -16 && spriteY < 160)
-        {
-            if (proc->vramRow[lineIndex % LinesBuffered] < 0)
+            if (!slot)
             {
-                InitNextLine(proc);
+                brk;
+                gActiveFont->chr_counter = 0;
             }
         }
     }
 
-    for (int i = 0; i < LinesBuffered; ++i)
-    {
-        int spriteY = proc->y + (i * 16);
-        if (spriteY < -16 && proc->vramRow[i % LinesBuffered] >= 0)
-        {
-            FreeRow(proc, i);
-        }
-    }
-
     return false;
 }
-*/
 
 void InitCreditsText(BigTextProc * proc)
 {
@@ -631,7 +602,7 @@ void StartCreditsProc(ProcPtr parent)
     proc->freeRows = 0;
     for (int i = 0; i < TotalLines; ++i)
     {
-        proc->vramRow[i] = (-1); // do not use if -1
+        proc->lineIndex[i] = (-1); // do not use if -1
     }
     proc->id = 0;
     proc->textTypeBitfield = 0;
