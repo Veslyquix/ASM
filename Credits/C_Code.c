@@ -25,6 +25,7 @@ typedef struct
     u16 textTypeBitfield;   // bitfield of which lines are header (unset) or body (set)
     s8 textType;            // Header or Body
     s8 strID;
+    s8 strLine;
 
     u8 id;
     u8 finished;
@@ -48,29 +49,9 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
         OAM2_CHR(BigText_VRAMTile),
     };
 
-int CountTextLines(signed char * str)
-{
-    signed char * tmp = str;
-    int i = 1;
-    while (*tmp)
-    {
-        while (*tmp > 1)
-        {
-            tmp++;
-        }
-        i++;
-        tmp++;
-    }
-    if (i > 4)
-    {
-        i = 4;
-    }
-    return i;
-}
-
 // 16y pixels per small text line
 // 48y for big text
-
+int CountTextLines(signed char * str);
 int GetYOffsetBetweenText(BigTextProc * proc, int id)
 {
     int result = 48;
@@ -83,7 +64,6 @@ extern u8 * const gUnknown_08A2F2C0[];
 u32 BigFontInit(signed char * str, u16 offset2)
 {
     // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
-    brk;
     u16 offset = gActiveFont->chr_counter << 5;
     CpuFastFill(0, (void *)(offset + OBJ_VRAM0), 0x1000);
     ApplyPalette(gUnknown_08A37300, 0x10);
@@ -110,7 +90,6 @@ u32 BigFontInit(signed char * str, u16 offset2)
         offset = 0;
     }
     // gActiveFont->vramDest = (void *)(offset + OBJ_VRAM0);
-    brk;
     gActiveFont->chr_counter = offset >> 5;
     // gActiveFont->tileref = ((uintptr_t)offset & 0x1FFFF) >> 5;
     return offset;
@@ -277,7 +256,6 @@ void BigTextLoop(BigTextProc * proc)
     if (proc->advanceId)
     {
         proc->id++;
-        // brk;
         yDiff = GetYOffsetBetweenText(proc, proc->id);
         proc->y += yDiff;
         // InitCreditsText(proc);
@@ -349,27 +327,143 @@ void FreeRow(BigTextProc * proc, int i)
     proc->freeRows &= ~(1 << i); // unset the bit, as it is now free.
 }
 
+int CountTextLines(signed char * str)
+{
+    signed char * tmp = str;
+    int i = 0;
+    while (*tmp)
+    {
+        i++;
+        while (*tmp > 1)
+        {
+            tmp++;
+        }
+        if (*tmp)
+        {
+            tmp++;
+        }
+    }
+    return i;
+}
+
+int GetNextLineNum(signed char * str, int num)
+{
+    signed char * tmp = str;
+    int i = 0;
+    while (*tmp)
+    {
+        i++;
+        while (*tmp > 1)
+        {
+            tmp++;
+        }
+        if (*tmp)
+        {
+            tmp++;
+        }
+    }
+
+    if (num + 1 < i)
+    {
+        return num + 1;
+    }
+    return (-1);
+}
+
+signed char * GetStringAtLine(signed char * str, int line)
+{
+    if (line < 0)
+    {
+        return NULL;
+    }
+    int currentLine = 0;
+
+    while (*str)
+    {
+        if (currentLine == line)
+            return str;
+
+        // Skip to the next delimiter
+        while (*str > 1)
+            str++;
+
+        // Skip the delimiter byte if not at end
+        if (*str)
+            str++;
+
+        currentLine++;
+    }
+
+    return NULL; // Line not found
+}
+
+signed char * GetNextHeaderLine(BigTextProc * proc)
+{
+    int id = proc->id;
+    int strLine = proc->strLine; // starts as (-1)
+    signed char * str = gCreditsText[id].header;
+    strLine = GetNextLineNum(str, strLine); // get current line
+    str = GetStringAtLine(str, strLine);
+
+    int nextLine = GetNextLineNum(gCreditsText[id].header, strLine); // read ahead for next line
+    brk;
+    proc->strLine = strLine;
+
+    if (nextLine < 0)
+    {
+        proc->strLine = nextLine;
+    }
+    return str;
+}
+signed char * GetNextBodyLine(BigTextProc * proc)
+{
+    int id = proc->id;
+    int strLine = proc->strLine;
+    signed char * str = gCreditsText[id].body;
+    strLine = GetNextLineNum(str, strLine);
+    str = GetStringAtLine(str, strLine);
+    int nextLine = GetNextLineNum(gCreditsText[id].body, strLine); // read ahead for next line
+    brk;
+    proc->strLine = strLine;
+    if (nextLine < 0)
+    {
+        proc->strLine = nextLine;
+    }
+    return str;
+}
+
 #define HeaderType 0
 #define BodyType 1
 signed char * GetNextStrLine(BigTextProc * proc)
 {
     int id = proc->id;
+    signed char * str;
     // handle multiline?
     switch (proc->textType)
     {
         case HeaderType: // current one is header
         {
-            proc->textType = BodyType; // next one will be body
+            str = GetNextHeaderLine(proc);
+            if (proc->strLine == (-1))
+            {
+                proc->textType = BodyType; // next one will be body
+            }
+
             // proc->textTypeBitfield &= ~(1<< strID); // unset the bit for PutSprite to know it's a header
-            return gCreditsText[id].header;
+            return str;
             break;
         }
         case BodyType:
         {
-            proc->textType = HeaderType;
-            proc->id++; // which gCreditsText[proc->id] entry we're on
+
+            str = GetNextBodyLine(proc);
+            if (proc->strLine == (-1))
+            {
+                proc->textType = HeaderType; // next one will be body
+                proc->id++;                  // which gCreditsText[proc->id] entry we're on
+            }
             // proc->textTypeBitfield &= ~(1<< strID); // set the bit for PutSprite to know it's a body
-            return gCreditsText[id].body;
+            return str;
             break;
         }
     }
@@ -411,9 +505,7 @@ int InitNextLine(BigTextProc * proc)
         }
         case BodyType:
         {
-            brk;
             InitCreditsBodyText(proc, (void *)str);
-            brk;
             return true;
             break;
         }
@@ -472,6 +564,7 @@ void StartCreditsProc(ProcPtr parent)
     proc->textTypeBitfield = 0;
     proc->textType = 0;
     proc->strID = 0;
+    proc->strLine = (-1);
 
     proc->finished = false;
     proc->maxId = 255;
