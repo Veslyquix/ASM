@@ -9,10 +9,16 @@
         #define PlayerPhaseOnlyFlag_Def 0x129
         #define SpeedupAnimsFlag_Def 0x12A
     #endif 
-#else // fe6/7
-    #define PlayerPhaseOnlyFlag_Def 0x9E // fe6/7 
+#endif 
+#ifdef _FE7_ 
+    #define PlayerPhaseOnlyFlag_Def 0x9E 
     #define SpeedupAnimsFlag_Def 0x9D 
 #endif 
+#ifdef _FE6_ 
+    #define PlayerPhaseOnlyFlag_Def 0//0x89 
+    #define SpeedupAnimsFlag_Def 0//0x8A 
+#endif 
+
 
 #ifndef A_BUTTON 
 #define A_BUTTON        0x0001
