@@ -38,7 +38,7 @@ WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator
 header1: 
 String("Header"); BYTE 0 
 body1: 
-String("stuff - by people"); NL
+String("stuff - by people"); //NL
 String("other stuff - by me"); BYTE 0 
 
 String("This is text."); BYTE 0 

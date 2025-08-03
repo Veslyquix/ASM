@@ -97,7 +97,14 @@ u16 BigFontInit(signed char * str, u16 offset)
             offset = 0;
         }
     }
+    offset &= 0x1F800;
+    offset += 0xC00; // go to next line
+    if ((int)(offset + BigTextVRAM) >= 0x6018000)
+    {
+        offset = 0;
+    }
     gActiveFont->vramDest += offset;
+    gActiveFont->tileref = ((uintptr_t)gActiveFont->vramDest & 0x1FFFF) >> 5;
     return offset;
 }
 
@@ -353,6 +360,7 @@ void FreeRow(BigTextProc * proc, int i)
 #define BodyType 1
 signed char * GetNextStrLine(BigTextProc * proc)
 {
+    int id = proc->id;
     // handle multiline?
     switch (proc->textType)
     {
@@ -360,24 +368,26 @@ signed char * GetNextStrLine(BigTextProc * proc)
         {
             proc->textType = BodyType; // next one will be body
             // proc->textTypeBitfield &= ~(1<< strID); // unset the bit for PutSprite to know it's a header
-            return gCreditsText[proc->id].header;
+            return gCreditsText[id].header;
             break;
         }
         case BodyType:
         {
             proc->textType = HeaderType;
+            proc->id++; // which gCreditsText[proc->id] entry we're on
             // proc->textTypeBitfield &= ~(1<< strID); // set the bit for PutSprite to know it's a body
-            return gCreditsText[proc->id].body;
+            return gCreditsText[id].body;
             break;
         }
     }
-    return gCreditsText[proc->id].header; // shouldn't reach
+    return gCreditsText[id].header; // shouldn't reach
 }
 
 #define LineChr 0x40 // per line
 
 int InitNextLine(BigTextProc * proc)
 {
+    brk;
     int type = proc->textType;
     signed char * str = GetNextStrLine(proc);
 
@@ -386,24 +396,25 @@ int InitNextLine(BigTextProc * proc)
         return false;
     }
     int strID = proc->strID & 0xF;
-    proc->strID++;
+    proc->strID++; // which line we're in?
     int rowID = GetFreeRow(proc);
     if (rowID < 0)
     {
         return false;
     }
     proc->vramRow[strID] = rowID;
-
+    brk;
     switch (type)
     {
         case HeaderType: // current one is header
         {
-            BigFontInit(str, rowID * LineChr);
+            BigFontInit(str, rowID * (LineChr << 8));
             return true;
             break;
         }
         case BodyType:
         {
+            // brk;
             InitCreditsBodyText(proc, (void *)str);
             return true;
             break;
@@ -419,7 +430,10 @@ void InitCreditsText(BigTextProc * proc)
     ApplyPalette(gUnknown_0859EF20, 0x11);
     for (int i = 0; i < LinesOnScreen; ++i)
     {
-        InitNextLine(proc);
+        if (!InitNextLine(proc))
+        {
+            break;
+        }
     }
 }
 
@@ -493,7 +507,6 @@ int ShouldAdvanceFrame(BigTextProc * proc)
     }
 }
 
-extern struct Font * gActiveFont;
 inline void * GetSpriteTextDrawDest_BL(struct Text * text)
 {
     int r1 = (text->db_id * text->tile_width + text->chr_position + text->x / 8);
