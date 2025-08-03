@@ -27,7 +27,10 @@ POIN header1 body1
 POIN header2 body2 
 POIN header3 body3 
 POIN header4 body4 
-
+POIN header4 body4 
+POIN header4 body4 
+POIN 0 emptyString 
+POIN 0 emptyString 
 WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator 
 
 
@@ -64,7 +67,11 @@ String("Tileset water animations, Evolution stones, Jelly Donut, Drying Pan - N4
 String("Potions, Stat boosters, & various skill icons - Jester"); NL
 String("PMD Minimugs - Akim2007"); BYTE 0 
 
-
+emptyString: 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
 
 
 
