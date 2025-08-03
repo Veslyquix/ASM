@@ -21,7 +21,7 @@ typedef struct
     /* 00 */ PROC_HEADER;
 
     /* 29 */ u8 unk_29;
-    s8 lineIndex[TotalLines]; // indexed by stringID & 0xF;
+    s8 slotIndex[TotalLines]; // indexed by stringID & 0xF;
     u16 usedRows;             // bitfield of which obj vram lines are taken up or free to use
     u16 textTypeBitfield;     // bitfield of which lines are header (unset) or body (set)
     s8 textType;              // Header or Body
@@ -296,53 +296,39 @@ void BigTextLoop(BigTextProc * proc)
     // offset += PrintBigString(proc, str, offset, x, proc->y + (i * yDiff)); // (i * yDiff)
     // }
     // }
-    for (int i = 0; i < LinesBuffered; ++i)
+    for (int line = proc->firstLineIndex; line < proc->firstLineIndex + LinesBuffered; ++line)
     {
-        if (!(proc->usedRows & (1 << i)))
+        int slot = proc->slotIndex[line % LinesBuffered];
+        if (slot < 0)
             continue;
-
-        int line = proc->lineIndex[i];
+        // int line = proc->firstslotIndex + i;
         int spriteY = proc->y + (line * 16);
 
         if (spriteY >= -16 && spriteY < 160)
         {
-            PutNormalSpriteText(2, x + 16, spriteY, gObject_32x16, OAM2_PAL(1) + (i * 0x40));
+            PutNormalSpriteText(2, x + 16, spriteY, gObject_32x16, OAM2_PAL(1) + (slot * 0x40));
         }
     }
 }
 
 // 1. Init text
-
 int GetFreeRow(BigTextProc * proc)
 {
-    int found = false;
-    int i = 0;
-    u32 usedRows = proc->usedRows;
-    for (; i < LinesBuffered; ++i)
+    for (int i = 0; i < LinesBuffered; ++i)
     {
-        if ((1 << i) & usedRows)
+        if (!(proc->usedRows & (1 << i)))
         {
-            continue;
+            proc->usedRows |= (1 << i);
+            return i;
         }
-        proc->usedRows |= (1 << i);
-        found = true;
-        break;
     }
-    if (found)
-    {
-        // if (!i)
-        // {
-        // gActiveFont->chr_counter = 0;
-        // }
-        return i % LinesBuffered;
-    }
-    return (-1); // nothing free
+    return -1; // nothing free
 }
 
 void FreeRow(BigTextProc * proc, int i)
 {
     i %= LinesBuffered;
-    proc->lineIndex[i] = (-1);
+    proc->slotIndex[i] = (-1);
     proc->usedRows &= ~(1 << i); // unset the bit, as it is now free.
     CpuFastFill(0, (void *)(0x800 * i + OBJ_VRAM0), 0x800);
 }
@@ -514,8 +500,9 @@ signed char * GetNextStrLine(BigTextProc * proc)
 
 #define LineChr 0x40 // per line
 
-int InitNextLine(BigTextProc * proc, int lineIndex)
+int InitNextLine(BigTextProc * proc, int slot)
 {
+
     int type = proc->textType;
     signed char * str = GetNextStrLine(proc);
 
@@ -529,16 +516,18 @@ int InitNextLine(BigTextProc * proc, int lineIndex)
         }
     }
 
-    int slot = lineIndex % LinesBuffered;
+    // int slot = slotIndex % LinesBuffered;
     // If already initialized, skip
-    if (proc->lineIndex[slot] >= 0)
-        return false;
+    // if (proc->slotIndex[slot] >= 0)
+    // return false;
 
-    // proc->lineIndex[slot] = slot;
+    // proc->slotIndex[slot] = slot;
     int rowID = GetFreeRow(proc);
     if (rowID < 0)
+    {
         return false;
-    proc->lineIndex[slot] = rowID;
+    }
+    proc->slotIndex[slot] = rowID;
 
     switch (type)
     {
@@ -565,25 +554,23 @@ int TryAdvanceID(BigTextProc * proc)
         int lineIndex = proc->firstLineIndex + i;
         int spriteY = proc->y + (lineIndex * 16);
         int slot = lineIndex % LinesBuffered;
-
-        if (spriteY >= -16 && spriteY < 160)
+        if (spriteY < -16 && proc->slotIndex[slot] >= 0)
         {
-            if (proc->lineIndex[slot] < 0)
-            {
-                if (!InitNextLine(proc, lineIndex))
-                {
-                    brk;
-                }
-            }
-        }
-
-        if (spriteY < -16 && proc->lineIndex[slot] >= 0)
-        {
+            brk;
             FreeRow(proc, slot);
             if (!slot)
             {
-                brk;
                 gActiveFont->chr_counter = 0;
+            }
+        }
+        if (spriteY >= -16 && spriteY < 160)
+        {
+            if (proc->slotIndex[slot] < 0)
+            {
+                if (!InitNextLine(proc, slot))
+                {
+                    // brk;
+                }
             }
         }
     }
@@ -636,7 +623,7 @@ void StartCreditsProc(ProcPtr parent)
     proc->usedRows = 0;
     for (int i = 0; i < TotalLines; ++i)
     {
-        proc->lineIndex[i] = (-1); // do not use if -1
+        proc->slotIndex[i] = (-1); // do not use if -1
     }
     proc->id = 0;
     proc->textTypeBitfield = 0;
