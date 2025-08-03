@@ -24,6 +24,7 @@ POP
 ALIGN 4 
 gCreditsText: 
 POIN header1 body1 
+WORD 0 0 
 POIN header2 body2 
 POIN header3 body3 
 POIN header4 body4 

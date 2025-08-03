@@ -12,13 +12,20 @@ struct CreditsStruct
 };
 extern struct CreditsStruct gCreditsText[];
 
+#define LinesOnScreen 10 // 160y / 16 pixels
+#define BufferedLines 6
+#define TotalLines (LinesOnScreen + BufferedLines) // max 14 or 16,
 typedef struct
 {
     /* 00 */ PROC_HEADER;
 
     /* 29 */ u8 unk_29;
-    u8 bigTextOffset[5];
-    u8 bigTextLength[5];
+    s8 vramRow[TotalLines]; // indexed by stringID & 0xF;
+    u16 freeRows;           // bitfield of which obj vram lines are taken up or free to use
+    u16 textTypeBitfield;   // bitfield of which lines are header (unset) or body (set)
+    s8 textType;            // Header or Body
+    s8 strID;
+
     u8 id;
     u8 finished;
     u8 maxId;
@@ -27,9 +34,11 @@ typedef struct
     u32 clock;
 } BigTextProc;
 
-#define BigText_VRAMTile 0x280
-#define BigTextVRAM (0x6010000 + (BigText_VRAMTile << 5)) // 0x6010000
+//
+#define BigText_VRAMTile 0                                // 0x280
+#define BigTextVRAM (OBJ_VRAM0 + (BigText_VRAMTile << 5)) // 0x6010000
 extern const u16 sSprite_08A2EF48[];
+extern struct Font * gActiveFont;
 u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
     {
         1, // number of entries
@@ -83,51 +92,46 @@ u16 BigFontInit(signed char * str, u16 offset)
         if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
             offset += 0xC00;       // Move to next text page
 
-        if ((offset + BigTextVRAM) >= 0x6018000)
+        if ((int)(offset + BigTextVRAM) >= 0x6018000)
         {
             offset = 0;
         }
     }
-
+    gActiveFont->vramDest += offset;
     return offset;
 }
 
-void InitBigTextStr(BigTextProc * proc)
-{
-    u16 vramOffset = 0;
+// void InitBigTextStr(BigTextProc * proc)
+// {
+// u16 vramOffset = 0;
 
-    for (int i = 0; i < NumOfStrs; i++)
-    {
-        signed char * str = gCreditsText[i + proc->id].header;
-        if (str && *str)
-        {
-            vramOffset = BigFontInit(str, vramOffset);
-        }
-    }
-}
+// for (int i = 0; i < NumOfStrs; i++)
+// {
+// signed char * str = gCreditsText[i + proc->id].header;
+// if (str && *str)
+// {
+// vramOffset = BigFontInit(str, vramOffset);
+// }
+// }
+// }
 
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
-void InitCreditsBodyText(BigTextProc * proc)
+void InitCreditsBodyText(BigTextProc * proc, const char * str)
 {
-    const char * str;
     const char * iter;
     int line;  // current one
     int lines; // how many
     u32 width;
     struct Text * th = gStatScreen.text;
 
-    InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0, 0x11);
-    SetTextFontGlyphs(1);
-    ApplyPalette(gUnknown_0859EF20, 0x11);
-
     for (int i = 0; i < 1; ++i)
     {
         th = &gStatScreen.text[i * 4]; // Max Number of lines
-        str = (void *)gCreditsText[i + proc->id].body;
+        // str = (void *)gCreditsText[i + proc->id].body;
         if (str && *str)
         {
 
-            lines = CountTextLines(str);
+            lines = 1; // CountTextLines(str);
             for (line = 0; line < lines; line++)
             {
                 InitSpriteText(&th[line]);
@@ -251,18 +255,6 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
     return;
 }
 
-void InitCreditsText(BigTextProc * proc)
-{
-    // while (REG_VCOUNT >= 160)
-    // ; // Wait for scanline 160+
-    // while (REG_VCOUNT < 160)
-    // ; // Wait for VBlank to begin
-    // brk;
-    // VBlankIntrWait();
-    InitBigTextStr(proc);
-    InitCreditsBodyText(proc);
-}
-
 int TryAdvanceID(BigTextProc * proc)
 {
     int yDiff = GetYOffsetBetweenText(proc, proc->id) * 2;
@@ -288,7 +280,7 @@ void BigTextLoop(BigTextProc * proc)
         // brk;
         yDiff = GetYOffsetBetweenText(proc, proc->id);
         proc->y += yDiff;
-        InitCreditsText(proc);
+        // InitCreditsText(proc);
         proc->advanceId = false;
     }
     if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
@@ -333,6 +325,104 @@ void BigTextLoop(BigTextProc * proc)
     }
 }
 
+// 1. Init text
+
+int GetFreeRow(BigTextProc * proc)
+{
+    u32 freeRows = proc->freeRows;
+    for (int i = 0; i < TotalLines; ++i)
+    {
+        if ((1 << i) & freeRows)
+        {
+            continue;
+        }
+        proc->freeRows |= (1 << i);
+        return i & 0xF;
+    }
+    return (-1); // nothing free
+}
+
+// GetFreeDoubleRow - for header text?
+
+void FreeRow(BigTextProc * proc, int i)
+{
+    proc->freeRows &= ~(1 << i); // unset the bit, as it is now free.
+}
+
+#define HeaderType 0
+#define BodyType 1
+signed char * GetNextStrLine(BigTextProc * proc)
+{
+    // handle multiline?
+    switch (proc->textType)
+    {
+        case HeaderType: // current one is header
+        {
+            proc->textType = BodyType; // next one will be body
+            // proc->textTypeBitfield &= ~(1<< strID); // unset the bit for PutSprite to know it's a header
+            return gCreditsText[proc->id].header;
+            break;
+        }
+        case BodyType:
+        {
+            proc->textType = HeaderType;
+            // proc->textTypeBitfield &= ~(1<< strID); // set the bit for PutSprite to know it's a body
+            return gCreditsText[proc->id].body;
+            break;
+        }
+    }
+    return gCreditsText[proc->id].header; // shouldn't reach
+}
+
+#define LineChr 0x40 // per line
+
+int InitNextLine(BigTextProc * proc)
+{
+    int type = proc->textType;
+    signed char * str = GetNextStrLine(proc);
+
+    if (!str || !(*str))
+    {
+        return false;
+    }
+    int strID = proc->strID & 0xF;
+    proc->strID++;
+    int rowID = GetFreeRow(proc);
+    if (rowID < 0)
+    {
+        return false;
+    }
+    proc->vramRow[strID] = rowID;
+
+    switch (type)
+    {
+        case HeaderType: // current one is header
+        {
+            BigFontInit(str, rowID * LineChr);
+            return true;
+            break;
+        }
+        case BodyType:
+        {
+            InitCreditsBodyText(proc, (void *)str);
+            return true;
+            break;
+        }
+    }
+    return false;
+}
+
+void InitCreditsText(BigTextProc * proc)
+{
+    InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0, 0x11);
+    SetTextFontGlyphs(1);
+    ApplyPalette(gUnknown_0859EF20, 0x11);
+    for (int i = 0; i < LinesOnScreen; ++i)
+    {
+        InitNextLine(proc);
+    }
+}
+
 struct ProcCmd const ProcScr_BigText[] = {
     PROC_NAME("opinfo"),
     PROC_SLEEP(0),
@@ -359,7 +449,16 @@ void StartCreditsProc(ProcPtr parent)
     //
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
     BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
+    proc->freeRows = 0;
+    for (int i = 0; i < TotalLines; ++i)
+    {
+        proc->vramRow[i] = (-1); // do not use if -1
+    }
     proc->id = 0;
+    proc->textTypeBitfield = 0;
+    proc->textType = 0;
+    proc->strID = 0;
+
     proc->finished = false;
     proc->maxId = 255;
     proc->y = 160;
