@@ -330,10 +330,10 @@ int GetFreeRow(BigTextProc * proc)
     }
     if (found)
     {
-        if (!i)
-        {
-            gActiveFont->chr_counter = 0;
-        }
+        // if (!i)
+        // {
+        // gActiveFont->chr_counter = 0;
+        // }
         return i % LinesBuffered;
     }
     return (-1); // nothing free
@@ -369,6 +369,10 @@ int CountTextLines(signed char * str)
 
 int GetNextLineNum(signed char * str, int num)
 {
+    if (!str || !*str)
+    {
+        return (-1);
+    }
     signed char * tmp = str;
     int i = 0;
     while (*tmp)
@@ -393,6 +397,10 @@ int GetNextLineNum(signed char * str, int num)
 
 signed char * GetStringAtLine(signed char * str, int line)
 {
+    if (!str || !*str)
+    {
+        return NULL;
+    }
     if (line < 0)
     {
         return NULL;
@@ -432,6 +440,11 @@ signed char * GetNextHeaderLine(BigTextProc * proc)
     signed char * str = gCreditsText[id].header;
     strLine = GetNextLineNum(str, strLine); // get current line
     str = GetStringAtLine(str, strLine);
+    if (!str || !*str)
+    {
+        proc->strLine = (-1);
+        return NULL;
+    }
 
     int nextLine = GetNextLineNum(gCreditsText[id].header, strLine); // read ahead for next line
     proc->strLine = strLine;
@@ -449,6 +462,11 @@ signed char * GetNextBodyLine(BigTextProc * proc)
     signed char * str = gCreditsText[id].body;
     strLine = GetNextLineNum(str, strLine);
     str = GetStringAtLine(str, strLine);
+    if (!str || !*str)
+    {
+        proc->strLine = (-1);
+        return NULL;
+    }
     int nextLine = GetNextLineNum(gCreditsText[id].body, strLine); // read ahead for next line
     proc->strLine = strLine;
     if (nextLine < 0)
@@ -520,7 +538,7 @@ int InitNextLine(BigTextProc * proc, int lineIndex)
     int rowID = GetFreeRow(proc);
     if (rowID < 0)
         return false;
-    proc->lineIndex[slot] = lineIndex;
+    proc->lineIndex[slot] = rowID;
 
     switch (type)
     {
@@ -562,11 +580,11 @@ int TryAdvanceID(BigTextProc * proc)
         if (spriteY < -16 && proc->lineIndex[slot] >= 0)
         {
             FreeRow(proc, slot);
-            // if (!slot)
-            // {
-            // brk;
-            // gActiveFont->chr_counter = 0;
-            // }
+            if (!slot)
+            {
+                brk;
+                gActiveFont->chr_counter = 0;
+            }
         }
     }
 

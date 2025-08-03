@@ -29,8 +29,8 @@ POIN header3 body3
 POIN header4 body4 
 POIN header4 body4 
 POIN header4 body4 
-POIN emptyString emptyString 
-POIN emptyString emptyString 
+POIN 0 emptyString 
+POIN 0 emptyString 
 WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator 
 
 
@@ -68,12 +68,12 @@ String("Potions, Stat boosters, & various skill icons - Jester"); NL
 String("PMD Minimugs - Akim2007"); BYTE 0 
 
 emptyString: 
-String("asdf"); BYTE 0 
-
-//NL; String(" "); NL; String(" "); NL; String(" "); NL; 
-String("  "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
-String("  "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
-String("  "); NL; String(" "); NL; String(" "); NL; String(" "); NL; BYTE 0 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
+String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; BYTE 0 
 
 
 
