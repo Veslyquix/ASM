@@ -37,7 +37,7 @@ WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator
 header1: 
 String("Header"); BYTE 0 
 body1: 
-String("stuff - by people"); //NL
+String("stuff - by people "); //NL
 String("other stuff - by me"); BYTE 0 
 
 String("This is text."); BYTE 0 
@@ -55,7 +55,7 @@ String("OK, others helped too."); BYTE 0
 header4: 
 String("Graphics"); BYTE 0 
 body4: 
-String("Title screen - redppr"); NL
+String("Title screen - redppr"); BYTE 0 
 String("Most item icons - Lukirioh"); NL
 String("Portraits - Eden"); NL
 String("Map Sprites - redppr"); NL
