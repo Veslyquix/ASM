@@ -82,7 +82,10 @@ int GetYOffsetBetweenText(BigTextProc * proc, int id)
 extern u8 * const gUnknown_08A2F2C0[];
 u32 BigFontInit(signed char * str, u16 offset2)
 {
-    u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
+    // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
+    brk;
+    u16 offset = gActiveFont->chr_counter << 5;
+    CpuFastFill(0, (void *)(offset + OBJ_VRAM0), 0x1000);
     ApplyPalette(gUnknown_08A37300, 0x10);
     while (*str != 0)
     {
@@ -91,13 +94,13 @@ u32 BigFontInit(signed char * str, u16 offset2)
 
         str++;
         offset += 0x40;
-        // if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
-        // offset += 0xC00;       // Move to next text page
+        if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
+            offset += 0xC00;       // Move to next text page
 
-        // if ((int)(offset) >= 0x6018000)
-        // {
-        // offset = 0;
-        // }
+        if ((int)(offset) >= 0x6018000)
+        {
+            offset = 0;
+        }
     }
 
     offset += 0x1000; // go to next line
@@ -106,25 +109,12 @@ u32 BigFontInit(signed char * str, u16 offset2)
     {
         offset = 0;
     }
+    // gActiveFont->vramDest = (void *)(offset + OBJ_VRAM0);
     brk;
-    gActiveFont->vramDest = (void *)(offset + OBJ_VRAM0);
-    gActiveFont->tileref = ((uintptr_t)offset & 0x1FFFF) >> 5;
+    gActiveFont->chr_counter = offset >> 5;
+    // gActiveFont->tileref = ((uintptr_t)offset & 0x1FFFF) >> 5;
     return offset;
 }
-
-// void InitBigTextStr(BigTextProc * proc)
-// {
-// u16 vramOffset = 0;
-
-// for (int i = 0; i < NumOfStrs; i++)
-// {
-// signed char * str = gCreditsText[i + proc->id].header;
-// if (str && *str)
-// {
-// vramOffset = BigFontInit(str, vramOffset);
-// }
-// }
-// }
 
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
 void InitCreditsBodyText(BigTextProc * proc, const char * str)
@@ -184,7 +174,7 @@ void InitCreditsBodyText(BigTextProc * proc, const char * str)
             }
         }
     }
-    SetTextFont(0);
+    // SetTextFont(0);
     return;
 }
 
@@ -421,8 +411,9 @@ int InitNextLine(BigTextProc * proc)
         }
         case BodyType:
         {
-            // brk;
+            brk;
             InitCreditsBodyText(proc, (void *)str);
+            brk;
             return true;
             break;
         }
@@ -432,6 +423,8 @@ int InitNextLine(BigTextProc * proc)
 
 void InitCreditsText(BigTextProc * proc)
 {
+    ResetText();
+    ResetTextFont();
     InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0, 0x11);
     SetTextFontGlyphs(1);
     ApplyPalette(gUnknown_0859EF20, 0x11);
