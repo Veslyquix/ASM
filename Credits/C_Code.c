@@ -35,8 +35,9 @@ typedef struct
 } BigTextProc;
 
 //
-#define BigText_VRAMTile 0                                // 0x280
-#define BigTextVRAM (OBJ_VRAM0 + (BigText_VRAMTile << 5)) // 0x6010000
+#define BigText_VRAMTile 0 // 0x280
+// #define BigTextVRAM (OBJ_VRAM0 + (BigText_VRAMTile << 5)) // 0x6010000
+#define BigTextVRAM (VRAM + (BigText_VRAMTile << 5)) // 0x6010000
 extern const u16 sSprite_08A2EF48[];
 extern struct Font * gActiveFont;
 u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
@@ -79,32 +80,35 @@ int GetYOffsetBetweenText(BigTextProc * proc, int id)
 }
 
 extern u8 * const gUnknown_08A2F2C0[];
-u16 BigFontInit(signed char * str, u16 offset)
+u32 BigFontInit(signed char * str, u16 offset2)
 {
+    u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
     ApplyPalette(gUnknown_08A37300, 0x10);
     while (*str != 0)
     {
         Decompress((gUnknown_08A2F2C0[*str] != 0) ? gUnknown_08A2F2C0[*str] : gUnknown_08A2F2C0[0x58], gGenericBuffer);
-        Copy2dChr(gGenericBuffer, (void *)(offset + BigTextVRAM), 2, 4);
+        Copy2dChr(gGenericBuffer, (void *)(offset + OBJ_VRAM0), 2, 4);
 
         str++;
         offset += 0x40;
-        if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
-            offset += 0xC00;       // Move to next text page
+        // if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
+        // offset += 0xC00;       // Move to next text page
 
-        if ((int)(offset + BigTextVRAM) >= 0x6018000)
-        {
-            offset = 0;
-        }
+        // if ((int)(offset) >= 0x6018000)
+        // {
+        // offset = 0;
+        // }
     }
-    offset &= 0x1F800;
-    offset += 0xC00; // go to next line
-    if ((int)(offset + BigTextVRAM) >= 0x6018000)
+
+    offset += 0x1000; // go to next line
+    offset &= 0xF800;
+    if ((int)(offset + VRAM) >= 0x6018000)
     {
         offset = 0;
     }
-    gActiveFont->vramDest += offset;
-    gActiveFont->tileref = ((uintptr_t)gActiveFont->vramDest & 0x1FFFF) >> 5;
+    brk;
+    gActiveFont->vramDest = (void *)(offset + OBJ_VRAM0);
+    gActiveFont->tileref = ((uintptr_t)offset & 0x1FFFF) >> 5;
     return offset;
 }
 
@@ -265,7 +269,6 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 int TryAdvanceID(BigTextProc * proc)
 {
     int yDiff = GetYOffsetBetweenText(proc, proc->id) * 2;
-    // brk;
     if (proc->y < (-yDiff))
     {
 
@@ -387,13 +390,17 @@ signed char * GetNextStrLine(BigTextProc * proc)
 
 int InitNextLine(BigTextProc * proc)
 {
-    brk;
     int type = proc->textType;
     signed char * str = GetNextStrLine(proc);
 
     if (!str || !(*str))
     {
-        return false;
+        str = GetNextStrLine(proc);
+        if (!str || !(*str))
+        {
+            return false;
+            // no string of either type, so end everything
+        }
     }
     int strID = proc->strID & 0xF;
     proc->strID++; // which line we're in?
@@ -403,7 +410,7 @@ int InitNextLine(BigTextProc * proc)
         return false;
     }
     proc->vramRow[strID] = rowID;
-    brk;
+
     switch (type)
     {
         case HeaderType: // current one is header
