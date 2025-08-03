@@ -22,9 +22,10 @@ typedef struct
 
     /* 29 */ u8 unk_29;
     s8 lineIndex[TotalLines]; // indexed by stringID & 0xF;
-    u16 freeRows;             // bitfield of which obj vram lines are taken up or free to use
+    u16 usedRows;             // bitfield of which obj vram lines are taken up or free to use
     u16 textTypeBitfield;     // bitfield of which lines are header (unset) or body (set)
     s8 textType;              // Header or Body
+    u8 bottomHalf;
     s8 strID;
     s8 strLine;
     int firstLineIndex;
@@ -62,22 +63,37 @@ int GetYOffsetBetweenText(BigTextProc * proc, int id)
     return result;
 }
 
+#define HeaderType 0
+#define BodyType 1
+
 extern u8 * const gUnknown_08A2F2C0[];
-u32 BigFontInit(signed char * str)
+u32 BigFontInit(BigTextProc * proc, signed char * str)
 {
     // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
     u16 offset = gActiveFont->chr_counter << 5;
-    // CpuFastFill(0, (void *)(offset + OBJ_VRAM0), 0x1000);
+    CpuFastFill(0, (void *)(offset + OBJ_VRAM0), 0x800);
     ApplyPalette(gUnknown_08A37300, 0x10);
+    int bufferAdd = 0;
+
+    if (proc->bottomHalf)
+    {
+        bufferAdd = 0x80;
+        proc->textType = BodyType;
+    }
+    else
+    {
+        proc->textType = HeaderType;
+    }
+    proc->bottomHalf ^= 1;
     while (*str != 0)
     {
         Decompress((gUnknown_08A2F2C0[*str] != 0) ? gUnknown_08A2F2C0[*str] : gUnknown_08A2F2C0[0x58], gGenericBuffer);
-        Copy2dChr(gGenericBuffer, (void *)(offset + OBJ_VRAM0), 2, 4);
+        Copy2dChr(gGenericBuffer + bufferAdd, (void *)(offset + OBJ_VRAM0), 2, 2);
 
         str++;
         offset += 0x40;
         if ((offset & 0x3FF) == 0) // If wrapped past a 0x400 boundary
-            offset += 0xC00;       // Move to next text page
+            offset += 0x400;       // Move to next text page
 
         if ((int)(offset) >= 0x6018000)
         {
@@ -85,7 +101,7 @@ u32 BigFontInit(signed char * str)
         }
     }
 
-    offset += 0x1000; // go to next line
+    offset += 0x800; // go to next line
     offset &= 0xF800;
     if ((int)(offset + VRAM) >= 0x6018000)
     {
@@ -282,7 +298,7 @@ void BigTextLoop(BigTextProc * proc)
     // }
     for (int i = 0; i < LinesBuffered; ++i)
     {
-        if (!(proc->freeRows & (1 << i)))
+        if (!(proc->usedRows & (1 << i)))
             continue;
 
         int line = proc->lineIndex[i];
@@ -301,14 +317,14 @@ int GetFreeRow(BigTextProc * proc)
 {
     int found = false;
     int i = 0;
-    u32 freeRows = proc->freeRows;
+    u32 usedRows = proc->usedRows;
     for (; i < LinesBuffered; ++i)
     {
-        if ((1 << i) & freeRows)
+        if ((1 << i) & usedRows)
         {
             continue;
         }
-        proc->freeRows |= (1 << i);
+        proc->usedRows |= (1 << i);
         found = true;
         break;
     }
@@ -316,7 +332,6 @@ int GetFreeRow(BigTextProc * proc)
     {
         if (!i)
         {
-            brk;
             gActiveFont->chr_counter = 0;
         }
         return i % LinesBuffered;
@@ -328,7 +343,7 @@ void FreeRow(BigTextProc * proc, int i)
 {
     i %= LinesBuffered;
     proc->lineIndex[i] = (-1);
-    proc->freeRows &= ~(1 << i); // unset the bit, as it is now free.
+    proc->usedRows &= ~(1 << i); // unset the bit, as it is now free.
     CpuFastFill(0, (void *)(0x800 * i + OBJ_VRAM0), 0x800);
 }
 
@@ -443,8 +458,6 @@ signed char * GetNextBodyLine(BigTextProc * proc)
     return str;
 }
 
-#define HeaderType 0
-#define BodyType 1
 signed char * GetNextStrLine(BigTextProc * proc)
 {
     int id = proc->id;
@@ -470,8 +483,8 @@ signed char * GetNextStrLine(BigTextProc * proc)
             str = GetNextBodyLine(proc);
             if (proc->strLine == (-1))
             {
-                // proc->textType = HeaderType; // next one will be body
-                proc->id++; // which gCreditsText[proc->id] entry we're on
+                proc->textType = HeaderType; // next one will be body
+                proc->id++;                  // which gCreditsText[proc->id] entry we're on
             }
             // proc->textTypeBitfield &= ~(1<< strID); // set the bit for PutSprite to know it's a body
             return str;
@@ -513,7 +526,7 @@ int InitNextLine(BigTextProc * proc, int lineIndex)
     {
         case HeaderType: // current one is header
         {
-            BigFontInit(str);
+            BigFontInit(proc, str);
             return true;
             break;
         }
@@ -539,18 +552,21 @@ int TryAdvanceID(BigTextProc * proc)
         {
             if (proc->lineIndex[slot] < 0)
             {
-                InitNextLine(proc, lineIndex);
+                if (!InitNextLine(proc, lineIndex))
+                {
+                    brk;
+                }
             }
         }
 
         if (spriteY < -16 && proc->lineIndex[slot] >= 0)
         {
             FreeRow(proc, slot);
-            if (!slot)
-            {
-                brk;
-                gActiveFont->chr_counter = 0;
-            }
+            // if (!slot)
+            // {
+            // brk;
+            // gActiveFont->chr_counter = 0;
+            // }
         }
     }
 
@@ -599,7 +615,7 @@ void StartCreditsProc(ProcPtr parent)
     //
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
     BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
-    proc->freeRows = 0;
+    proc->usedRows = 0;
     for (int i = 0; i < TotalLines; ++i)
     {
         proc->lineIndex[i] = (-1); // do not use if -1
@@ -607,6 +623,7 @@ void StartCreditsProc(ProcPtr parent)
     proc->id = 0;
     proc->textTypeBitfield = 0;
     proc->textType = 0;
+    proc->bottomHalf = 0;
     proc->strID = 0;
     proc->strLine = (-1);
 
