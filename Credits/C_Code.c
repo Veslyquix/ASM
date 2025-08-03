@@ -13,7 +13,7 @@ struct CreditsStruct
 extern struct CreditsStruct gCreditsText[];
 
 #define LinesOnScreen 11 // 160y / 16 pixels, but sprites can be partially offscreen
-#define LinesBuffered 12 // for moduluo
+#define LinesBuffered 13 // for moduluo
 #define BufferedLines 5
 #define TotalLines (LinesOnScreen + BufferedLines) // max 14 or 16,
 typedef struct
@@ -27,6 +27,7 @@ typedef struct
     s8 textType;            // Header or Body
     s8 strID;
     s8 strLine;
+    int firstLineIndex;
 
     u8 id;
     u8 finished;
@@ -479,7 +480,7 @@ signed char * GetNextStrLine(BigTextProc * proc)
 
 #define LineChr 0x40 // per line
 
-int InitNextLine(BigTextProc * proc)
+int InitNextLine(BigTextProc * proc, int lineIndex)
 {
     int type = proc->textType;
     signed char * str = GetNextStrLine(proc);
@@ -493,14 +494,22 @@ int InitNextLine(BigTextProc * proc)
             // no string of either type, so end everything
         }
     }
-    int strID = proc->strID % LinesBuffered;
-    proc->strID = strID + 1; // which line we're in?
+
+    int slot = lineIndex % LinesBuffered;
+    // If already initialized, skip
+    if (proc->vramRow[slot] >= 0)
+        return false;
+
     int rowID = GetFreeRow(proc);
     if (rowID < 0)
-    {
         return false;
+
+    if (!lineIndex)
+    {
+        brk;
+        gActiveFont->chr_counter = 0;
     }
-    proc->vramRow[strID] = rowID;
+    proc->vramRow[slot] = rowID;
 
     switch (type)
     {
@@ -522,25 +531,23 @@ int InitNextLine(BigTextProc * proc)
 
 int TryAdvanceID(BigTextProc * proc)
 {
-    int baseLine = -proc->y / 16;
-
     for (int i = 0; i < LinesBuffered; ++i)
     {
-        int lineIndex = baseLine + i;
+        int lineIndex = proc->firstLineIndex + i;
         int spriteY = proc->y + (lineIndex * 16);
-
         int slot = lineIndex % LinesBuffered;
 
         if (spriteY >= -16 && spriteY < 160)
         {
             if (proc->vramRow[slot] < 0)
             {
-                InitNextLine(proc);
+                InitNextLine(proc, lineIndex);
             }
         }
-        else if (spriteY < -16 && proc->vramRow[slot] >= 0)
+
+        if (spriteY < -16 && proc->vramRow[slot] >= 0)
         {
-            FreeRow(proc, lineIndex);
+            FreeRow(proc, slot);
         }
     }
 
@@ -635,6 +642,8 @@ void StartCreditsProc(ProcPtr parent)
     proc->finished = false;
     proc->maxId = 255;
     proc->y = 160;
+    proc->firstLineIndex = 0;
+
     proc->advanceId = false;
     proc->clock = GetGameClock();
 }
@@ -658,6 +667,11 @@ int ShouldAdvanceFrame(BigTextProc * proc)
     if ((clock - proc->clock) >= speed)
     {
         proc->clock = clock;
+        if (proc->y < -(proc->firstLineIndex * 16 + 16))
+        {
+            proc->firstLineIndex++;
+        }
+
         return 1;
     }
     else
