@@ -280,7 +280,7 @@ void BigTextLoop(BigTextProc * proc)
     // }
     // }
     int vramRow;
-    for (int i = 0; i < BufferedLines; ++i)
+    for (int i = 0; i < LinesBuffered; ++i)
     {
         vramRow = proc->vramRow[i];
         if (vramRow < 0)
@@ -298,7 +298,7 @@ int GetFreeRow(BigTextProc * proc)
     int found = false;
     int i = 0;
     u32 freeRows = proc->freeRows;
-    for (; i < BufferedLines; ++i)
+    for (; i < LinesBuffered; ++i)
     {
         if ((1 << i) & freeRows)
         {
