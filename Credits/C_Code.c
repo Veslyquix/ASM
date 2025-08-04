@@ -52,17 +52,6 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
         OAM2_CHR(BigText_VRAMTile),
     };
 
-// 16y pixels per small text line
-// 48y for big text
-int CountTextLines(signed char * str);
-int GetYOffsetBetweenText(BigTextProc * proc, int id)
-{
-    int result = 48;
-    // result += CountTextLines(gCreditsText[id].body) * 16;
-    // return 64;
-    return result;
-}
-
 #define HeaderType 0
 #define BodyType 1
 
@@ -115,7 +104,7 @@ u32 BigFontInit(BigTextProc * proc, signed char * str)
 }
 
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
-void InitCreditsBodyText(BigTextProc * proc, const char * str)
+signed char * InitCreditsBodyText(BigTextProc * proc, signed char * str)
 {
     const char * iter;
     int line;  // current one
@@ -130,7 +119,7 @@ void InitCreditsBodyText(BigTextProc * proc, const char * str)
         if (str && *str)
         {
 
-            lines = 1; // CountTextLines(str);
+            lines = 1;
             for (line = 0; line < lines; line++)
             {
                 InitSpriteText(&th[line]);
@@ -160,12 +149,14 @@ void InitCreditsBodyText(BigTextProc * proc, const char * str)
 
                         // iter -= 2;
                         iter++;
-                        line++;
+                        return iter;
+
+                        // line++;
 
                         // GetCharTextLen(iter, &width);
 
                         // Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
-                        Text_SetCursor(&th[line], 0);
+                        // Text_SetCursor(&th[line], 32);
                     }
                     iter = Text_DrawCharacterAscii_BL(&th[line], iter); // 160k cycles
                     // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
@@ -176,8 +167,7 @@ void InitCreditsBodyText(BigTextProc * proc, const char * str)
             }
         }
     }
-    // SetTextFont(0);
-    return;
+    return NULL;
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
@@ -231,7 +221,7 @@ int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int 
     }
     return len;
 }
-// 0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58,
+
 // PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
 void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 { // see  PutSubtitleHelpText
@@ -263,14 +253,7 @@ void BigTextLoop(BigTextProc * proc)
 {
 
     proc->y -= ShouldAdvanceFrame(proc);
-    // int yDiff = GetYOffsetBetweenText(proc, proc->id);
-    // if (proc->advanceId)
-    // {
-    // proc->id++;
-    // yDiff = GetYOffsetBetweenText(proc, proc->id);
-    // proc->y += yDiff;
-    // proc->advanceId = false;
-    // }
+
     if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
     { // nothing left to display, so end
         Proc_Break(proc);
@@ -287,14 +270,7 @@ void BigTextLoop(BigTextProc * proc)
 
     signed char * str;
 
-    // for (int i = 0; i < NumOfStrs; ++i)
-    // {
-    // str = gCreditsText[i + proc->id].header;
-    // if (str && *str)
-    // {
     // offset += PrintBigString(proc, str, offset, x, proc->y + (i * yDiff)); // (i * yDiff)
-    // }
-    // }
 
     for (int line = proc->firstLineIndex; line < proc->firstLineIndex + LinesBuffered; ++line)
     {
@@ -320,7 +296,6 @@ void BigTextLoop(BigTextProc * proc)
     }
 }
 
-// 1. Init text
 int GetFreeRow(BigTextProc * proc)
 {
     for (int i = 0; i < LinesBuffered; ++i)
@@ -341,27 +316,7 @@ void FreeRow(BigTextProc * proc, int i)
     proc->usedRows &= ~(1 << i); // unset the bit, as it is now free.
     CpuFastFill(0, (void *)(0x800 * i + OBJ_VRAM0), 0x800);
 }
-
-// GetFreeDoubleRow - for header text?
-int CountTextLines(signed char * str)
-{
-    signed char * tmp = str;
-    int i = 0;
-    while (*tmp)
-    {
-        i++;
-        while (*tmp > 1)
-        {
-            tmp++;
-        }
-        if (*tmp)
-        {
-            tmp++;
-        }
-    }
-    return i;
-}
-
+// GetStringTextLen
 int GetNextLineNum(signed char * str, int num)
 {
     if (!str || !*str)
@@ -406,10 +361,6 @@ signed char * GetStringAtLine(signed char * str, int line)
     {
         if (currentLine == line)
         {
-            // if (line)
-            // {
-            // return str + 1;
-            // }
 
             return str;
         }
@@ -428,11 +379,23 @@ signed char * GetStringAtLine(signed char * str, int line)
     return NULL; // Line not found
 }
 
-signed char * GetNextHeaderLine(BigTextProc * proc)
+signed char * GetNextLineOfType(BigTextProc * proc, int type)
 {
     int id = proc->id;
     int strLine = proc->strLine; // starts as (-1)
-    signed char * str = gCreditsText[id].header;
+    signed char * str;
+    signed char * originalStr;
+    if (type == HeaderType)
+    {
+        str = gCreditsText[id].header;
+        originalStr = str;
+    }
+    else
+    {
+        str = gCreditsText[id].body;
+        originalStr = str;
+    }
+
     strLine = GetNextLineNum(str, strLine); // get current line
     str = GetStringAtLine(str, strLine);
     if (!str || !*str)
@@ -441,29 +404,9 @@ signed char * GetNextHeaderLine(BigTextProc * proc)
         return NULL;
     }
 
-    int nextLine = GetNextLineNum(gCreditsText[id].header, strLine); // read ahead for next line
+    int nextLine = GetNextLineNum(originalStr, strLine); // read ahead for next line
     proc->strLine = strLine;
 
-    if (nextLine < 0)
-    {
-        proc->strLine = nextLine;
-    }
-    return str;
-}
-signed char * GetNextBodyLine(BigTextProc * proc)
-{
-    int id = proc->id;
-    int strLine = proc->strLine;
-    signed char * str = gCreditsText[id].body;
-    strLine = GetNextLineNum(str, strLine);
-    str = GetStringAtLine(str, strLine);
-    if (!str || !*str)
-    {
-        proc->strLine = (-1);
-        return NULL;
-    }
-    int nextLine = GetNextLineNum(gCreditsText[id].body, strLine); // read ahead for next line
-    proc->strLine = strLine;
     if (nextLine < 0)
     {
         proc->strLine = nextLine;
@@ -480,7 +423,7 @@ signed char * GetNextStrLine(BigTextProc * proc)
     {
         case HeaderType: // current one is header
         {
-            str = GetNextHeaderLine(proc);
+            str = GetNextLineOfType(proc, HeaderType);
             if (proc->strLine == (-1))
             {
                 proc->textType = BodyType; // next one will be body
@@ -493,7 +436,7 @@ signed char * GetNextStrLine(BigTextProc * proc)
         case BodyType:
         {
 
-            str = GetNextBodyLine(proc);
+            str = GetNextLineOfType(proc, BodyType);
             if (proc->strLine == (-1))
             {
                 proc->textType = HeaderType; // next one will be body
@@ -525,12 +468,6 @@ int InitNextLine(BigTextProc * proc, int slot)
         }
     }
 
-    // int slot = slotIndex % LinesBuffered;
-    // If already initialized, skip
-    // if (proc->slotIndex[slot] >= 0)
-    // return false;
-
-    // proc->slotIndex[slot] = slot;
     int rowID = GetFreeRow(proc);
     if (rowID < 0)
     {
@@ -596,13 +533,6 @@ void InitCreditsText(BigTextProc * proc)
     InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0, 0x11);
     SetTextFontGlyphs(1);
     ApplyPalette(gUnknown_0859EF20, 0x11);
-    // for (int i = 0; i < LinesOnScreen; ++i)
-    // {
-    // if (!InitNextLine(proc))
-    // {
-    // break;
-    // }
-    // }
 }
 
 struct ProcCmd const ProcScr_BigText[] = {
