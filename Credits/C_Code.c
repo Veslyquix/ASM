@@ -19,23 +19,18 @@ extern struct CreditsStruct gCreditsText[];
 typedef struct
 {
     /* 00 */ PROC_HEADER;
-
-    /* 29 */ u8 unk_29;
     s8 slotIndex[TotalLines]; // indexed by stringID & 0xF;
     u16 usedRows;             // bitfield of which obj vram lines are taken up or free to use
     u16 textTypeBitfield;     // bitfield of which lines are header (unset) or body (set)
-    s8 textType;              // Header or Body
-    u8 bottomHalf;
-    s8 strID;
-    s8 strLine;
+    u16 indentBitfield;
     int firstLineIndex;
-
-    u8 id;
-    u8 finished;
-    u8 maxId;
-    u8 advanceId;
     int y;
     u32 clock;
+    s8 textType; // Header or Body
+    u8 bottomHalf;
+    s8 strLine;
+    u8 slot;
+    u8 id;
 } BigTextProc;
 
 //
@@ -57,7 +52,8 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
 
 #define HEADER_X_OFFSET 8
 #define BODY_X_OFFSET 24
-#define MAX_LINE_WIDTH (240 - BODY_X_OFFSET) //(240 - 32)
+#define INDENT_BODY_X_OFFSET 32
+#define MAX_LINE_WIDTH (240 - INDENT_BODY_X_OFFSET) //(240 - 32)
 #define CHAR_NEWLINE 0x01
 #define CHAR_SPACE 0x20
 
@@ -240,6 +236,16 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 }
 
 int TryAdvanceID(BigTextProc * proc);
+int GetCurrentSlot(BigTextProc * proc) // after TryAdvanceID runs
+{
+    int lineIndex = proc->firstLineIndex + proc->slot;
+    return lineIndex % LinesBuffered;
+}
+int GetSlotAt(BigTextProc * proc, int i)
+{
+    int lineIndex = proc->firstLineIndex + i;
+    return lineIndex % LinesBuffered;
+}
 
 int ShouldAdvanceFrame(BigTextProc * proc);
 void BigTextLoop(BigTextProc * proc)
@@ -273,6 +279,12 @@ void BigTextLoop(BigTextProc * proc)
         int isBody = proc->textTypeBitfield & (1 << slot);
         int ix = x;
         int palID = 0;
+        if (proc->indentBitfield & (1 << slot))
+        {
+
+            ix += 8;
+        }
+
         if (isBody)
         {
             ix += BODY_X_OFFSET;
@@ -313,9 +325,21 @@ void FreeRow(BigTextProc * proc, int i)
     proc->usedRows &= ~(1 << i); // unset the bit, as it is now free.
     CpuFastFill(0, (void *)(0x800 * i + OBJ_VRAM0), 0x800);
 }
+int GetCurrentSlot(BigTextProc * proc);
 
-signed char * GetStringAtLine(signed char * str, int targetLine)
+void SetIndent(BigTextProc * proc, int slot)
 {
+    brk;
+    proc->indentBitfield |= (1 << (slot % LinesBuffered));
+}
+void UnsetIndent(BigTextProc * proc, int slot)
+{
+    proc->indentBitfield &= ~(1 << (slot % LinesBuffered));
+}
+
+signed char * GetStringAtLine(signed char * str, int targetLine, BigTextProc * proc, int slot)
+{
+    UnsetIndent(proc, slot);
     if (!str || targetLine < 0)
         return NULL;
 
@@ -341,6 +365,10 @@ signed char * GetStringAtLine(signed char * str, int targetLine)
 
             if (width > MAX_LINE_WIDTH)
             {
+                if (currentLine + 1 == targetLine)
+                {
+                    SetIndent(proc, slot);
+                }
                 if (lastSpace)
                 {
                     str = lastSpace + 1; // wrap at space (skip it)
@@ -358,8 +386,9 @@ signed char * GetStringAtLine(signed char * str, int targetLine)
     return NULL;
 }
 
-int GetNextLineNum(signed char * str, int num)
+int GetNextLineNum(signed char * str, int num, BigTextProc * proc, int slot)
 {
+
     if (!str || num < -1)
         return -1;
 
@@ -384,6 +413,7 @@ int GetNextLineNum(signed char * str, int num)
 
             if (width > MAX_LINE_WIDTH)
             {
+
                 if (lastSpace)
                 {
                     str = lastSpace + 1; // wrap at last space
@@ -401,7 +431,7 @@ int GetNextLineNum(signed char * str, int num)
     return -1;
 }
 
-signed char * GetNextLineOfType(BigTextProc * proc, int type)
+signed char * GetNextLineOfType(BigTextProc * proc, int type, int slot)
 {
     int id = proc->id;
     int strLine = proc->strLine; // starts as (-1)
@@ -418,15 +448,15 @@ signed char * GetNextLineOfType(BigTextProc * proc, int type)
         originalStr = str;
     }
 
-    strLine = GetNextLineNum(str, strLine); // get current line
-    str = GetStringAtLine(str, strLine);
+    strLine = GetNextLineNum(str, strLine, proc, slot); // get current line
+    str = GetStringAtLine(str, strLine, proc, slot);
     if (!str || !*str)
     {
         proc->strLine = (-1);
         return NULL;
     }
 
-    int nextLine = GetNextLineNum(originalStr, strLine); // read ahead for next line
+    int nextLine = GetNextLineNum(originalStr, strLine, proc, slot); // read ahead for next line
     proc->strLine = strLine;
 
     if (nextLine < 0)
@@ -436,7 +466,7 @@ signed char * GetNextLineOfType(BigTextProc * proc, int type)
     return str;
 }
 
-signed char * GetNextStrLine(BigTextProc * proc)
+signed char * GetNextStrLine(BigTextProc * proc, int slot)
 {
     int id = proc->id;
     signed char * str;
@@ -445,26 +475,24 @@ signed char * GetNextStrLine(BigTextProc * proc)
     {
         case HeaderType: // current one is header
         {
-            str = GetNextLineOfType(proc, HeaderType);
+            str = GetNextLineOfType(proc, HeaderType, slot);
             if (proc->strLine == (-1))
             {
                 proc->textType = BodyType; // next one will be body
             }
 
-            // proc->textTypeBitfield &= ~(1<< strID); // unset the bit for PutSprite to know it's a header
             return str;
             break;
         }
         case BodyType:
         {
 
-            str = GetNextLineOfType(proc, BodyType);
+            str = GetNextLineOfType(proc, BodyType, slot);
             if (proc->strLine == (-1))
             {
                 proc->textType = HeaderType; // next one will be body
                 proc->id++;                  // which gCreditsText[proc->id] entry we're on
             }
-            // proc->textTypeBitfield &= ~(1<< strID); // set the bit for PutSprite to know it's a body
             return str;
             break;
         }
@@ -478,11 +506,18 @@ int InitNextLine(BigTextProc * proc, int slot)
 {
 
     int type = proc->textType;
-    signed char * str = GetNextStrLine(proc);
+
+    proc->slot = slot;
+    int rowID = GetFreeRow(proc);
+    if (rowID < 0)
+    {
+        return false;
+    }
+    signed char * str = GetNextStrLine(proc, rowID);
 
     if (!str || !(*str))
     {
-        str = GetNextStrLine(proc);
+        str = GetNextStrLine(proc, slot);
         if (!str || !(*str))
         {
             return false;
@@ -490,11 +525,6 @@ int InitNextLine(BigTextProc * proc, int slot)
         }
     }
 
-    int rowID = GetFreeRow(proc);
-    if (rowID < 0)
-    {
-        return false;
-    }
     proc->slotIndex[slot] = rowID;
 
     switch (type)
@@ -581,25 +611,22 @@ void StartCreditsProc(ProcPtr parent)
     //
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
     BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
-    proc->usedRows = 0;
+
     for (int i = 0; i < TotalLines; ++i)
     {
         proc->slotIndex[i] = (-1); // do not use if -1
     }
-    proc->id = 0;
+    proc->usedRows = 0;
     proc->textTypeBitfield = 0;
+    proc->indentBitfield = 0;
+    proc->firstLineIndex = 0;
+    proc->y = 160;
+    proc->clock = GetGameClock();
     proc->textType = 0;
     proc->bottomHalf = 0;
-    proc->strID = 0;
     proc->strLine = (-1);
-
-    proc->finished = false;
-    proc->maxId = 255;
-    proc->y = 160;
-    proc->firstLineIndex = 0;
-
-    proc->advanceId = false;
-    proc->clock = GetGameClock();
+    proc->slot = 0;
+    proc->id = 0;
 }
 
 extern int HeldButtonSpeed;
