@@ -70,6 +70,7 @@ extern u8 * const gUnknown_08A2F2C0[];
 u32 BigFontInit(BigTextProc * proc, signed char * str)
 {
     // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
+
     u16 offset = gActiveFont->chr_counter << 5;
     CpuFastFill(0, (void *)(offset + OBJ_VRAM0), 0x800);
     ApplyPalette(gUnknown_08A37300, 0x10);
@@ -230,7 +231,7 @@ int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int 
     }
     return len;
 }
-
+// 0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58,
 // PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
 void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 { // see  PutSubtitleHelpText
@@ -239,7 +240,8 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
         return;
     }
     static u16 lut[] = {
-        0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58,
+
+        0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20,
     };
 
     int i;
@@ -247,10 +249,7 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 
     for (i = 0; i < 9; i++)
     {
-        // int x = (i * 32) - 32 + proc->textOffset;
-        // int index = (proc->textNum + i) % proc->textCount;
         ix = x + (i * 32);
-
         PutSprite(layer, ix, y, gObject_32x16, oam2 + lut[i]);
     }
 
@@ -296,17 +295,27 @@ void BigTextLoop(BigTextProc * proc)
     // offset += PrintBigString(proc, str, offset, x, proc->y + (i * yDiff)); // (i * yDiff)
     // }
     // }
+
     for (int line = proc->firstLineIndex; line < proc->firstLineIndex + LinesBuffered; ++line)
     {
         int slot = proc->slotIndex[line % LinesBuffered];
         if (slot < 0)
             continue;
+        int isBody = proc->textTypeBitfield & (1 << slot);
+        int ix = x;
+        int palID = 0;
+        if (isBody)
+        {
+            ix += 16;
+            palID = 1;
+        }
+
         // int line = proc->firstslotIndex + i;
         int spriteY = proc->y + (line * 16);
 
         if (spriteY >= -16 && spriteY < 160)
         {
-            PutNormalSpriteText(2, x + 16, spriteY, gObject_32x16, OAM2_PAL(1) + (slot * 0x40));
+            PutNormalSpriteText(2, ix + 8, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
         }
     }
 }
@@ -533,12 +542,14 @@ int InitNextLine(BigTextProc * proc, int slot)
     {
         case HeaderType: // current one is header
         {
+            proc->textTypeBitfield &= ~(1 << rowID);
             BigFontInit(proc, str);
             return true;
             break;
         }
         case BodyType:
         {
+            proc->textTypeBitfield |= (1 << rowID);
             InitCreditsBodyText(proc, (void *)str);
             return true;
             break;
