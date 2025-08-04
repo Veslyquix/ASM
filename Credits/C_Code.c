@@ -329,7 +329,6 @@ int GetCurrentSlot(BigTextProc * proc);
 
 void SetIndent(BigTextProc * proc, int slot)
 {
-    brk;
     proc->indentBitfield |= (1 << (slot % LinesBuffered));
 }
 void UnsetIndent(BigTextProc * proc, int slot)
@@ -386,7 +385,7 @@ signed char * GetStringAtLine(signed char * str, int targetLine, BigTextProc * p
     return NULL;
 }
 
-int GetNextLineNum(signed char * str, int num, BigTextProc * proc, int slot)
+int GetNextLineNum(signed char * str, int num)
 {
 
     if (!str || num < -1)
@@ -448,7 +447,7 @@ signed char * GetNextLineOfType(BigTextProc * proc, int type, int slot)
         originalStr = str;
     }
 
-    strLine = GetNextLineNum(str, strLine, proc, slot); // get current line
+    strLine = GetNextLineNum(str, strLine); // get current line
     str = GetStringAtLine(str, strLine, proc, slot);
     if (!str || !*str)
     {
@@ -456,7 +455,7 @@ signed char * GetNextLineOfType(BigTextProc * proc, int type, int slot)
         return NULL;
     }
 
-    int nextLine = GetNextLineNum(originalStr, strLine, proc, slot); // read ahead for next line
+    int nextLine = GetNextLineNum(originalStr, strLine); // read ahead for next line
     proc->strLine = strLine;
 
     if (nextLine < 0)

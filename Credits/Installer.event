@@ -27,10 +27,8 @@ POIN header1 body1
 POIN header2 body2 
 POIN header3 body3 
 POIN header4 body4 
-POIN header4 body4 
-POIN header4 body4 
-POIN 0 emptyString 
-POIN 0 emptyString 
+POIN emptyString emptyStringLong 
+// POIN emptyString emptyStringLong 
 WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator 
 
 
@@ -40,11 +38,10 @@ WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator
 header1: 
 String("Header"); BYTE 0 
 body1: 
+String("this text is too long to fit on just one line, so it'll wrap onto the next line"); NL 
 String("stuff - by people "); NL
-String("Pokemart Clerk, Beta Trainer Sprites, Choice Band, Muscle Band - Zaim"); NL
 String("other stuff - by me"); BYTE 0 
 
-String("This is text."); BYTE 0 
 
 header2: 
 String("Engine Hacks"); BYTE 0 
@@ -68,13 +65,13 @@ String("Tileset water animations, Evolution stones, Jelly Donut, Drying Pan - N4
 String("Potions, Stat boosters, & various skill icons - Jester"); NL
 String("PMD Minimugs - Akim2007"); BYTE 0 
 
+
 emptyString: 
+String(" "); BYTE 0 
+emptyStringLong: 
 String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
 String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
-String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
-String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
-String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; 
-String(" "); NL; String(" "); NL; String(" "); NL; String(" "); NL; BYTE 0 
+String(" "); NL; String(" "); NL; BYTE 0 
 
 
 
