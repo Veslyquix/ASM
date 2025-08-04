@@ -41,6 +41,7 @@ header1:
 String("Header"); BYTE 0 
 body1: 
 String("stuff - by people "); NL
+String("Pokemart Clerk, Beta Trainer Sprites, Choice Band, Muscle Band - Zaim"); NL
 String("other stuff - by me"); BYTE 0 
 
 String("This is text."); BYTE 0 

@@ -55,7 +55,14 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
 #define HeaderType 0
 #define BodyType 1
 
+#define HEADER_X_OFFSET 8
+#define BODY_X_OFFSET 24
+#define MAX_LINE_WIDTH (240 - BODY_X_OFFSET) //(240 - 32)
+#define CHAR_NEWLINE 0x01
+#define CHAR_SPACE 0x20
+
 extern u8 * const gUnknown_08A2F2C0[];
+
 u32 BigFontInit(BigTextProc * proc, signed char * str)
 {
     // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
@@ -104,70 +111,56 @@ u32 BigFontInit(BigTextProc * proc, signed char * str)
 }
 
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
-signed char * InitCreditsBodyText(BigTextProc * proc, signed char * str)
+void InitCreditsBodyText(BigTextProc * proc, signed char * str)
 {
-    const char * iter;
-    int line;  // current one
-    int lines; // how many
-    u32 width;
+    signed char * iter;
+    int line = 0; // current one
+    // I guess it doesn't really matter that they all share a text handle because they are never redrawn, just moved
+    // up the screen with PutSprite
     struct Text * th = gStatScreen.text;
-
-    for (int i = 0; i < 1; ++i)
+    if (str && *str)
     {
-        th = &gStatScreen.text[i * 4]; // Max Number of lines
-        // str = (void *)gCreditsText[i + proc->id].body;
-        if (str && *str)
+        InitSpriteText(&th[line]);
+
+        SpriteText_DrawBackgroundExt(&th[line], 0); // clears the vram obj behind the sprite text
+        Text_SetColor(&th[line], 0);
+        iter = str;
+
+        int nextWordWidth = 0;
+        while (*iter == CHAR_NEWLINE)
         {
+            iter++;
+        }
 
-            lines = 1;
-            for (line = 0; line < lines; line++)
+        while (*iter > CHAR_NEWLINE)
+        {
+            int curX = Text_GetCursor(&th[line]); // current x position
+
+            if (*iter == ' ')
             {
-                InitSpriteText(&th[line]);
+                signed char * lookahead = iter + 1;
+                nextWordWidth = gActiveFont->glyphs[(u8)*iter]->width; // include the space in width
 
-                SpriteText_DrawBackgroundExt(&th[line], 0); // clears the vram obj behind the sprite text
-                Text_SetColor(&th[line], 0);
-            }
-            iter = str;
-            line = 0;
-            if (iter != 0)
-            {
-                if (*iter == 1)
+                while (*lookahead > CHAR_NEWLINE && *lookahead != ' ' && *lookahead != CHAR_NEWLINE)
                 {
-                    iter++;
-                } // new line
-
-                while (*iter > 1)
-                // while (*iter)
-                {
-                    if (line >= lines)
-                    {
-                        break;
-                    }
-
-                    if (Text_GetCursor(&th[line]) > 0xE0 || (*iter == 1))
-                    {
-
-                        // iter -= 2;
-                        iter++;
-                        return iter;
-
-                        // line++;
-
-                        // GetCharTextLen(iter, &width);
-
-                        // Text_SetCursor(&th[line], (Text_GetCursor(&th[line - 1]) - width) - 0xC0);
-                        // Text_SetCursor(&th[line], 32);
-                    }
-                    iter = Text_DrawCharacterAscii_BL(&th[line], iter); // 160k cycles
-                    // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
+                    struct Glyph * glyph = gActiveFont->glyphs[(u8)*lookahead++];
+                    nextWordWidth += glyph->width;
                 }
 
-                // proc->textCount = ((GetStringTextLen(str) + 16) >> 5) + 1;
-                // proc->textNum = proc->textCount - 1;
+                // If the next word doesn't fit, break before this space
+                if (curX + nextWordWidth > MAX_LINE_WIDTH)
+                {
+                    return; // wrap before the next word
+                }
             }
+            if (curX > MAX_LINE_WIDTH || *iter == CHAR_NEWLINE)
+            {
+                return;
+            }
+            iter = (void *)Text_DrawCharacterAscii_BL(&th[line], (void *)iter); // 160k cycles
+            // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
         }
     }
-    return NULL;
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
@@ -282,8 +275,12 @@ void BigTextLoop(BigTextProc * proc)
         int palID = 0;
         if (isBody)
         {
-            ix += 16;
+            ix += BODY_X_OFFSET;
             palID = 1;
+        }
+        else
+        {
+            ix += HEADER_X_OFFSET;
         }
 
         // int line = proc->firstslotIndex + i;
@@ -291,7 +288,7 @@ void BigTextLoop(BigTextProc * proc)
 
         if (spriteY >= -16 && spriteY < 160)
         {
-            PutNormalSpriteText(2, ix + 8, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
+            PutNormalSpriteText(2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
         }
     }
 }
@@ -316,67 +313,92 @@ void FreeRow(BigTextProc * proc, int i)
     proc->usedRows &= ~(1 << i); // unset the bit, as it is now free.
     CpuFastFill(0, (void *)(0x800 * i + OBJ_VRAM0), 0x800);
 }
-// GetStringTextLen
-int GetNextLineNum(signed char * str, int num)
-{
-    if (!str || !*str)
-    {
-        return (-1);
-    }
-    signed char * tmp = str;
-    int i = 0;
-    while (*tmp)
-    {
-        i++;
-        while (*tmp > 1)
-        {
-            tmp++;
-        }
-        if (*tmp)
-        {
-            tmp++;
-        }
-    }
 
-    if (num + 1 < i)
-    {
-        return num + 1;
-    }
-    return (-1);
-}
-
-signed char * GetStringAtLine(signed char * str, int line)
+signed char * GetStringAtLine(signed char * str, int targetLine)
 {
-    if (!str || !*str)
-    {
+    if (!str || targetLine < 0)
         return NULL;
-    }
-    if (line < 0)
-    {
-        return NULL;
-    }
+
     int currentLine = 0;
 
     while (*str)
     {
-        if (currentLine == line)
-        {
-
+        if (currentLine == targetLine)
             return str;
-        }
 
-        // Skip to the next delimiter
+        int width = 0;
+        signed char * lineStart = str;
+        signed char * lastSpace = NULL;
+
         while (*str > 1)
+        {
+            if (*str == ' ')
+                lastSpace = str;
+
+            struct Glyph * glyph = gActiveFont->glyphs[(u8)*str];
+            width += glyph->width;
             str++;
 
-        // Skip the delimiter byte if not at end
-        if (*str)
+            if (width > MAX_LINE_WIDTH)
+            {
+                if (lastSpace)
+                {
+                    str = lastSpace + 1; // wrap at space (skip it)
+                }
+                break;
+            }
+        }
+
+        if (*str == CHAR_NEWLINE)
             str++;
 
         currentLine++;
     }
 
-    return NULL; // Line not found
+    return NULL;
+}
+
+int GetNextLineNum(signed char * str, int num)
+{
+    if (!str || num < -1)
+        return -1;
+
+    int currentLine = 0;
+
+    while (*str)
+    {
+        if (currentLine == num + 1)
+            return currentLine;
+
+        int width = 0;
+        signed char * lastSpace = NULL;
+
+        while (*str > 1)
+        {
+            if (*str == ' ')
+                lastSpace = str;
+
+            struct Glyph * glyph = gActiveFont->glyphs[(u8)*str];
+            width += glyph->width;
+            str++;
+
+            if (width > MAX_LINE_WIDTH)
+            {
+                if (lastSpace)
+                {
+                    str = lastSpace + 1; // wrap at last space
+                }
+                break;
+            }
+        }
+
+        if (*str == CHAR_NEWLINE)
+            str++;
+
+        currentLine++;
+    }
+
+    return -1;
 }
 
 signed char * GetNextLineOfType(BigTextProc * proc, int type)
@@ -504,7 +526,6 @@ int TryAdvanceID(BigTextProc * proc)
         int slot = lineIndex % LinesBuffered;
         if (spriteY < -16 && proc->slotIndex[slot] >= 0)
         {
-            brk;
             FreeRow(proc, slot);
             if (!slot)
             {
@@ -517,7 +538,6 @@ int TryAdvanceID(BigTextProc * proc)
             {
                 if (!InitNextLine(proc, slot))
                 {
-                    // brk;
                 }
             }
         }
