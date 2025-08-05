@@ -14,14 +14,13 @@ extern struct CreditsStruct gCreditsText[];
 
 #define LinesOnScreen 11 // 160y / 16 pixels, but sprites can be partially offscreen
 #define LinesBuffered 13 // for moduluo
-#define BufferedLines 5
-#define TotalLines (LinesOnScreen + BufferedLines) // max 14 or 16,
 typedef struct
 {
     /* 00 */ PROC_HEADER;
-    s8 slotIndex[TotalLines]; // indexed by stringID & 0xF;
-    u16 usedRows;             // bitfield of which obj vram lines are taken up or free to use
-    u16 textTypeBitfield;     // bitfield of which lines are header (unset) or body (set)
+    s8 slotIndex[LinesBuffered]; // indexed by stringID & 0xF;
+    s8 strLen[LinesBuffered];
+    u16 usedRows;         // bitfield of which obj vram lines are taken up or free to use
+    u16 textTypeBitfield; // bitfield of which lines are header (unset) or body (set)
     u16 indentBitfield;
     int firstLineIndex;
     int y;
@@ -39,12 +38,13 @@ typedef struct
 #define BigTextVRAM (VRAM + (BigText_VRAMTile << 5)) // 0x6010000
 extern const u16 sSprite_08A2EF48[];
 extern struct Font * gActiveFont;
+// gObject_32x16
 u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
     {
-        1, // number of entries
-        OAM0_SHAPE_16x32 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE,
-        OAM1_SIZE_32x32,
-        OAM2_CHR(BigText_VRAMTile),
+        1,                                                       // number of entries
+        OAM0_SHAPE_16x16 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE, //
+        OAM1_SIZE_16x16,
+        0, // OAM2_CHR(BigText_VRAMTile),
     };
 
 #define HeaderType 0
@@ -59,7 +59,7 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
 
 extern u8 * const gUnknown_08A2F2C0[];
 
-u32 BigFontInit(BigTextProc * proc, signed char * str)
+u32 BigFontInit(BigTextProc * proc, signed char * str, int rowID)
 {
     // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
 
@@ -78,10 +78,12 @@ u32 BigFontInit(BigTextProc * proc, signed char * str)
         proc->textType = HeaderType;
     }
     proc->bottomHalf ^= 1;
+    int len = 0;
     while (*str != 0)
     {
         Decompress((gUnknown_08A2F2C0[*str] != 0) ? gUnknown_08A2F2C0[*str] : gUnknown_08A2F2C0[0x58], gGenericBuffer);
         Copy2dChr(gGenericBuffer + bufferAdd, (void *)(offset + OBJ_VRAM0), 2, 2);
+        len++;
 
         str++;
         offset += 0x40;
@@ -93,6 +95,7 @@ u32 BigFontInit(BigTextProc * proc, signed char * str)
             offset = 0;
         }
     }
+    proc->strLen[rowID] = len;
 
     offset += 0x800; // go to next line
     offset &= 0xF800;
@@ -107,8 +110,9 @@ u32 BigFontInit(BigTextProc * proc, signed char * str)
 }
 
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
-void InitCreditsBodyText(BigTextProc * proc, signed char * str)
+void InitCreditsBodyText(BigTextProc * proc, signed char * str, int rowID)
 {
+    proc->strLen[rowID] = 0;
     signed char * iter;
     int line = 0; // current one
     // I guess it doesn't really matter that they all share a text handle because they are never redrawn, just moved
@@ -160,10 +164,10 @@ void InitCreditsBodyText(BigTextProc * proc, signed char * str)
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
-void PutBigLetter(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset) // based on sub_80B2A14
+void PutBigLetter(
+    int layer, u8 charId, int x, int y, u16 xScale, u16 yScale, const u16 * object, int oam2) // based on sub_80B2A14
 {
     int palID = 0;
-    // if (x > 224)
     if (x > 240)
     {
         return;
@@ -184,31 +188,33 @@ void PutBigLetter(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset) //
         matrixId, Div(+COS(0) << 4, xScale), Div(-SIN(0) << 4, yScale), Div(+SIN(0) << 4, xScale),
         Div(+COS(0) << 4, yScale)); // unsure what this does, but it is needed
 
-    int layer = 1; // sub_80B2A14 uses oam2 layer 1 for first letter and layer 2 after that
-    int oam2 = adjustedCharId * 2 + OAM2_LAYER(layer) + OAM2_PAL(palID);
+    oam2 += adjustedCharId * 2 + OAM2_LAYER(layer) + OAM2_PAL(palID);
     PutSpriteExt(4, (x & 0x1FF) + (matrixId << 9), y & 0x1FF, sSprite_08A2EF48_new, oam2);
 }
+// int layer = 1; // sub_80B2A14 uses oam2 layer 1 for first letter and layer 2 after that
 #define Width_BigChar 12
 unsigned int strlen(const char *);
-int PrintBigString(BigTextProc * proc, signed char * str, int index, int x, int y)
-{
-    if (!str)
-    {
-        return 0;
-    }
-    if (y > 160 || y < (-48))
-    {
-        return 0;
-    }
-    int ix;
-    int len = strlen((void *)str);
 
-    for (int i = 0; i < len; ++i)
-    { // display each character in the string
-        ix = x + (i * Width_BigChar);
-        PutBigLetter(index + i, ix, y, 0x100, 0x100, 0);
+const static u16 lut[] = {
+    0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20,
+};
+
+extern void sub_80B2A14(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset);
+void PrintBigString(int len, int layer, int x, int y, const u16 * object, int oam2)
+{
+    if (y > 160 || y < (-16))
+    {
+        return;
     }
-    return len;
+    int i;
+    int ix;
+
+    for (i = 0; i < len; i++)
+    {
+        ix = x + (i * Width_BigChar);
+        PutBigLetter(layer, i, ix, y, 0x100, 0x100, object, oam2);
+        // sub_80B2A14(i, ix, y, 0x100, 0x100, 0);
+    }
 }
 
 // PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
@@ -218,10 +224,6 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
     {
         return;
     }
-    static u16 lut[] = {
-
-        0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C, 0x20,
-    };
 
     int i;
     int ix;
@@ -264,12 +266,6 @@ void BigTextLoop(BigTextProc * proc)
     }
 
     int x = 0;
-    int offset = 0;
-    int lines;
-
-    signed char * str;
-
-    // offset += PrintBigString(proc, str, offset, x, proc->y + (i * yDiff)); // (i * yDiff)
 
     for (int line = proc->firstLineIndex; line < proc->firstLineIndex + LinesBuffered; ++line)
     {
@@ -300,7 +296,14 @@ void BigTextLoop(BigTextProc * proc)
 
         if (spriteY >= -16 && spriteY < 160)
         {
-            PutNormalSpriteText(2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
+            if (isBody)
+            {
+                PutNormalSpriteText(2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
+            }
+            else
+            {
+                PrintBigString(proc->strLen[slot], 2, ix, spriteY, gObject_32x16, (slot * 0x40));
+            }
         }
     }
 }
@@ -350,7 +353,6 @@ signed char * GetStringAtLine(signed char * str, int targetLine, BigTextProc * p
             return str;
 
         int width = 0;
-        signed char * lineStart = str;
         signed char * lastSpace = NULL;
 
         while (*str > 1)
@@ -531,14 +533,14 @@ int InitNextLine(BigTextProc * proc, int slot)
         case HeaderType: // current one is header
         {
             proc->textTypeBitfield &= ~(1 << rowID);
-            BigFontInit(proc, str);
+            BigFontInit(proc, str, rowID);
             return true;
             break;
         }
         case BodyType:
         {
             proc->textTypeBitfield |= (1 << rowID);
-            InitCreditsBodyText(proc, (void *)str);
+            InitCreditsBodyText(proc, (void *)str, rowID);
             return true;
             break;
         }
@@ -611,9 +613,10 @@ void StartCreditsProc(ProcPtr parent)
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
     BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
 
-    for (int i = 0; i < TotalLines; ++i)
+    for (int i = 0; i < LinesBuffered; ++i)
     {
         proc->slotIndex[i] = (-1); // do not use if -1
+        proc->strLen[i] = 0;
     }
     proc->usedRows = 0;
     proc->textTypeBitfield = 0;
@@ -711,7 +714,7 @@ static inline void DrawSpriteTextGlyph_BL(struct Text * text, struct Glyph * gly
 
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str)
 {
-    struct Glyph * glyph = gActiveFont->glyphs[*str++];
+    struct Glyph * glyph = gActiveFont->glyphs[(u8)*str++];
 
     if (glyph == NULL)
         glyph = gActiveFont->glyphs['?'];
