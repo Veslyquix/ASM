@@ -18,7 +18,6 @@ BYTE 1 // fade to black //map
 
 ORG $9EEBFC
 TEXTSTART
-
 ASMC StartCreditsProc_ASMC
 NoFade 
 ENDA 
@@ -38,11 +37,11 @@ ALIGN 4
 gCreditsData: 
 POIN header1 body1; WORD 1 // bg  
 POIN header2 body2; WORD 0xFF 
-POIN header3 body3; WORD 2 
-POIN header4 body4; WORD 3  
+POIN header3 body3; WORD 3 
+POIN header4 body4; WORD 0xFF  
 POIN emptyString emptyStringLong; WORD 0xFF 
 // POIN emptyString emptyStringLong 
-WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator 
+WORD 0 0 0xFF 0 0 0xFF 0 0 0xFF 0 0 0xFF // Terminator 
 
 
 #define NL "BYTE 1;"
@@ -91,8 +90,6 @@ emptyString:
 txt(" "); BYTE 0 
 emptyStringLong: // bunch of blank lines while above text finishes displaying  
 txt(" \\
- \\
- \\
  \\
  \\
  \\

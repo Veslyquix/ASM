@@ -592,8 +592,6 @@ void ReputConvoBg_new(int index)
     gPaletteBuffer[PAL_BACKDROP_OFFSET] = 0;
 }
 
-// gUnknown_08591EB0
-// gUnknown_08591E00
 void InitNextBG(CreditsTextProc * proc, int slot)
 {
     int bg = gCreditsData[proc->id].bg;
@@ -604,9 +602,9 @@ void InitNextBG(CreditsTextProc * proc, int slot)
     proc->bg = bg;
     struct ConvoBackgroundFadeProc * otherProc = Proc_Start(gUnknown_08591E00, (void *)3);
     otherProc->fadeType = 0; // 0, 1, or 2
-    otherProc->unkType = 1;  // 1 sprite text?
+    otherProc->unkType = 1;  // 0 = broken, 1 = bg text, 2 = cg text
     otherProc->bgIndex = bg;
-    otherProc->fadeSpeed = 8;
+    otherProc->fadeSpeed = 3;
     otherProc->fadeTimer = 0;
     otherProc->pEventEngine = (void *)proc;
     // ReputConvoBg_unused(bg);
@@ -697,15 +695,16 @@ struct ProcCmd const ProcScr_CreditsText[] = {
     PROC_NAME("Vesly's Credits Proc"),
     PROC_SLEEP(0),
     PROC_CALL(LockGame),
-    // PROC_CALL(BMapDispSuspend),
+    PROC_CALL(BMapDispSuspend),
     PROC_CALL(InitCreditsText),
     PROC_REPEAT(CreditsTextLoop),
     PROC_CALL(StartFastFadeToBlack),
     PROC_REPEAT(WaitForFade),
     PROC_SLEEP(16),
-    PROC_CALL(RefreshUnitSprites),
-    // PROC_CALL(BMapDispResume),
+
+    PROC_CALL(BMapDispResume),
     PROC_CALL(RefreshBMapGraphics),
+    PROC_CALL(RefreshUnitSprites),
     PROC_CALL(UnlockGame),
     PROC_CALL(StartFastFadeFromBlack),
     PROC_REPEAT(WaitForFade),
