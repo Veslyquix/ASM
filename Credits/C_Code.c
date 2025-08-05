@@ -18,7 +18,7 @@ typedef struct
 {
     /* 00 */ PROC_HEADER;
     s8 slotIndex[LinesBuffered]; // indexed by stringID & 0xF;
-    s8 strLen[LinesBuffered];
+    u8 strLen[LinesBuffered];
     u16 usedRows;         // bitfield of which obj vram lines are taken up or free to use
     u16 textTypeBitfield; // bitfield of which lines are header (unset) or body (set)
     u16 indentBitfield;
@@ -30,6 +30,7 @@ typedef struct
     s8 strLine;
     u8 slot;
     u8 id;
+    int totalSprites;
 } BigTextProc;
 
 //
@@ -120,11 +121,11 @@ u32 BigFontInit(BigTextProc * proc, signed char * str, int rowID)
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
 void InitCreditsBodyText(BigTextProc * proc, signed char * str, int rowID)
 {
-    proc->strLen[rowID] = 0;
     signed char * iter;
     int line = 0; // current one
     // I guess it doesn't really matter that they all share a text handle because they are never redrawn, just moved
     // up the screen with PutSprite
+    int curX = 0;
     struct Text * th = gStatScreen.text;
     if (str && *str)
     {
@@ -142,7 +143,7 @@ void InitCreditsBodyText(BigTextProc * proc, signed char * str, int rowID)
 
         while (*iter > CHAR_NEWLINE)
         {
-            int curX = Text_GetCursor(&th[line]); // current x position
+            curX = Text_GetCursor(&th[line]); // current x position
 
             if (*iter == ' ')
             {
@@ -158,22 +159,22 @@ void InitCreditsBodyText(BigTextProc * proc, signed char * str, int rowID)
                 // If the next word doesn't fit, break before this space
                 if (curX + nextWordWidth > MAX_LINE_WIDTH)
                 {
-                    return; // wrap before the next word
+                    break; // wrap before the next word
                 }
             }
             if (curX > MAX_LINE_WIDTH || *iter == CHAR_NEWLINE)
             {
-                return;
+                break;
             }
             iter = (void *)Text_DrawCharacterAscii_BL(&th[line], (void *)iter); // 160k cycles
             // iter = Text_DrawCharacter(&th[line], iter); // 278k cycles
         }
     }
+    proc->strLen[rowID] = curX;
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
-void PutBigLetter(
-    int layer, u8 charId, int x, int y, u16 xScale, u16 yScale, const u16 * object, int oam2) // based on sub_80B2A14
+void PutBigLetter(int layer, u8 charId, int x, int y, u16 xScale, u16 yScale, int oam2) // based on sub_80B2A14
 {
     int palID = 0;
     if (x > 240)
@@ -208,7 +209,7 @@ const static u16 lut[] = {
 };
 
 extern void sub_80B2A14(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset);
-void PrintBigString(int len, int layer, int x, int y, const u16 * object, int oam2)
+void PrintBigString(int len, int layer, int x, int y, int oam2)
 {
     if (y > 160 || y < (-16))
     {
@@ -220,13 +221,13 @@ void PrintBigString(int len, int layer, int x, int y, const u16 * object, int oa
     for (i = 0; i < len; i++)
     {
         ix = x + (i * Width_BigChar);
-        PutBigLetter(layer, i, ix, y - 8, 0x100, 0x100, object, oam2);
+        PutBigLetter(layer, i, ix, y - 8, 0x100, 0x100, oam2);
         // sub_80B2A14(i, ix, y, 0x100, 0x100, 0);
     }
 }
 
 // PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
-void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
+void PutNormalSpriteText(int len, int layer, int x, int y, const u16 * object, int oam2)
 { // see  PutSubtitleHelpText
     if (y > 160 || y < (-16))
     {
@@ -235,6 +236,7 @@ void PutNormalSpriteText(int layer, int x, int y, const u16 * object, int oam2)
 
     int i;
     int ix;
+    len >>= 4;
 
     for (i = 0; i < 9; i++)
     {
@@ -274,6 +276,8 @@ void BigTextLoop(BigTextProc * proc)
     }
 
     int x = 0;
+    int bodySprites = 0;
+    int headerSprites = 0;
 
     for (int line = proc->firstLineIndex; line < proc->firstLineIndex + LinesBuffered; ++line)
     {
@@ -306,12 +310,22 @@ void BigTextLoop(BigTextProc * proc)
         {
             if (isBody)
             {
-                PutNormalSpriteText(2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
+                PutNormalSpriteText(proc->strLen[slot], 2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
+                bodySprites += proc->strLen[slot] >> 4;
             }
             else
             {
-                PrintBigString(proc->strLen[slot], 2, ix, spriteY, gObject_32x16, (slot * 0x40));
+                PrintBigString(proc->strLen[slot], 2, ix, spriteY, (slot * 0x40));
+                headerSprites += proc->strLen[slot];
             }
+        }
+    }
+    if ((headerSprites + bodySprites) != proc->totalSprites)
+    {
+        proc->totalSprites = (headerSprites + bodySprites);
+        if ((headerSprites + bodySprites) > 64)
+        {
+            brk;
         }
     }
 }
@@ -637,6 +651,7 @@ void StartCreditsProc(ProcPtr parent)
     proc->strLine = (-1);
     proc->slot = 0;
     proc->id = 0;
+    proc->totalSprites = 0;
 }
 
 extern int HeldButtonSpeed;
