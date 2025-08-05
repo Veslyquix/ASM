@@ -71,6 +71,7 @@ u16 const sSprite_08A2EF48_big[] = // see gSprite_UiSpinningArrows_Horizontal an
 #define BodyType 1
 
 extern int Width_BigChar; // 12ish
+extern int DarkenAmount;
 
 #define HEADER_X_OFFSET 0 // there's some offset from affining the letters I think..
 #define BODY_X_OFFSET 14
@@ -275,9 +276,15 @@ int GetSlotAt(CreditsTextProc * proc, int i)
 }
 
 int ShouldAdvanceFrame(CreditsTextProc * proc);
+
+struct ProcCmd const gUnknown_08591E00_FadeBGs[];
 void CreditsTextLoop(CreditsTextProc * proc)
 {
-
+    if (!Proc_Find(gUnknown_08591E00_FadeBGs))
+    {
+        WriteFadedPaletteFromArchive(DarkenAmount, DarkenAmount, DarkenAmount, 0x0000FFFF);
+    }
+    // PrepScreenProc_DimMapImmediate_new();
     proc->y -= ShouldAdvanceFrame(proc);
 
     if (!gCreditsData[proc->id].header && !gCreditsData[proc->id].body)
@@ -593,6 +600,58 @@ void ReputConvoBg_new(int index)
     gPaletteBuffer[PAL_BACKDROP_OFFSET] = 0;
 }
 
+void sub_800EEE8_new(struct ConvoBackgroundFadeProc * proc)
+{
+    int currentFadeLevel = (proc->fadeTimer += proc->fadeSpeed) / 16;
+    WriteFadedPaletteFromArchive(DarkenAmount, DarkenAmount, DarkenAmount, 0xFFFF);
+
+    switch (proc->fadeType)
+    {
+        case EVSUBCMD_TEXTSTART:
+        case EVSUBCMD_REMOVEPORTRAITS:
+            SetBlendAlpha(currentFadeLevel, 0x10 - currentFadeLevel);
+            break;
+
+        case EVSUBCMD_0x1A22:
+            SetBlendAlpha(0x10 - currentFadeLevel, currentFadeLevel);
+            break;
+    }
+
+    if (currentFadeLevel >= 0x10)
+        Proc_Break(proc);
+}
+void PrepScreenProc_DimMapImmediate_new(void)
+{
+    // ArchiveCurrentPalettes();
+    WriteFadedPaletteFromArchive(0xFF, 0xFF, 0x5, 0x0000FFFF);
+    return;
+}
+
+extern void sub_800EA84(struct ConvoBackgroundFadeProc * otherProc);
+extern void sub_800EBB0(struct ConvoBackgroundFadeProc * otherProc);
+extern void sub_800ED50(struct ConvoBackgroundFadeProc * otherProc);
+extern void sub_800EEE8(struct ConvoBackgroundFadeProc * otherProc);
+extern void sub_800EF48(struct ConvoBackgroundFadeProc * otherProc);
+
+struct ProcCmd const gUnknown_08591E00_FadeBGs[] = {
+    PROC_YIELD,
+
+    PROC_CALL(sub_800EA84),
+    PROC_YIELD,
+
+    PROC_CALL(sub_800EBB0),
+    PROC_YIELD,
+
+    PROC_CALL(sub_800ED50),
+    PROC_CALL(ArchiveCurrentPalettes),
+    PROC_YIELD,
+
+    PROC_REPEAT(sub_800EEE8_new),
+    PROC_CALL(sub_800EF48),
+
+    PROC_END,
+};
+
 void InitNextBG(CreditsTextProc * proc, int slot)
 {
     int bg = gCreditsData[proc->id].bg;
@@ -601,15 +660,17 @@ void InitNextBG(CreditsTextProc * proc, int slot)
         return;
     }
     proc->bg = bg;
-    struct ConvoBackgroundFadeProc * otherProc = Proc_Start(gUnknown_08591E00, (void *)3);
+    struct ConvoBackgroundFadeProc * otherProc = Proc_Start(gUnknown_08591E00_FadeBGs, (void *)3);
     otherProc->fadeType = 0; // 0, 1, or 2
     otherProc->unkType = 1;  // 0 = broken, 1 = bg text, 2 = cg text
     otherProc->bgIndex = bg;
-    otherProc->fadeSpeed = 3;
+    otherProc->fadeSpeed = 2;
     otherProc->fadeTimer = 0;
     otherProc->pEventEngine = (void *)proc;
+
     // ReputConvoBg_unused(bg);
 }
+
 int InitNextLine(CreditsTextProc * proc, int slot)
 {
 

@@ -18,3 +18,9 @@ SET_FUNC __aeabi_idivmod, __modsi3
 
 SET_DATA classTablePoin, 0x8017AB8 
 
+SET_FUNC CopyBgImage, 0x800b911 
+SET_FUNC CopyBgTiles, 0x800b955 
+SET_FUNC CopyBgPalette, 0x800b995 
+SET_FUNC BgChangeChr, 0x800b9b9 
+
+

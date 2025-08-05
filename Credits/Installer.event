@@ -9,6 +9,10 @@ DefaultSpeed:
 WORD 3 // 4 
 Width_BigChar: 
 WORD 8 // 8 is overlapping, 12 has no overlap, more than 12 has some space between characters 
+DarkenAmount:
+// WORD 0xC0 // Backgrounds are 25% darker during credits 
+WORD 0x80 // 50% darker 
+// WORD 0x40 // 75% darker 
 
 #define SetBg(background) "SVAL 0x2 background; CALL $9EE2E8"
 
