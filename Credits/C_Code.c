@@ -13,7 +13,7 @@ struct CreditsStruct
 extern struct CreditsStruct gCreditsText[];
 
 #define LinesOnScreen 11 // 160y / 16 pixels, but sprites can be partially offscreen
-#define LinesBuffered 13 // for moduluo
+#define LinesBuffered 14 // for moduluo
 typedef struct
 {
     /* 00 */ PROC_HEADER;
@@ -33,6 +33,7 @@ typedef struct
     int totalSprites;
 } BigTextProc;
 
+#define SPRITE_OFFSCREEN_Y -16
 //
 #define BigText_VRAMTile 0 // 0x280
 // #define BigTextVRAM (OBJ_VRAM0 + (BigText_VRAMTile << 5)) // 0x6010000
@@ -41,6 +42,14 @@ extern const u16 sSprite_08A2EF48[];
 extern struct Font * gActiveFont;
 // gObject_32x16
 u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
+    {
+        1,                                                       // number of entries
+        OAM0_SHAPE_16x32 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE, //
+        OAM1_SIZE_32x32,
+        0, // OAM2_CHR(BigText_VRAMTile),
+    };
+
+u16 const sSprite_08A2EF48_works[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
     {
         1,                                                       // number of entries
         OAM0_SHAPE_16x16 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE, //
@@ -174,7 +183,8 @@ void InitCreditsBodyText(BigTextProc * proc, signed char * str, int rowID)
 }
 
 void PutSpriteExt(int layer, int xOam1, int yOam0, const u16 * object, int oam2);
-void PutBigLetter(int layer, u8 charId, int x, int y, u16 xScale, u16 yScale, int oam2) // based on sub_80B2A14
+void PutBigLetter(
+    int layer, u8 charId, int x, int y, u16 xScale, u16 yScale, const u16 * object, int oam2) // based on sub_80B2A14
 {
     int palID = 0;
     if (x > 240)
@@ -198,7 +208,7 @@ void PutBigLetter(int layer, u8 charId, int x, int y, u16 xScale, u16 yScale, in
         Div(+COS(0) << 4, yScale)); // unsure what this does, but it is needed
 
     oam2 += adjustedCharId * 2 + OAM2_LAYER(layer) + OAM2_PAL(palID);
-    PutSpriteExt(4, (x & 0x1FF) + (matrixId << 9), y & 0x1FF, sSprite_08A2EF48_new, oam2);
+    PutSpriteExt(4, (x & 0x1FF) + (matrixId << 9), y & 0x1FF, object, oam2);
 }
 // int layer = 1; // sub_80B2A14 uses oam2 layer 1 for first letter and layer 2 after that
 #define Width_BigChar 12
@@ -209,9 +219,10 @@ const static u16 lut[] = {
 };
 
 extern void sub_80B2A14(u8 charId, int x, int y, u16 xScale, u16 yScale, u8 offset);
-void PrintBigString(int len, int layer, int x, int y, int oam2)
+void PrintBigString(int len, int layer, int x, int y, const u16 * object, int oam2)
 {
-    if (y > 160 || y < (-16))
+    // if (y > 160 || y < (SPRITE_OFFSCREEN_Y))
+    if (y > 160)
     {
         return;
     }
@@ -221,7 +232,7 @@ void PrintBigString(int len, int layer, int x, int y, int oam2)
     for (i = 0; i < len; i++)
     {
         ix = x + (i * Width_BigChar);
-        PutBigLetter(layer, i, ix, y - 8, 0x100, 0x100, oam2);
+        PutBigLetter(layer, i, ix, y, 0x100, 0x100, object, oam2);
         // sub_80B2A14(i, ix, y, 0x100, 0x100, 0);
     }
 }
@@ -285,6 +296,7 @@ void BigTextLoop(BigTextProc * proc)
         if (slot < 0)
             continue;
         int isBody = proc->textTypeBitfield & (1 << slot);
+        int nextBody = proc->textTypeBitfield & (1 << proc->slotIndex[(line + 1) % LinesBuffered]);
         int ix = x;
         int palID = 0;
         if (proc->indentBitfield & (1 << slot))
@@ -306,17 +318,30 @@ void BigTextLoop(BigTextProc * proc)
         // int line = proc->firstslotIndex + i;
         int spriteY = proc->y + (line * 16);
 
-        if (spriteY >= -16 && spriteY < 160)
+        if (spriteY >= SPRITE_OFFSCREEN_Y && spriteY < 160)
         {
             if (isBody)
             {
+                if (spriteY < -16)
+                {
+                    continue;
+                }
                 PutNormalSpriteText(proc->strLen[slot], 2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
                 bodySprites += proc->strLen[slot] >> 4;
             }
             else
             {
-                PrintBigString(proc->strLen[slot], 2, ix, spriteY, (slot * 0x40));
-                headerSprites += proc->strLen[slot];
+                if (nextBody) // next line will be body, so print only the bottom half
+                {
+                    PrintBigString(proc->strLen[slot], 2, ix, spriteY - 8, sSprite_08A2EF48_works, (slot * 0x40));
+                    headerSprites += proc->strLen[slot];
+                }
+                else
+                {
+                    PrintBigString(proc->strLen[slot], 2, ix, spriteY - 16, sSprite_08A2EF48_new, (slot * 0x40));
+                    headerSprites += proc->strLen[slot];
+                    line++;
+                }
             }
         }
     }
@@ -577,7 +602,7 @@ int TryAdvanceID(BigTextProc * proc)
         int lineIndex = proc->firstLineIndex + i;
         int spriteY = proc->y + (lineIndex * 16);
         int slot = lineIndex % LinesBuffered;
-        if (spriteY < -16 && proc->slotIndex[slot] >= 0)
+        if (spriteY < SPRITE_OFFSCREEN_Y && proc->slotIndex[slot] >= 0)
         {
             FreeRow(proc, slot);
             if (!slot)
@@ -585,7 +610,7 @@ int TryAdvanceID(BigTextProc * proc)
                 gActiveFont->chr_counter = 0;
             }
         }
-        if (spriteY >= -16 && spriteY < 160)
+        if (spriteY >= SPRITE_OFFSCREEN_Y && spriteY < 160)
         {
             if (proc->slotIndex[slot] < 0)
             {
