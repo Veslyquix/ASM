@@ -302,7 +302,8 @@ void CreditsTextLoop(CreditsTextProc * proc)
         int isBody = proc->textTypeBitfield & (1 << slot);
         int nextLine = (line + 1) % LinesBuffered;
         int nextSlot = proc->slotIndex[nextLine];
-        int nextLineIsTop = ((line + 1) % LinesBuffered) == 0;
+        // int nextLineIsTop = ((line + 1) % LinesBuffered) == 0;
+        int nextLineIsTop = nextSlot == 0;
 
         int nextBody = proc->textTypeBitfield & (1 << nextSlot);
         int nextIndent = !((((proc->indentBitfield >> slot) & 1) ^ ((proc->indentBitfield >> nextSlot) & 1)));
@@ -356,7 +357,7 @@ void CreditsTextLoop(CreditsTextProc * proc)
             }
             else
             {
-                if (nextBody && !nextLineIsTop) // next line will be body, so print only the bottom half
+                if (nextBody || nextLineIsTop) // next line will be body, so print only half
                 {
                     PrintBigString(proc->strLen[slot], 2, ix, spriteY - 8, sSprite_08A2EF48_works, (slot * 0x40));
                 }
@@ -702,10 +703,12 @@ struct ProcCmd const ProcScr_CreditsText[] = {
     PROC_REPEAT(WaitForFade),
     PROC_SLEEP(16),
 
+    PROC_CALL(UnlockGame),
+    PROC_CALL(BMapDispResume), // why is this needed twice ?
     PROC_CALL(BMapDispResume),
     PROC_CALL(RefreshBMapGraphics),
     PROC_CALL(RefreshUnitSprites),
-    PROC_CALL(UnlockGame),
+
     PROC_CALL(StartFastFadeFromBlack),
     PROC_REPEAT(WaitForFade),
     PROC_END,
