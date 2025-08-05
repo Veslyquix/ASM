@@ -9,8 +9,9 @@ struct CreditsStruct
 {
     signed char * header;
     signed char * body;
+    u32 bg;
 };
-extern struct CreditsStruct gCreditsText[];
+extern struct CreditsStruct gCreditsData[];
 
 #define LinesOnScreen 11 // 160y / 16 pixels, but sprites can be partially offscreen
 #define LinesBuffered 13 // for moduluo
@@ -30,14 +31,15 @@ typedef struct
     s8 strLine;
     u8 slot;
     u8 id;
+    u8 bg;
     int totalSprites;
-} BigTextProc;
+} CreditsTextProc;
 
 #define SPRITE_OFFSCREEN_Y -16
 //
-#define BigText_VRAMTile 0 // 0x280
-// #define BigTextVRAM (OBJ_VRAM0 + (BigText_VRAMTile << 5)) // 0x6010000
-#define BigTextVRAM (VRAM + (BigText_VRAMTile << 5)) // 0x6010000
+#define CreditsText_VRAMTile 0 // 0x280
+// #define CreditsTextVRAM (OBJ_VRAM0 + (CreditsText_VRAMTile << 5)) // 0x6010000
+#define CreditsTextVRAM (VRAM + (CreditsText_VRAMTile << 5)) // 0x6010000
 extern const u16 sSprite_08A2EF48[];
 extern struct Font * gActiveFont;
 // gObject_32x16
@@ -46,7 +48,7 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
         1,                                                       // number of entries
         OAM0_SHAPE_16x32 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE, //
         OAM1_SIZE_32x32,
-        0, // OAM2_CHR(BigText_VRAMTile),
+        0, // OAM2_CHR(CreditsText_VRAMTile),
     };
 
 u16 const sSprite_08A2EF48_works[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
@@ -54,7 +56,7 @@ u16 const sSprite_08A2EF48_works[] = // see gSprite_UiSpinningArrows_Horizontal 
         1,                                                       // number of entries
         OAM0_SHAPE_16x16 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE, //
         OAM1_SIZE_16x16,
-        0, // OAM2_CHR(BigText_VRAMTile),
+        0, // OAM2_CHR(CreditsText_VRAMTile),
     };
 
 u16 const sSprite_08A2EF48_big[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
@@ -62,7 +64,7 @@ u16 const sSprite_08A2EF48_big[] = // see gSprite_UiSpinningArrows_Horizontal an
         1,                                                       // number of entries
         OAM0_SHAPE_16x32 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE, //
         OAM1_SIZE_32x32,
-        0, // OAM2_CHR(BigText_VRAMTile),
+        0, // OAM2_CHR(CreditsText_VRAMTile),
     };
 
 #define HeaderType 0
@@ -79,7 +81,7 @@ extern int Width_BigChar; // 12ish
 
 extern u8 * const gUnknown_08A2F2C0[];
 
-u32 BigFontInit(BigTextProc * proc, signed char * str, int rowID)
+u32 BigFontInit(CreditsTextProc * proc, signed char * str, int rowID)
 {
     // u16 offset = (u16)gActiveFont->vramDest & 0xFFFF;
 
@@ -130,7 +132,7 @@ u32 BigFontInit(BigTextProc * proc, signed char * str, int rowID)
 }
 
 static inline const char * Text_DrawCharacterAscii_BL(struct Text * th, const char * str);
-void InitCreditsBodyText(BigTextProc * proc, signed char * str, int rowID)
+void InitCreditsBodyText(CreditsTextProc * proc, signed char * str, int rowID)
 {
     signed char * iter;
     int line = 0; // current one
@@ -260,25 +262,25 @@ void PutNormalSpriteText(int len, int layer, int x, int y, const u16 * object, i
     return;
 }
 
-int TryAdvanceID(BigTextProc * proc);
-int GetCurrentSlot(BigTextProc * proc) // after TryAdvanceID runs
+int TryAdvanceID(CreditsTextProc * proc);
+int GetCurrentSlot(CreditsTextProc * proc) // after TryAdvanceID runs
 {
     int lineIndex = proc->firstLineIndex + proc->slot;
     return lineIndex % LinesBuffered;
 }
-int GetSlotAt(BigTextProc * proc, int i)
+int GetSlotAt(CreditsTextProc * proc, int i)
 {
     int lineIndex = proc->firstLineIndex + i;
     return lineIndex % LinesBuffered;
 }
 
-int ShouldAdvanceFrame(BigTextProc * proc);
-void BigTextLoop(BigTextProc * proc)
+int ShouldAdvanceFrame(CreditsTextProc * proc);
+void CreditsTextLoop(CreditsTextProc * proc)
 {
 
     proc->y -= ShouldAdvanceFrame(proc);
 
-    if (!gCreditsText[proc->id].header && !gCreditsText[proc->id].body)
+    if (!gCreditsData[proc->id].header && !gCreditsData[proc->id].body)
     { // nothing left to display, so end
         Proc_Break(proc);
         return;
@@ -378,7 +380,7 @@ void BigTextLoop(BigTextProc * proc)
     }
 }
 
-int GetFreeRow(BigTextProc * proc)
+int GetFreeRow(CreditsTextProc * proc)
 {
     for (int i = 0; i < LinesBuffered; ++i)
     {
@@ -391,25 +393,25 @@ int GetFreeRow(BigTextProc * proc)
     return -1; // nothing free
 }
 
-void FreeRow(BigTextProc * proc, int i)
+void FreeRow(CreditsTextProc * proc, int i)
 {
     i %= LinesBuffered;
     proc->slotIndex[i] = (-1);
     proc->usedRows &= ~(1 << i); // unset the bit, as it is now free.
     CpuFastFill(0, (void *)(0x800 * i + OBJ_VRAM0), 0x800);
 }
-int GetCurrentSlot(BigTextProc * proc);
+int GetCurrentSlot(CreditsTextProc * proc);
 
-void SetIndent(BigTextProc * proc, int slot)
+void SetIndent(CreditsTextProc * proc, int slot)
 {
     proc->indentBitfield |= (1 << (slot % LinesBuffered));
 }
-void UnsetIndent(BigTextProc * proc, int slot)
+void UnsetIndent(CreditsTextProc * proc, int slot)
 {
     proc->indentBitfield &= ~(1 << (slot % LinesBuffered));
 }
 
-signed char * GetStringAtLine(signed char * str, int targetLine, BigTextProc * proc, int slot)
+signed char * GetStringAtLine(signed char * str, int targetLine, CreditsTextProc * proc, int slot)
 {
     UnsetIndent(proc, slot);
     if (!str || targetLine < 0)
@@ -502,7 +504,7 @@ int GetNextLineNum(signed char * str, int num)
     return -1;
 }
 
-signed char * GetNextLineOfType(BigTextProc * proc, int type, int slot)
+signed char * GetNextLineOfType(CreditsTextProc * proc, int type, int slot)
 {
     int id = proc->id;
     int strLine = proc->strLine; // starts as (-1)
@@ -510,12 +512,12 @@ signed char * GetNextLineOfType(BigTextProc * proc, int type, int slot)
     signed char * originalStr;
     if (type == HeaderType)
     {
-        str = gCreditsText[id].header;
+        str = gCreditsData[id].header;
         originalStr = str;
     }
     else
     {
-        str = gCreditsText[id].body;
+        str = gCreditsData[id].body;
         originalStr = str;
     }
 
@@ -537,7 +539,7 @@ signed char * GetNextLineOfType(BigTextProc * proc, int type, int slot)
     return str;
 }
 
-signed char * GetNextStrLine(BigTextProc * proc, int slot)
+signed char * GetNextStrLine(CreditsTextProc * proc, int slot)
 {
     int id = proc->id;
     signed char * str;
@@ -562,18 +564,54 @@ signed char * GetNextStrLine(BigTextProc * proc, int slot)
             if (proc->strLine == (-1))
             {
                 proc->textType = HeaderType; // next one will be body
-                proc->id++;                  // which gCreditsText[proc->id] entry we're on
+                proc->id++;                  // which gCreditsData[proc->id] entry we're on
             }
             return str;
             break;
         }
     }
-    return gCreditsText[id].header; // shouldn't reach
+    return gCreditsData[id].header; // shouldn't reach
 }
 
 #define LineChr 0x40 // per line
 
-int InitNextLine(BigTextProc * proc, int slot)
+void ReputConvoBg_new(int index)
+{
+    // ResetDialogueScreen();
+
+    BG_SetPosition(0, 0, 0);
+    BG_SetPosition(1, 0, 0);
+    BG_SetPosition(2, 0, 0);
+    BG_SetPosition(3, 0, 0);
+
+    Decompress(gConvoBackgroundData[index].gfx, (void *)(GetBackgroundTileDataOffset(3) + BG_VRAM));
+
+    CallARM_FillTileRect(gBG3TilemapBuffer, gConvoBackgroundData[index].tsa, 0x8000);
+    ApplyPalettes(gConvoBackgroundData[index].pal, 0x8, 0x8);
+    BG_EnableSyncByMask(BG3_SYNC_BIT);
+    gPaletteBuffer[PAL_BACKDROP_OFFSET] = 0;
+}
+
+// gUnknown_08591EB0
+// gUnknown_08591E00
+void InitNextBG(CreditsTextProc * proc, int slot)
+{
+    int bg = gCreditsData[proc->id].bg;
+    if (bg == 0xFF || bg == proc->bg)
+    {
+        return;
+    }
+    proc->bg = bg;
+    struct ConvoBackgroundFadeProc * otherProc = Proc_Start(gUnknown_08591E00, (void *)3);
+    otherProc->fadeType = 0; // 0, 1, or 2
+    otherProc->unkType = 1;  // 1 sprite text?
+    otherProc->bgIndex = bg;
+    otherProc->fadeSpeed = 8;
+    otherProc->fadeTimer = 0;
+    otherProc->pEventEngine = (void *)proc;
+    // ReputConvoBg_unused(bg);
+}
+int InitNextLine(CreditsTextProc * proc, int slot)
 {
 
     int type = proc->textType;
@@ -618,7 +656,7 @@ int InitNextLine(BigTextProc * proc, int slot)
     return false;
 }
 
-int TryAdvanceID(BigTextProc * proc)
+int TryAdvanceID(CreditsTextProc * proc)
 {
     for (int i = 0; i < LinesBuffered; ++i)
     {
@@ -637,9 +675,8 @@ int TryAdvanceID(BigTextProc * proc)
         {
             if (proc->slotIndex[slot] < 0)
             {
-                if (!InitNextLine(proc, slot))
-                {
-                }
+                InitNextLine(proc, slot);
+                InitNextBG(proc, slot);
             }
         }
     }
@@ -647,7 +684,7 @@ int TryAdvanceID(BigTextProc * proc)
     return false;
 }
 
-void InitCreditsText(BigTextProc * proc)
+void InitCreditsText(CreditsTextProc * proc)
 {
     ResetText();
     ResetTextFont();
@@ -656,18 +693,18 @@ void InitCreditsText(BigTextProc * proc)
     ApplyPalette(gUnknown_0859EF20, 0x11);
 }
 
-struct ProcCmd const ProcScr_BigText[] = {
-    PROC_NAME("opinfo"),
+struct ProcCmd const ProcScr_CreditsText[] = {
+    PROC_NAME("Vesly's Credits Proc"),
     PROC_SLEEP(0),
     PROC_CALL(LockGame),
-    PROC_CALL(BMapDispSuspend),
+    // PROC_CALL(BMapDispSuspend),
     PROC_CALL(InitCreditsText),
-    PROC_REPEAT(BigTextLoop),
+    PROC_REPEAT(CreditsTextLoop),
     PROC_CALL(StartFastFadeToBlack),
     PROC_REPEAT(WaitForFade),
     PROC_SLEEP(16),
     PROC_CALL(RefreshUnitSprites),
-    PROC_CALL(BMapDispResume),
+    // PROC_CALL(BMapDispResume),
     PROC_CALL(RefreshBMapGraphics),
     PROC_CALL(UnlockGame),
     PROC_CALL(StartFastFadeFromBlack),
@@ -675,13 +712,26 @@ struct ProcCmd const ProcScr_BigText[] = {
     PROC_END,
 };
 
-void StartCreditsProc(ProcPtr parent)
+struct ProcCmd const ProcScr_CreditsWait[] = {
+    PROC_NAME("Vesly's Credits - wait"),
+    PROC_SLEEP(0),
+    PROC_WHILE_EXISTS(ProcScr_CreditsText),
+    PROC_END,
+};
+
+void WaitForCreditsProc_ASMC(ProcPtr parent)
 {
-    RegisterBlankTile(0x400);
-    BG_Fill(gBG3TilemapBuffer, 0);
-    //
-    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
-    BigTextProc * proc = Proc_StartBlocking(ProcScr_BigText, parent);
+
+    CreditsTextProc * proc = Proc_StartBlocking(ProcScr_CreditsText, parent);
+}
+
+void StartCreditsProc_ASMC(ProcPtr parent)
+{
+    // RegisterBlankTile(0x400);
+    // BG_Fill(gBG3TilemapBuffer, 0);
+    // BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG3_SYNC_BIT);
+    // CreditsTextProc * proc = Proc_Start(ProcScr_CreditsText, (void *)3);
+    CreditsTextProc * proc = Proc_StartBlocking(ProcScr_CreditsText, parent);
 
     for (int i = 0; i < LinesBuffered; ++i)
     {
@@ -700,12 +750,13 @@ void StartCreditsProc(ProcPtr parent)
     proc->slot = 0;
     proc->id = 0;
     proc->totalSprites = 0;
+    proc->bg = 0xFF;
 }
 
 extern int HeldButtonSpeed;
 extern int DefaultSpeed;
 extern struct KeyStatusBuffer sKeyStatusBuffer;
-int ShouldAdvanceFrame(BigTextProc * proc)
+int ShouldAdvanceFrame(CreditsTextProc * proc)
 {
     u32 clock = GetGameClock();
     u16 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;

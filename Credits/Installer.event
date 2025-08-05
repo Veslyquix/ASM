@@ -10,26 +10,37 @@ WORD 3 // 4
 Width_BigChar: 
 WORD 8 // 8 is overlapping, 12 has no overlap, more than 12 has some space between characters 
 
+#define SetBg(background) "SVAL 0x2 background; CALL $9EE2E8"
+
 PUSH 
 ORG $8B0917
-BYTE 0 // fade to map 
+BYTE 1 // fade to black //map 
 
 ORG $9EEBFC
-ASMC StartCreditsProc
-STAL 30 
+TEXTSTART
+
+ASMC StartCreditsProc_ASMC
 NoFade 
 ENDA 
 POP 
 
+// 
+ReplaceBG_Event: 
+SetBg(0) // calls 089ee2E8 
+TEXTSTART // target text type is 0 = map, 1 = bg, 2 = cg 
+BACKGROUND_CHANGE 1 1 1 
+NoFade 
+ENDA 
+
 // #define CreditsText(header, body) "PUSH; POIN header body; POP"
 
 ALIGN 4 
-gCreditsText: 
-POIN header1 body1 
-POIN header2 body2 
-POIN header3 body3 
-POIN header4 body4 
-POIN emptyString emptyStringLong 
+gCreditsData: 
+POIN header1 body1; WORD 1 // bg  
+POIN header2 body2; WORD 0xFF 
+POIN header3 body3; WORD 2 
+POIN header4 body4; WORD 3  
+POIN emptyString emptyStringLong; WORD 0xFF 
 // POIN emptyString emptyStringLong 
 WORD 0 0 0 0 0 0 0 0 0 0 0 0 // Terminator 
 
