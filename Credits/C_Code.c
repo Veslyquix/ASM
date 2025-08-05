@@ -50,8 +50,8 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
 #define HeaderType 0
 #define BodyType 1
 
-#define HEADER_X_OFFSET 8
-#define BODY_X_OFFSET 24
+#define HEADER_X_OFFSET 4
+#define BODY_X_OFFSET 14
 #define INDENT_BODY_X_OFFSET 32
 #define MAX_LINE_WIDTH (240 - INDENT_BODY_X_OFFSET) //(240 - 32)
 #define CHAR_NEWLINE 0x01
@@ -282,7 +282,7 @@ void BigTextLoop(BigTextProc * proc)
         if (proc->indentBitfield & (1 << slot))
         {
 
-            ix += 8;
+            ix += INDENT_BODY_X_OFFSET - BODY_X_OFFSET;
         }
 
         if (isBody)
