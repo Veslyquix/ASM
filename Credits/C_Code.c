@@ -47,6 +47,14 @@ u16 const sSprite_08A2EF48_new[] = // see gSprite_UiSpinningArrows_Horizontal an
         0, // OAM2_CHR(BigText_VRAMTile),
     };
 
+u16 const sSprite_08A2EF48_big[] = // see gSprite_UiSpinningArrows_Horizontal and sSprite_08A2EF48
+    {
+        1,                                                       // number of entries
+        OAM0_SHAPE_16x32 | OAM0_DOUBLESIZE | OAM0_AFFINE_ENABLE, //
+        OAM1_SIZE_32x32,
+        0, // OAM2_CHR(BigText_VRAMTile),
+    };
+
 #define HeaderType 0
 #define BodyType 1
 
@@ -212,7 +220,7 @@ void PrintBigString(int len, int layer, int x, int y, const u16 * object, int oa
     for (i = 0; i < len; i++)
     {
         ix = x + (i * Width_BigChar);
-        PutBigLetter(layer, i, ix, y, 0x100, 0x100, object, oam2);
+        PutBigLetter(layer, i, ix, y - 8, 0x100, 0x100, object, oam2);
         // sub_80B2A14(i, ix, y, 0x100, 0x100, 0);
     }
 }
