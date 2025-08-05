@@ -13,7 +13,7 @@ struct CreditsStruct
 extern struct CreditsStruct gCreditsText[];
 
 #define LinesOnScreen 11 // 160y / 16 pixels, but sprites can be partially offscreen
-#define LinesBuffered 14 // for moduluo
+#define LinesBuffered 13 // for moduluo
 typedef struct
 {
     /* 00 */ PROC_HEADER;
@@ -68,7 +68,9 @@ u16 const sSprite_08A2EF48_big[] = // see gSprite_UiSpinningArrows_Horizontal an
 #define HeaderType 0
 #define BodyType 1
 
-#define HEADER_X_OFFSET 4
+extern int Width_BigChar; // 12ish
+
+#define HEADER_X_OFFSET 0 // there's some offset from affining the letters I think..
 #define BODY_X_OFFSET 14
 #define INDENT_BODY_X_OFFSET 32
 #define MAX_LINE_WIDTH (240 - INDENT_BODY_X_OFFSET) //(240 - 32)
@@ -211,7 +213,7 @@ void PutBigLetter(
     PutSpriteExt(4, (x & 0x1FF) + (matrixId << 9), y & 0x1FF, object, oam2);
 }
 // int layer = 1; // sub_80B2A14 uses oam2 layer 1 for first letter and layer 2 after that
-#define Width_BigChar 12
+
 unsigned int strlen(const char *);
 
 const static u16 lut[] = {
@@ -252,7 +254,7 @@ void PutNormalSpriteText(int len, int layer, int x, int y, const u16 * object, i
     for (i = 0; i < 9; i++)
     {
         ix = x + (i * 32);
-        PutSprite(layer, ix, y, gObject_32x16, oam2 + lut[i]);
+        PutSprite(layer, ix, y, object, oam2 + lut[i]);
     }
 
     return;
@@ -296,7 +298,15 @@ void BigTextLoop(BigTextProc * proc)
         if (slot < 0)
             continue;
         int isBody = proc->textTypeBitfield & (1 << slot);
-        int nextBody = proc->textTypeBitfield & (1 << proc->slotIndex[(line + 1) % LinesBuffered]);
+        int nextLine = (line + 1) % LinesBuffered;
+        int nextSlot = proc->slotIndex[nextLine];
+        int nextLineIsTop = ((line + 1) % LinesBuffered) == 0;
+
+        int nextBody = proc->textTypeBitfield & (1 << nextSlot);
+        int nextIndent = !((((proc->indentBitfield >> slot) & 1) ^ ((proc->indentBitfield >> nextSlot) & 1)));
+
+        // both are non-zero, or both are zero
+
         int ix = x;
         int palID = 0;
         if (proc->indentBitfield & (1 << slot))
@@ -326,22 +336,34 @@ void BigTextLoop(BigTextProc * proc)
                 {
                     continue;
                 }
-                PutNormalSpriteText(proc->strLen[slot], 2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
+                if (nextBody && nextIndent && !nextLineIsTop)
+                // if (nextBody)
+                { // and next has the same indent
+                    int len = proc->strLen[slot] > proc->strLen[nextSlot] ? proc->strLen[slot] : proc->strLen[nextSlot];
+
+                    PutNormalSpriteText(len, 2, ix, spriteY, gObject_32x32, OAM2_PAL(palID) + (slot * 0x40));
+                    line++;
+                }
+
+                else
+                {
+                    PutNormalSpriteText(
+                        proc->strLen[slot], 2, ix, spriteY, gObject_32x16, OAM2_PAL(palID) + (slot * 0x40));
+                }
                 bodySprites += proc->strLen[slot] >> 4;
             }
             else
             {
-                if (nextBody) // next line will be body, so print only the bottom half
+                if (nextBody && !nextLineIsTop) // next line will be body, so print only the bottom half
                 {
                     PrintBigString(proc->strLen[slot], 2, ix, spriteY - 8, sSprite_08A2EF48_works, (slot * 0x40));
-                    headerSprites += proc->strLen[slot];
                 }
                 else
                 {
                     PrintBigString(proc->strLen[slot], 2, ix, spriteY - 16, sSprite_08A2EF48_new, (slot * 0x40));
-                    headerSprites += proc->strLen[slot];
                     line++;
                 }
+                headerSprites += proc->strLen[slot];
             }
         }
     }
@@ -350,7 +372,8 @@ void BigTextLoop(BigTextProc * proc)
         proc->totalSprites = (headerSprites + bodySprites);
         if ((headerSprites + bodySprites) > 64)
         {
-            brk;
+            // brk;
+            // we have exceeded OAM limitations approx
         }
     }
 }

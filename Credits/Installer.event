@@ -6,7 +6,9 @@ ALIGN 4
 HeldButtonSpeed: 
 WORD 1 
 DefaultSpeed:
-WORD 4 // 4 
+WORD 3 // 4 
+Width_BigChar: 
+WORD 8 // 8 is overlapping, 12 has no overlap, more than 12 has some space between characters 
 
 PUSH 
 ORG $8B0917
