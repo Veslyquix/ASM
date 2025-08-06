@@ -22,41 +22,34 @@ WORD 0 // 1 for enabled
 #define LyonStoneCG 2 
 #define DemonKingCG 5
 
-#define BlackBG 0x35 
-#define BurningBG 0x2B 
+
 #define PondBG 0x21 
+#define BurningBG 0x2B 
+#define BlackBG 0x35 
+#define RandomBG 0x37 
  
 
 #define BG_Type 1
 #define CG_Type 2 
 
+
+#define CreditsEntryBG(header, body, bgID, darkenAmount) "POIN header body; BYTE bgID BG_Type darkenAmount 0" 
+#define CreditsEntryBG(header, body, bgID) "POIN header body; BYTE bgID BG_Type 0 0" 
+#define CreditsEntryCG(header, body, cgID, darkenAmount) "POIN header body; BYTE cgID CG_Type darkenAmount 0" 
+#define CreditsEntryCG(header, body, cgID) "POIN header body; BYTE cgID CG_Type 0 0" 
+#define CreditsEntry(header, body) "POIN header body; BYTE 0xFF 0 0 0" 
+#define CreditsEnd "WORD 0 0 (-1) 0 0 (-1) 0 0 (-1)" 
+
 ALIGN 4 
 gCreditsData: 
-POIN header1 body1; 
-BYTE LyonStoneCG // bg or cg ID
-BYTE CG_Type // bg or cg type (1 or 2) 
-BYTE 0x80 // darken amount (or 0 for default) 
-BYTE 0; 
- 
-POIN header2 body2; 
-BYTE PondBG BG_Type 0 0; 
-
-POIN header3 body3; 
-BYTE DemonKingCG CG_Type 0x80 0; 
-
-POIN header4 body4; 
-BYTE BurningBG BG_Type 0 0; 
-   
-POIN emptyString emptyStringLong; 
-WORD (-1)  
-
-POIN theEnd emptyString; 
-BYTE BlackBG BG_Type 0 0  
-
-POIN emptyString emptyStringLong; 
-WORD (-1)  
-// POIN emptyString emptyStringLong 
-WORD 0 0 0xFF 0 0 0xFF 0 0 0xFF 0 0 0xFF // Terminator 
+CreditsEntryCG(header1, body1, LyonStoneCG) 
+CreditsEntryBG(header2, body2, RandomBG) 
+CreditsEntryCG(header3, body3, DemonKingCG, 0x80) 
+CreditsEntryBG(header4, body4, BurningBG) 
+CreditsEntry(emptyString, emptyStringLong) 
+CreditsEntryBG(theEnd, emptyString, BlackBG) 
+CreditsEntry(emptyString, emptyStringLong) 
+CreditsEnd
 
 
 #define NL "BYTE 1;"
