@@ -18,8 +18,9 @@
         #define txt(string2) STRING string2 "fe6TR"; BYTE 0 0; // fe6 version 
     #endif 
 #else 
-    #inctbl "fe8TR" "Data/fe8_tr.tbl"
     #ifndef txt
+    #inctbl "fe8TR" "Data/fe8_tr.tbl"
+
         #define txt(string2) STRING string2 "fe8TR"; BYTE 0 0; // fe6 version 
     #endif 
 #endif 
