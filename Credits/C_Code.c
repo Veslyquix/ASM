@@ -9,7 +9,10 @@ struct CreditsStruct
 {
     signed char * header;
     signed char * body;
-    u32 bg;
+    u8 bg;
+    u8 type;
+    u8 darkenAmount;
+    u8 pad;
 };
 extern struct CreditsStruct gCreditsData[];
 
@@ -32,6 +35,8 @@ typedef struct
     u8 slot;
     u8 id;
     u8 bg;
+    u8 holding;
+    u8 darkenAmount;
     int totalSprites;
 } CreditsTextProc;
 
@@ -276,13 +281,28 @@ int GetSlotAt(CreditsTextProc * proc, int i)
 }
 
 int ShouldAdvanceFrame(CreditsTextProc * proc);
-
+struct ProcCmd const ProcScr_CreditsText[];
+int GetDarkenAmount(void)
+{
+    CreditsTextProc * proc = Proc_Find(ProcScr_CreditsText);
+    int darkenAmount = 0;
+    if (proc)
+    {
+        darkenAmount = proc->darkenAmount;
+    }
+    if (!darkenAmount)
+    {
+        darkenAmount = DarkenAmount;
+    }
+    return darkenAmount;
+}
 struct ProcCmd const gUnknown_08591E00_FadeBGs[];
 void CreditsTextLoop(CreditsTextProc * proc)
 {
     if (!Proc_Find(gUnknown_08591E00_FadeBGs))
     {
-        WriteFadedPaletteFromArchive(DarkenAmount, DarkenAmount, DarkenAmount, 0x0000FFFF);
+        int darkenAmount = GetDarkenAmount();
+        WriteFadedPaletteFromArchive(darkenAmount, darkenAmount, darkenAmount, 0x0000FFFF);
     }
     // PrepScreenProc_DimMapImmediate_new();
     proc->y -= ShouldAdvanceFrame(proc);
@@ -581,29 +601,11 @@ signed char * GetNextStrLine(CreditsTextProc * proc, int slot)
     return gCreditsData[id].header; // shouldn't reach
 }
 
-#define LineChr 0x40 // per line
-
-void ReputConvoBg_new(int index)
-{
-    // ResetDialogueScreen();
-
-    BG_SetPosition(0, 0, 0);
-    BG_SetPosition(1, 0, 0);
-    BG_SetPosition(2, 0, 0);
-    BG_SetPosition(3, 0, 0);
-
-    Decompress(gConvoBackgroundData[index].gfx, (void *)(GetBackgroundTileDataOffset(3) + BG_VRAM));
-
-    CallARM_FillTileRect(gBG3TilemapBuffer, gConvoBackgroundData[index].tsa, 0x8000);
-    ApplyPalettes(gConvoBackgroundData[index].pal, 0x8, 0x8);
-    BG_EnableSyncByMask(BG3_SYNC_BIT);
-    gPaletteBuffer[PAL_BACKDROP_OFFSET] = 0;
-}
-
 void sub_800EEE8_new(struct ConvoBackgroundFadeProc * proc)
 {
     int currentFadeLevel = (proc->fadeTimer += proc->fadeSpeed) / 16;
-    WriteFadedPaletteFromArchive(DarkenAmount, DarkenAmount, DarkenAmount, 0xFFFF);
+    int darkenAmount = GetDarkenAmount();
+    WriteFadedPaletteFromArchive(darkenAmount, darkenAmount, darkenAmount, 0x0000FFFF);
 
     switch (proc->fadeType)
     {
@@ -619,12 +621,6 @@ void sub_800EEE8_new(struct ConvoBackgroundFadeProc * proc)
 
     if (currentFadeLevel >= 0x10)
         Proc_Break(proc);
-}
-void PrepScreenProc_DimMapImmediate_new(void)
-{
-    // ArchiveCurrentPalettes();
-    WriteFadedPaletteFromArchive(0xFF, 0xFF, 0x5, 0x0000FFFF);
-    return;
 }
 
 extern void sub_800EA84(struct ConvoBackgroundFadeProc * otherProc);
@@ -652,17 +648,65 @@ struct ProcCmd const gUnknown_08591E00_FadeBGs[] = {
     PROC_END,
 };
 
+struct CGDataEnt
+{
+    u8 ** img; // CG images have 10 parts
+    u8 * tsa;
+    u16 * pal;
+};
+// extern struct CGDataEnt  const gCGDataTable[];
+extern struct CGDataEnt const * const sCGDataTable; // pointer to gCGDataTable
+struct CGDataEnt const * GetCGFix(int id)
+{
+    return sCGDataTable + id;
+}
+
+void ModifySaveLinkArenaStruct2B(void * buf, int val);
+//! FE8U = 0x080B65F8
+void DisplayCGfx(u16 * tm, int offset, int palId, int palCount, int idx)
+{
+    int i;
+
+    struct CGDataEnt * cgEnt = (void *)GetCGFix(idx);
+
+    for (i = 0; i < 10; i++)
+    {
+        Decompress(cgEnt->img[i], (void *)(VRAM + offset + i * 0x800));
+    }
+
+    // TODO: Seems like this should use the "TILEREF" macro, but the order doesn't match
+    CallARM_FillTileRect(tm, cgEnt->tsa, (u16)((palId << 12) + ((u32)(offset << 0x11) >> 0x16)));
+
+    ApplyPalettes(cgEnt->pal, palId, palCount);
+
+    if (idx < 0x80)
+    {
+        ModifySaveLinkArenaStruct2B(NULL, idx);
+    }
+}
+
 void InitNextBG(CreditsTextProc * proc, int slot)
 {
     int bg = gCreditsData[proc->id].bg;
+    int type = gCreditsData[proc->id].type;
+    int darkenAmount = gCreditsData[proc->id].darkenAmount;
+    if (!darkenAmount)
+    {
+        darkenAmount = DarkenAmount;
+    }
+    if (type != 1 && type != 2)
+    {
+        return;
+    }
     if (bg == 0xFF || bg == proc->bg)
     {
         return;
     }
     proc->bg = bg;
+    proc->darkenAmount = darkenAmount;
     struct ConvoBackgroundFadeProc * otherProc = Proc_Start(gUnknown_08591E00_FadeBGs, (void *)3);
-    otherProc->fadeType = 0; // 0, 1, or 2
-    otherProc->unkType = 1;  // 0 = broken, 1 = bg text, 2 = cg text
+    otherProc->fadeType = 0;   // 0, 1, or 2
+    otherProc->unkType = type; // 0 = broken, 1 = bg text, 2 = cg text
     otherProc->bgIndex = bg;
     otherProc->fadeSpeed = 2;
     otherProc->fadeTimer = 0;
@@ -751,6 +795,7 @@ void InitCreditsText(CreditsTextProc * proc)
     InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0, 0x11);
     SetTextFontGlyphs(1);
     ApplyPalette(gUnknown_0859EF20, 0x11);
+    // ApplyPalette(Pal_Text, 0x11);
 }
 
 struct ProcCmd const ProcScr_CreditsText[] = {
@@ -762,6 +807,7 @@ struct ProcCmd const ProcScr_CreditsText[] = {
     PROC_REPEAT(CreditsTextLoop),
     PROC_CALL(StartFastFadeToBlack),
     PROC_REPEAT(WaitForFade),
+    PROC_END_EACH(gUnknown_08591E00_FadeBGs),
     PROC_SLEEP(16),
 
     PROC_CALL(UnlockGame),
@@ -774,19 +820,6 @@ struct ProcCmd const ProcScr_CreditsText[] = {
     PROC_REPEAT(WaitForFade),
     PROC_END,
 };
-
-struct ProcCmd const ProcScr_CreditsWait[] = {
-    PROC_NAME("Vesly's Credits - wait"),
-    PROC_SLEEP(0),
-    PROC_WHILE_EXISTS(ProcScr_CreditsText),
-    PROC_END,
-};
-
-void WaitForCreditsProc_ASMC(ProcPtr parent)
-{
-
-    CreditsTextProc * proc = Proc_StartBlocking(ProcScr_CreditsText, parent);
-}
 
 void StartCreditsProc_ASMC(ProcPtr parent)
 {
@@ -813,10 +846,13 @@ void StartCreditsProc_ASMC(ProcPtr parent)
     proc->slot = 0;
     proc->id = 0;
     proc->totalSprites = 0;
+    proc->holding = 0;
     proc->bg = 0xFF;
+    proc->darkenAmount = 0;
 }
 
 extern int HeldButtonSpeed;
+extern int SkipWithStartEnabled;
 extern int DefaultSpeed;
 extern struct KeyStatusBuffer sKeyStatusBuffer;
 int ShouldAdvanceFrame(CreditsTextProc * proc)
@@ -824,13 +860,28 @@ int ShouldAdvanceFrame(CreditsTextProc * proc)
     u32 clock = GetGameClock();
     u16 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;
     int speed = DefaultSpeed;
+    int multiplier = false;
     if (keys & (B_BUTTON | A_BUTTON))
     {
         speed = HeldButtonSpeed;
+        multiplier = proc->holding >> 5;
+
+        proc->holding++;
+        if (proc->holding > 0x20)
+        {
+            proc->holding = 0x20;
+        }
+    }
+    else
+    {
+        proc->holding = 0;
     }
     if (keys & (START_BUTTON))
     {
-        Proc_Break(proc);
+        if (SkipWithStartEnabled)
+        {
+            Proc_Break(proc);
+        }
     }
     if ((clock - proc->clock) >= speed)
     {
@@ -840,7 +891,7 @@ int ShouldAdvanceFrame(CreditsTextProc * proc)
             proc->firstLineIndex++;
         }
 
-        return 1;
+        return 1 * (1 + multiplier);
     }
     else
     {

@@ -9,24 +9,17 @@ DefaultSpeed:
 WORD 3 // 4 
 Width_BigChar: 
 WORD 8 // 8 is overlapping, 12 has no overlap, more than 12 has some space between characters 
-DarkenAmount:
+DarkenAmount: // default 
 // WORD 0xC0 // Backgrounds are 25% darker during credits 
-WORD 0x80 // 50% darker 
+// WORD 0x80 // 50% darker 
+WORD 0x60 // 62.5% darker 
 // WORD 0x40 // 75% darker 
+SkipWithStartEnabled:
+WORD 0 // 1 for enabled 
 
 #define SetBg(background) "SVAL 0x2 background; CALL $9EE2E8"
 
-PUSH 
-ORG $8B0917
-BYTE 1 // fade to black //map 
 
-ORG $9EEBFC
-SetBg(0x35)
-TEXTSTART
-ASMC StartCreditsProc_ASMC
-NoFade 
-ENDA 
-POP 
 
 // 
 ReplaceBG_Event: 
@@ -38,15 +31,42 @@ ENDA
 
 // #define CreditsText(header, body) "PUSH; POIN header body; POP"
 
+#define LyonStoneCG 2 
+#define DemonKingCG 5
+
+#define BlackBG 0x35 
+#define BurningBG 0x2B 
+#define PondBG 0x21 
+ 
+
+#define BG_Type 1
+#define CG_Type 2 
+
 ALIGN 4 
 gCreditsData: 
-POIN header1 body1; WORD 1 // bg  
-POIN header2 body2; WORD 0xFF 
-POIN header3 body3; WORD 3 
-POIN header4 body4; WORD 0xFF  
-POIN emptyString emptyStringLong; WORD 0xFF 
-POIN theEnd emptyString; WORD 0x35 
-POIN emptyString emptyStringLong; WORD 0xFF 
+POIN header1 body1; 
+BYTE LyonStoneCG // bg or cg ID
+BYTE CG_Type // bg or cg type (1 or 2) 
+BYTE 0x80 // darken amount (or 0 for default) 
+BYTE 0; 
+ 
+POIN header2 body2; 
+BYTE PondBG BG_Type 0 0; 
+
+POIN header3 body3; 
+BYTE DemonKingCG CG_Type 0x80 0; 
+
+POIN header4 body4; 
+BYTE BurningBG BG_Type 0 0; 
+   
+POIN emptyString emptyStringLong; 
+WORD (-1)  
+
+POIN theEnd emptyString; 
+BYTE BlackBG BG_Type 0 0  
+
+POIN emptyString emptyStringLong; 
+WORD (-1)  
 // POIN emptyString emptyStringLong 
 WORD 0 0 0xFF 0 0 0xFF 0 0 0xFF 0 0 0xFF // Terminator 
 
@@ -64,35 +84,129 @@ WORD 0 0 0xFF 0 0 0xFF 0 0 0xFF 0 0 0xFF // Terminator
 theEnd: 
 txt("  T h e   E n d") 
 
-header1: 
-txt("Header"); BYTE 0 
-body1: 
-txt(" this text is too long to fit on just one line, so it'll wrap onto the next line\\
-stuff - by people\\
-other stuff - by me"); BYTE 0 
+// with notepad++, replace (ctrl+h) your line endings with \\ 
 
+header1: 
+txt("Patches"); BYTE 0 
+body1: 
+txt(" Casual Mode: Circles, 7743\\
+Danger Zone: Circles\\
+Unlock Mode Select: Doesnt\\
+Tutorial Disabler: 7743\\
+Fix REDAs: 7743\\
+BattleStatsAnimsOff: Tequila\\
+HP Bars: Circles, Tequila\\
+Show Heal Amount: Tequila\\
+Hard Mode Unlock: 7743\\
+Skip Intro: Gryz\\
+L Button Cycling: Aurawolf\\
+Colour Hue Function: Huichelaar\\
+Minimug Palette Fix: Huichelaar\\
+Handaxe Wildcard: 7743\\
+Droppable Item Icon GFX: Scraiza\\
+Animation Numbers: Huichelaar\\
+MMB: Zane (FE8 only)\\
+Support Hearts: Vesly, Gamma, 7743\\
+224 Colour Backgrounds: Huichelaar\\"); BYTE 0 
 
 header2: 
-txt("Engine Hacks"); BYTE 0 
+txt("Animations"); BYTE 0 
+
 body2: 
-txt(" Vesly. 'Nuff said."); BYTE 0 
+txt(" Alm_T1 animation by Nuramon, HyperGammaSpaces\\
+Alm_T2 animation by Nuramon\\
+Ike_Lord animation by xxx_Drama\\
+Ike_Ranger animation by Mikey, Khrene, Khardros\\
+Leif_Lord animation by Obsidian_Daddy, Jj09\\
+Marth_Slash animation by Caim Van Fang, Seliost1\\
+Seliph animation by Obsidian, Zoramine, Eretein\\
+T1_Lancer animation by Memae, Skitty, BwdYeti, MOJ\\
+Trueblade animation by Dinar87, RobertFPY\\
+Katarina_Fencer animation by GabrielKnight, 7743\\
+Dragoon animation by MercLord, NYZGamer, Maiser6\\
+Lancer_by_SALVAGED animation by SALVAGED\\
+Militia animation by Alusq\\
+Halberdier animation by TheBlindArcher, Spud, MOJ\\
+Mounted_Marauder animation by Spud\\
+Sentinel animation by Nuramon, Craigrandall55\\
+Warbird animation by Alexsplode\\
+Supplier_Anna animation by DAT, JonoTheRed, Sable Mage\\
+Baron animation by TBA, St jack, Flasuban, Sax-M\\
+Brighid animation by Sphealnuke\\
+Flail_Knight animation by JonoTheRed, ZoramineFae\\
+Gladiator animation by Waleed, Pushwall, L_Tweed, Zane\\
+Harbinger animation by Nuramon, Linkain, JJ09, Gabr\\
+Heavy_Infantry animation by Nuramon, Seliost1\\
+Legion_King animation by Huichelaar, Obsidian_Daddy\\
+Mercenary_by_SALVAGED animation by SALVAGED\\
+Phantom_by_TBA animation by TheBlindArcher, Arch, Skitty, Temp\\
+War_Cleric animation by SkidMarc25\\
+Adventurer animation by Itranc, Nuramon, Leo_Link\\
+Fletchling animation by RenOokami, knabepicer\\
+Hunter animation by RenOokami, Knabepicer\\
+Merlinus_Transport animation by Spud, N426, knabepicer\\"); BYTE 0  
 
 header3: 
-txt("More Patches"); BYTE 0 
+txt("Class Sprites"); BYTE 0 
+
 body3: 
-txt(" OK, others helped too."); BYTE 0 
+txt(" Alm sprites by Norikins\\
+AngelSMS by Unknown\\
+ArcanistSMS by Norikins\\
+BaronSMS by Topazlight, Nuramon, Its_Just_Jay\\
+BlackDragonSMS by L95\\
+CantorSMS by Ryn\\
+BoxerSMS by ShadowAllyX\\
+BrighidSMS by Shin19\\
+Cantor2SMS by Norikins\\
+ChickenSMS by Pikmin1211\\
+CursedSwordSMS by Der\\
+DarkPrinceSMS by Stephano, Zane, Norikins\\
+DjinnSMS by Alexsplode\\
+DragoonSMS by Pikmin, Unknown\\
+DreadFighterSMS by Nuramon\\
+EnchanterSMS by Ninja, Der\\
+ExecutionerSMS by Huichelaar, Lexou\\
+FE15MyrmidonSMS by Nuramon\\
+FellbeastSMS by Faeriefruit\\
+FencerSMS by AnnoyingAnon\\
+FlailKnightSMS by L95, Stephano\\
+FletchlingSMS by Knabepicer, NightBloodKT\\
+GladiatorSMS by Pikmin, L95, Pushwall\\
+GrandMahoutSMS by Camus, SHYUTERz, Orihara, Dat\\
+HarbingerSMS by SD9K\\"); BYTE 0 
+
 
 header4: 
-txt("Graphics"); BYTE 0 
+txt("FE1 Portraits"); BYTE 0 
 body4: 
-txt(" Title screen - redppr\\
-Most item icons - Lukirioh\\
-Portraits - Eden\\
-Map Sprites - redppr\\
-Pokemart Clerk, Beta Trainer Sprites, Choice Band, Muscle Band - Zaim\\
-Tileset water animations, Evolution stones, Jelly Donut, Drying Pan - N426\\
-Potions, Stat boosters, & various skill icons - Jester\\
-PMD Minimugs - Akim2007"); BYTE 0 
+txt(" Marth portrait by Lenh\\
+Jagen portrait by Thorn\\
+Caeda portrait by Nickt, Blueyguy\\
+Cain portrait by Xenith, Nickt, Blaze\\
+Abel portrait by LuminescentBlade\\
+Draug portrait by Thorn\\
+Gordin portrait by Thorn\\
+Wrys portrait by Thorn\\
+Ogma portrait by Thorn\\
+Barst portrait by Thorn\\
+Bord portrait by Frigid, Nickt\\
+Cord portrait by Frigid, Nickt, Glaceo\\
+Darros portrait by FEier\\
+Castor portrait by Thorn\\
+Lena portrait by Thorn\\
+Julian portrait by Thorn\\
+Navarre portrait by BuskHusker\\
+Matthis portrait by Thorn\\
+Merric portrait by Thorn\\
+Hardin portrait by Thorn\\
+Wolf portrait by Thorn\\
+Sedgar portrait by Thorn, AlemOwl\\
+Roshea portrait by Thorn\\
+Vyland portrait by Zmr, Peer, Blueey, Nickt\\
+Wendell portrait by Thorn\\
+Rickard portrait by Thorn\\
+Bantu portrait by Thorn\\"); BYTE 0 
 
 
 
@@ -109,3 +223,29 @@ txt("  \\
 
 
 
+
+// #define TESTING_CREDITS 
+
+PUSH 
+
+ORG $B65F8 
+SHORT $E002 // b 0x80b6600 
+SHORT 0 0 0 // so FEBuilder will recognize the CG patch 
+WORD $46C04778 $E59FC000 $E12FFF1C
+POIN DisplayCGfx
+
+#ifdef TESTING_CREDITS
+ORG $8B0917
+BYTE 1 // fade to black //map 
+
+ORG $9EEBFC
+SetBg(0x35)
+TEXTSTART
+CGTEXTSTART 
+ASMC StartCreditsProc_ASMC
+NoFade 
+ENDA 
+#endif 
+
+
+POP 
