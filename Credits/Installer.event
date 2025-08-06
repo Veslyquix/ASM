@@ -17,19 +17,7 @@ WORD 0x60 // 62.5% darker
 SkipWithStartEnabled:
 WORD 0 // 1 for enabled 
 
-#define SetBg(background) "SVAL 0x2 background; CALL $9EE2E8"
 
-
-
-// 
-ReplaceBG_Event: 
-SetBg(0) // calls 089ee2E8 
-TEXTSTART // target text type is 0 = map, 1 = bg, 2 = cg 
-BACKGROUND_CHANGE 1 1 1 
-NoFade 
-ENDA 
-
-// #define CreditsText(header, body) "PUSH; POIN header body; POP"
 
 #define LyonStoneCG 2 
 #define DemonKingCG 5
@@ -163,6 +151,7 @@ txt("  \\
 
 
 // #define TESTING_CREDITS 
+#define SetBg(background) "SVAL 0x2 background; CALL $9EE2E8"
 
 PUSH 
 
