@@ -98,16 +98,7 @@ BattleStatsAnimsOff: Tequila\\
 HP Bars: Circles, Tequila\\
 Show Heal Amount: Tequila\\
 Hard Mode Unlock: 7743\\
-Skip Intro: Gryz\\
-L Button Cycling: Aurawolf\\
-Colour Hue Function: Huichelaar\\
-Minimug Palette Fix: Huichelaar\\
-Handaxe Wildcard: 7743\\
-Droppable Item Icon GFX: Scraiza\\
-Animation Numbers: Huichelaar\\
-MMB: Zane (FE8 only)\\
-Support Hearts: Vesly, Gamma, 7743\\
-224 Colour Backgrounds: Huichelaar\\"); BYTE 0 
+Skip Intro: Gryz\\"); BYTE 0 
 
 header2: 
 txt("Animations"); BYTE 0 
@@ -123,28 +114,7 @@ Seliph animation by Obsidian, Zoramine, Eretein\\
 T1_Lancer animation by Memae, Skitty, BwdYeti, MOJ\\
 Trueblade animation by Dinar87, RobertFPY\\
 Katarina_Fencer animation by GabrielKnight, 7743\\
-Dragoon animation by MercLord, NYZGamer, Maiser6\\
-Lancer_by_SALVAGED animation by SALVAGED\\
-Militia animation by Alusq\\
-Halberdier animation by TheBlindArcher, Spud, MOJ\\
-Mounted_Marauder animation by Spud\\
-Sentinel animation by Nuramon, Craigrandall55\\
-Warbird animation by Alexsplode\\
-Supplier_Anna animation by DAT, JonoTheRed, Sable Mage\\
-Baron animation by TBA, St jack, Flasuban, Sax-M\\
-Brighid animation by Sphealnuke\\
-Flail_Knight animation by JonoTheRed, ZoramineFae\\
-Gladiator animation by Waleed, Pushwall, L_Tweed, Zane\\
-Harbinger animation by Nuramon, Linkain, JJ09, Gabr\\
-Heavy_Infantry animation by Nuramon, Seliost1\\
-Legion_King animation by Huichelaar, Obsidian_Daddy\\
-Mercenary_by_SALVAGED animation by SALVAGED\\
-Phantom_by_TBA animation by TheBlindArcher, Arch, Skitty, Temp\\
-War_Cleric animation by SkidMarc25\\
-Adventurer animation by Itranc, Nuramon, Leo_Link\\
-Fletchling animation by RenOokami, knabepicer\\
-Hunter animation by RenOokami, Knabepicer\\
-Merlinus_Transport animation by Spud, N426, knabepicer\\"); BYTE 0  
+Dragoon animation by MercLord, NYZGamer, Maiser6\\"); BYTE 0  
 
 header3: 
 txt("Class Sprites"); BYTE 0 
@@ -159,26 +129,11 @@ CantorSMS by Ryn\\
 BoxerSMS by ShadowAllyX\\
 BrighidSMS by Shin19\\
 Cantor2SMS by Norikins\\
-ChickenSMS by Pikmin1211\\
-CursedSwordSMS by Der\\
-DarkPrinceSMS by Stephano, Zane, Norikins\\
-DjinnSMS by Alexsplode\\
-DragoonSMS by Pikmin, Unknown\\
-DreadFighterSMS by Nuramon\\
-EnchanterSMS by Ninja, Der\\
-ExecutionerSMS by Huichelaar, Lexou\\
-FE15MyrmidonSMS by Nuramon\\
-FellbeastSMS by Faeriefruit\\
-FencerSMS by AnnoyingAnon\\
-FlailKnightSMS by L95, Stephano\\
-FletchlingSMS by Knabepicer, NightBloodKT\\
-GladiatorSMS by Pikmin, L95, Pushwall\\
-GrandMahoutSMS by Camus, SHYUTERz, Orihara, Dat\\
-HarbingerSMS by SD9K\\"); BYTE 0 
+ChickenSMS by Pikmin1211\\"); BYTE 0 
 
 
 header4: 
-txt("FE1 Portraits"); BYTE 0 
+txt("Portraits"); BYTE 0 
 body4: 
 txt(" Marth portrait by Lenh\\
 Jagen portrait by Thorn\\
@@ -188,25 +143,7 @@ Abel portrait by LuminescentBlade\\
 Draug portrait by Thorn\\
 Gordin portrait by Thorn\\
 Wrys portrait by Thorn\\
-Ogma portrait by Thorn\\
-Barst portrait by Thorn\\
-Bord portrait by Frigid, Nickt\\
-Cord portrait by Frigid, Nickt, Glaceo\\
-Darros portrait by FEier\\
-Castor portrait by Thorn\\
-Lena portrait by Thorn\\
-Julian portrait by Thorn\\
-Navarre portrait by BuskHusker\\
-Matthis portrait by Thorn\\
-Merric portrait by Thorn\\
-Hardin portrait by Thorn\\
-Wolf portrait by Thorn\\
-Sedgar portrait by Thorn, AlemOwl\\
-Roshea portrait by Thorn\\
-Vyland portrait by Zmr, Peer, Blueey, Nickt\\
-Wendell portrait by Thorn\\
-Rickard portrait by Thorn\\
-Bantu portrait by Thorn\\"); BYTE 0 
+Ogma portrait by Thorn\\"); BYTE 0 
 
 
 
@@ -214,6 +151,7 @@ emptyString:
 txt("  "); BYTE 0 // should be 2 or more spaces lol 
 emptyStringLong: // bunch of blank lines while above text finishes displaying  
 txt("  \\
+  \\
   \\
   \\
   \\
@@ -238,7 +176,7 @@ POIN DisplayCGfx
 ORG $8B0917
 BYTE 1 // fade to black //map 
 
-ORG $9EEBFC
+ORG $9EEBFC // Prologue start event 
 SetBg(0x35)
 TEXTSTART
 CGTEXTSTART 
