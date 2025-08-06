@@ -812,12 +812,12 @@ struct ProcCmd const ProcScr_CreditsText[] = {
 
     PROC_CALL(UnlockGame),
     PROC_CALL(BMapDispResume), // why is this needed twice ?
-    PROC_CALL(BMapDispResume),
-    PROC_CALL(RefreshBMapGraphics),
+    // PROC_CALL(BMapDispResume),
+    // PROC_CALL(RefreshBMapGraphics),
     PROC_CALL(RefreshUnitSprites),
 
-    PROC_CALL(StartFastFadeFromBlack),
-    PROC_REPEAT(WaitForFade),
+    // PROC_CALL(StartFastFadeFromBlack),
+    // PROC_REPEAT(WaitForFade),
     PROC_END,
 };
 

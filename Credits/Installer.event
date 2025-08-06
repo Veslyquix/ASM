@@ -163,13 +163,23 @@ POIN DisplayCGfx
 
 #ifdef TESTING_CREDITS
 ORG $8B0917
-BYTE 1 // fade to black //map 
+// BYTE 1 // fade to black //map 
 
 ORG $9EEBFC // Prologue start event 
-SetBg(0x35)
-TEXTSTART
-CGTEXTSTART 
+FADI 4 // slow fade to black (optional)
 ASMC StartCreditsProc_ASMC
+
+// direct to background 
+// SetBg(0)
+// Text(0x9df) 
+// FADI 4 
+
+// direct to title 
+MNTS 0
+
+// direct to map 
+// CLEAN 
+// FADU 4 
 NoFade 
 ENDA 
 #endif 
