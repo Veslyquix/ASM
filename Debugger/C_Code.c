@@ -5491,6 +5491,9 @@ int CanDisplayCG(int id)
     return IsImgValidLZ77(data, (const u8 *)*data->img);
 }
 
+extern struct TalkState sTalkStateCore;
+struct TalkState * const pTalkState = &sTalkStateCore;
+
 void DebuggerStartFace(int id)
 {
     EndFaceById(0);
@@ -5500,9 +5503,16 @@ void DebuggerStartFace(int id)
     }
     if (CanDisplayPortrait(id))
     {
-        StartFace(0, id, 48, 16, 0);
+        pTalkState->faces[pTalkState->activeFaceSlot] =
+            StartFace(0, id, 48, 16, FACE_DISP_KIND(FACE_96x80) | FACE_DISP_FLIPPED); // blink
+        // SetFaceBlinkControlById(0, 0);
+        StartFaceFadeIn(pTalkState->faces[pTalkState->activeFaceSlot]);
+
+        // SetTalkFaceLayer(pTalkState->activeFaceSlot, CheckTalkFlag(TALK_FLAG_4));
+        SetTalkFaceLayer(pTalkState->activeFaceSlot, 1);
+        // StartFace(0, id, 48, 16, 0);
     }
-}
+} // 859133c T sTalkState
 
 void DebuggerStartSMS(int id)
 {
@@ -5518,6 +5528,30 @@ void DebuggerStartSMS(int id)
 
 void RedrawGfxFromIDs(int id)
 {
+
+    int time = GetGameClock();
+    switch ((time & 0x1FF) >> 7)
+    {
+        case 0:
+        case 2:
+        {
+            SetTalkFaceMouthMove(0);
+            break;
+        }
+        case 1:
+        {
+            SetTalkFaceNoMouthMove(0);
+            SetTalkFaceDisp(0, 1); // smile
+            break;
+        }
+        case 3:
+        {
+            SetTalkFaceNoMouthMove(0);
+            SetTalkFaceDisp(0, 0); // neutral
+            break;
+        }
+    }
+
     // sub_8027DB4(int layer, int x, int y, u16 oam2base, int classId, int id);
     if (CanDisplaySMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
     {
