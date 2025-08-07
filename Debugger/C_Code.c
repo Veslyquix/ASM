@@ -5429,13 +5429,22 @@ static struct CGDataEnt const * GetCGData(int id)
     return sCGDataTable + id;
 }
 
-int IsImgValidLZ77(const void * data, const u8 * imgData)
+int IsImgValid(const void * data, const u8 * imgData)
 {
     if (!data || !imgData)
     {
         return false;
     }
     if ((u32)data < 0x8000000 || (u32)data > 0x9FFFFFF || (u32)imgData < 0x8000000 || (u32)imgData > 0x9FFFFFF)
+    {
+        return false;
+    }
+    return true;
+}
+
+int IsImgValidLZ77(const void * data, const u8 * imgData)
+{
+    if (!IsImgValid(data, imgData))
     {
         return false;
     }
@@ -5455,7 +5464,8 @@ int IsImgValidLZ77(const void * data, const u8 * imgData)
 int CanDisplayPortrait(int id)
 {
     const struct FaceData * data = GetMugData(id);
-    return data != 0; // hack portraits might be uncompressed, so don't worry about checking for lz77 compression
+    return IsImgValid(data, data->img);
+    // hack portraits might be uncompressed, so don't worry about checking for lz77 compression
     // const struct FaceData * data = GetMugData(id);
     // return IsImgValidLZ77(data, (const u8 *)data->img);
 }
