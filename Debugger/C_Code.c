@@ -303,14 +303,16 @@ void EditSupportsInit(DebuggerProc * proc);
 void EditSupportsIdle(DebuggerProc * proc);
 void DebuggerListInit(DebuggerProc * proc);
 void DebuggerListIdle(DebuggerProc * proc);
+void GfxViewerInit(DebuggerProc * proc);
+void GfxViewerLoop(DebuggerProc * proc);
 void ClearSomeGfx(DebuggerProc * proc);
 u8 CanActiveUnitPromote(void);
 
 #define InitProcLabel 0
 #define RestartLabel 1
-#define PostActionLabel                                                                                                \
-    2 // ClassChgMenuSelOnPressB 80CDC15 has Proc_Goto(proc, 2) in it, so we make
-      // this post action label 2
+#define PostActionLabel 2
+// ClassChgMenuSelOnPressB 80CDC15 has Proc_Goto(proc, 2) in it, so we make
+// this post action label 2
 #define UnitActionLabel 3
 #define PickupUnitLabel 4
 #define ChooseTileLabel 5
@@ -328,7 +330,8 @@ u8 CanActiveUnitPromote(void);
 #define SupportLabel 17
 #define SupplyLabel 18
 #define ListLabel 19
-#define LoopLabel 20
+#define GfxViewerLabel 20
+#define LoopLabel 21
 #define EndLabel 99
 
 #define ActionID_Promo 1
@@ -455,6 +458,11 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_CALL(DebuggerListInit),
     PROC_SLEEP(1),
     PROC_CALL(ClearSomeGfx),
+    PROC_GOTO(EndLabel),
+
+    PROC_LABEL(GfxViewerLabel),
+    PROC_CALL(GfxViewerInit),
+    PROC_REPEAT(GfxViewerLoop),
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(EndLabel),
@@ -4227,6 +4235,14 @@ u8 AiControlRemainingUnitsNow(struct MenuProc * menu, struct MenuItemProc * menu
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 GfxViewerNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, GfxViewerLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 int ShouldStartDebugger(void)
 {
     if (CheckFlag(DebuggerTurnedOff_Flag))
@@ -5305,4 +5321,334 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
     }
 
     return;
+}
+
+#define GfxViewerOptions 5
+static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "SMS", "MMS", "BG", "CG" };
+
+void RedrawGfxViewerMenu(DebuggerProc * proc)
+{
+    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - 2, Y_HAND), 9, 2 * GfxViewerOptions, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    // ResetText();
+    struct Text * th = gStatScreen.text;
+    int x = NUMBER_X - SupportWidth;
+    for (int i = 0; i < GfxViewerOptions; ++i)
+    {
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i * 2)));
+    }
+    for (int i = 0; i < GfxViewerOptions; ++i)
+    {
+        // PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)),
+        // TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+        PutNumberHex(
+            gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+    }
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
+
+void GfxViewerInit(DebuggerProc * proc)
+{
+    SomeMenuInit(proc);
+    struct Unit * unit = proc->unit;
+    for (int i = 0; i < GfxViewerOptions; ++i)
+    {
+        proc->tmp[i] = 0;
+    }
+
+    int x = NUMBER_X - SupportWidth - 1;
+    int y = Y_HAND - 1;
+    int w = SupportWidth + (START_X - NUMBER_X) + 3;
+    int h = (GfxViewerOptions * 2) + 2;
+
+    DrawUiFrame(
+        BG_GetMapBuffer(1),            // back BG
+        x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
+
+    // ClearUiFrame(
+    //     BG_GetMapBuffer(1), // front BG
+    //     x, y, w, h);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < 15; ++i)
+    {
+        InitText(&th[i], SupportWidth);
+        Text_DrawString(&th[i], gfxViewerOpts[i]);
+    }
+
+    RedrawGfxViewerMenu(proc);
+}
+
+// Because users repoint these tables, use pointers to them instead of the vanilla address of tables
+extern struct FaceData const * const sPortrait_data;
+static struct FaceData const * GetMugData(int id)
+{
+    return sPortrait_data + id;
+}
+
+struct UnitIconWait
+{
+    unsigned short pattern; // unknown, seems to be useless
+    unsigned short size;    // icon size
+    char * sheet;           // animation sheet
+};
+extern struct UnitIconWait const * const sUnit_icon_wait_table; // 27bb0
+static struct UnitIconWait const * GetSMSData(int id)
+{
+    return sUnit_icon_wait_table + id; // 27bb0
+}
+
+struct MuInfo
+{
+    const void * img;
+    const void * anim;
+};
+
+extern struct MuInfo const * const sUnit_icon_move_table; // struct MuInfo
+static struct MuInfo const * GetMMSData(int id)
+{
+    return sUnit_icon_move_table + id; // 27bb0
+}
+extern struct gfx_set const * const sConvoBackgroundData;
+static struct gfx_set const * GetBGData(int id)
+{
+    return sConvoBackgroundData + id;
+}
+
+struct CGDataEnt
+{
+    u8 ** img; // CG images have 10 parts
+    u8 * tsa;
+    u16 * pal;
+};
+extern struct CGDataEnt const * const sCGDataTable; // pointer to gCGDataTable
+static struct CGDataEnt const * GetCGData(int id)
+{
+    return sCGDataTable + id;
+}
+
+int IsImgValidLZ77(const void * data, const u8 * imgData)
+{
+    if (!data || !imgData)
+    {
+        return false;
+    }
+    if ((u32)data < 0x8000000 || (u32)data > 0x9FFFFFF || (u32)imgData < 0x8000000 || (u32)imgData > 0x9FFFFFF)
+    {
+        return false;
+    }
+
+    // Check LZ77 header magic byte
+    if (imgData[0] != 0x10)
+        return false;
+
+    // Check decompressed size (should be > 0)
+    u32 decompressedSize = imgData[1] | (imgData[2] << 8) | (imgData[3] << 16);
+    if (decompressedSize == 0)
+        return false;
+
+    return true;
+}
+
+int CanDisplayPortrait(int id)
+{
+    const struct FaceData * data = GetMugData(id);
+    return data != 0; // hack portraits might be uncompressed, so don't worry about checking for lz77 compression
+    // const struct FaceData * data = GetMugData(id);
+    // return IsImgValidLZ77(data, (const u8 *)data->img);
+}
+int CanDisplaySMS(int id)
+{
+    struct UnitIconWait * const data = (void *)GetSMSData(id);
+    return IsImgValidLZ77(data, (const u8 *)data->sheet);
+}
+int CanDisplayMMS(int id)
+{
+    struct MuInfo * const data = (void *)GetMMSData(id);
+    return IsImgValidLZ77(data, (const u8 *)data->img);
+}
+int CanDisplayBG(int id)
+{
+    struct gfx_set * const data = (void *)GetBGData(id);
+    return IsImgValidLZ77(data, (const u8 *)data->gfx);
+}
+int CanDisplayCG(int id)
+{
+    struct CGDataEnt * const data = (void *)GetCGData(id);
+
+    return IsImgValidLZ77(data, (const u8 *)*data->img);
+}
+
+void DebuggerStartFace(int id)
+{
+    EndFaceById(0);
+    if (id < 0)
+    {
+        id = 0;
+    }
+    if (CanDisplayPortrait(id))
+    {
+        StartFace(0, id, 48, 16, 0);
+    }
+}
+
+void DebuggerStartSMS(int id)
+{
+    // sub_8027DB4(int layer, int x, int y, u16 oam2base, int classId, int id);
+    ResetUnitSprites();
+    RefreshUnitSprites();
+    // brk;
+    // if (CanDisplaySMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
+    // {
+    // SMS_80266F0(GetClassData(id)->SMSId, 16);
+    // }
+}
+
+void RedrawGfxFromIDs(int id)
+{
+    // sub_8027DB4(int layer, int x, int y, u16 oam2base, int classId, int id);
+    if (CanDisplaySMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
+    {
+        // SMS_SomethingGmapUnit(id, 1, 16);
+        PutUnitSpriteForClassId(0, 8, 128, 0xC800, GetClassData(id)->SMSId);
+    }
+    // UseUnitSprite(12);
+}
+
+struct MuProc * StartUiMu(struct Unit * unit, int x, int y);
+void DebuggerStartMMS(int id, struct Unit * unit)
+{
+
+    MU_EndAll(); // EndAllMus();
+
+    if (CanDisplayMMS(id) && (GetClassData(id) != 0))
+    {
+        const struct ClassData * classData = unit->pClassData;
+        unit->pClassData = GetClassData(id);
+        MU_CreateForUI(unit, 48, 144); // StartUiMu
+        unit->pClassData = classData;
+    }
+}
+void DebuggerStartBG(int id)
+{
+    SetBackgroundTileDataOffset(BG_3, 0x8000); // restore to default just in case it's after 256 cols
+    gLCDControlBuffer.bg3cnt.colorMode = 0;    // no 256-col mode.
+    gLCDControlBuffer.bldcnt.target2_bd_on = false;
+
+    if (CanDisplayBG(id))
+    {
+        BMapDispResume();
+        BMapDispSuspend();
+        EventShowTextBgDirect(1, id);
+    }
+    else
+    {
+        RegisterBlankTile(0x400);
+        BG_Fill(gBG3TilemapBuffer, 0);
+        BG_EnableSyncByMask(BG3_SYNC_BIT);
+    }
+}
+void DebuggerStartCG(int id)
+{
+    SetBackgroundTileDataOffset(BG_3, 0x8000); // restore to default just in case it's after 256 cols
+    gLCDControlBuffer.bg3cnt.colorMode = 0;    // no 256-col mode.
+    gLCDControlBuffer.bldcnt.target2_bd_on = false;
+    if (CanDisplayCG(id))
+    {
+        BMapDispResume();
+        BMapDispSuspend();
+        EventShowTextBgDirect(2, id);
+    }
+    else
+    {
+        RegisterBlankTile(0x400);
+        BG_Fill(gBG3TilemapBuffer, 0);
+        BG_EnableSyncByMask(BG3_SYNC_BIT);
+    }
+}
+
+void DrawGfxFromIDs(int type, int id, struct Unit * unit)
+{
+    switch (type)
+    {
+        case 0:
+        {
+            DebuggerStartFace(id);
+            break;
+        }
+        case 1:
+        {
+            DebuggerStartSMS(id);
+            break;
+        }
+        case 2:
+        {
+            DebuggerStartMMS(id, unit);
+            break;
+        }
+        case 3:
+        {
+            DebuggerStartBG(id);
+            break;
+        }
+        case 4:
+        {
+            DebuggerStartCG(id);
+            break;
+        }
+    }
+}
+
+void GfxViewerLoop(DebuggerProc * proc)
+{
+    struct Unit * unit = proc->unit;
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    if ((keys & START_BUTTON) || (keys & A_BUTTON) || keys & B_BUTTON)
+    { // press B to not save Supports
+        BMapDispResume();
+        RefreshBMapGraphics();
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+    };
+
+    DisplayUiHand(CursorLocationTable[0].x - ((SupportWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+    if (keys & DPAD_RIGHT)
+    {
+        proc->tmp[proc->id]++;
+        RedrawGfxViewerMenu(proc);
+        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit);
+    }
+    if (keys & DPAD_LEFT)
+    {
+        proc->tmp[proc->id]--;
+        if (proc->tmp[proc->id] < 0)
+        {
+            proc->tmp[proc->id] = 0; // I have no idea what the final valid mug/sms/mms/bg/cg will be lol
+        }
+        RedrawGfxViewerMenu(proc);
+        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit);
+    }
+    RedrawGfxFromIDs(proc->tmp[1]); // redraw SMS each frame
+
+    if (keys & DPAD_UP)
+    {
+        proc->id--;
+        if (proc->id < 0)
+        {
+            proc->id = GfxViewerOptions - 1;
+        }
+        RedrawGfxViewerMenu(proc);
+    }
+    if (keys & DPAD_DOWN)
+    {
+        proc->id++;
+        if (proc->id >= GfxViewerOptions)
+        {
+            proc->id = 0;
+        }
+
+        RedrawGfxViewerMenu(proc);
+    }
 }

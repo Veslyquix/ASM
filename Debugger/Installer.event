@@ -212,6 +212,7 @@ MenuCommand1(SupportMenuText,SupportMenuDesc, NormalText, MenuAlwaysEnabled, Deb
 MenuCommand1(SupplyMenuText,SupplyMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, SupplyNow)
 MenuCommand1(ListMenuText,ListMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, ListNow) 
 MenuCommand1(AiControlRemainingUnitsText,AiControlRemainingUnitsDesc, NormalText, MenuAlwaysEnabled, AiControlRemainingUnitsDrawText, AiControlRemainingUnitsNow) 
+MenuCommand1(GfxViewerText,GfxViewerDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, GfxViewerNow) 
 #ifdef VeslyBuildfile 
 MenuCommand1(EditSkillsText,EditSkillsDesc, NormalText, $04F449,DebuggerMenuItemDraw, DebugSkillsNow) // This is external - it is located in skillsystems folders 
 #endif 
@@ -336,6 +337,10 @@ AiControlRemainingUnitsDesc:
     txt("Open the list\of everyone's items."); 
     
    
+    GfxViewerText:
+    txt(" Gfx viewer"); 
+GfxViewerDesc:
+    txt("Open the list\of everyone's items."); 
     
     
 #ifdef _FE6_  
