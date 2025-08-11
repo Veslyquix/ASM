@@ -276,19 +276,23 @@ void PrintErrorNumberToScreen(ProcMonitor * proc)
     KillProcsWhenOutOfSpace(proc);
 }
 
+void ProcSpaceError(ProcMonitor * proc)
+{
+    EndGreenText();
+
+    LockGame();
+    BMapDispSuspend();
+    PrintErrorToScreen((void *)proc);
+    CallEvent(EventScr_ErrorOccurred, 1);
+    Proc_Goto((void *)proc, 1);
+    PrintErrorNumberToScreen(proc);
+}
+
 void CheckForProcSpace(ProcMonitor * proc)
 {
     if ((int)sProcAllocListHead > (int)&sProcAllocList[ProcsReqForErrorMsg])
     {
-
-        EndGreenText();
-
-        LockGame();
-        BMapDispSuspend();
-        PrintErrorToScreen((void *)proc);
-        CallEvent(EventScr_ErrorOccurred, 1);
-        Proc_Goto((void *)proc, 1);
-        PrintErrorNumberToScreen(proc);
+        ProcSpaceError(proc);
     }
 }
 
@@ -342,3 +346,70 @@ struct ProcCmd const ProcScr_ApProc_New[] = {
 
     PROC_END,
 };
+
+void EkrsubAnimeEmulatorMain(struct ProcEkrSubAnimeEmulator * proc)
+{
+    struct Anim _anim;
+    u32 * anim_scr = proc->anim_scr;
+    if (proc->timer == 0)
+    {
+        u32 inst = anim_scr[proc->scr_cur];
+        if (ANIM_INS_TYPE_STOP == ANINS_GET_TYPE(inst))
+        {
+            switch (proc->type)
+            {
+                case 0:
+                    Proc_Break(proc);
+                    return;
+
+                case 1:
+                    proc->timer = 1;
+                    proc->scr_cur = 0;
+                    break;
+
+                case 2:
+                    proc->timer = 1;
+                    proc->scr_cur--;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+        else if (ANIM_INS_TYPE_WAIT == ANINS_GET_TYPE(inst))
+        {
+            proc->timer = inst;
+            proc->scr_cur++;
+        }
+        else
+        {
+            proc->sprite = ANINS_FORCESPRITE_GET_ADDRESS(inst);
+            proc->timer = ANINS_FORCESPRITE_GET_DELAY(inst);
+            proc->scr_cur++;
+        }
+    }
+
+    proc->timer--;
+    if (proc->timer < 0)
+    {
+        brk;
+        ProcMonitor * procMonitor = Proc_Find(ProcMonitorCmd);
+        if (procMonitor)
+        {
+            procMonitor->peak = 99;
+            ProcSpaceError(procMonitor);
+        }
+        Proc_Break(proc);
+    }
+
+    if (proc->valid == 0 && proc->sprite != NULL)
+    {
+        _anim.pSpriteData = proc->sprite;
+        _anim.oam2Base = proc->oam2Base;
+        _anim.oamBase = proc->oamBase;
+        _anim.xPosition = proc->x1 + proc->x2;
+        _anim.yPosition = proc->y1 + proc->y2;
+        _anim.state2 = 0;
+        AnimDisplay(&_anim);
+    }
+}
