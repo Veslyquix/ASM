@@ -153,13 +153,23 @@ extern const struct MenuItemDef gDebuggerMenuItemsPage3[];
 extern char * gDebuggerMenuText[];
 extern const struct MenuItemDef * ggDebuggerMenuItems[];
 
+void UnlockGameIfNeeded(void)
+{
+    int locked = GetGameLock();
+    while (locked)
+    {
+        UnlockGame();
+        locked = GetGameLock();
+    }
+}
+
 const struct ProcCmd DebuggerProcCmd[] = {
     PROC_NAME("DebuggerProcName"),
     PROC_YIELD,
     PROC_LABEL(InitProcLabel),
     // PROC_CALL(InitProc),
     PROC_LABEL(RestartLabel), // Menu
-
+    PROC_CALL(UnlockGameIfNeeded),
     PROC_CALL(EndPlayerPhaseSideWindows),
     PROC_SLEEP(1),
     PROC_WHILE(DoesBMXFADEExist),

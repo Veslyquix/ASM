@@ -352,6 +352,16 @@ void SaveProcVarsToIdler(DebuggerProc * proc)
     Proc_End(proc);
 }
 
+void UnlockGameIfNeeded(void)
+{
+    int locked = GetGameLock();
+    while (locked)
+    {
+        UnlockGame();
+        locked = GetGameLock();
+    }
+}
+
 const struct ProcCmd DebuggerProcCmd[] = {
     PROC_NAME("DebuggerProcName"),
     PROC_YIELD,
@@ -359,6 +369,7 @@ const struct ProcCmd DebuggerProcCmd[] = {
     // PROC_CALL(InitProc),
     PROC_LABEL(RestartLabel), // Menu
 
+    PROC_CALL(UnlockGameIfNeeded), // failsafe
     PROC_CALL(EndPlayerPhaseSideWindows),
     PROC_SLEEP(1),
     PROC_WHILE(DoesBMXFADEExist),
