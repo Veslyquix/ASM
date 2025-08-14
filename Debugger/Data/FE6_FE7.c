@@ -388,7 +388,7 @@ static const int DigitHexTable[] = { 0x1, 0x10, 0x100, 0x1000, 0x10000, 0x100000
 static const int * pDigitTable[2] = { DigitDecimalTable, DigitHexTable };
 
 #ifdef FE6
-#define NumberOfState 16
+#define NumberOfState 32
 #else
 #define NumberOfState 32
 #endif
