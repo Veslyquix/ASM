@@ -4646,6 +4646,7 @@ void UnitBeginActionInit(struct Unit * unit)
     gActionData.yMove = unit->yPos;
 
     gActionData.subjectIndex = unit->index;
+    gActionData.targetIndex = 0;
     gActionData.itemSlotIndex = -1;
     gActionData.unitActionType = 0;
     gActionData.moveCount = 0;

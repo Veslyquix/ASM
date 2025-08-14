@@ -258,7 +258,8 @@ SET_DATA gBattleHitArray, 0x203930C  @ from SetupMapBattleAnim
 @ ProcScr_BattleManim 664DA4 
 @ ProcScr_EndManim 664E4C @ https://github.com/FireEmblemUniverse/fireemblem6j/blob/c0065f139f1cbe2aa974046448898427ecc5a021/src/manim.c#L159
 
-SET_FUNC BattleEventEngineExists, 0x8011f71
+@SET_FUNC BattleEventEngineExists, 0x8011f71
+SET_FUNC BattleEventEngineExists, 0x8011f8d
 SET_FUNC DeleteBattleAnimInfoThing, 0x8062cf1
 SET_FUNC MapAnimProc_DisplayExpBar, 0x8061d01
 SET_FUNC MapAnim_MoveCameraOntoSubject, 0x8061B81
