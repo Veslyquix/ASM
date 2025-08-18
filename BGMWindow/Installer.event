@@ -1,0 +1,33 @@
+
+
+
+#ifndef callHackNew
+	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+#endif 
+
+
+PUSH 
+#ifdef _FE8_ 
+ORG 0x4FEC8 // fe8 
+#endif 
+#ifdef _FE7_ 
+ORG $4b30c // fe7 
+#endif 
+#ifdef _FE6_ 
+ORG $426E8 // fe6
+#endif 
+// callHackNew(FastForwardBattles) 
+POP 
+
+#ifdef _FE8_ 
+#include "Data/FE8.lyn.event" 
+#endif 
+#ifdef _FE7_ 
+#include "Data/FE7.lyn.event" 
+#endif 
+#ifdef _FE6_ 
+#include "Data/FE6.lyn.event" 
+#endif 
+
+
