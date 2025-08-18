@@ -6,6 +6,10 @@
     #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
 #endif 
 
+ALIGN 4 
+BGMWindow_DisplayFrames: 
+WORD 200 
+
 
 PUSH 
 #ifdef _FE8_ 
