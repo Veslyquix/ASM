@@ -95,13 +95,16 @@ void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
 
 void BGMWindow_Init(struct PlayerInterfaceProc * proc)
 {
-    InitTextDb(proc->texts, 7);
+    InitTextDb(proc->texts, 3);
     proc->burstUnitId = 0;
     proc->hideContents = false;
     proc->showHideClock = 0;
     proc->wBurst = 0;
     proc->hBurst = 0;
     proc->isRetracting = false;
+
+    char * str = "This is some text";
+    Text_InsertDrawString(&proc->texts[0], GetStringTextCenteredPos(64, str), TEXT_COLOR_SYSTEM_WHITE, str);
 
     return;
 }
@@ -145,11 +148,117 @@ void BGMWindow_Loop_OnSideChange(struct PlayerInterfaceProc * proc)
     return;
 }
 
+//! FE8U = 0x0808D514
+#define gUiScratchX 0 // vanilla uses 19
+#define gUiScratchY 0 // vanilla uses 10
+
+#define gUiWindowX_Size 12
+#define gUiWindowY_Size 6
+
+void BGMWindow_808D514(int quadrant, int param_2, int param_3)
+{
+    int x = sPlayerInterfaceConfigLut[quadrant].xGoal;
+    int y = sPlayerInterfaceConfigLut[quadrant].yGoal;
+
+    // if ((x < 0) && (y < 0))
+    // {
+    TileMap_FillRect(gBG1TilemapBuffer, gUiWindowX_Size, gUiWindowY_Size, 0);
+    TileMap_FillRect(gBG0TilemapBuffer, gUiWindowX_Size, gUiWindowY_Size, 0);
+
+    TileMap_CopyRect(
+        gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 6 - param_2)), gBG1TilemapBuffer, gUiWindowX_Size,
+        param_2);
+    TileMap_CopyRect(
+        gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 8 - param_2)), gBG0TilemapBuffer, gUiWindowX_Size,
+        param_2);
+    // }
+
+    // if ((x > 0) && (y < 0))
+    // {
+    // TileMap_FillRect(gBG1TilemapBuffer + TILEMAP_INDEX(gUiScratchX, 0), gUiWindowX_Size, gUiWindowY_Size, 0);
+    // TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(gUiScratchX, 0), gUiWindowX_Size, gUiWindowY_Size, 0);
+
+    // TileMap_CopyRect(
+    // gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 6 - param_2)),
+    // gBG1TilemapBuffer + TILEMAP_INDEX(gUiScratchX, 0), gUiWindowX_Size, param_2);
+    // TileMap_CopyRect(
+    // gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 8 - param_2)),
+    // gBG0TilemapBuffer + TILEMAP_INDEX(gUiScratchX, 0), gUiWindowX_Size, param_2);
+    // }
+
+    // if ((x < 0) && (y > 0))
+    // {
+
+    // TileMap_FillRect(gBG1TilemapBuffer + TILEMAP_INDEX(0, gUiScratchY + 4), gUiWindowX_Size, gUiWindowY_Size, 0);
+    // TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(0, gUiScratchY + 4), gUiWindowX_Size, gUiWindowY_Size, 0);
+
+    // TileMap_CopyRect(
+    // gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY),
+    // gBG1TilemapBuffer + 0x1C0 + 0x20 * (({ (1 - param_3) * 2 + 20; }) - param_2) - 0x1C0, gUiWindowX_Size,
+    // param_2);
+    // TileMap_CopyRect(
+    // gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY + 2),
+    // gBG0TilemapBuffer + 0x1C0 + 0x20 * (({ (1 - param_3) * 2 + 20; }) - param_2) - 0x1C0, gUiWindowX_Size,
+    // param_2);
+    // }
+
+    if ((x > 0) && (y > 0) && 0)
+    {
+        TileMap_FillRect(
+            gBG1TilemapBuffer + TILEMAP_INDEX(gUiScratchX, gUiScratchY), gUiWindowX_Size, gUiWindowY_Size, 0);
+        TileMap_FillRect(
+            gBG0TilemapBuffer + TILEMAP_INDEX(gUiScratchX, gUiScratchY), gUiWindowX_Size, gUiWindowY_Size, 0);
+
+        TileMap_CopyRect(
+            gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 6 - param_2)), gBG1TilemapBuffer,
+            gUiWindowX_Size, param_2);
+        TileMap_CopyRect(
+            gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 8 - param_2)), gBG0TilemapBuffer,
+            gUiWindowX_Size, param_2);
+
+        // TileMap_CopyRect(
+        // gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY),
+        // gBG1TilemapBuffer + TILEMAP_INDEX(gUiScratchX, gUiScratchY + 4) +
+        // 0x20 * (({ (1 - param_3) * 2 + 20; }) - param_2) - TILEMAP_INDEX(0, gUiScratchY + 4),
+        // gUiWindowX_Size, param_2);
+        // TileMap_CopyRect(
+        // gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY + 2),
+        // gBG0TilemapBuffer + TILEMAP_INDEX(gUiScratchX, gUiScratchY + 4) +
+        // 0x20 * (({ (1 - param_3) * 2 + 20; }) - param_2) - TILEMAP_INDEX(0, gUiScratchY + 4),
+        // gUiWindowX_Size, param_2);
+    }
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+
+    return;
+}
+
+void BGMWindowDraw(struct PlayerInterfaceProc * proc)
+{
+    TileMap_FillRect(gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY), 11, 9, 0);
+    TileMap_FillRect(gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY + 2), 11, 9, 0);
+
+    if (proc->unitClock == 0)
+    {
+        CallARM_FillTileRect(
+            gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY), gTSA_GoalBox_OneLine, TILEREF(0x0, 1));
+        PutText(proc->texts, gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 2, gUiScratchY + 3));
+    }
+
+    if (proc->unitClock == 1)
+    {
+        CallARM_FillTileRect(
+            gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY), gTSA_GoalBox_TwoLines, TILEREF(0x0, 1));
+        PutText(&proc->texts[0], gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 2, gUiScratchY + 3));
+        PutText(&proc->texts[1], gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 2, gUiScratchY + 5));
+    }
+}
+
 void BGMWindow_Loop_SlideIn(struct PlayerInterfaceProc * proc)
 {
     int unk = sGoalSlideInWidthLut[proc->showHideClock];
 
-    sub_808D514(proc->cursorQuadrant, unk, proc->unitClock);
+    BGMWindow_808D514(proc->cursorQuadrant, unk, proc->unitClock);
 
     proc->showHideClock++;
 
@@ -172,7 +281,7 @@ void BGMWindow_Loop_SlideOut(struct PlayerInterfaceProc * proc)
 
     unk = sGoalSlideOutWidthLut[proc->showHideClock];
 
-    sub_808D514(proc->cursorQuadrant, unk, proc->unitClock);
+    BGMWindow_808D514(proc->cursorQuadrant, unk, proc->unitClock);
 
     proc->showHideClock++;
 
@@ -187,25 +296,6 @@ void BGMWindow_Loop_SlideOut(struct PlayerInterfaceProc * proc)
     }
 
     return;
-}
-
-void BGMWindowDraw(struct PlayerInterfaceProc * proc)
-{
-    TileMap_FillRect(gUiTmScratchB + TILEMAP_INDEX(20, 10), 11, 9, 0);
-    TileMap_FillRect(gUiTmScratchA + TILEMAP_INDEX(20, 12), 11, 9, 0);
-
-    if (proc->unitClock == 0)
-    {
-        CallARM_FillTileRect(gUiTmScratchB + TILEMAP_INDEX(20, 10), gTSA_GoalBox_OneLine, TILEREF(0x0, 1));
-        PutText(proc->texts, gUiTmScratchA + TILEMAP_INDEX(21, 13));
-    }
-
-    if (proc->unitClock == 1)
-    {
-        CallARM_FillTileRect(gUiTmScratchB + TILEMAP_INDEX(20, 10), gTSA_GoalBox_TwoLines, TILEREF(0x0, 1));
-        PutText(&proc->texts[0], gUiTmScratchA + TILEMAP_INDEX(21, 13));
-        PutText(&proc->texts[1], gUiTmScratchA + TILEMAP_INDEX(21, 15));
-    }
 }
 
 void BGMWindow_Loop_Display(struct PlayerInterfaceProc * proc)
