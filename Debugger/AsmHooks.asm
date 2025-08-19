@@ -1,7 +1,6 @@
 
 .thumb
 
-
 .global CallDebuggerProc
 .type CallDebuggerProc, %function 
 CallDebuggerProc: 
@@ -177,7 +176,7 @@ pop {r3}
 BX r3
 
 .ltorg 
-.global Mod
+@.global Mod
 .type Mod, %function 
 __aeabi_idivmod:
 Mod: 
@@ -193,7 +192,7 @@ bx lr
 
 @.global __aeabi_idiv
 @.type __aeabi_idiv, %function 
-.global Div1
+@.global Div1
 .type Div1, %function 
 __aeabi_idiv: 
 Div1: 

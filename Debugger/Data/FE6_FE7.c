@@ -24,7 +24,7 @@ char * GetStringFromIndexSafe(int index)
     return GetStringFromIndex(index);
 }
 void PutUiWindowFrame(int x, int y, int width, int height, int window_kind);
-void DrawUiFrame(u16 * tilemap, int x, int y, int width, int height, int tilebase, int style)
+static void DrawUiFrameNew(u16 * tilemap, int x, int y, int width, int height, int tilebase, int style)
 {
     PutUiWindowFrame(x, y, width, height, style);
 }
@@ -299,14 +299,14 @@ void LoopDebuggerProc(DebuggerProc * proc)
     return;
 }
 
-u16 * const BgTilemapBuffers[] = {
+static u16 * const BgTilemapBuffers[] = {
     gBG0TilemapBuffer,
     gBG1TilemapBuffer,
     gBG2TilemapBuffer,
     gBG3TilemapBuffer,
 };
 
-u16 * BG_GetMapBuffer(int bg)
+static u16 * BG_GetMapBufferNew(int bg)
 {
     if (bg > 3)
     {
@@ -657,12 +657,12 @@ void StateInit(DebuggerProc * proc)
     int w = 29; // StatWidth + (START_X - NUMBER_X) + 3;
     int h = 18; //(NumberOfOptions * 2) + 2;
 
-    DrawUiFrame(
-        BG_GetMapBuffer(1),            // back BG
+    DrawUiFrameNew(
+        BG_GetMapBufferNew(1),         // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     // ClearUiFrame(
-    //     BG_GetMapBuffer(1), // front BG
+    //     BG_GetMapBufferNew(1), // front BG
     //     x, y, w, h);
 
     struct Text * th = gStatScreen.text;
@@ -821,12 +821,12 @@ void EditStatsInit(DebuggerProc * proc)
     int w = StatWidth + (START_X - NUMBER_X) + 3;
     int h = (NumberOfOptions * 2) + 2;
 
-    DrawUiFrame(
-        BG_GetMapBuffer(1),            // back BG
+    DrawUiFrameNew(
+        BG_GetMapBufferNew(1),         // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     // ClearUiFrame(
-    //     BG_GetMapBuffer(1), // front BG
+    //     BG_GetMapBufferNew(1), // front BG
     //     x, y, w, h);
 
     struct Text * th = gStatScreen.text;
@@ -898,8 +898,8 @@ void EditItemsInit(DebuggerProc * proc)
     int w = ItemNameWidth + (START_X - NUMBER_X) + 8;
     int h = (NumberOfItems * 2) + 2;
 
-    DrawUiFrame(
-        BG_GetMapBuffer(1),            // back BG
+    DrawUiFrameNew(
+        BG_GetMapBufferNew(1),         // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     struct Text * th = gStatScreen.text;
@@ -1310,8 +1310,8 @@ void EditMiscInit(DebuggerProc * proc)
     int w = MiscNameWidth + (START_X - NUMBER_X) + 4;
     int h = (NumberOfMisc * 2) + 2;
 
-    DrawUiFrame(
-        BG_GetMapBuffer(1),            // back BG
+    DrawUiFrameNew(
+        BG_GetMapBufferNew(1),         // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     struct Text * th = gStatScreen.text;
@@ -2026,7 +2026,7 @@ int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
 
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
-    PutText(&menuItem->text, BG_GetMapBuffer(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    PutText(&menuItem->text, BG_GetMapBufferNew(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 }
 
@@ -2265,7 +2265,7 @@ int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     }
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
-    PutText(&menuItem->text, BG_GetMapBuffer(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    PutText(&menuItem->text, BG_GetMapBufferNew(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 }
 

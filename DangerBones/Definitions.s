@@ -21,7 +21,7 @@
 
 .if FE6 == true 
 
-.global strlen 
+@.global strlen 
 .type strlen, %function 
 strlen: 
 @mov r11, r11 
