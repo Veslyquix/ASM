@@ -308,6 +308,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     }
     proc->finished = false;
     proc->str = str;
+    proc->unitClock = 0;
 
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
