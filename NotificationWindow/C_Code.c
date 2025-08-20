@@ -39,7 +39,7 @@ struct PlayerInterfaceProc
 struct NotificationWindowProc
 {
     /* 00 */ PROC_HEADER;
-    /* 29 */ u8 finished;
+    /* 29 */ u8 finishedPrinting;
     /* 2a */ u8 id;
     /* 2b */ u8 chr_counter;
     // /* 2C */ struct Text texts[2];
@@ -54,6 +54,7 @@ struct NotificationWindowProc
     // /* 57 */ s8 windowQuadrant;
     // /* 58 */ int showHideClock;
     char * str;
+    char * strOriginal;
 };
 
 struct PlayerInterfaceConfigEntry
@@ -81,7 +82,6 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc);
 void NotificationWindowDraw(struct NotificationWindowProc * proc);
 void NotificationWindowClean(struct NotificationWindowProc * proc);
 char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str);
-void EnqueueIfUnfinished(struct NotificationWindowProc * proc);
 void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc);
 int CountStrLines(const char * str);
 int GetNotificationStringTextLenASCII_Wrapped(const char * str);
@@ -103,8 +103,9 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_15, // ?
     PROC_YIELD,
     PROC_LABEL(StartLabel),
+    PROC_SLEEP(2),
     PROC_REPEAT(NotificationIdleWhileMenuEtc),
-    PROC_SLEEP(0),
+    PROC_SLEEP(2),
 
     PROC_CALL(NotificationWindow_Init),
 
@@ -120,7 +121,7 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_CALL(NotificationWindowClean),
 
     PROC_LABEL(EnqueueLabel),
-    PROC_CALL(EnqueueIfUnfinished),
+    PROC_GOTO(StartLabel),
     PROC_YIELD,
 
     PROC_LABEL(EndLabel),
@@ -141,6 +142,7 @@ void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
     {
         // Proc_EndEach(gProcScr_NotificationWindow);
         struct NotificationWindowProc * notifProc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        StartGreenText(notifProc);
         notifProc->id = 0;
     }
     else
@@ -197,14 +199,6 @@ int GetSoundRoomIDFromTrack(int id)
     return (-1);
 }
 
-static const char ExampleTexts[][50] = {
-    "Critical security updates are required.",
-    "Achievement unlocked: Pacifist.",
-    "A new update for CandyCrushSaga is available.",
-    "NG+ feature unlocked: Silver Sword.",
-    "", // terminator
-};
-
 const char * GetPlayingBGMName(void)
 {
     int id = GetCurrentBgmSong();
@@ -219,26 +213,37 @@ const char * GetPlayingBGMName(void)
     return str;
 }
 
-void EnqueueIfUnfinished(struct NotificationWindowProc * proc)
+int ShowBgm()
 {
-    if (!proc->finished)
-    {
-
-        Proc_Goto(proc, StartLabel);
-    }
+    return false;
 }
+struct NotificationsStruct
+{
+    const char * text;
+    u16 textID;
+    u16 flag;
+};
+extern const struct NotificationsStruct gNotificationsData[];
+
 const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 {
     const char * str = "";
-    // if (!proc->id)
-    if (0)
+    const struct NotificationsStruct data = gNotificationsData[proc->id];
+    if (data.text == NULL && data.textID == 0)
+    {
+        return NULL;
+    }
+    if (ShowBgm())
     {
         str = GetPlayingBGMName();
     }
     else
     {
-        // str = ExampleTexts[proc->id - 1];
-        str = ExampleTexts[proc->id];
+        str = data.text;
+        if (!str)
+        {
+            str = GetStringFromIndex(data.textID);
+        }
     }
 
     return str;
@@ -250,7 +255,7 @@ extern struct Font * gActiveFont;
 #define DefaultTextChr 0x80
 #define NotificationChr 0x180
 
-int ClearNotificationText(struct Text * text, int tileWidth, int chr_counter)
+int ClearNotificationText(struct NotificationWindowProc * proc, struct Text * text, int tileWidth, int chr_counter)
 {
 
     // save where text was drawing
@@ -262,10 +267,11 @@ int ClearNotificationText(struct Text * text, int tileWidth, int chr_counter)
     // (0x200 - 0x80) / 2 = 0xC0;
     // if we wanted to start at 0x200 tile, then we'd put 0xC0 here, or change NotifChr to 0x200
     gActiveFont->chr_counter =
-        ((NotificationChr - DefaultTextChr) >> 1) + chr_counter; // starts at 0x80 tile normally, then
+        ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter; // starts at 0x80 tile normally, then
 
     InitText(text, tileWidth);
     int result = gActiveFont->chr_counter;
+    proc->chr_counter = gActiveFont->chr_counter;
     gActiveFont->chr_counter = chr;
 
     return result;
@@ -273,6 +279,10 @@ int ClearNotificationText(struct Text * text, int tileWidth, int chr_counter)
 
 void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 {
+    if (GetGameClock() & 1)
+    {
+        return;
+    }
     struct Text * th = &gStatScreen.text[proc->line];
     const char * str = (const char *)proc->str;
     // chr_counter = InitNotificationText(proc, th, str, tileWidth, chr_counter);
@@ -288,6 +298,10 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
     gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
 
     proc->str = NotificationPrintText(proc, th, str);
+    if (!proc->str || !*proc->str)
+    {
+        proc->finishedPrinting = true;
+    }
 
     // Text_InsertDrawString(th, GetStringTextCenteredPos(tileWidth * 8 + 8, str), TEXT_COLOR_SYSTEM_WHITE, str);
     proc->chr_counter = gActiveFont->chr_counter;
@@ -300,21 +314,21 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 {
 
     const char * str = GetNextNotificationStr(proc);
-    if (!*str || !str)
+    if (!str || !*str)
     {
 
         Proc_Goto(proc, EndLabel);
         return;
     }
-    proc->finished = false;
-    proc->str = str;
+    proc->finishedPrinting = false;
+    proc->str = (void *)str;
+    proc->strOriginal = (void *)str;
     proc->unitClock = 0;
 
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
     proc->line = 0;
     proc->lines = CountStrLines(str);
-    brk;
     int chr_counter = 0;
     NotificationWindowDraw(proc);
     proc->chr_counter = 0;
@@ -322,10 +336,10 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 
     for (int i = 0; i < proc->lines; i++)
     {
-        chr_counter = ClearNotificationText(&th[i], tileWidth, chr_counter);
+        chr_counter = ClearNotificationText(proc, &th[i], tileWidth, chr_counter);
     }
     // chr_counter = InitNotificationText(proc, th, str, tileWidth, chr_counter);
-
+    proc->chr_counter = 0;
     for (int i = 0; i < proc->lines; i++)
     {
         PutText(&th[i], &gBG0TilemapBuffer[TILEMAP_INDEX(1, 1 + (i * 2))]);
@@ -361,7 +375,7 @@ int GetNotificationWindowWidth(struct NotificationWindowProc * proc)
 {
     // int lines = proc->lines;
     // int result = 0;
-    return ((GetNotificationStringTextLenASCII_Wrapped(proc->str) + 7) >> 3) + 2;
+    return ((GetNotificationStringTextLenASCII_Wrapped(proc->strOriginal) + 7) >> 3) + 2;
     // return gStatScreen.text[proc->line].tile_width + 1;s
 }
 
@@ -385,7 +399,8 @@ void NotificationWindowClean(struct NotificationWindowProc * proc)
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
 }
 
-#define MAX_LINE_WIDTH 160
+// #define MAX_LINE_WIDTH 144
+#define MAX_LINE_WIDTH 136
 #define CHAR_NEWLINE 1
 
 int GetNotificationStringTextLenASCII_Wrapped(const char * str)
@@ -516,13 +531,14 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
             if (curX + nextWordWidth > MAX_LINE_WIDTH)
             {
                 proc->line++;
-                break; // wrap before the next word
+                iter++; // so next line does not start with a space
+                break;  // wrap before the next word
             }
         }
         if (curX > MAX_LINE_WIDTH || *iter == CHAR_NEWLINE)
         {
             proc->line++;
-            // iter++;
+            iter++; // so next line does not start with a space
             break;
         }
         iter = (void *)Text_DrawCharacterAscii(&th[line], (void *)iter);
@@ -615,12 +631,16 @@ void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc)
     }
     NotificationWindow_LoopDrawText(proc);
 
-    proc->unitClock++;
-    if (proc->unitClock > NotificationWindow_DisplayFrames)
+    if (proc->finishedPrinting)
     {
 
-        proc->id++;
-        Proc_Goto(proc, ClearGfxLabel);
-        return;
+        proc->unitClock++;
+        if (proc->unitClock > NotificationWindow_DisplayFrames)
+        {
+            NotificationWindowClean(proc);
+            proc->id++;
+            Proc_Goto(proc, EnqueueLabel);
+            return;
+        }
     }
 }

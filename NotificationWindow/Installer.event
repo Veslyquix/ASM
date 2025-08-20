@@ -8,7 +8,7 @@
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
-WORD 180 // 3 seconds  
+WORD 120 // 2 seconds after it finishes printing 
 
 
 PUSH 
@@ -33,5 +33,43 @@ POP
 #ifdef _FE6_ 
 #include "Data/FE6.lyn.event" 
 #endif 
+
+
+
+#ifndef txt
+#inctbl "fe8TR" "fe8_tr.tbl"
+    #define txt(string2) STRING string2 "fe8TR"; BYTE 0 0; 
+#endif 
+
+// #define NotificationEntry(stringLabel, textID, flagID) "POIN stringLabel; SHORT textID flagID" 
+#define NotificationEntry(stringLabel, flagID) "POIN stringLabel; SHORT 0 flagID" 
+#define NotificationEntryTextID(textID, flagID) "POIN 0; SHORT textID flagID" 
+
+ALIGN 4 
+gNotificationsData:
+NotificationEntry(text0, 0) 
+NotificationEntry(text1, 0) 
+NotificationEntry(text2, 0) 
+// NotificationEntryTextID(0x94b, 0) 
+NotificationEntry(text3, 0) 
+NotificationEntry(text4, 0) 
+WORD 0 0 // Terminator 
+
+text0: 
+txt("Because I could not stop for Death-\\
+He kindly stopped for me-\\
+The Carriage held but just Ourselves-\\
+And Immortality."); BYTE 0 
+
+text1: 
+txt("Critical security updates are required."); BYTE 0 
+text2: 
+txt("Achievement unlocked: Pacifist."); BYTE 0 
+text3: 
+txt("A new update for CandyCrushSaga is available."); BYTE 0 
+text4: 
+txt("NG+ feature unlocked: Silver Sword."); BYTE 0 
+text5: 
+txt("Critical security updates are required."); BYTE 0 
 
 

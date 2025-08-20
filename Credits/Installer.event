@@ -59,7 +59,7 @@ CreditsEnd
     
 #ifndef txt
 #inctbl "fe8TR" "fe8_tr.tbl"
-    #define txt(string2) STRING string2 "fe8TR"; BYTE 0 0; // fe6 version 
+    #define txt(string2) STRING string2 "fe8TR"; BYTE 0 0; 
 #endif 
 
 theEnd: 
