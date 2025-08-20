@@ -6,7 +6,7 @@ struct PlayerInterfaceProc
 {
     /* 00 */ PROC_HEADER;
     /* 29 */ u8 finished;
-    /* 2a */ u8 pad1;
+    /* 2a */ u8 id;
     /* 2b */ u8 pad2;
     /* 2C */ struct Text texts[2];
 
@@ -123,7 +123,8 @@ void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
     if (!Proc_Find(gProcScr_NotificationWindow))
     {
         // Proc_EndEach(gProcScr_NotificationWindow);
-        Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        struct PlayerInterfaceProc * notifProc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        notifProc->id = 0;
     }
     else
     {
@@ -179,6 +180,14 @@ int GetSoundRoomIDFromTrack(int id)
     return (-1);
 }
 
+static const char ExampleTexts[][50] = {
+    "Critical security updates are required.",
+    "Achievement unlocked: Pacifist.",
+    "A new update for CandyCrushSaga is available.",
+    "NG+ feature unlocked: Silver Sword.",
+    "", // terminator
+};
+
 const char * GetPlayingBGMName(void)
 {
     int id = GetCurrentBgmSong();
@@ -204,8 +213,15 @@ void EnqueueIfUnfinished(struct PlayerInterfaceProc * proc)
 const char * GetNextNotificationStr(struct PlayerInterfaceProc * proc)
 {
     const char * str = "";
+    if (!proc->id)
+    {
+        str = GetPlayingBGMName();
+    }
+    else
+    {
+        str = ExampleTexts[proc->id - 1];
+    }
 
-    str = GetPlayingBGMName();
     return str;
 }
 
@@ -250,6 +266,7 @@ void NotificationWindow_Init(struct PlayerInterfaceProc * proc)
     const char * str = GetNextNotificationStr(proc);
     if (!*str || !str)
     {
+
         Proc_Goto(proc, EndLabel);
         return;
     }
@@ -485,7 +502,8 @@ void NotificationWindow_Loop_Display(struct PlayerInterfaceProc * proc)
     proc->showHideClock++;
     if (proc->showHideClock > NotificationWindow_DisplayFrames)
     {
-        proc->finished = true;
+
+        proc->id++;
         Proc_Goto(proc, ClearGfxLabel);
         return;
     }
