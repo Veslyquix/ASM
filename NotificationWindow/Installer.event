@@ -1,38 +1,17 @@
 
+// Replaces: TerrainDisplay_Init
+// Hooks: SetChapterFlag, SetPermanentFlag
 
 
-#ifndef callHackNew
-	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
-    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
-#endif 
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
-WORD 120 // 2 seconds after it finishes printing 
+WORD 120 // Disappear 2 seconds after it finishes printing 
+DisableBGMNotificationsFlag:
+WORD 0x12A // Choose a flag if you want to disable new BGM notifications ingame 
+MAX_LINE_WIDTH:
+WORD 144 // 152 will cause a little text to be outside the right side of the box 
 
-
-PUSH 
-#ifdef _FE8_ 
-ORG 0x4FEC8 // fe8 
-#endif 
-#ifdef _FE7_ 
-ORG $4b30c // fe7 
-#endif 
-#ifdef _FE6_ 
-ORG $426E8 // fe6
-#endif 
-// callHackNew(FastForwardBattles) 
-POP 
-
-#ifdef _FE8_ 
-#include "Data/FE8.lyn.event" 
-#endif 
-#ifdef _FE7_ 
-#include "Data/FE7.lyn.event" 
-#endif 
-#ifdef _FE6_ 
-#include "Data/FE6.lyn.event" 
-#endif 
 
 
 
@@ -42,23 +21,50 @@ POP
 #endif 
 
 // #define NotificationEntry(stringLabel, textID, flagID) "POIN stringLabel; SHORT textID flagID" 
-#define NotificationEntry(stringLabel, flagID) "POIN stringLabel; SHORT 0 flagID" 
-#define NotificationEntryTextID(textID, flagID) "POIN 0; SHORT textID flagID" 
+#define NotificationEntry(stringLabel, flagID, colour) "POIN stringLabel; SHORT 0 flagID; BYTE colour colour colour colour" 
+#define NotificationEntry(stringLabel, flagID, colour1, colour2) "POIN stringLabel; SHORT 0 flagID; BYTE colour1 colour2 colour2 colour2" 
+#define NotificationEntry(stringLabel, flagID) "POIN stringLabel; SHORT 0 flagID; BYTE 0 0 0 0" 
+#define NotificationEntryTextID(textID, flagID, colour) "POIN 0; SHORT textID flagID; BYTE colour colour colour colour" 
+#define NotificationEntryTextID(textID, flagID, colour1, colour2) "POIN 0; SHORT textID flagID; BYTE colour1 colour2 colour2 colour2" 
+#define NotificationEntryTextID(textID, flagID) "POIN 0; SHORT textID flagID; BYTE 0 0 0 0" 
+
+
+#define TEXT_COLOR_SYSTEM_WHITE 0
+#define TEXT_COLOR_SYSTEM_GRAY  1
+#define TEXT_COLOR_SYSTEM_BLUE  2
+#define TEXT_COLOR_SYSTEM_GOLD  3
+#define TEXT_COLOR_SYSTEM_GREEN 4
+#define TEXT_COLOR_SYSTEM_BLACK 5
+
 
 ALIGN 4 
 gNotificationsData:
-NotificationEntry(text0, 0) 
-NotificationEntry(text1, 0) 
-NotificationEntry(text2, 0) 
-// NotificationEntryTextID(0x94b, 0) 
-NotificationEntry(text3, 0) 
-NotificationEntry(text4, 0) 
+// NotificationEntryTextID(0x505, 0) // textID, flagID "Sword" 
+NotificationEntryTextID(0x3D, 1) // textID, flagID "Sword" 
+NotificationEntry(text0, 9) // text label, flagID 
+NotificationEntry(text1, 0xA, TEXT_COLOR_SYSTEM_WHITE, TEXT_COLOR_SYSTEM_GREEN) 
+// NotificationEntry(text2, 0x65) 
+
+// NotificationEntry(text3, 0) 
+// NotificationEntry(text4, 0) 
 WORD 0 0 // Terminator 
 
+// don't exceed 6 lines 
 text0: 
+txt("Achievement Completed:\\
+Scuffed."); BYTE 0 
+
+text1: 
+txt("New Game+ Unlock:\\
+Silver Sword."); BYTE 0 
+
+
+
+/*
+// text0: 
 txt("Because I could not stop for Death- \He kindly stopped for me- \The Carriage held but just Ourselves- \And Immortality."); BYTE 0 
 
-// text0: 
+text3: 
 txt("We slowly drove - He knew no haste\\
 And I had put away\\
 My labor and my leisure too,\\
@@ -68,11 +74,58 @@ text1:
 txt("Critical security updates are required."); BYTE 0 
 text2: 
 txt("Achievement unlocked: Pacifist."); BYTE 0 
-text3: 
+text0: 
 txt("A new update for CandyCrushSaga is available."); BYTE 0 
 text4: 
 txt("NG+ feature unlocked: Silver Sword."); BYTE 0 
 text5: 
 txt("Critical security updates are required."); BYTE 0 
+
+*/
+
+
+
+#ifndef callHackNew
+	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+#endif 
+
+PUSH 
+
+
+#ifdef _FE6_ 
+// ORG $ 
+#endif 
+#ifdef _FE7_ 
+// ORG $ 
+#endif 
+#ifdef _FE8_ 
+ORG 0x83be0 
+#endif 
+callHackNew(HookSetLocalFlag_NotificationWindow) 
+
+
+#ifdef _FE6_ 
+// ORG $ 
+#endif 
+#ifdef _FE7_ 
+// ORG $ 
+#endif 
+#ifdef _FE8_ 
+ORG 0x83CAC
+#endif 
+callHackNew(HookSetGlobalFlag_NotificationWindow) 
+POP 
+
+#ifdef _FE8_ 
+#include "Data/FE8.lyn.event" 
+#include "Data/FE8_AsmHooks.lyn.event" 
+#endif 
+#ifdef _FE7_ 
+#include "Data/FE7.lyn.event" 
+#endif 
+#ifdef _FE6_ 
+#include "Data/FE6.lyn.event" 
+#endif 
 
 

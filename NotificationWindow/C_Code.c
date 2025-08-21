@@ -2,74 +2,42 @@
 
 #define brk asm("mov r11, r11");
 
-struct PlayerInterfaceProc
+struct NotificationsStruct
 {
-    /* 00 */ PROC_HEADER;
-    /* 29 */ u8 finished;
-    /* 2a */ u8 id;
-    /* 2b */ u8 chr_counter;
-    /* 2C */ struct Text texts[2];
-
-    /* 3C */ s8 xBurst;
-    /* 3D */ s8 yBurst;
-    /* 3E */ s8 wBurst;
-    /* 3F */ s8 hBurst;
-
-    /* 40 */ u16 * statusTm;
-    /* 44 */ s16 unitClock;
-    /* 46 */ s16 xHp;
-    /* 48 */ s16 yHp;
-    /* 4A */ u8 burstUnitIdPrev;
-    /* 4B */ u8 burstUnitId;
-    /* 4C */ u8 xCursorPrev;
-    /* 4D */ u8 yCursorPrev;
-    /* 4E */ u8 xCursor;
-    /* 4F */ u8 yCursor;
-    /* 50 */ s8 cursorQuadrant;
-    /* 51 */ u8 hpCurHi;
-    /* 52 */ u8 hpCurLo;
-    /* 53 */ u8 hpMaxHi;
-    /* 54 */ u8 hpMaxLo;
-    /* 55 */ s8 hideContents;
-    /* 56 */ s8 isRetracting;
-    /* 57 */ s8 windowQuadrant;
-    /* 58 */ int showHideClock;
+    const char * text;
+    u16 textID;
+    u16 flag;
+    u8 colour[4];
 };
+extern const struct NotificationsStruct gNotificationsData[];
 
+#define StrBufSize 30
 struct NotificationWindowProc
 {
-    /* 00 */ PROC_HEADER;
-    /* 29 */ u8 finishedPrinting;
-    /* 2a */ u8 id;
-    /* 2b */ u16 chr_counter;
-    // /* 2C */ struct Text texts[2];
-
-    // char str[30];
-    u8 line;
-    u8 lines;
-    /* 44 */ s16 unitClock;
-    // /* 50 */ s8 cursorQuadrant;
-    // /* 55 */ s8 hideContents;
-    // /* 56 */ s8 isRetracting;
-    // /* 57 */ s8 windowQuadrant;
-    // /* 58 */ int showHideClock;
+    PROC_HEADER;
+    u8 finishedPrinting;
+    u8 showingBgm;
+    s8 delayFrames;
     char * str;
     char * strOriginal;
-};
+    s16 id;
+    u16 chr_counter;
+    u16 bgm;
 
-struct PlayerInterfaceConfigEntry
-{
-    /* 00 */ s8 xTerrain, yTerrain;
-    /* 02 */ s8 xMinimug, yMinimug;
-    /* 04 */ s8 xGoal, yGoal;
-    STRUCT_PAD(0x06, 0x08);
+    s16 unitClock;
+    u8 line;
+    u8 lines;
+
+    u8 fastPrint;
+
+    u8 colour[4]; // up to 0x41
+    char strBuf[StrBufSize];
 };
 
 extern struct ProcCmd gProcScr_UnitDisplay_MinimugBox[];
 extern struct ProcCmd gProcScr_TerrainDisplay[];
 extern struct ProcCmd sProc_Menu[];
 
-extern struct PlayerInterfaceConfigEntry sPlayerInterfaceConfigLut[4];
 extern s8 sGoalSlideInWidthLut[5];
 extern s8 sGoalSlideOutWidthLut[3];
 extern int GetCursorQuadrant();
@@ -83,6 +51,8 @@ void NotificationWindowDraw(struct NotificationWindowProc * proc);
 void NotificationWindowClean(struct NotificationWindowProc * proc);
 char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str);
 void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc);
+void NotificationWindow_Idle(struct NotificationWindowProc * proc);
+void StartNotificationProc(int id);
 int CountStrLines(const char * str);
 int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 // notifications eg. new BGM, ingame achievements, NG+ unlocks, or spam
@@ -98,10 +68,21 @@ int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 #define ClearGfxLabel 97
 #define EnqueueLabel 98
 #define EndLabel 99
+
+void NotificationSetFastPrint(struct NotificationWindowProc * proc)
+{
+    proc->fastPrint = true;
+}
+void NotificationInitVariables(struct NotificationWindowProc * proc)
+{
+    proc->fastPrint = false;
+}
+
 struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_NAME("NotificationWindow"),
     PROC_15, // ?
     PROC_YIELD,
+    PROC_CALL(NotificationInitVariables),
     PROC_LABEL(StartLabel),
     PROC_SLEEP(2),
     PROC_REPEAT(NotificationIdleWhileMenuEtc),
@@ -121,13 +102,66 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_CALL(NotificationWindowClean),
 
     PROC_LABEL(EnqueueLabel),
+    PROC_CALL(NotificationSetFastPrint),
     PROC_GOTO(StartLabel),
     PROC_YIELD,
 
     PROC_LABEL(EndLabel),
+    PROC_REPEAT(NotificationWindow_Idle),
+    PROC_GOTO(StartLabel),
 
     PROC_END,
 };
+
+void StartNotificationProc(int id)
+{
+    struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
+    if (!proc)
+    {
+        proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        StartGreenText(proc);
+        proc->id = id;
+        proc->bgm = 0xFFFF;
+    }
+    else
+    {
+        proc->id = id;
+        Proc_Goto(proc, StartLabel);
+    }
+}
+
+void DoNotificationsForFlag(int id)
+{
+    const struct NotificationsStruct * data = &gNotificationsData[0];
+    int i = 0;
+    while (data->text || data->textID)
+    {
+        if (data->flag == id)
+        {
+            StartNotificationProc(i);
+            // no break in case more than 1 notification is to display for the 1 flag
+        }
+        data++;
+        i++;
+    }
+    return;
+}
+
+void RestartNotificationProc(void)
+{
+    struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
+    if (!proc)
+    {
+        proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        StartGreenText(proc);
+        proc->id = (-1); // bgm only
+        proc->bgm = 0xFFFF;
+    }
+    else
+    {
+        Proc_Goto(proc, StartLabel); // maybe ?
+    }
+}
 
 //! FE8U = 0x0808CB34
 void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
@@ -138,20 +172,15 @@ void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
     proc->cursorQuadrant = 1;
 
     InitTextDb(proc->texts, 5);
-    if (!Proc_Find(gProcScr_NotificationWindow))
-    {
-        // Proc_EndEach(gProcScr_NotificationWindow);
-        struct NotificationWindowProc * notifProc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
-        StartGreenText(notifProc);
-        notifProc->id = 0;
-    }
-    else
-    {
-        Proc_Goto(Proc_Find(gProcScr_NotificationWindow), StartLabel);
-    }
+
+    RestartNotificationProc();
 
     return;
 }
+
+// Hooks:
+// void SetChapterFlag(int flag);
+// void SetPermanentFlag(int flag);
 
 // NotificationWindow
 
@@ -198,8 +227,8 @@ int GetSoundRoomIDFromTrack(int id)
     }
     return (-1);
 }
-
-const char * GetPlayingBGMName(void)
+#include <string.h>
+const char * GetPlayingBGMName(struct NotificationWindowProc * proc)
 {
     int id = GetCurrentBgmSong();
     struct SoundRoomData * data = sSoundRoom;
@@ -210,39 +239,68 @@ const char * GetPlayingBGMName(void)
     }
 
     const char * str = GetStringFromIndex(data[id].songName);
+    int len = strlen(str);
+    if (len < StrBufSize)
+    {
+        CopyString(proc->strBuf, str);
+        str = (void *)proc->strBuf;
+    }
+
     return str;
 }
 
-int ShowBgm()
+extern const int DisableBGMNotificationsFlag;
+int ShowBgm(struct NotificationWindowProc * proc)
 {
-    return false;
+    int songID = GetCurrentBgmSong();
+    if (songID == proc->bgm)
+    {
+        return false;
+    }
+    proc->bgm = songID;
+    return !CheckFlag(DisableBGMNotificationsFlag);
 }
-struct NotificationsStruct
+
+void NotificationWindow_Idle(struct NotificationWindowProc * proc)
 {
-    const char * text;
-    u16 textID;
-    u16 flag;
-};
-extern const struct NotificationsStruct gNotificationsData[];
+    if (ShowBgm(proc))
+    {
+        Proc_Goto(proc, StartLabel);
+    }
+}
 
 const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 {
     const char * str = "";
-    const struct NotificationsStruct data = gNotificationsData[proc->id];
-    if (data.text == NULL && data.textID == 0)
+    const struct NotificationsStruct * data = NULL;
+    if (proc->id != (-1))
+    {
+        data = &gNotificationsData[proc->id];
+    }
+    else if (ShowBgm(proc))
+    {
+        proc->showingBgm = true;
+        return GetPlayingBGMName(proc);
+    }
+    if (!data || (data->text == NULL && data->textID == 0))
     {
         return NULL;
     }
-    if (ShowBgm())
+
+    str = data->text;
+    for (int i = 0; i < 4; i++)
     {
-        str = GetPlayingBGMName();
+        proc->colour[i] = data->colour[i];
     }
-    else
+
+    if (!str)
     {
-        str = data.text;
-        if (!str)
+        str = GetStringFromIndex(data->textID);
+        int len = strlen(str);
+        if (len < StrBufSize)
         {
-            str = GetStringFromIndex(data.textID);
+            CopyString(proc->strBuf, str);
+            str = (void *)&proc->strBuf;
         }
     }
 
@@ -255,7 +313,8 @@ extern struct Font * gActiveFont;
 #define DefaultTextChr 0x80
 #define NotificationChr 0x180
 
-#define MAX_LINE_WIDTH 151
+// #define MAX_LINE_WIDTH 151
+extern const int MAX_LINE_WIDTH;
 #define CHAR_NEWLINE 1
 #define CHAR_SPACE 0x20
 
@@ -290,7 +349,7 @@ int ClearNotificationText(
 
 void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 {
-    if (GetGameClock() & 1)
+    if (!proc->fastPrint && (GetGameClock() & 1))
     {
         return;
     }
@@ -330,7 +389,11 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 
 void NotificationWindow_Init(struct NotificationWindowProc * proc)
 {
-
+    proc->showingBgm = false;
+    for (int i = 0; i < 4; ++i)
+    {
+        proc->colour[i] = TEXT_COLOR_SYSTEM_WHITE;
+    }
     const char * str = GetNextNotificationStr(proc);
     if (!str || !*str)
     {
@@ -338,6 +401,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         Proc_Goto(proc, EndLabel);
         return;
     }
+    proc->delayFrames = 0;
     proc->finishedPrinting = false;
     proc->str = (void *)str;
     proc->strOriginal = (void *)str;
@@ -360,6 +424,14 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     proc->chr_counter = 0;
     for (int i = 0; i < proc->lines; i++)
     {
+        if (i < 4)
+        {
+            Text_SetColor(&th[i], proc->colour[i]);
+        }
+        else
+        {
+            Text_SetColor(&th[i], proc->colour[3]);
+        }
         PutText(&th[i], &gBG0TilemapBuffer[TILEMAP_INDEX(1, 1 + (i * 2))]);
     }
 
@@ -524,10 +596,12 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
 
 int GetNotificationWindowWidth(struct NotificationWindowProc * proc)
 {
-    // int lines = proc->lines;
-    // int result = 0;
-    return ((GetNotificationStringTextLenASCII_Wrapped(proc->strOriginal) + 7) >> 3) + 2;
-    // return gStatScreen.text[proc->line].tile_width + 1;s
+    int width = ((GetNotificationStringTextLenASCII_Wrapped(proc->strOriginal) + 7) >> 3) + 2;
+    if (width > 19)
+    {
+        width = 19;
+    }
+    return width;
 }
 
 int GetNotificationWindowHeight(struct NotificationWindowProc * proc)
@@ -563,9 +637,35 @@ void NotificationWindowDraw(struct NotificationWindowProc * proc)
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
 }
 
+int UpdateIdleDelayFrames(struct NotificationWindowProc * proc)
+{
+    proc->delayFrames = 2;
+
+    return true;
+}
+
+// idle for a couple extra frames so menu closing to MMB opening doesn't trigger
 int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
 {
+    int result = false;
+    if (proc->delayFrames > 0)
+    {
+        result = true;
+    }
+    proc->delayFrames--;
+    if (proc->delayFrames < 0)
+    {
+        proc->delayFrames = 0;
+    }
+    if (GetGameLock())
+    {
+        return UpdateIdleDelayFrames(proc);
+    }
+    // playerCursorDisplay
     if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x])
+    // if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x] ||
+    // gBmMapUnit[gBmSt.cursorPrevious.y][gBmSt.cursorPrevious.x])
+
     { // then minimug will show up
         struct PlayerInterfaceProc * mmb = Proc_Find(gProcScr_UnitDisplay_MinimugBox);
 
@@ -573,20 +673,29 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
         {
             if (mmb->windowQuadrant == 0) // top left
             {
-                return true;
+                return UpdateIdleDelayFrames(proc);
             }
 
             if (mmb->isRetracting || mmb->showHideClock)
             {
-                return true;
+                return UpdateIdleDelayFrames(proc);
             }
         }
     }
     if (Proc_Find(sProc_Menu))
     {
-        return true;
+        return UpdateIdleDelayFrames(proc);
     }
-    return false;
+    struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
+    if (playerPhase)
+    {
+        if (playerPhase->proc_lockCnt) // player phase has a blocking proc (such as the debugger)
+        {
+            return UpdateIdleDelayFrames(proc);
+        }
+    }
+
+    return result;
 }
 
 void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
@@ -595,9 +704,17 @@ void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
     {
         return;
     }
-
-    if (Proc_Find(gProcScr_TerrainDisplay))
+    struct PlayerInterfaceProc * terrainProc = Proc_Find(gProcScr_TerrainDisplay);
+    if (terrainProc)
     {
+        if (terrainProc->isRetracting || terrainProc->showHideClock)
+        {
+            return;
+        }
+        if (terrainProc->windowQuadrant == (-1))
+        {
+            return;
+        }
         Proc_Break(proc);
     }
 }
@@ -608,7 +725,7 @@ void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc)
     if (CheckNotificationInterrupted(proc))
     {
         NotificationWindowClean(proc);
-        Proc_Goto(proc, EnqueueLabel);
+        Proc_Goto(proc, EnqueueLabel); // print faster this time
         return;
     }
     NotificationWindow_LoopDrawText(proc);
@@ -620,8 +737,13 @@ void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc)
         if (proc->unitClock > NotificationWindow_DisplayFrames)
         {
             NotificationWindowClean(proc);
-            proc->id++;
-            Proc_Goto(proc, EnqueueLabel);
+            if (!proc->showingBgm)
+            {
+                proc->id = (-1);
+                proc->fastPrint = false;
+                // proc->id++;
+            }
+            Proc_Goto(proc, StartLabel);
             return;
         }
     }

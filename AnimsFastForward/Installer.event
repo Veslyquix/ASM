@@ -7,7 +7,7 @@
         #define SpeedupAnimsFlag_Def 0    // choose a flag if you want this functionality 
     #else 
         #define PlayerPhaseOnlyFlag_Def 0x129
-        #define SpeedupAnimsFlag_Def 0x12A
+        #define SpeedupAnimsFlag_Def 0x128
     #endif 
 #endif 
 #ifdef _FE7_ 
