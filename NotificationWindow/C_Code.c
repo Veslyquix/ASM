@@ -41,7 +41,7 @@ struct NotificationWindowProc
     /* 00 */ PROC_HEADER;
     /* 29 */ u8 finishedPrinting;
     /* 2a */ u8 id;
-    /* 2b */ u8 chr_counter;
+    /* 2b */ u16 chr_counter;
     // /* 2C */ struct Text texts[2];
 
     // char str[30];
@@ -255,7 +255,12 @@ extern struct Font * gActiveFont;
 #define DefaultTextChr 0x80
 #define NotificationChr 0x180
 
-int ClearNotificationText(struct NotificationWindowProc * proc, struct Text * text, int tileWidth, int chr_counter)
+#define MAX_LINE_WIDTH 151
+#define CHAR_NEWLINE 1
+#define CHAR_SPACE 0x20
+
+int ClearNotificationText(
+    struct NotificationWindowProc * proc, struct Text * text, int tileWidth, int chr_counter, int line)
 {
 
     // save where text was drawing
@@ -266,8 +271,14 @@ int ClearNotificationText(struct NotificationWindowProc * proc, struct Text * te
     // then, chr_counter * 2 is the chr tile ID we want
     // (0x200 - 0x80) / 2 = 0xC0;
     // if we wanted to start at 0x200 tile, then we'd put 0xC0 here, or change NotifChr to 0x200
-    gActiveFont->chr_counter =
-        ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter; // starts at 0x80 tile normally, then
+    if (!line)
+    {
+        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
+    }
+    else
+    {
+        gActiveFont->chr_counter = proc->chr_counter;
+    }
 
     InitText(text, tileWidth);
     int result = gActiveFont->chr_counter;
@@ -283,7 +294,7 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
     {
         return;
     }
-    struct Text * th = &gStatScreen.text[proc->line];
+    struct Text * th = &gStatScreen.text[0];
     const char * str = (const char *)proc->str;
     // chr_counter = InitNotificationText(proc, th, str, tileWidth, chr_counter);
 
@@ -295,7 +306,15 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
     // then, chr_counter * 2 is the chr tile ID we want
     // (0x200 - 0x80) / 2 = 0xC0;
     // if we wanted to start at 0x200 tile, then we'd put 0xC0 here, or change NotifChr to 0x200
-    gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
+
+    if (!proc->line)
+    {
+        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
+    }
+    else
+    {
+        gActiveFont->chr_counter = proc->chr_counter;
+    }
 
     proc->str = NotificationPrintText(proc, th, str);
     if (!proc->str || !*proc->str)
@@ -303,7 +322,6 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
         proc->finishedPrinting = true;
     }
 
-    // Text_InsertDrawString(th, GetStringTextCenteredPos(tileWidth * 8 + 8, str), TEXT_COLOR_SYSTEM_WHITE, str);
     proc->chr_counter = gActiveFont->chr_counter;
 
     // restore where text was drawing
@@ -336,7 +354,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 
     for (int i = 0; i < proc->lines; i++)
     {
-        chr_counter = ClearNotificationText(proc, &th[i], tileWidth, chr_counter);
+        chr_counter = ClearNotificationText(proc, &th[i], tileWidth, chr_counter, i);
     }
     // chr_counter = InitNotificationText(proc, th, str, tileWidth, chr_counter);
     proc->chr_counter = 0;
@@ -349,59 +367,6 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 
     return;
 }
-
-//! FE8U = 0x0808D514
-#define gUiScratchX 0 // vanilla uses 19
-#define gUiScratchY 0 // vanilla uses 10
-
-#define gUiWindowX_Size 12
-#define gUiWindowY_Size 6
-
-void NotificationWindow_808D514(int quadrant, int height, int width) // originally param3 would be line 0 or line 1
-{
-
-    TileMap_FillRect(gBG1TilemapBuffer, width, gUiWindowY_Size, 0);
-    TileMap_FillRect(gBG0TilemapBuffer, width, gUiWindowY_Size, 0);
-
-    TileMap_CopyRect(
-        gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 6 - height)), gBG1TilemapBuffer, width, height);
-    TileMap_CopyRect(
-        gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, (gUiScratchY + 8 - height)), gBG0TilemapBuffer, width, height);
-
-    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
-}
-
-int GetNotificationWindowWidth(struct NotificationWindowProc * proc)
-{
-    // int lines = proc->lines;
-    // int result = 0;
-    return ((GetNotificationStringTextLenASCII_Wrapped(proc->strOriginal) + 7) >> 3) + 2;
-    // return gStatScreen.text[proc->line].tile_width + 1;s
-}
-
-int GetNotificationWindowHeight(struct NotificationWindowProc * proc)
-{
-    return (proc->lines * 2) + 2;
-}
-
-void NotificationWindowClean(struct NotificationWindowProc * proc)
-{
-
-    int w = GetNotificationWindowWidth(proc);
-    int h = GetNotificationWindowHeight(proc);
-    int x = 0;
-    int y = 0;
-
-    // DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
-
-    ClearUiFrame(BG_GetMapBuffer(0), x, y, w, h);
-    ClearUiFrame(BG_GetMapBuffer(1), x, y, w, h);
-    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
-}
-
-// #define MAX_LINE_WIDTH 144
-#define MAX_LINE_WIDTH 136
-#define CHAR_NEWLINE 1
 
 int GetNotificationStringTextLenASCII_Wrapped(const char * str)
 {
@@ -503,20 +468,20 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
 
     char * iter = (void *)str;
     int curX;
-    int line = 0;
+    int line = proc->line;
+    int forceNewLine = false;
 
     int nextWordWidth = 0;
-    while (*iter == CHAR_NEWLINE)
-    {
-        // proc->line++;
-        iter++;
-    }
+    // while (*iter == CHAR_NEWLINE)
+    // {
+    // iter++;
+    // }
 
     while (*iter > CHAR_NEWLINE)
     {
         curX = Text_GetCursor(&th[line]); // current x position
 
-        if (*iter == ' ')
+        if (*iter == CHAR_SPACE)
         {
             char * lookahead = iter + 1;
             nextWordWidth = gActiveFont->glyphs[(u8)*iter]->width; // include the space in width
@@ -530,21 +495,59 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
             // If the next word doesn't fit, break before this space
             if (curX + nextWordWidth > MAX_LINE_WIDTH)
             {
-                proc->line++;
-                iter++; // so next line does not start with a space
-                break;  // wrap before the next word
+                // brk;
+                forceNewLine = true;
+                // proc->line++;
+                // iter++; // so next line does not start with a space
+                break; // wrap before the next word
             }
         }
         if (curX > MAX_LINE_WIDTH || *iter == CHAR_NEWLINE)
         {
-            proc->line++;
-            iter++; // so next line does not start with a space
+            forceNewLine = true;
             break;
         }
         iter = (void *)Text_DrawCharacterAscii(&th[line], (void *)iter);
         break;
     }
+    if (*iter == CHAR_NEWLINE || forceNewLine)
+    {
+        proc->line++;
+        while (*iter == CHAR_SPACE || *iter == CHAR_NEWLINE)
+        {
+            iter++;
+        }
+    }
+
     return iter;
+}
+
+int GetNotificationWindowWidth(struct NotificationWindowProc * proc)
+{
+    // int lines = proc->lines;
+    // int result = 0;
+    return ((GetNotificationStringTextLenASCII_Wrapped(proc->strOriginal) + 7) >> 3) + 2;
+    // return gStatScreen.text[proc->line].tile_width + 1;s
+}
+
+int GetNotificationWindowHeight(struct NotificationWindowProc * proc)
+{
+    return (proc->lines * 2) + 2;
+}
+
+void NotificationWindowClean(struct NotificationWindowProc * proc)
+{
+
+    int w = GetNotificationWindowWidth(proc);
+    int h = GetNotificationWindowHeight(proc);
+    int x = 0;
+    int y = 0;
+
+    // DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
+
+    ClearUiFrame(BG_GetMapBuffer(0), x, y, w, h);
+    ClearUiFrame(BG_GetMapBuffer(1), x, y, w, h);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
 }
 
 void NotificationWindowDraw(struct NotificationWindowProc * proc)
@@ -557,27 +560,7 @@ void NotificationWindowDraw(struct NotificationWindowProc * proc)
     DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
 
     ClearUiFrame(BG_GetMapBuffer(0), x, y, w, h);
-
-    // PutText(th, gBG0TilemapBuffer + TILEMAP_INDEX(gUiScratchX + 0, gUiScratchY + 1));
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
-
-    // TileMap_FillRect(gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY), 11, 9, 0);
-    // TileMap_FillRect(gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY + 2), 11, 9, 0);
-
-    // if (proc->unitClock == 0)
-    // {
-    // CallARM_FillTileRect(
-    // gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY), gTSA_GoalBox_OneLine, TILEREF(0x0, 1));
-    // PutText(proc->texts, gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 2, gUiScratchY + 3));
-    // }
-
-    // if (proc->unitClock == 1)
-    // {
-    // CallARM_FillTileRect(
-    // gUiTmScratchB + TILEMAP_INDEX(gUiScratchX + 1, gUiScratchY), gTSA_GoalBox_TwoLines, TILEREF(0x0, 1));
-    // PutText(&proc->texts[0], gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 2, gUiScratchY + 3));
-    // PutText(&proc->texts[1], gUiTmScratchA + TILEMAP_INDEX(gUiScratchX + 2, gUiScratchY + 5));
-    // }
 }
 
 int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
@@ -593,11 +576,10 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
                 return true;
             }
 
-            // if (mmb->isRetracting || mmb->showHideClock)
-            // {
-            // brk;
-            // return;
-            // }
+            if (mmb->isRetracting || mmb->showHideClock)
+            {
+                return true;
+            }
         }
     }
     if (Proc_Find(sProc_Menu))

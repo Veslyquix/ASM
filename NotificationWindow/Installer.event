@@ -56,10 +56,13 @@ NotificationEntry(text4, 0)
 WORD 0 0 // Terminator 
 
 text0: 
-txt("Because I could not stop for Death-\\
-He kindly stopped for me-\\
-The Carriage held but just Ourselves-\\
-And Immortality."); BYTE 0 
+txt("Because I could not stop for Death- \He kindly stopped for me- \The Carriage held but just Ourselves- \And Immortality."); BYTE 0 
+
+// text0: 
+txt("We slowly drove - He knew no haste\\
+And I had put away\\
+My labor and my leisure too,\\
+For His Civility -")
 
 text1: 
 txt("Critical security updates are required."); BYTE 0 
