@@ -11,7 +11,7 @@ struct NotificationsStruct
 };
 extern const struct NotificationsStruct gNotificationsData[];
 
-#define StrBufSize 30
+#define QueueSize 30
 struct NotificationWindowProc
 {
     PROC_HEADER;
@@ -31,7 +31,7 @@ struct NotificationWindowProc
     u8 fastPrint;
 
     u8 colour[4]; // up to 0x41
-    char strBuf[StrBufSize];
+    u8 queue[30];
 };
 
 extern struct ProcCmd gProcScr_UnitDisplay_MinimugBox[];
@@ -73,16 +73,11 @@ void NotificationSetFastPrint(struct NotificationWindowProc * proc)
 {
     proc->fastPrint = true;
 }
-void NotificationInitVariables(struct NotificationWindowProc * proc)
-{
-    proc->fastPrint = false;
-}
 
 struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_NAME("NotificationWindow"),
     PROC_15, // ?
     PROC_YIELD,
-    PROC_CALL(NotificationInitVariables),
     PROC_LABEL(StartLabel),
     PROC_SLEEP(2),
     PROC_REPEAT(NotificationIdleWhileMenuEtc),
@@ -113,19 +108,68 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_END,
 };
 
+int GetNotificationId(struct NotificationWindowProc * proc)
+{
+    int id = proc->id;
+    if (id == (-1))
+    {
+        return id;
+    }
+    return proc->queue[id];
+}
+
+int GetFreeQueueSlot(struct NotificationWindowProc * proc)
+{
+    for (int i = 0; i < QueueSize; ++i)
+    {
+        if (proc->queue[i] == 0xFF)
+        {
+            return i;
+        }
+    }
+    return 0;
+}
+
+int GetTakenQueueSlot(struct NotificationWindowProc * proc)
+{
+    for (int i = 0; i < QueueSize; ++i)
+    {
+        if (proc->queue[i] != 0xFF)
+        {
+            return i;
+        }
+    }
+    return (-1);
+}
+
+void NotificationInitVariables(struct NotificationWindowProc * proc)
+{
+    proc->fastPrint = false;
+    StartGreenText(proc);
+    for (int i = 0; i < QueueSize; i++)
+    {
+        proc->queue[i] = 0xFF;
+    }
+}
+
 void StartNotificationProc(int id)
 {
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!proc)
     {
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
-        StartGreenText(proc);
-        proc->id = id;
+        NotificationInitVariables(proc);
+        int slot = GetFreeQueueSlot(proc);
+        proc->queue[slot] = id;
+        proc->id = slot;
         proc->bgm = 0xFFFF;
     }
     else
     {
-        proc->id = id;
+        int slot = GetFreeQueueSlot(proc);
+        brk;
+        proc->queue[slot] = id;
+        proc->id = slot;
         Proc_Goto(proc, StartLabel);
     }
 }
@@ -153,7 +197,7 @@ void RestartNotificationProc(void)
     if (!proc)
     {
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
-        StartGreenText(proc);
+        NotificationInitVariables(proc);
         proc->id = (-1); // bgm only
         proc->bgm = 0xFFFF;
     }
@@ -227,6 +271,16 @@ int GetSoundRoomIDFromTrack(int id)
     }
     return (-1);
 }
+
+struct MsgBuffer
+{
+    u8 buffer1[0x555];
+    u8 buffer2[0x555];
+    u8 buffer3[0x356];
+    u8 buffer4[0x100];
+    u8 buffer5[0x100];
+};
+extern struct MsgBuffer sMsgString;
 #include <string.h>
 const char * GetPlayingBGMName(struct NotificationWindowProc * proc)
 {
@@ -238,15 +292,13 @@ const char * GetPlayingBGMName(struct NotificationWindowProc * proc)
         return "";
     }
 
-    const char * str = GetStringFromIndex(data[id].songName);
-    int len = strlen(str);
-    if (len < StrBufSize)
-    {
-        CopyString(proc->strBuf, str);
-        str = (void *)proc->strBuf;
-    }
+    // use this buffer so that moving the cursor over different terrain doesn't overwrite the buffered text
+    char * buf = (void *)sMsgString.buffer3;
 
-    return str;
+    CopyString(buf, "BGM: ");
+    const char * str = GetStringFromIndexInBuffer(data[id].songName, buf + strlen(buf));
+
+    return buf;
 }
 
 extern const int DisableBGMNotificationsFlag;
@@ -273,9 +325,10 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 {
     const char * str = "";
     const struct NotificationsStruct * data = NULL;
-    if (proc->id != (-1))
+    int id = GetNotificationId(proc);
+    if (id != (-1))
     {
-        data = &gNotificationsData[proc->id];
+        data = &gNotificationsData[id];
     }
     else if (ShowBgm(proc))
     {
@@ -295,13 +348,7 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 
     if (!str)
     {
-        str = GetStringFromIndex(data->textID);
-        int len = strlen(str);
-        if (len < StrBufSize)
-        {
-            CopyString(proc->strBuf, str);
-            str = (void *)&proc->strBuf;
-        }
+        str = GetStringFromIndexInBuffer(data->textID, (void *)sMsgString.buffer3);
     }
 
     return str;
@@ -676,10 +723,10 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
                 return UpdateIdleDelayFrames(proc);
             }
 
-            if (mmb->isRetracting || mmb->showHideClock)
-            {
-                return UpdateIdleDelayFrames(proc);
-            }
+            // if (mmb->isRetracting || mmb->showHideClock)
+            // {
+            // return UpdateIdleDelayFrames(proc);
+            // }
         }
     }
     if (Proc_Find(sProc_Menu))
@@ -693,6 +740,10 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
         {
             return UpdateIdleDelayFrames(proc);
         }
+    }
+    else
+    {
+        return UpdateIdleDelayFrames(proc);
     }
 
     return result;
@@ -739,7 +790,8 @@ void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc)
             NotificationWindowClean(proc);
             if (!proc->showingBgm)
             {
-                proc->id = (-1);
+                proc->queue[proc->id] = 0xFF;
+                proc->id = GetTakenQueueSlot(proc);
                 proc->fastPrint = false;
                 // proc->id++;
             }
