@@ -296,7 +296,7 @@ const char * GetPlayingBGMName(struct NotificationWindowProc * proc)
     char * buf = (void *)sMsgString.buffer3;
 
     CopyString(buf, "BGM: ");
-    const char * str = GetStringFromIndexInBuffer(data[id].songName, buf + strlen(buf));
+    GetStringFromIndexInBuffer(data[id].songName, buf + strlen(buf));
 
     return buf;
 }
