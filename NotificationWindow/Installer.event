@@ -2,6 +2,7 @@
 // Replaces: TerrainDisplay_Init
 // Hooks: SetChapterFlag, SetPermanentFlag
 
+// gProcScr_TitleScreen 
 
 
 ALIGN 4 
@@ -112,6 +113,10 @@ callHackNew(HookSetLocalFlag_NotificationWindow)
 // ORG $ 
 #endif 
 #ifdef _FE8_ 
+// ORG $a341c 
+// SHORT $2001 
+// SHORT $4770 // IsExtraBonusClaimEnabled always true (not needed) 
+
 ORG 0x83CAC
 #endif 
 callHackNew(HookSetGlobalFlag_NotificationWindow) 

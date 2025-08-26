@@ -34,6 +34,71 @@ struct NotificationWindowProc
     u8 queue[30];
 };
 
+// MSa_SaveBonusClaim
+// default EMS seems to save 4 bytes for bonus content data that's been claimed
+// although the global sram for it is still in the link arena sram at like 0xE007200ish
+
+static const u8 iid_bonus[] = {
+    ITEM_BOOSTER_HP,  ITEM_BOOSTER_POW, ITEM_BOOSTER_SKL, ITEM_BOOSTER_SPD, ITEM_BOOSTER_LCK,
+    ITEM_BOOSTER_DEF, ITEM_BOOSTER_RES, ITEM_BOOSTER_MOV, ITEM_BOOSTER_CON,
+};
+struct BonusClaimEnt
+{
+    /* 00 */ u8 unseen;
+    /* 01 */ u8 kind; // 2 = gold, 0/1 = items
+    /* 02 */ u8 itemId;
+    /* 03 */ char str[0x11]; // Only used in FE8
+};
+
+#define BONUS_CLAIM_MAX 16
+#include <string.h>
+
+void SetBonusDataItem(struct BonusClaimEnt * data, int itemID, const char * str)
+{
+    data->unseen = true; // "viewable" would be better name
+    data->kind = BONUSKIND_ITEM0;
+    data->itemId = itemID;
+
+    // Clear the buffer
+    for (int i = 0; i < 0x11; i++)
+    {
+        data->str[i] = 0;
+    }
+
+    int len = strlen(str);
+    if (len >= 0x11)
+    {
+        return; // too long, skip
+    }
+
+    CopyString(data->str, str);
+}
+// vanilla only supports 3000g and 5000g items
+void SetBonusData3000Gold(struct BonusClaimEnt * data, const char * str)
+{
+    SetBonusDataItem(data, ITEM_3000G, str);
+    data->kind = BONUSKIND_MONEY;
+}
+void SetBonusData5000Gold(struct BonusClaimEnt * data, const char * str)
+{
+    SetBonusDataItem(data, ITEM_5000G, str);
+    data->kind = BONUSKIND_MONEY;
+}
+
+void CreateBonusContentData()
+{
+
+    struct BonusClaimEnt data[BONUS_CLAIM_MAX] = { 0 };
+    // brk;
+    for (int i = 0; i < BONUS_CLAIM_MAX; ++i)
+    {
+        SetBonusDataItem(&data[i], i + 1, "enjoy :)");
+    }
+    SetBonusData3000Gold(&data[0], "Monies");
+    SetBonusData5000Gold(&data[1], "Im rich");
+    SaveBonusContentData(data);
+}
+
 extern struct ProcCmd gProcScr_UnitDisplay_MinimugBox[];
 extern struct ProcCmd gProcScr_TerrainDisplay[];
 extern struct ProcCmd sProc_Menu[];
@@ -218,6 +283,7 @@ void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
     InitTextDb(proc->texts, 5);
 
     RestartNotificationProc();
+    CreateBonusContentData();
 
     return;
 }
@@ -281,7 +347,6 @@ struct MsgBuffer
     u8 buffer5[0x100];
 };
 extern struct MsgBuffer sMsgString;
-#include <string.h>
 const char * GetPlayingBGMName(struct NotificationWindowProc * proc)
 {
     int id = GetCurrentBgmSong();
