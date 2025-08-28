@@ -1,10 +1,15 @@
 
+#ifndef callHackNew
+	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+#endif 
+
 
 ALIGN 4 
 DisplayOnlyBG_Flag:
 WORD 0x27 
 SpriteTransparency: // between 0 (no transparency) and 16 (16 = cannot see portraits at all) 
-WORD 12
+WORD 10
 
 PUSH 
 ORG $7C50 
@@ -15,7 +20,9 @@ ORG $CEA0
 callHackNew(EventEngine_MaybeShowOnlyBG)
 ORG $E5EC 
 callHackNew(TalkEngine_MaybeSetSpriteBlend) 
-
+ORG $7C10 
+jumpToHack(ClearFlagWhenDialogueFinishes) 
+SHORT $46C0 
 
 POP 
 

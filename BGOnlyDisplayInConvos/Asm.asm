@@ -1,4 +1,10 @@
 .thumb 
+.macro blh to, reg=r3
+  ldr \reg, =\to
+  mov lr, \reg
+  .short 0xf800
+.endm
+
 .global ToggleSpritesWithSelect
 .type ToggleSpritesWithSelect, %function 
 ToggleSpritesWithSelect: 
@@ -36,5 +42,21 @@ ldr r3, =0x8007CAD
 bx r3 
 .ltorg 
 
+.global ClearFlagWhenDialogueFinishes
+.type ClearFlagWhenDialogueFinishes, %function 
+ClearFlagWhenDialogueFinishes:
+push {lr} 
+blh 0x8003078 @ Delete6Cs 
+ldr r0, =0x8007C24 
+ldr r0, [r0] 
+blh 0x8003078 @ Delete6Cs 
+ldr r3, =DisplayOnlyBG_Flag 
+ldr r0, [r3] 
+
+blh ClearFlag 
+pop {r3} 
+ldr r3, =0x8007C19 
+bx r3 
+.ltorg 
 
 
