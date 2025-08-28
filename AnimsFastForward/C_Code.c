@@ -157,9 +157,11 @@ void FastForwardBattles(void)
         VBlankIntrWait();
         return;
     }
+
     INTR_CHECK = 1;
     IncrementGameClock();
     Proc_Run(*gProcTreeRootArray);
+    // MainUpdateEkrBattle();
     SyncLoOam();
     if (!gBmSt.sync_hardware)
     {

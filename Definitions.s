@@ -290,10 +290,11 @@ SET_DATA gpEkrBattleUnitRight, 0x203CD80
 @ 0x203CCF4 / 0x203E00C
 SET_DATA gBanimUniquePal, 0x203CD04 @ should be gEkrInitialHitSide + 0x10 approx 
 
+SET_FUNC MainUpdateEkrBattle, 0x8042705
 
 .endif     
 .if FE7 == true 
-
+SET_FUNC MainUpdateEkrBattle, 0x804b329 
 SET_FUNC ApplyBanimUniquePalette, 0x8053FB1
 SET_DATA gBanimUniquePaletteDisabled, 0x203E0E8
 SET_DATA gpEkrBattleUnitLeft, 0x203E094
@@ -302,7 +303,7 @@ SET_DATA gBanimUniquePal, 0x203E01C @ should be gEkrInitialHitSide + 0x10 approx
 
 
 SET_FUNC IncrementGameClock, 0x8000F49
-SET_DATA gProcTreeRootArray, 0x2006a30 
+SET_DATA gProcTreeRootArray, 0x2026a30 
 SET_FUNC Proc_Run, 0x8004691
 SET_FUNC SyncLoOam, 0x8003339
 SET_FUNC FlushLCDControl, 0x80011b1
@@ -551,6 +552,8 @@ SET_DATA SRRBuffer, 0x2026d30	@ normally used by debug printing
 
 .endif 
 .if FE8 == true 
+
+SET_FUNC MainUpdateEkrBattle, 0x804fee5 
 SET_DATA sSoundRoom, 0x80AECA8 
 SET_FUNC ApplyBanimUniquePalette, 0x8059971
 SET_DATA gBanimPaletteLeft,  0x2004088 
