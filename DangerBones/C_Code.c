@@ -250,6 +250,7 @@ typedef struct
 {
     /* 00 */ PROC_HEADER;
     /* 2c */ u8 id;
+    u8 selected;
 } DangerBonesProc;
 
 extern void RefreshUnitsOnBmMap(void);
@@ -262,6 +263,7 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
     int counter = 0;
     if (proc->id >= 0xC0)
     {
+        Proc_Break(proc);
         return;
     }
 
@@ -318,8 +320,23 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
 #endif
 }
 
+void DangerBonesWaitForBattle(DangerBonesProc * proc)
+{
+    if (proc->selected && (gActionData.unitActionType == UNIT_ACTION_COMBAT))
+    {
+        Proc_Break(proc);
+    }
+}
+
 const struct ProcCmd DangerBonesProcCmd[] = {
-    PROC_YIELD, PROC_LABEL(0), PROC_CALL(SetDangerBonesPalette), PROC_REPEAT(GenerateDangerBones), PROC_END,
+    PROC_YIELD,
+    PROC_NAME("DangerBones"),
+    PROC_LABEL(0),
+    PROC_CALL(SetDangerBonesPalette),
+    PROC_REPEAT(GenerateDangerBones),
+    PROC_REPEAT(DangerBonesWaitForBattle),
+    PROC_CALL(RefreshUnitSprites),
+    PROC_END,
 };
 
 void GenerateDangerBonesRangeAll(int i) // Causes noticable lag if done for 0x80 - 0xBF at once
@@ -388,11 +405,13 @@ void StartDangerBonesRange(void)
     if (proc)
     {
         proc->id = 0x80;
+        proc->selected = false;
         Proc_Goto(proc, 0);
     }
     else
     {
         proc = Proc_Start((ProcPtr)&DangerBonesProcCmd, PROC_TREE_3);
+        proc->selected = false;
         proc->id = 0x80;
     }
     // GenerateDangerBonesRange();
@@ -410,11 +429,13 @@ void FinishDangerBonesRange(void) // if proc didn't finish yet, calc the rest no
     {
         id = proc->id;
         Proc_Goto(proc, 0);
+        proc->selected = true;
         proc->id = 0xC0; // stop proc from continuing
     }
     else
     {
         proc = Proc_Start((ProcPtr)&DangerBonesProcCmd, PROC_TREE_3);
+        proc->selected = true;
         CpuFill16(0, DangerBonesBuffer, DangerBonesBufferSize);
         proc->id = 0xC0;
     }
