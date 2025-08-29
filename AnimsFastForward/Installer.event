@@ -38,7 +38,7 @@ HeldButton_AnimOff:
 SHORT L_BUTTON|R_BUTTON // Holding any of these when battle starts will make the game do map anims instead 
 
 HeldButton_FastForwardAnims:
-SHORT L_BUTTON|B_BUTTON 
+SHORT L_BUTTON|B_BUTTON|A_BUTTON
 
 PlayerPhaseOnlyFlag:
 SHORT PlayerPhaseOnlyFlag_Def 
