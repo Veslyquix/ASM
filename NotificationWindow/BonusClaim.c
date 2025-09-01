@@ -113,7 +113,7 @@ int GetBonusClaimOffset(int id)
 // count++;
 // }
 
-void SetBonusDataItem(struct BonusClaimEnt * data, int itemID, const char * str)
+void SetBonusDataItem(struct NewBonusClaimRamStruct * data, int itemID, const char * str)
 {
     data->unseen = true; // "viewable" would be better name
     // data->kind = BONUSKIND_ITEM0;
@@ -134,27 +134,28 @@ void SetBonusDataItem(struct BonusClaimEnt * data, int itemID, const char * str)
     // CopyString(data->str, str);
 }
 // vanilla only supports 3000g and 5000g items
-void SetBonusData3000Gold(struct BonusClaimEnt * data, const char * str)
+void SetBonusData3000Gold(struct NewBonusClaimRamStruct * data, const char * str)
 {
     SetBonusDataItem(data, ITEM_3000G, str);
-    data->kind = BONUSKIND_MONEY;
+    // data->kind = BONUSKIND_MONEY;
 }
-void SetBonusData5000Gold(struct BonusClaimEnt * data, const char * str)
+void SetBonusData5000Gold(struct NewBonusClaimRamStruct * data, const char * str)
 {
     SetBonusDataItem(data, ITEM_5000G, str);
-    data->kind = BONUSKIND_MONEY;
+    // data->kind = BONUSKIND_MONEY;
 }
 
 void CreateBonusContentData()
 {
 
-    struct BonusClaimEnt data[BONUS_CLAIM_NUM_ENTRIES] = { 0 };
+    struct NewBonusClaimRamStruct data[BONUS_CLAIM_NUM_ENTRIES] = { 0 };
     for (int i = 6; i < BONUS_CLAIM_NUM_ENTRIES; ++i)
     {
         SetBonusDataItem(&data[i], i + 1, "enjoy :)");
     }
     SetBonusData3000Gold(&data[2], "Monies");
     // SetBonusData5000Gold(&data[1], "Im rich");
+
     SaveBonusContentData(data);
 }
 
@@ -171,6 +172,13 @@ int GetBonusClaimItem(int id)
 int GetBonusClaimType(int id)
 {
     return bonusData[id].kind;
+}
+
+int IsBonusClaimUnseen(int id)
+{
+    struct NewBonusClaimRamStruct * ent = (void *)gpBonusClaimData;
+    ent += id;
+    return ent->unseen;
 }
 
 //! FE8U = 0x080B0638
@@ -262,6 +270,7 @@ s8 InitBonusClaimData()
         proc->availableBonusIds[i] = 0;
     }
     int reachedStartId = false;
+    struct NewBonusClaimRamStruct * data = (void *)&gpBonusClaimData[0];
 
     CpuFill16(0, gpBonusClaimItemList, 0x80);
     CpuFill16(0, gpBonusClaimData, 0x144);
@@ -272,8 +281,8 @@ s8 InitBonusClaimData()
 
         for (i = 0; i < BONUS_CLAIM_NUM_ENTRIES; i++)
         {
-            struct BonusClaimEnt * ent = &gpBonusClaimData[i];
-            struct BonusClaimEnt * ent2;
+            struct NewBonusClaimRamStruct * ent = &data[i];
+            struct NewBonusClaimRamStruct * ent2;
             int type = GetBonusClaimType(i);
             int itemId = GetBonusClaimItem(i);
 
@@ -317,10 +326,10 @@ s8 InitBonusClaimData()
                     break;
             }
 
-            ent2 = &gpBonusClaimData[i];
+            ent2 = &data[i];
             if ((ent2->unseen & 3) == 1)
             {
-                struct BonusClaimEnt * ent3 = &gpBonusClaimDataUpdated[i];
+                struct NewBonusClaimRamStruct * ent3 = &data[i];
                 ent3->unseen = (ent3->unseen & 0xfc) + 2;
             }
         }
@@ -347,7 +356,7 @@ void DrawBonusClaimItemText(int idx)
     int itemId;
     int color;
     // struct BonusClaimEnt * ent;
-    struct BonusClaimEnt * ent2;
+    struct NewBonusClaimRamStruct * ent2;
 
     struct Text * th = gpBonusClaimText + ((idx % 6) << 1);
 
@@ -375,13 +384,13 @@ void DrawBonusClaimItemText(int idx)
         return;
     }
 
-    ent2 = &gpBonusClaimData[bonusId];
-    if ((ent2->unseen & 3) == 0)
+    int unseen = IsBonusClaimUnseen(bonusId);
+    if ((unseen & 3) == 0)
     {
         return;
     }
 
-    if ((ent2->unseen & 3) == 1)
+    if ((unseen & 3) == 1)
     {
         color = TEXT_COLOR_SYSTEM_GREEN;
     }
@@ -600,7 +609,7 @@ void BonusClaim_Init(struct BonusClaimProc * proc)
 void BonusClaim_Loop_MainKeyHandler(struct BonusClaimProc * proc)
 {
     u16 tmp;
-    struct BonusClaimEnt * ent;
+    struct NewBonusClaimRamStruct * ent;
 
     int curIdx = proc->menuIndex;
 
@@ -640,7 +649,7 @@ void BonusClaim_Loop_MainKeyHandler(struct BonusClaimProc * proc)
                             sub_8024E20(3000);
                         }
 
-                        ent = &gpBonusClaimData[bonusId];
+                        // ent = &gpBonusClaimData[bonusId];
                         if (itemID == ITEM_5000G)
                         {
                             sub_8024E20(5000);
@@ -950,8 +959,8 @@ void BonusClaim_DrawItemSentPopup(struct BonusClaimProc * proc)
     int x;
     struct Text * th;
     char buf[32];
-    struct BonusClaimEnt * ent;
-    struct BonusClaimEnt * ent2;
+    struct NewBonusClaimRamStruct * ent;
+    struct NewBonusClaimRamStruct * ent2;
     int itemId;
 
     // int bonusId = proc->menuIndex;
@@ -1002,9 +1011,8 @@ void BonusClaim_DrawItemSentPopup(struct BonusClaimProc * proc)
 
     DrawIcon(gBG0TilemapBuffer + x + 0x141, GetItemIconId(itemId), 0x4000);
 
-    ent2 = gpBonusClaimData;
-    ent2 += bonusId;
-    switch (ent2->kind)
+    int type = GetBonusClaimType(bonusId);
+    switch (type)
     {
         case BONUSKIND_ITEM0:
         case BONUSKIND_ITEM1:
@@ -1118,4 +1126,67 @@ struct ProcCmd const ProcScr_BonusClaim[] = {
 void StartBonusClaimScreen(ProcPtr parent) // exactly long enough for autohook
 {
     Proc_StartBlocking(ProcScr_BonusClaim, parent);
+}
+
+//! FE8U = 0x080AA550
+void sub_80AA550(struct ProcBonusClaimMenu * proc)
+{
+    int i;
+
+    // CpuFill16(0, _gpBonusClaimData, 0x144);
+
+    // if (LoadBonusContentData(_gpBonusClaimData) == 0)
+    // {
+    // Proc_Goto(proc, 10);
+    // return;
+    // }
+
+    proc->unk_5c = 0;
+    proc->unk_58 = 0;
+    // struct NewBonusClaimRamStruct * data = (void*)_gpBonusClaimData;
+
+    // for (i = 0; i < 0x10; i++)
+    // {
+    // struct NewBonusClaimRamStruct * ent = data + i;
+
+    // if ((ent->unseen & 3) != 1)
+    // {
+    // continue;
+    // }
+    // }
+
+    if ((proc->unk_58 == 0) && (proc->unk_5c == 0))
+    {
+        Proc_Goto(proc, 10);
+        return;
+    }
+
+    LoadHelpBoxGfx(OBJ_VRAM0 + OBJCHR_SAVEMENU_SLOTSEL_HELPBOX * TILE_SIZE_4BPP, OBJPAL_SAVEMENU_SLOTSEL_HELPBOX);
+}
+
+bool IsExtraBonusClaimEnabled(void)
+{
+    struct PlaySt playSt;
+    struct NewBonusClaimRamStruct * buf1;
+    int i, ret;
+
+    if (LoadBonusContentData((void *)gGenericBuffer))
+    {
+
+        ret = 0;
+        buf1 = (void *)gGenericBuffer;
+
+        for (i = 0; i < 0x10; i++)
+        {
+            if (!buf1[i].unseen)
+                continue;
+            ret = true;
+        }
+
+        if (0 == ret)
+            return false;
+        else
+            return true;
+    }
+    return 0;
 }
