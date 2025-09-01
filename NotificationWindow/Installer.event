@@ -50,8 +50,10 @@ bonusEnt(0, SteelSword, "Enjoy");
 bonusEnt(1, Speedwings, "gotta go fast"); 
 bonusEnt(2, EnergyRing, "so strong"); 
 bonusEnt(3, SecretBook, "skillful"); 
-bonusEnt(4, AngelicRobe, "can't die lol"); 
-bonusEnt(5, Dracoshield, "tank"); 
+bonusEnt(6, AngelicRobe, "can't die lol"); 
+bonusEnt(8, Dracoshield, "tank"); 
+bonusEnt(10, Dracoshield, "tank"); 
+bonusEnt(13, Dracoshield, "tank"); 
 
 
 

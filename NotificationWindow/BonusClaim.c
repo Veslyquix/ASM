@@ -1,28 +1,4 @@
-// #include "global.h"
-
-// #include "ctc.h"
-// #include "bmunit.h"
-// #include "bmudisp.h"
-// #include "uiutils.h"
-// #include "hardware.h"
-// #include "fontgrp.h"
-// #include "icon.h"
-// #include "bm.h"
-// #include "bmcontainer.h"
-// #include "m4a.h"
-// #include "soundwrapper.h"
-// #include "bmitem.h"
-// #include "bmsave.h"
-// #include "prepscreen.h"
-// #include "helpbox.h"
-// #include "bmlib.h"
-// #include "sysutil.h"
-// #include "savemenu.h"
-// #include "bonusclaim.h"
-
-// #include "constants/characters.h"
-// #include "constants/items.h"
-// #include "constants/songs.h"
+#define brk asm("mov r11, r11");
 
 extern struct BonusClaimEnt gBonusClaimData[50];
 extern u8 bonusclaim_maybe_not_pad1[0x18];
@@ -53,6 +29,9 @@ static const u8 iid_bonus[] = {
 
 #define BONUS_CLAIM_NUM_ENTRIES 16
 
+#define MAX_ITEMS 32
+#define availableBonusIdWords ((MAX_ITEMS + 31) / 32)
+
 struct BonusClaimEnt
 {
     /* 00 */ u8 unseen;
@@ -63,10 +42,76 @@ struct BonusClaimEnt
 
 extern const struct BonusClaimEnt bonusData[];
 
-struct BonusClaimNewRam
+struct NewBonusClaimRamStruct
 {
     u8 unseen;
 };
+
+struct NewBonusClaimProc
+{
+    /* 00 */ PROC_HEADER;
+
+    /* 29 */ u8 menuIndex;
+    /* 2A */ u8 submenuIndex;
+    /* 2B */ u8 targets;
+    /* 2C */ s16 unk_2c;
+    /* 2E */ s8 unk_2e;
+    /* 30 */ int timer;
+    /* 34 */ ProcPtr unk_34;
+    /* 38 */ u32 availableBonusIds[availableBonusIdWords];
+};
+
+struct ProcCmd const ProcScr_BonusClaim[];
+
+void SetBonusClaimBit(int i, struct NewBonusClaimProc * proc)
+{
+    if (!proc)
+    {
+        return;
+    }
+    int offset = i / 32;
+    int bit = i % 32;
+    proc->availableBonusIds[offset] |= 1 << bit;
+}
+
+int GetBonusClaimOffset(int id)
+{
+    struct NewBonusClaimProc * proc = (void *)Proc_Find(ProcScr_BonusClaim);
+    if (!proc)
+        return id;
+
+    int i = 0;     // physical index
+    int found = 0; // how many available IDs we've seen
+
+    while (1)
+    {
+        int offset = i / 32;
+        int bit = i % 32;
+        u32 data = proc->availableBonusIds[offset];
+
+        if (data & (1 << bit)) // this slot is available
+        {
+            if (found == id)
+                return i; // found the id-th available one
+            found++;
+        }
+
+        i++;
+    }
+}
+
+// for (int i = 0; i < id; ++i)
+// {
+
+// bit = i % 32;
+// if (!bit)
+// {
+// offset = i / 32;
+// data = proc->availableBonusIds[offset];
+// }
+// if (!(data & (1 << bit)))
+// count++;
+// }
 
 void SetBonusDataItem(struct BonusClaimEnt * data, int itemID, const char * str)
 {
@@ -104,12 +149,11 @@ void CreateBonusContentData()
 {
 
     struct BonusClaimEnt data[BONUS_CLAIM_NUM_ENTRIES] = { 0 };
-    // brk;
-    for (int i = 2; i < BONUS_CLAIM_NUM_ENTRIES; ++i)
+    for (int i = 6; i < BONUS_CLAIM_NUM_ENTRIES; ++i)
     {
         SetBonusDataItem(&data[i], i + 1, "enjoy :)");
     }
-    // SetBonusData3000Gold(&data[0], "Monies");
+    SetBonusData3000Gold(&data[2], "Monies");
     // SetBonusData5000Gold(&data[1], "Im rich");
     SaveBonusContentData(data);
 }
@@ -207,11 +251,17 @@ void sub_80B06FC(void)
 }
 
 //! FE8U = 0x080B0760
-s8 InitBonusClaimData(void)
+s8 InitBonusClaimData()
 {
     int i;
 
     int count = 0;
+    struct NewBonusClaimProc * proc = (void *)Proc_Find(ProcScr_BonusClaim);
+    for (i = 0; i < availableBonusIdWords; ++i)
+    {
+        proc->availableBonusIds[i] = 0;
+    }
+    int reachedStartId = false;
 
     CpuFill16(0, gpBonusClaimItemList, 0x80);
     CpuFill16(0, gpBonusClaimData, 0x144);
@@ -225,11 +275,12 @@ s8 InitBonusClaimData(void)
             struct BonusClaimEnt * ent = &gpBonusClaimData[i];
             struct BonusClaimEnt * ent2;
             int type = GetBonusClaimType(i);
+            int itemId = GetBonusClaimItem(i);
 
-            if ((ent->unseen & 3) == 0)
-            {
-                // continue;
-            }
+            // if ((ent->unseen & 3) == 0)
+            // {
+            // continue;
+            // }
 
             switch (type)
             {
@@ -251,10 +302,16 @@ s8 InitBonusClaimData(void)
                         gpBonusClaimItemList[i].claimable = 1;
                     }
 
-                    if ((ent->unseen & 3) != 0)
+                    if ((ent->unseen & 3) != 0 && itemId)
                     {
-                        gpBonusClaimItemList[count].unk_00 = i;
+                        // gpBonusClaimItemList[count].unk_00 = i;
+                        SetBonusClaimBit(i, (void *)proc);
+                        reachedStartId = true;
                         count++;
+                    }
+                    else if (!reachedStartId)
+                    {
+                        proc->menuIndex++;
                     }
 
                     break;
@@ -298,7 +355,9 @@ void DrawBonusClaimItemText(int idx)
     unk1 &= 0x1f;
 
     claimable = gpBonusClaimItemList[idx].claimable;
-    bonusId = gpBonusClaimItemList[idx].unk_00;
+    // bonusId = GetBonusClaimOffset(idx);
+    bonusId = GetBonusClaimOffset(idx);
+    // bonusId = gpBonusClaimItemList[idx].unk_00;
 
     // ent = gpBonusClaimData;
     // ent += bonusID;
@@ -369,21 +428,22 @@ void DrawBonusClaimItemText(int idx)
 
 // This custom function does not work because whether items are claimed or not is saved in the save slot, and this does
 // not update that. This would need to use WriteGameSave instead of SaveBonusContentData
-void SetBonusItemUnclaimed(int idx)
-{
-    struct BonusClaimItemEnt * ent = &gpBonusClaimItemList[idx];
-    int itemFlag = ent->unk_00;
-    SetBonusContentClaimFlags(GetBonusContentClaimFlags() & ~(1 << itemFlag));
-    ent->claimable = true;
-    return;
-}
+// void SetBonusItemUnclaimed(int idx)
+// {
+// struct BonusClaimItemEnt * ent = &gpBonusClaimItemList[idx];
+// int itemFlag = ent->unk_00;
+// SetBonusContentClaimFlags(GetBonusContentClaimFlags() & ~(1 << itemFlag));
+// ent->claimable = true;
+// return;
+// }
 
 //! FE8U = 0x080B0A24
 void SetBonusItemClaimed(int idx)
 {
     struct BonusClaimItemEnt * ent = &gpBonusClaimItemList[idx];
 
-    int itemFlag = ent->unk_00;
+    // int itemFlag = ent->unk_00;
+    int itemFlag = GetBonusClaimOffset(idx);
 
     SetBonusContentClaimFlags((1 << itemFlag) | GetBonusContentClaimFlags());
 
@@ -478,8 +538,9 @@ void BonusClaim_Init(struct BonusClaimProc * proc)
     gLCDControlBuffer.bg1cnt.priority = 2;
     gLCDControlBuffer.bg2cnt.priority = 0;
     gLCDControlBuffer.bg3cnt.priority = 3;
-
+    proc->menuIndex = 0;
     InitBonusClaimData();
+    proc->menuIndex = 0;
 
     for (i = 0; i <= 5 && i < *gpBonusClaimItemCount; i++)
     {
@@ -487,7 +548,7 @@ void BonusClaim_Init(struct BonusClaimProc * proc)
         InitText(th, 7);
         th++;
         InitText(th, 10);
-        DrawBonusClaimItemText(i);
+        DrawBonusClaimItemText(i + proc->menuIndex);
     }
 
     for (i = 0; i < 2; i++)
@@ -503,7 +564,6 @@ void BonusClaim_Init(struct BonusClaimProc * proc)
 
     SetPrimaryHBlankHandler(sub_80B06FC);
 
-    proc->menuIndex = 0;
     proc->unk_2c = 0;
     proc->unk_2e = 0;
     proc->submenuIndex = 0;
@@ -548,7 +608,8 @@ void BonusClaim_Loop_MainKeyHandler(struct BonusClaimProc * proc)
     {
         if (gKeyStatusPtr->newKeys & A_BUTTON)
         {
-            int bonusId = gpBonusClaimItemList[curIdx].unk_00;
+            // int bonusId = gpBonusClaimItemList[curIdx].unk_00;
+            int bonusId = GetBonusClaimOffset(curIdx);
 
             if (((1 << bonusId) & GetBonusContentClaimFlags()) != 0)
             {
@@ -790,7 +851,8 @@ s8 TryClaimBonusItem(struct BonusClaimProc * proc)
     struct BonusClaimConfig * unk = base - (-tmp);
 
     struct BonusClaimItemEnt * itemEnt = gpBonusClaimItemList + proc->menuIndex;
-    int bonusId = itemEnt->unk_00;
+    // int bonusId = itemEnt->unk_00;
+    int bonusId = GetBonusClaimOffset(proc->menuIndex);
 
     // struct BonusClaimEnt * ent = gpBonusClaimData;
     // ent += tmp2;
@@ -893,7 +955,8 @@ void BonusClaim_DrawItemSentPopup(struct BonusClaimProc * proc)
     int itemId;
 
     // int bonusId = proc->menuIndex;
-    int bonusId = gpBonusClaimItemList[proc->menuIndex].unk_00;
+    // int bonusId = gpBonusClaimItemList[proc->menuIndex].unk_00;
+    int bonusId = GetBonusClaimOffset(proc->menuIndex);
 
     // ent = gpBonusClaimData;
     // ent += idx;
