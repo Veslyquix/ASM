@@ -43,12 +43,12 @@ extern struct Text gBonusClaimText[0x121]; // maybe lower
 int LoadBonusContentData(void *);
 
 //! FE8U = 0x080B0638
-void PutChapterBannerSprites(void)
-{
-    PutSpriteExt(4, 24, 8, *SpriteArray_08A209F0, 0x8000);
-    PutSpriteExt(4, 24, 16, *SpriteArray_08A209E4, 0x9000);
-    return;
-}
+// void PutChapterBannerSprites(void)
+// {
+// PutSpriteExt(4, 24, 8, *SpriteArray_08A209F0, 0x8000);
+// PutSpriteExt(4, 24, 16, *SpriteArray_08A209E4, 0x9000);
+// return;
+// }
 
 //! FE8U = 0x080B0674
 void sub_80B0674(void)
@@ -320,12 +320,12 @@ void SetupBonusClaimTargets(struct BonusClaimProc * proc)
 }
 
 //! FE8U = 0x080B0ABC
-void sub_80B0ABC(void)
-{
-    DrawUiFrame2(3, 6, 24, 12, 0);
-    BG_EnableSyncByMask(3);
-    return;
-}
+// void sub_80B0ABC(void)
+// {
+// DrawUiFrame2(3, 6, 24, 12, 0);
+// BG_EnableSyncByMask(3);
+// return;
+// }
 
 //! FE8U = 0x080B0ADC
 void BonusClaim_Init(struct BonusClaimProc * proc)
@@ -363,7 +363,7 @@ void BonusClaim_Init(struct BonusClaimProc * proc)
 
     gLCDControlBuffer.wincnt.wout_enableBg0 = 1;
     gLCDControlBuffer.wincnt.wout_enableBg1 = 1;
-    gLCDControlBuffer.wincnt.wout_enableBg2 = 2;
+    gLCDControlBuffer.wincnt.wout_enableBg2 = 0; // 2; 2 is what decomp says but it's only 1 bit
     gLCDControlBuffer.wincnt.wout_enableBg3 = 1;
     gLCDControlBuffer.wincnt.wout_enableObj = 1;
 
@@ -904,7 +904,8 @@ void BonusClaim_OnEnd(struct BonusClaimProc * proc)
     SetPrimaryHBlankHandler(NULL);
 }
 
-struct ProcCmd const gProcScr_BonusClaim[] = {
+struct ProcCmd const ProcScr_BonusClaim[] = {
+    // renamed gProcScr_BonusClaim to avoid autohook
     PROC_SLEEP(0),
 
     PROC_CALL(BonusClaim_Init),
@@ -943,7 +944,7 @@ struct ProcCmd const gProcScr_BonusClaim[] = {
 };
 
 //! FE8U = 0x080B1688
-void StartBonusClaimScreen(ProcPtr parent)
+void StartBonusClaimScreen(ProcPtr parent) // exactly long enough for autohook
 {
-    Proc_StartBlocking(gProcScr_BonusClaim, parent);
+    Proc_StartBlocking(ProcScr_BonusClaim, parent);
 }
