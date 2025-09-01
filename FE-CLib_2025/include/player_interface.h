@@ -6,7 +6,7 @@
 struct PlayerInterfaceProc
 {
     /* 00 */ PROC_HEADER;
-
+    /* 29 */ u8 pad[3];
     /* 2C */ struct Text texts[2];
 
     /* 3C */ s8 xBurst;

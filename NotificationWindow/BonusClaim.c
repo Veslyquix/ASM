@@ -50,6 +50,9 @@ static const u8 iid_bonus[] = {
     ITEM_BOOSTER_HP,  ITEM_BOOSTER_POW, ITEM_BOOSTER_SKL, ITEM_BOOSTER_SPD, ITEM_BOOSTER_LCK,
     ITEM_BOOSTER_DEF, ITEM_BOOSTER_RES, ITEM_BOOSTER_MOV, ITEM_BOOSTER_CON,
 };
+
+#define BONUS_CLAIM_NUM_ENTRIES 16
+
 struct BonusClaimEnt
 {
     /* 00 */ u8 unseen;
@@ -58,27 +61,32 @@ struct BonusClaimEnt
     /* 03 */ char str[0x11]; // Only used in FE8
 };
 
-#define BONUS_CLAIM_MAX 16
+extern const struct BonusClaimEnt bonusData[];
+
+struct BonusClaimNewRam
+{
+    u8 unseen;
+};
 
 void SetBonusDataItem(struct BonusClaimEnt * data, int itemID, const char * str)
 {
     data->unseen = true; // "viewable" would be better name
-    data->kind = BONUSKIND_ITEM0;
-    data->itemId = itemID;
+    // data->kind = BONUSKIND_ITEM0;
+    // data->itemId = itemID;
 
     // Clear the buffer
-    for (int i = 0; i < 0x11; i++)
-    {
-        data->str[i] = 0;
-    }
+    // for (int i = 0; i < 0x11; i++)
+    // {
+    // data->str[i] = 0;
+    // }
 
-    int len = strlen(str);
-    if (len >= 0x11)
-    {
-        return; // too long, skip
-    }
+    // int len = strlen(str);
+    // if (len >= 0x11)
+    // {
+    // return; // too long, skip
+    // }
 
-    CopyString(data->str, str);
+    // CopyString(data->str, str);
 }
 // vanilla only supports 3000g and 5000g items
 void SetBonusData3000Gold(struct BonusClaimEnt * data, const char * str)
@@ -94,17 +102,15 @@ void SetBonusData5000Gold(struct BonusClaimEnt * data, const char * str)
 
 void CreateBonusContentData()
 {
-    // CpuFill16(0, gpBonusClaimItemList, 0x80);
-    // CpuFill16(0, gpBonusClaimData, 0x144);
 
-    struct BonusClaimEnt data[BONUS_CLAIM_MAX] = { 0 };
+    struct BonusClaimEnt data[BONUS_CLAIM_NUM_ENTRIES] = { 0 };
     // brk;
-    for (int i = 0; i < BONUS_CLAIM_MAX; ++i)
+    for (int i = 2; i < BONUS_CLAIM_NUM_ENTRIES; ++i)
     {
         SetBonusDataItem(&data[i], i + 1, "enjoy :)");
     }
-    SetBonusData3000Gold(&data[0], "Monies");
-    SetBonusData5000Gold(&data[1], "Im rich");
+    // SetBonusData3000Gold(&data[0], "Monies");
+    // SetBonusData5000Gold(&data[1], "Im rich");
     SaveBonusContentData(data);
 }
 
@@ -199,10 +205,11 @@ s8 InitBonusClaimData(void)
     {
         CpuFastCopy(gpBonusClaimData, gpBonusClaimDataUpdated, 0x144);
 
-        for (i = 0; i < 0x10; i++)
+        for (i = 0; i < BONUS_CLAIM_NUM_ENTRIES; i++)
         {
             struct BonusClaimEnt * ent = &gpBonusClaimData[i];
             struct BonusClaimEnt * ent2;
+            int type = GetBonusClaimType(i);
 
             if ((ent->unseen & 3) == 0)
             {
@@ -256,15 +263,30 @@ s8 InitBonusClaimData(void)
     return 1;
 }
 
+const char * GetBonusClaimStr(int id)
+{
+    return bonusData[id].str;
+}
+int GetBonusClaimItem(int id)
+{
+
+    return bonusData[id].itemId;
+}
+
+int GetBonusClaimType(int id)
+{
+    return bonusData[id].kind;
+}
+
 //! FE8U = 0x080B0894
 void DrawBonusClaimItemText(int idx)
 {
     int unk1;
     s8 claimable;
-    int unk3;
+    int bonusId;
     int itemId;
     int color;
-    struct BonusClaimEnt * ent;
+    // struct BonusClaimEnt * ent;
     struct BonusClaimEnt * ent2;
 
     struct Text * th = gpBonusClaimText + ((idx % 6) << 1);
@@ -273,12 +295,12 @@ void DrawBonusClaimItemText(int idx)
     unk1 &= 0x1f;
 
     claimable = gpBonusClaimItemList[idx].claimable;
-    unk3 = gpBonusClaimItemList[idx].unk_00;
+    bonusId = gpBonusClaimItemList[idx].unk_00;
 
-    ent = gpBonusClaimData;
-    ent += unk3;
-
-    itemId = ent->itemId;
+    // ent = gpBonusClaimData;
+    // ent += bonusID;
+    int type = GetBonusClaimType(bonusId);
+    itemId = GetBonusClaimItem(bonusId);
 
     color = TEXT_COLOR_SYSTEM_WHITE;
 
@@ -291,7 +313,7 @@ void DrawBonusClaimItemText(int idx)
         return;
     }
 
-    ent2 = &gpBonusClaimData[unk3];
+    ent2 = &gpBonusClaimData[bonusId];
     if ((ent2->unseen & 3) == 0)
     {
         return;
@@ -307,7 +329,7 @@ void DrawBonusClaimItemText(int idx)
         color = TEXT_COLOR_SYSTEM_GRAY;
     }
 
-    switch (gpBonusClaimData[unk3].kind)
+    switch (type)
     {
         case BONUSKIND_ITEM0:
         case BONUSKIND_ITEM1:
@@ -335,7 +357,7 @@ void DrawBonusClaimItemText(int idx)
 
     PutDrawText(
         th, gBG2TilemapBuffer + 12 + unk1 * 0x20, color == 0 ? TEXT_COLOR_SYSTEM_GOLD : color, 0, 0,
-        gpBonusClaimData[unk3].str);
+        GetBonusClaimStr(bonusId));
 
     BG_EnableSyncByMask(4);
 
@@ -523,9 +545,9 @@ void BonusClaim_Loop_MainKeyHandler(struct BonusClaimProc * proc)
     {
         if (gKeyStatusPtr->newKeys & A_BUTTON)
         {
-            int itemIdx = gpBonusClaimItemList[curIdx].unk_00;
+            int bonusId = gpBonusClaimItemList[curIdx].unk_00;
 
-            if (((1 << itemIdx) & GetBonusContentClaimFlags()) != 0)
+            if (((1 << bonusId) & GetBonusContentClaimFlags()) != 0)
             {
                 StartBonusClaimHelpBox(-1, -1, 0x88F, proc); // TODO: msgid "Already used"
                 return;
@@ -533,10 +555,12 @@ void BonusClaim_Loop_MainKeyHandler(struct BonusClaimProc * proc)
 
             if (proc->targets != 0)
             {
-                struct BonusClaimEnt * ent2 = gpBonusClaimData;
-                ent2 += itemIdx;
+                // struct BonusClaimEnt * ent2 = gpBonusClaimData;
+                // ent2 += bonusId;
+                int itemID = GetBonusClaimItem(bonusId);
+                int type = GetBonusClaimType(bonusId);
 
-                switch (ent2->kind)
+                switch (type)
                 {
                     case BONUSKIND_ITEM0:
                     case BONUSKIND_ITEM1:
@@ -547,13 +571,13 @@ void BonusClaim_Loop_MainKeyHandler(struct BonusClaimProc * proc)
                         return;
 
                     case BONUSKIND_MONEY:
-                        if (ent2->itemId == ITEM_3000G)
+                        if (itemID == ITEM_3000G)
                         {
                             sub_8024E20(3000);
                         }
 
-                        ent = &gpBonusClaimData[itemIdx];
-                        if (ent->itemId == ITEM_5000G)
+                        ent = &gpBonusClaimData[bonusId];
+                        if (itemID == ITEM_5000G)
                         {
                             sub_8024E20(5000);
                         }
@@ -761,13 +785,15 @@ s8 TryClaimBonusItem(struct BonusClaimProc * proc)
     int tmp = proc->submenuIndex;
     struct BonusClaimConfig * base = gpBonusClaimConfig;
     struct BonusClaimConfig * unk = base - (-tmp);
+
     struct BonusClaimItemEnt * itemEnt = gpBonusClaimItemList + proc->menuIndex;
-    int tmp2 = itemEnt->unk_00;
+    int bonusId = itemEnt->unk_00;
 
-    struct BonusClaimEnt * ent = gpBonusClaimData;
-    ent += tmp2;
+    // struct BonusClaimEnt * ent = gpBonusClaimData;
+    // ent += tmp2;
 
-    itemId = ent->itemId;
+    itemId = GetBonusClaimItem(bonusId);
+    // itemId = ent->itemId;
 
     if (unk->hasInventorySpace == 0)
         return false;
@@ -863,11 +889,13 @@ void BonusClaim_DrawItemSentPopup(struct BonusClaimProc * proc)
     struct BonusClaimEnt * ent2;
     int itemId;
 
-    int idx = gpBonusClaimItemList[proc->menuIndex].unk_00;
+    // int bonusId = proc->menuIndex;
+    int bonusId = gpBonusClaimItemList[proc->menuIndex].unk_00;
 
-    ent = gpBonusClaimData;
-    ent += idx;
-    itemId = ent->itemId;
+    // ent = gpBonusClaimData;
+    // ent += idx;
+    // itemId = ent->itemId;
+    itemId = GetBonusClaimItem(bonusId);
 
     th = gpBonusClaimText + 14;
 
@@ -909,7 +937,7 @@ void BonusClaim_DrawItemSentPopup(struct BonusClaimProc * proc)
     DrawIcon(gBG0TilemapBuffer + x + 0x141, GetItemIconId(itemId), 0x4000);
 
     ent2 = gpBonusClaimData;
-    ent2 += idx;
+    ent2 += bonusId;
     switch (ent2->kind)
     {
         case BONUSKIND_ITEM0:

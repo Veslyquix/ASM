@@ -4,6 +4,7 @@
 
 // gProcScr_TitleScreen 
 
+#include "eaSTDlib.event"
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
@@ -36,6 +37,22 @@ WORD 144 // 152 will cause a little text to be outside the right side of the box
 #define TEXT_COLOR_SYSTEM_GOLD  3
 #define TEXT_COLOR_SYSTEM_GREEN 4
 #define TEXT_COLOR_SYSTEM_BLACK 5
+
+
+
+ALIGN 4 
+bonusData:
+FILL 1024 
+
+#define bonusEnt(id, itemID, str) "PUSH; ORG bonusData + (id * 0x14); BYTE 0 0 itemID; txt(str); BYTE 0; POP" 
+
+bonusEnt(0, SteelSword, "Enjoy"); 
+bonusEnt(1, Speedwings, "gotta go fast"); 
+bonusEnt(2, EnergyRing, "so strong"); 
+bonusEnt(3, SecretBook, "skillful"); 
+bonusEnt(4, AngelicRobe, "can't die lol"); 
+bonusEnt(5, Dracoshield, "tank"); 
+
 
 
 ALIGN 4 
