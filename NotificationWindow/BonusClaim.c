@@ -114,6 +114,21 @@ void CreateBonusContentData()
     SaveBonusContentData(data);
 }
 
+const char * GetBonusClaimStr(int id)
+{
+    return bonusData[id].str;
+}
+int GetBonusClaimItem(int id)
+{
+
+    return bonusData[id].itemId;
+}
+
+int GetBonusClaimType(int id)
+{
+    return bonusData[id].kind;
+}
+
 //! FE8U = 0x080B0638
 // void PutChapterBannerSprites(void)
 // {
@@ -213,10 +228,10 @@ s8 InitBonusClaimData(void)
 
             if ((ent->unseen & 3) == 0)
             {
-                continue;
+                // continue;
             }
 
-            switch (ent->kind)
+            switch (type)
             {
                 case BONUSKIND_ITEM1:
                     if ((gPlaySt.unk_2B_00) == 0)
@@ -226,18 +241,21 @@ s8 InitBonusClaimData(void)
 
                 case BONUSKIND_ITEM0:
                 case BONUSKIND_MONEY:
-                    gpBonusClaimItemList[count].unk_00 = i;
 
                     if (((1 << i) & GetBonusContentClaimFlags()) != 0)
                     {
-                        gpBonusClaimItemList[count].claimable = 0;
+                        gpBonusClaimItemList[i].claimable = 0;
                     }
                     else
                     {
-                        gpBonusClaimItemList[count].claimable = 1;
+                        gpBonusClaimItemList[i].claimable = 1;
                     }
 
-                    count++;
+                    if ((ent->unseen & 3) != 0)
+                    {
+                        gpBonusClaimItemList[count].unk_00 = i;
+                        count++;
+                    }
 
                     break;
             }
@@ -261,21 +279,6 @@ s8 InitBonusClaimData(void)
     }
 
     return 1;
-}
-
-const char * GetBonusClaimStr(int id)
-{
-    return bonusData[id].str;
-}
-int GetBonusClaimItem(int id)
-{
-
-    return bonusData[id].itemId;
-}
-
-int GetBonusClaimType(int id)
-{
-    return bonusData[id].kind;
 }
 
 //! FE8U = 0x080B0894
