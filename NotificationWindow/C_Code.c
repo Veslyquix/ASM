@@ -1,4 +1,5 @@
 #include "C_Code.h"
+#include "BonusClaim.c"
 
 #define brk asm("mov r11, r11");
 
@@ -152,7 +153,7 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
 
     PROC_LABEL(LoopLabel),
 
-    PROC_WHILE_EXISTS(gProcScr_CamMove), // ProcScr_CamMove
+    PROC_WHILE_EXISTS(ProcScr_CamMove),
 
     PROC_REPEAT(NotificationWindow_Loop_Display),
 

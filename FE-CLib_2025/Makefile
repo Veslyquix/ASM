@@ -18,14 +18,14 @@ CFLAGS := $(ARCH) -Wall -mtune=arm7tdmi -O2 -mlong-calls
 
 # C to ASM rule
 %.s: %.c *.c
-	$(CC) $(CFLAGS) -S $< -I C:/devkitPro/FE-Clib-Mokha-2025/Include -o $@ -fverbose-asm -mlong-calls
+	$(CC) $(CFLAGS) -S $< -I C:/devkitPro/FE-Clib_2024/Include -o $@ -fverbose-asm -mlong-calls
 
 
 # OBJ to EVENT rule
 %.lyn.event: %.o *.c
-	$(MAKE) $(dir $<)FE8_defs.o
-	$(LYN) "$<" "$(dir $<)FE8_defs.o" > "$@"
-	
+	$(MAKE) $(dir $<)Definitions.o
+	$(LYN) "$<" "$(dir $<)Definitions.o" > "$@"
+	rm $(dir $<)Definitions.o
 	
 # ASM to OBJ
 %.o: %.s *.s
