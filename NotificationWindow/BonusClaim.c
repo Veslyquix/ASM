@@ -42,6 +42,72 @@ extern struct Text gBonusClaimText[0x121]; // maybe lower
 
 int LoadBonusContentData(void *);
 
+// MSa_SaveBonusClaim
+// default EMS seems to save 4 bytes for bonus content data that's been claimed
+// although the global sram for it is still in the link arena sram at like 0xE007200ish
+
+static const u8 iid_bonus[] = {
+    ITEM_BOOSTER_HP,  ITEM_BOOSTER_POW, ITEM_BOOSTER_SKL, ITEM_BOOSTER_SPD, ITEM_BOOSTER_LCK,
+    ITEM_BOOSTER_DEF, ITEM_BOOSTER_RES, ITEM_BOOSTER_MOV, ITEM_BOOSTER_CON,
+};
+struct BonusClaimEnt
+{
+    /* 00 */ u8 unseen;
+    /* 01 */ u8 kind; // 2 = gold, 0/1 = items
+    /* 02 */ u8 itemId;
+    /* 03 */ char str[0x11]; // Only used in FE8
+};
+
+#define BONUS_CLAIM_MAX 16
+
+void SetBonusDataItem(struct BonusClaimEnt * data, int itemID, const char * str)
+{
+    data->unseen = true; // "viewable" would be better name
+    data->kind = BONUSKIND_ITEM0;
+    data->itemId = itemID;
+
+    // Clear the buffer
+    for (int i = 0; i < 0x11; i++)
+    {
+        data->str[i] = 0;
+    }
+
+    int len = strlen(str);
+    if (len >= 0x11)
+    {
+        return; // too long, skip
+    }
+
+    CopyString(data->str, str);
+}
+// vanilla only supports 3000g and 5000g items
+void SetBonusData3000Gold(struct BonusClaimEnt * data, const char * str)
+{
+    SetBonusDataItem(data, ITEM_3000G, str);
+    data->kind = BONUSKIND_MONEY;
+}
+void SetBonusData5000Gold(struct BonusClaimEnt * data, const char * str)
+{
+    SetBonusDataItem(data, ITEM_5000G, str);
+    data->kind = BONUSKIND_MONEY;
+}
+
+void CreateBonusContentData()
+{
+    // CpuFill16(0, gpBonusClaimItemList, 0x80);
+    // CpuFill16(0, gpBonusClaimData, 0x144);
+
+    struct BonusClaimEnt data[BONUS_CLAIM_MAX] = { 0 };
+    // brk;
+    for (int i = 0; i < BONUS_CLAIM_MAX; ++i)
+    {
+        SetBonusDataItem(&data[i], i + 1, "enjoy :)");
+    }
+    SetBonusData3000Gold(&data[0], "Monies");
+    SetBonusData5000Gold(&data[1], "Im rich");
+    SaveBonusContentData(data);
+}
+
 //! FE8U = 0x080B0638
 // void PutChapterBannerSprites(void)
 // {
@@ -276,6 +342,17 @@ void DrawBonusClaimItemText(int idx)
     return;
 }
 
+// This custom function does not work because whether items are claimed or not is saved in the save slot, and this does
+// not update that. This would need to use WriteGameSave instead of SaveBonusContentData
+void SetBonusItemUnclaimed(int idx)
+{
+    struct BonusClaimItemEnt * ent = &gpBonusClaimItemList[idx];
+    int itemFlag = ent->unk_00;
+    SetBonusContentClaimFlags(GetBonusContentClaimFlags() & ~(1 << itemFlag));
+    ent->claimable = true;
+    return;
+}
+
 //! FE8U = 0x080B0A24
 void SetBonusItemClaimed(int idx)
 {
@@ -285,7 +362,7 @@ void SetBonusItemClaimed(int idx)
 
     SetBonusContentClaimFlags((1 << itemFlag) | GetBonusContentClaimFlags());
 
-    ent->claimable = 0;
+    ent->claimable = false;
 
     return;
 }
