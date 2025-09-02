@@ -56,20 +56,22 @@ bonusEnt(10, Dracoshield, "tank");
 bonusEnt(13, Dracoshield, "tank"); 
 bonusEnt(19, IronSword, "pointy"); 
 
-#define achievementEnt(id, str, func, zero) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + (id * 0xC); POIN header func; SHORT 0 0; POP }" 
-#define achievementEnt(id, str, flag) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + (id * 0xC); POIN header 0; SHORT flag 0; POP }" 
+#define achievementEnt(id, str) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + (id * 4); POIN header; POP }" 
+// flag / func here don't make sense 
+// just call UnlockAchievement from func / SetFlag 
+
 
 ALIGN 4 
-achievementData:
-FILL (32 * 0xC)
-achievementEnt(0, "Tanked", 1)
-achievementEnt(1, "Lost", 2)
+achievementData: // these show up once ever 
+FILL (1000 * 4)
+achievementEnt(0, "Tanked")
+achievementEnt(1, "Lost")
 // ORG achievementData 
 
 
 
 ALIGN 4 
-gNotificationsData:
+gNotificationsData: // these show up when a flag is turned on 
 // NotificationEntryTextID(0x505, 1) // textID "Sword", flagID 
 // NotificationEntryTextID(0x3D, 1) // textID, flagID 
 NotificationEntry(text0, 1) // text label, flagID 

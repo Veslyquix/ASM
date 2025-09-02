@@ -34,9 +34,6 @@ struct AchievementsStruct
 struct AchievementsRomStruct
 {
     const char * str; 
-    void * func; 
-    u16 flag; 
-    u16 pad; 
 };
 extern struct AchievementsRomStruct achievementData[];
 
