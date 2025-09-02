@@ -12,7 +12,7 @@ struct NotificationsStruct
 };
 extern const struct NotificationsStruct gNotificationsData[];
 
-#define QueueSize 30
+#define QueueSize 15
 struct NotificationWindowProc
 {
     PROC_HEADER;
@@ -32,7 +32,8 @@ struct NotificationWindowProc
     u8 fastPrint;
 
     u8 colour[4]; // up to 0x41
-    u8 queue[30];
+    u8 queue[QueueSize];
+    u8 type[QueueSize];
 };
 
 extern struct ProcCmd gProcScr_UnitDisplay_MinimugBox[];
@@ -53,7 +54,7 @@ void NotificationWindowClean(struct NotificationWindowProc * proc);
 char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str);
 void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc);
 void NotificationWindow_Idle(struct NotificationWindowProc * proc);
-void StartNotificationProc(int id);
+void StartNotificationProc(int id, int type);
 int CountStrLines(const char * str);
 int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 // notifications eg. new BGM, ingame achievements, NG+ unlocks, or spam
@@ -153,7 +154,7 @@ void NotificationInitVariables(struct NotificationWindowProc * proc)
     }
 }
 
-void StartNotificationProc(int id)
+void StartNotificationProc(int id, int type)
 {
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!proc)
@@ -161,6 +162,7 @@ void StartNotificationProc(int id)
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
         NotificationInitVariables(proc);
         int slot = GetFreeQueueSlot(proc);
+        proc->type[slot] = type;
         proc->queue[slot] = id;
         proc->id = slot;
         proc->bgm = 0xFFFF;
@@ -168,7 +170,7 @@ void StartNotificationProc(int id)
     else
     {
         int slot = GetFreeQueueSlot(proc);
-        brk;
+        proc->type[slot] = type;
         proc->queue[slot] = id;
         proc->id = slot;
         Proc_Goto(proc, StartLabel);
@@ -183,12 +185,20 @@ void DoNotificationsForFlag(int id)
     {
         if (data->flag == id)
         {
-            StartNotificationProc(i);
+            StartNotificationProc(i, 0);
             // no break in case more than 1 notification is to display for the 1 flag
         }
         data++;
         i++;
     }
+    return;
+}
+
+void DoNotificationForAchievement(int id)
+{
+    // const struct NotificationsStruct * data = &gNotificationsData[0];
+    StartNotificationProc(id, 1);
+
     return;
 }
 
@@ -326,9 +336,14 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 {
     const char * str = "";
     const struct NotificationsStruct * data = NULL;
+    const struct AchievementsRomStruct * data2 = NULL;
     int id = GetNotificationId(proc);
     if (id != (-1))
     {
+        if (proc->type[proc->id] == ACHIEVEMENT_TYPE)
+        {
+            data2 = &achievementData[id];
+        }
         data = &gNotificationsData[id];
     }
     else if (ShowBgm(proc))
@@ -336,20 +351,37 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
         proc->showingBgm = true;
         return GetPlayingBGMName(proc);
     }
-    if (!data || (data->text == NULL && data->textID == 0))
-    {
-        return NULL;
-    }
 
-    str = data->text;
-    for (int i = 0; i < 4; i++)
+    if (proc->type[proc->id] == ACHIEVEMENT_TYPE)
     {
-        proc->colour[i] = data->colour[i];
-    }
+        if (!data2 || (data2->str == NULL))
+        {
+            return NULL;
+        }
 
-    if (!str)
+        str = data2->str;
+        for (int i = 0; i < 4; i++)
+        {
+            proc->colour[i] = 0;
+        }
+    }
+    else
     {
-        str = GetStringFromIndexInBuffer(data->textID, (void *)sMsgString.buffer3);
+        if (!data || (data->text == NULL && data->textID == 0))
+        {
+            return NULL;
+        }
+
+        str = data->text;
+        for (int i = 0; i < 4; i++)
+        {
+            proc->colour[i] = data->colour[i];
+        }
+
+        if (!str)
+        {
+            str = GetStringFromIndexInBuffer(data->textID, (void *)sMsgString.buffer3);
+        }
     }
 
     return str;

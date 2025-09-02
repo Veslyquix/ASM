@@ -31,7 +31,17 @@ struct AchievementsStruct
 {
     u8 complete;
 };
+struct AchievementsRomStruct
+{
+    const char * str; 
+    void * func; 
+    u16 flag; 
+    u16 pad; 
+};
+extern struct AchievementsRomStruct achievementData[];
 
+void DoNotificationForAchievement(int id); 
+#define ACHIEVEMENT_TYPE 1 
 
 #include "BonusClaim.c"
 #include "Achievements.c"

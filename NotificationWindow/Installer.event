@@ -4,7 +4,7 @@
 
 // gProcScr_TitleScreen 
 
-#include "eaSTDlib.event"
+#include "EAstdlib.event"
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
@@ -55,7 +55,16 @@ bonusEnt(8, Dracoshield, "tank");
 bonusEnt(10, Dracoshield, "tank"); 
 bonusEnt(13, Dracoshield, "tank"); 
 bonusEnt(19, IronSword, "pointy"); 
-bonusEnt(41, SilverSword, "sharp"); 
+
+#define achievementEnt(id, str, func, zero) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + (id * 0xC); POIN header func; SHORT 0 0; POP }" 
+#define achievementEnt(id, str, flag) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + (id * 0xC); POIN header 0; SHORT flag 0; POP }" 
+
+ALIGN 4 
+achievementData:
+FILL (32 * 0xC)
+achievementEnt(0, "Tanked", 1)
+achievementEnt(1, "Lost", 2)
+// ORG achievementData 
 
 
 

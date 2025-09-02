@@ -41,15 +41,21 @@ void LockAll(void)
 
 void UnlockAchievement(int id)
 {
+
     CpuFill16(0, gpBonusClaimData, 0x144);
     LoadBonusContentData(gpBonusClaimData);
+    if (IsAchievementComplete(id))
+        return;
+
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * achievements = (void *)&data[4];
+    DoNotificationForAchievement(id);
     SetAchievement(achievements, id);
     SaveBonusContentData(data);
 }
 
 void CreateBonusContentData()
 {
-    UnlockAll();
+    UnlockAchievement(1);
+    // UnlockAll();
 }
