@@ -1,6 +1,5 @@
-#include "C_Code.h"
+
 #include <string.h>
-#include "BonusClaim.c"
 
 #define brk asm("mov r11, r11");
 

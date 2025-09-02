@@ -1,3 +1,3 @@
-#define FE6 
+#define FE6
 
-#include "../C_code.c" 
+#include "../C_code.h"

@@ -1,3 +1,3 @@
-#define FE8 
+#define FE8
 
-#include "../C_code.c" 
+#include "../C_code.h"

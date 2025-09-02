@@ -22,16 +22,6 @@ int LoadBonusContentData(void *);
 // default EMS seems to save 4 bytes for bonus content data that's been claimed
 // although the global sram for it is still in the link arena sram at like 0xE007200ish
 
-static const u8 iid_bonus[] = {
-    ITEM_BOOSTER_HP,  ITEM_BOOSTER_POW, ITEM_BOOSTER_SKL, ITEM_BOOSTER_SPD, ITEM_BOOSTER_LCK,
-    ITEM_BOOSTER_DEF, ITEM_BOOSTER_RES, ITEM_BOOSTER_MOV, ITEM_BOOSTER_CON,
-};
-
-#define BONUS_CLAIM_NUM_ENTRIES 32
-
-#define MAX_ITEMS 32
-#define availableBonusIdWords ((MAX_ITEMS + 31) / 32)
-
 /*
 I believe more than 32 item rewards is unnecessary, but I'm making notes on how to do it just in case.
 Instead, I've freed up most of the bonus rewards ram and sram, which I'll use for achievements.
@@ -65,21 +55,6 @@ void MSa_LoadBonusClaim(void* source, unsigned size) {
 }
 
 */
-
-struct BonusClaimEnt
-{
-    /* 00 */ u8 unseen;
-    /* 01 */ u8 kind; // 2 = gold, 0/1 = items
-    /* 02 */ u8 itemId;
-    /* 03 */ char str[0x11]; // Only used in FE8
-};
-
-extern const struct BonusClaimEnt bonusData[];
-
-struct NewBonusClaimRamStruct
-{
-    u8 viewable;
-};
 
 struct NewBonusClaimProc
 {
@@ -140,6 +115,12 @@ void SetBonusDataItem(struct NewBonusClaimRamStruct * data, int i)
     int offset = i / 8;
     data[offset].viewable |= 1 << bit;
 }
+int IsBonusClaimViewable(int id)
+{
+    struct NewBonusClaimRamStruct * ent = (void *)gpBonusClaimData;
+    ent += id / 8;
+    return ent->viewable & (1 << (id % 8));
+}
 
 // void SaveBonusContentData(void * buf)
 // {
@@ -148,17 +129,24 @@ void SetBonusDataItem(struct NewBonusClaimRamStruct * data, int i)
 // WriteAndVerifySramFast(buf, &gSram->bonusClaim, sizeof(gSram->bonusClaim)); // 0x144 bytes
 // }
 
-void CreateBonusContentData()
+void UnlockAllBonusItems(void)
 {
-
-    struct NewBonusClaimRamStruct data[0x144] = { 0 };
+    CpuFill16(0, gpBonusClaimData, 0x144);
+    LoadBonusContentData(gpBonusClaimData);
+    struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     for (int i = 0; i < BONUS_CLAIM_NUM_ENTRIES; ++i)
     {
-        SetBonusDataItem(&data[0], i);
+        SetBonusDataItem(data, i);
     }
-    // should use up 4 bytes
-    // now use the remaining 0x140 bytes for achievements
+    SaveBonusContentData(data);
+}
 
+void UnlockBonusItem(int id)
+{
+    CpuFill16(0, gpBonusClaimData, 0x144);
+    LoadBonusContentData(gpBonusClaimData);
+    struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
+    SetBonusDataItem(data, id);
     SaveBonusContentData(data);
 }
 
@@ -175,13 +163,6 @@ int GetBonusClaimItem(int id)
 int GetBonusClaimType(int id)
 {
     return bonusData[id].kind;
-}
-
-int IsBonusClaimViewable(int id)
-{
-    struct NewBonusClaimRamStruct * ent = (void *)gpBonusClaimData;
-    ent += id / 8;
-    return ent->viewable & (1 << (id % 8));
 }
 
 //! FE8U = 0x080B0638
