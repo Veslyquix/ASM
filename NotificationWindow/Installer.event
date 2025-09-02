@@ -60,13 +60,26 @@ bonusEnt(19, IronSword, "pointy");
 // flag / func here don't make sense 
 // just call UnlockAchievement from func / SetFlag 
 
+#define RossRecruitID 2 
 
 ALIGN 4 
 achievementData: // these show up once ever 
 FILL (1000 * 4)
 achievementEnt(0, "Tanked")
 achievementEnt(1, "Lost")
-// ORG achievementData 
+// achievementEnt(RossRecruitID, "The Wounded Trainee") // done via recruitmentEnt
+
+
+
+
+
+
+ALIGN 4 
+recruitmentData: 
+FILL (512) 
+#define recruitmentEnt(charID, id, str) "PUSH; ORG recruitmentData + (charID * 2); SHORT id ; POP; achievementEnt(id, str)" 
+recruitmentEnt(Ross, RossRecruitID, "The Wounded Trainee") 
+
 
 
 

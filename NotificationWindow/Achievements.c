@@ -56,6 +56,41 @@ void UnlockAchievement(int id)
 
 void CreateBonusContentData()
 {
-    UnlockAchievement(1);
+    // UnlockAchievement(0);
     // UnlockAll();
+}
+
+void UnlockAchievementByRecruitment(int charID)
+{
+
+    UnlockAchievement(recruitmentData[charID]);
+}
+
+void UnitChangeFaction(struct Unit * unit, int faction)
+{
+    struct Unit * newUnit = GetFreeUnit(faction);
+
+    if (gActiveUnit == unit)
+        gActiveUnit = newUnit;
+
+    CopyUnit(unit, newUnit);
+    ClearUnit(unit);
+
+    if (newUnit->exp == UNIT_EXP_DISABLED)
+    {
+        if ((faction == FACTION_BLUE) && (newUnit->level != UNIT_LEVEL_MAX))
+            newUnit->exp = 0;
+        else
+            newUnit->exp = UNIT_EXP_DISABLED;
+    }
+
+    newUnit->state = newUnit->state & ~US_DROP_ITEM;
+
+    if (newUnit->rescue)
+        GetUnit(newUnit->rescue)->rescue = newUnit->index;
+
+    if (faction == FACTION_BLUE)
+    {
+        UnlockAchievementByRecruitment(newUnit->pCharacterData->number);
+    }
 }

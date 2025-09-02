@@ -12,7 +12,7 @@ struct NotificationsStruct
 };
 extern const struct NotificationsStruct gNotificationsData[];
 
-#define QueueSize 15
+#define QueueSize 10
 struct NotificationWindowProc
 {
     PROC_HEADER;
@@ -32,7 +32,7 @@ struct NotificationWindowProc
     u8 fastPrint;
 
     u8 colour[4]; // up to 0x41
-    u8 queue[QueueSize];
+    u16 queue[QueueSize];
     u8 type[QueueSize];
 };
 
