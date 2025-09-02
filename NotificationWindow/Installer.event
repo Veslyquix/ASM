@@ -42,7 +42,7 @@ WORD 144 // 152 will cause a little text to be outside the right side of the box
 
 ALIGN 4 
 bonusData:
-FILL 1024 
+FILL (32 * 0x14) // BONUS_CLAIM_NUM_ENTRIES * size 
 
 #define bonusEnt(id, itemID, str) "PUSH; ORG bonusData + (id * 0x14); BYTE 0 0 itemID; txt(str); BYTE 0; POP" 
 
@@ -54,6 +54,8 @@ bonusEnt(6, AngelicRobe, "can't die lol");
 bonusEnt(8, Dracoshield, "tank"); 
 bonusEnt(10, Dracoshield, "tank"); 
 bonusEnt(13, Dracoshield, "tank"); 
+bonusEnt(19, IronSword, "pointy"); 
+bonusEnt(41, SilverSword, "sharp"); 
 
 
 
