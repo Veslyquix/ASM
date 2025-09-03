@@ -1,0 +1,35 @@
+
+#include "C_Code.lyn.event" 
+
+// #define ROSS_CONVO_TEST_EVENT 
+
+// 1. Download goombacolor Version 3-31-2008 
+// 2. Select goomba_mb.gba as the "emulator file" 
+// 3. Select/name your output file 
+// 4. Select and add your gb/c game 
+// 5. Hit compile 
+// NOTE: The resulting .gba file must be smaller than 256kb! 
+// 6. Copy the .gba file into my ASM/Goomba folder 
+// 7. Change the #incbin line below to match your filename  
+
+// Optionally make it so a gameover etc. in the gameboy game will reset the rom
+// (which would then return to FE) 
+// making a gameover reset the game isn't a simple process, as it depends on the game 
+// so don't ask me how to do it, sorry. 
+
+
+
+// Example gif uses this free gameboy rom: 
+// https://shenmansell.itch.io/simple-snake-gameboy 
+ALIGN 4 
+GameboyRom: 
+#incbin "goombasnek.gba" 
+
+
+#ifdef ROSS_CONVO_TEST_EVENT
+PUSH 
+ORG $9F0604 
+ASMC LaunchGameboyRomASMC // You cannot return from this! It starts a whole new game lol 
+// However, it sets a bitflag so that next time the ASMC is called, it does nothing 
+POP 
+#endif 

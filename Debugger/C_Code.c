@@ -234,6 +234,16 @@ void GameControl_CallEraseSaveEventWithKeyCombo(ProcPtr aproc)
                     break;
                 }
             } // Resume ch
+            case 3:
+            {
+                if (IsValidSuspendSave(SAVE_ID_SUSPEND))
+                {
+                    ReadSuspendSave(3);
+                    // SetNextGameActionId(GAME_ACTION_4);
+                    Proc_Goto(proc, 8);
+                    break;
+                }
+            } // Resume ch once
             default:
         }
     }
