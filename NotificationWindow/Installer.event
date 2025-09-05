@@ -5,6 +5,8 @@
 // gProcScr_TitleScreen 
 
 #include "EAstdlib.event"
+#include "Definitions.enu.event" 
+
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
@@ -60,27 +62,86 @@ bonusEnt(19, IronSword, "pointy");
 // flag / func here don't make sense 
 // just call UnlockAchievement from func / SetFlag 
 
-#define RossRecruitID 2 
+
+
+
+
+
 
 ALIGN 4 
 achievementData: // these show up once ever 
 FILL (1000 * 4)
-achievementEnt(0, "Tanked")
-achievementEnt(1, "Lost")
 // achievementEnt(RossRecruitID, "The Wounded Trainee") // done via recruitmentEnt
-
-
+achievementEnt(EndID, "Tanked")
+achievementEnt(EndID+1, "Lost")
 
 
 
 
 ALIGN 4 
-recruitmentData: 
+flagAchievements:
+FILL (512)
+
+
+// clear valni / lagdou 
+// recruit CC characters 
+// promotions into specific classes 
+
+// achieve A rank support 
+// reach level 20 
+// reach promoted level 20 
+
+// equip legendaries 
+
+ALIGN 4 
+equipAchievements:
+FILL (512)
+#define recruitmentEnt(itemID, id, str) "PUSH; ORG equipAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str)" 
+equipEnt(Vidofnir, VidofnirID, "The Twin Winged Lance") 
+equipEnt(Audhulma, AudhulmaID, "The Twin Ice Blade") 
+equipEnt(Siegmund, SiegmundID, "The Twin Fire Lance") 
+equipEnt(Garm, GarmID, "The Twin Black Axe") 
+equipEnt(Nidhogg, NidhoggID, "The Twin Serpent Bow") 
+equipEnt(Sieglinde, SieglindeID, "The Twin Storm Blade") 
+equipEnt(Gleipnir, GleipnirID, "The Twin Dark Tome") 
+equipEnt(Excalibur, ExcaliburID, "The Twin Wind Tome") 
+equipEnt(Ivaldi, IvaldiID, "The Twin Light Tome") 
+equipEnt(Naglfar, NaglfarID, "The Void Tome") 
+// These all use the same text / same achievement ID 
+equipEnt(WretchedAir, UnobtainableID, "How'd you get this?") 
+equipEnt(0x3D, UnobtainableID, "How'd you get this?") // Forblaze / Dummy 
+equipEnt(0x44, UnobtainableID, "How'd you get this?") // Luce / Dummy 
+equipEnt(0xB6, UnobtainableID, "How'd you get this?") // Alacalibur 
+equipEnt(Stone, UnobtainableID, "How'd you get this?") 
+equipEnt(CrimsonEye, UnobtainableID, "How'd you get this?") 
+equipEnt(EvilEye, UnobtainableID, "How'd you get this?") 
+equipEnt(DemonSurge, UnobtainableID, "How'd you get this?") 
+equipEnt(Shadowshot, UnobtainableID, "How'd you get this?") 
+
+
+
+ALIGN 4 
+recruitmentAchievements: 
 FILL (512) 
-#define recruitmentEnt(charID, id, str) "PUSH; ORG recruitmentData + (charID * 2); SHORT id ; POP; achievementEnt(id, str)" 
-recruitmentEnt(Ross, RossRecruitID, "The Wounded Trainee") 
-
-
+#define recruitmentEnt(charID, id, str) "PUSH; ORG recruitmentAchievements + (charID * 2); SHORT id ; POP; achievementEnt(id, str)" 
+recruitmentEnt(Ross,    RossRecruitID, "The Wounded Trainee") 
+recruitmentEnt(Garcia,  GarciaRecruitID, "The Great Garcia") 
+recruitmentEnt(Colm,    ColmRecruitID, "The Thief from Renais") 
+recruitmentEnt(Lute,    LuteRecruitID, "The Prodigy") // "The Monk Watcher" 
+recruitmentEnt(Joshua,  JoshuaRecruitID, "The Wandering Swordsman") 
+recruitmentEnt(Amelia,  AmeliaRecruitID, "The Orphan of Grado") 
+recruitmentEnt(Innes,   InnesRecruitID, "The Strategician") 
+recruitmentEnt(Gerik,   GerikRecruitID, "The Desert Tiger") 
+recruitmentEnt(Tethys,  TethysRecruitID, "The Beloved Dancer") 
+recruitmentEnt(LArachel, LArachelRecruitID, "The Princess of Light") 
+recruitmentEnt(Dozla,   DozlaRecruitID, "The Steady Axe") 
+recruitmentEnt(Marisa,  MarisaRecruitID, "The Crimson Flash") 
+recruitmentEnt(Ewan,    EwanRecruitID, "The Pupil") // some of these don't use CUSA 
+recruitmentEnt(Cormag,  CormagRecruitID, "The Aloof Lanceman") 
+recruitmentEnt(Rennac,  RennacRecruitID, "The 'Merchant'") 
+recruitmentEnt(Duessel, DuesselRecruitID, "The Obsidian") 
+recruitmentEnt(Syrene,  SyreneRecruitID, "The Graceful Rider") 
+// recruit all characters? 
 
 
 ALIGN 4 

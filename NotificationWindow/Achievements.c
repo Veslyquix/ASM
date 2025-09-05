@@ -63,7 +63,7 @@ void CreateBonusContentData()
 void UnlockAchievementByRecruitment(int charID)
 {
 
-    UnlockAchievement(recruitmentData[charID]);
+    UnlockAchievement(recruitmentAchievements[charID]);
 }
 
 void UnitChangeFaction(struct Unit * unit, int faction)
