@@ -15,4 +15,15 @@
 #define RennacRecruitID 0xE
 #define DuesselRecruitID 0xF
 #define SyreneRecruitID 0x10
-#define EndID 0x11
+#define VidofnirID 0x11
+#define AudhulmaID 0x12
+#define SiegmundID 0x13
+#define GarmID 0x14
+#define NidhoggID 0x15
+#define SieglindeID 0x16
+#define GleipnirID 0x17
+#define ExcaliburID 0x18
+#define IvaldiID 0x19
+#define NaglfarID 0x1A
+#define UnobtainableItemID 0x1B
+#define EndID 0x1C

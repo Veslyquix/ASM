@@ -58,7 +58,7 @@ bonusEnt(10, Dracoshield, "tank");
 bonusEnt(13, Dracoshield, "tank"); 
 bonusEnt(19, IronSword, "pointy"); 
 
-#define achievementEnt(id, str) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + (id * 4); POIN header; POP }" 
+#define achievementEnt(id, str) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + ((id) * 4); POIN header; POP }" 
 // flag / func here don't make sense 
 // just call UnlockAchievement from func / SetFlag 
 
@@ -96,7 +96,7 @@ FILL (512)
 ALIGN 4 
 equipAchievements:
 FILL (512)
-#define recruitmentEnt(itemID, id, str) "PUSH; ORG equipAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str)" 
+#define equipEnt(itemID, id, str) "PUSH; ORG equipAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str)" 
 equipEnt(Vidofnir, VidofnirID, "The Twin Winged Lance") 
 equipEnt(Audhulma, AudhulmaID, "The Twin Ice Blade") 
 equipEnt(Siegmund, SiegmundID, "The Twin Fire Lance") 
@@ -108,15 +108,15 @@ equipEnt(Excalibur, ExcaliburID, "The Twin Wind Tome")
 equipEnt(Ivaldi, IvaldiID, "The Twin Light Tome") 
 equipEnt(Naglfar, NaglfarID, "The Void Tome") 
 // These all use the same text / same achievement ID 
-equipEnt(WretchedAir, UnobtainableID, "How'd you get this?") 
-equipEnt(0x3D, UnobtainableID, "How'd you get this?") // Forblaze / Dummy 
-equipEnt(0x44, UnobtainableID, "How'd you get this?") // Luce / Dummy 
-equipEnt(0xB6, UnobtainableID, "How'd you get this?") // Alacalibur 
-equipEnt(Stone, UnobtainableID, "How'd you get this?") 
-equipEnt(CrimsonEye, UnobtainableID, "How'd you get this?") 
-equipEnt(EvilEye, UnobtainableID, "How'd you get this?") 
-equipEnt(DemonSurge, UnobtainableID, "How'd you get this?") 
-equipEnt(Shadowshot, UnobtainableID, "How'd you get this?") 
+equipEnt(WretchedAir, UnobtainableItemID, "How'd you get this?") 
+equipEnt(Forblaze, UnobtainableItemID, "How'd you get this?") 
+equipEnt(Luce, UnobtainableItemID, "How'd you get this?") 
+equipEnt(Aircalibur, UnobtainableItemID, "How'd you get this?") 
+equipEnt(Stone, UnobtainableItemID, "How'd you get this?") 
+equipEnt(CrimsonEye, UnobtainableItemID, "How'd you get this?") 
+equipEnt(EvilEye, UnobtainableItemID, "How'd you get this?") 
+equipEnt(DemonSurge, UnobtainableItemID, "How'd you get this?") 
+equipEnt(Shadowshot, UnobtainableItemID, "How'd you get this?") 
 
 
 

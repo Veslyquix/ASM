@@ -218,22 +218,6 @@ void RestartNotificationProc(void)
     }
 }
 
-//! FE8U = 0x0808CB34
-void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
-{
-    proc->windowQuadrant = -1;
-    proc->isRetracting = false;
-    proc->showHideClock = 0;
-    proc->cursorQuadrant = 1;
-
-    InitTextDb(proc->texts, 5);
-
-    RestartNotificationProc();
-    CreateBonusContentData();
-
-    return;
-}
-
 // Hooks:
 // void SetChapterFlag(int flag);
 // void SetPermanentFlag(int flag);
@@ -803,33 +787,45 @@ void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
     }
 }
 
+void ContinueToNextNotification(struct NotificationWindowProc * proc)
+{
+    NotificationWindowClean(proc);
+    if (!proc->showingBgm)
+    {
+        proc->queue[proc->id] = 0xFF;
+        proc->id = GetTakenQueueSlot(proc);
+        proc->fastPrint = false;
+        // proc->id++;
+    }
+    Proc_Goto(proc, StartLabel);
+    return;
+}
+
 extern int NotificationWindow_DisplayFrames;
 void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc)
 {
     if (CheckNotificationInterrupted(proc))
     {
-        NotificationWindowClean(proc);
-        Proc_Goto(proc, EnqueueLabel); // print faster this time
-        return;
+        if (proc->finishedPrinting)
+        {
+            ContinueToNextNotification(proc);
+            return;
+        }
+        else
+        {
+            NotificationWindowClean(proc);
+            Proc_Goto(proc, EnqueueLabel); // print faster this time
+            return;
+        }
     }
     NotificationWindow_LoopDrawText(proc);
 
     if (proc->finishedPrinting)
     {
-
         proc->unitClock++;
         if (proc->unitClock > NotificationWindow_DisplayFrames)
         {
-            NotificationWindowClean(proc);
-            if (!proc->showingBgm)
-            {
-                proc->queue[proc->id] = 0xFF;
-                proc->id = GetTakenQueueSlot(proc);
-                proc->fastPrint = false;
-                // proc->id++;
-            }
-            Proc_Goto(proc, StartLabel);
-            return;
+            ContinueToNextNotification(proc);
         }
     }
 }

@@ -45,25 +45,6 @@ pop {r2}
 bx r2 
 .ltorg 
 
-.global HookEquipCommand_Achievements
-.type HookEquipCommand_Achievements, %function 
-HookEquipCommand_Achievements: 
-push {r4, lr} 
-ldr r0, =0x3004e50 
-ldr r0, [r0] 
-ldr r1, =0x203A958 
-ldrb r1, [r1, #0x12] 
-
-
-blh 0x8016BC0 @ EquipUnitItemByIndex 
-
-
-pop {r4} 
-pop {r2} 
-bx r2 
-.ltorg 
-
-
 
 
 

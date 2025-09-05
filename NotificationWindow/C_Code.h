@@ -38,6 +38,7 @@ struct AchievementsRomStruct
 extern struct AchievementsRomStruct achievementData[];
 
 extern u16 recruitmentAchievements[]; 
+extern u16 equipAchievements[]; 
 
 void DoNotificationForAchievement(int id); 
 #define ACHIEVEMENT_TYPE 1 
@@ -45,3 +46,6 @@ void DoNotificationForAchievement(int id);
 #include "BonusClaim.c"
 #include "Achievements.c"
 #include "Notifications.c"
+#include "Autohooks.c" 
+
+
