@@ -219,9 +219,8 @@ callHackNew(HookSetLocalFlag_NotificationWindow)
 // ORG $ 
 #endif 
 #ifdef _FE8_ 
-// ORG $a341c 
-// SHORT $2001 
-// SHORT $4770 // IsExtraBonusClaimEnabled always true (not needed) 
+ORG $226F4 
+POIN ProcScr_E_Guide1_New // take over guide menu for now 
 
 ORG 0x83CAC
 #endif 

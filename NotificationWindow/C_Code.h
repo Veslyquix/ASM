@@ -46,6 +46,7 @@ void DoNotificationForAchievement(int id);
 #include "BonusClaim.c"
 #include "Achievements.c"
 #include "Notifications.c"
+#include "AchievementsMenu.c" 
 #include "Autohooks.c" 
 
 
