@@ -80,8 +80,8 @@ void Talk_OnIdle(ProcPtr proc)
                     }
                     else
                     {
-                        if ((GetTextDisplaySpeed() == 1) && !(GetGameClock() & 1))
-                        // if ((GetTextDisplaySpeed() == 1) && (GetGameClock() & 3))
+                        // if ((GetTextDisplaySpeed() == 1) && !(GetGameClock() & 1))
+                        if ((GetTextDisplaySpeed() == 1) && (GetGameClock() & 3))
                         {
                             break;
                         }
