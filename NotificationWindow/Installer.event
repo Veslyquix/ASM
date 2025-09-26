@@ -222,6 +222,10 @@ callHackNew(HookSetLocalFlag_NotificationWindow)
 ORG $226F4 
 POIN ProcScr_E_Guide1_New // take over guide menu for now 
 
+ORG $81B 
+BYTE $2a // ? 
+// copied into 3003D70 / 300487c
+
 ORG 0x83CAC
 #endif 
 callHackNew(HookSetGlobalFlag_NotificationWindow) 
