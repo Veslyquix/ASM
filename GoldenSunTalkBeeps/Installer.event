@@ -4,6 +4,14 @@
     // #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
 #endif 
 
+// fe8 srr test to give specific voices to Eirika's portrait and Seth's portrait 
+// PUSH 
+// ORG $1030051
+// BYTE 2 
+
+// ORG $1030089 
+// BYTE 7
+// POP 
 
 
 #include "sfx_defs.event" 
@@ -24,8 +32,8 @@
 // drag .s file onto s2ea.exe 
 
 
-// #define SongTableOffset  0x224470
-#define SongTableOffset  0x1C34504 // fe8srr current address 
+#define SongTableOffset  0x224470
+// #define SongTableOffset  0x1C34504 // fe8srr current address 
 #define SongTable(index,SongPointer,Group) "PUSH; ORG SongTableOffset+(8*(index)); POIN SongPointer; SHORT Group Group; POP"
 
 #define SongTableStartID 0x385 // or around 0x26D 
@@ -125,16 +133,19 @@ SfxSongDataEntry(sfx287, 7, Gn2)
 
 
 
+
+
+
 ALIGN 4 
 GoldenSunVoices:
+VoiceDirect($00, $3C, $00, sfx260voice, $FF, $00, $FF, $A5)	// highest 
 VoiceDirect($00, $3C, $00, sfx256voice, $FF, $00, $FF, $A5)	
-VoiceDirect($00, $3C, $00, sfx260voice, $FF, $00, $FF, $A5)	
-VoiceDirect($00, $3C, $00, sfx264voice, $FF, $00, $FF, $A5)	
 VoiceDirect($00, $3C, $00, sfx268voice, $FF, $00, $FF, $A5)	
-VoiceDirect($00, $3C, $00, sfx272voice, $FF, $00, $FF, $A5)	
+VoiceDirect($00, $3C, $00, sfx264voice, $FF, $00, $FF, $A5)	
 VoiceDirect($00, $3C, $00, sfx276voice, $FF, $00, $FF, $A5)	
-VoiceDirect($00, $3C, $00, sfx280voice, $FF, $00, $FF, $A5)	
 VoiceDirect($00, $3C, $00, sfx284voice, $FF, $00, $FF, $A5)	
+VoiceDirect($00, $3C, $00, sfx272voice, $FF, $00, $FF, $A5)	// default if nothing entered 
+VoiceDirect($00, $3C, $00, sfx280voice, $FF, $00, $FF, $A5)	// lowest 
 
 
 

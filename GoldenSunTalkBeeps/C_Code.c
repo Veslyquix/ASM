@@ -11,20 +11,51 @@ extern struct Text sTalkText[3];
 extern int SongTableStartID_Link;
 extern int SongTableNumberOfBoops;
 #define CHAR_NEWLINE 0x01
-#define CHAR_A 0x03
+#define CHAR_A 0x3 // 0x1f
 #define CHAR_SPACE 0x20
 int ShouldDoVanillaBoops()
 {
     return false;
 }
 
-int GetBoopFirstID()
-{ // if some flag is on, use a different voice?
-    return SongTableStartID_Link;
-}
 int GetNumberOfBoops()
 {
-    return SongTableNumberOfBoops;
+    return 3; // SongTableNumberOfBoops;
+}
+
+struct FaceProc * GetSpeaker()
+{
+    int slot = sTalkState->activeFaceSlot;
+    if (slot == 0xFF)
+    {
+        return NULL;
+    }
+    return sTalkState->faces[slot];
+}
+struct FaceDataBoop
+{
+    u8 pad[0x19];
+    u8 boopID;
+};
+struct FaceProcBoop
+{
+    u8 pad[0x4c];
+    u8 timer;
+};
+int GetBoopFirstID()
+{
+    struct FaceProc * proc = GetSpeaker();
+    if (!proc)
+    {
+        return SongTableStartID_Link;
+    }
+    struct FaceDataBoop * data = (struct FaceDataBoop *)proc->pFaceInfo;
+    int voiceID = data->boopID;
+    if (!voiceID)
+    {
+        voiceID = 5;
+    }
+    return SongTableStartID_Link + (voiceID << 2) - 1;
 }
 
 int HandleBoops()
@@ -39,16 +70,47 @@ int HandleBoops()
             }
             else
             {
-                if (!((*sTalkState->str == CHAR_SPACE) || (*sTalkState->str == CHAR_NEWLINE) ||
-                      (*sTalkState->str == CHAR_A))) // only boop after a space, newline, or [A]
+                struct FaceProcBoop * proc = (struct FaceProcBoop *)GetSpeaker();
+                proc->timer++;
+                if (proc->timer >= 6)
                 {
-                    return true;
+                    proc->timer = 2;
+                }
+
+                switch (GetTextDisplaySpeed())
+                {
+                    case 0:
+                    case 1:
+                    {
+                        if (!((*sTalkState->str == CHAR_SPACE) || (*sTalkState->str == CHAR_NEWLINE) ||
+                              (*sTalkState->str == CHAR_A))) // only boop after a space, newline, or [A]
+                        {
+                            return true;
+                        }
+                        break;
+                    }
+                    case 4:
+                    case 8:
+                    {
+                        // implement some sort of counter in the proc to see how long it's been since we played sfx
+                        if (!((*sTalkState->str == CHAR_SPACE) || (*sTalkState->str == CHAR_NEWLINE) ||
+                              (*sTalkState->str == CHAR_A)) &&
+                            (proc->timer < 6))
+                        {
+                            return true;
+                        }
+                        break;
+                    }
                 }
 
                 if (sTalkState->instantScroll && sTalkState->unk82)
                 {
                     return true;
                 }
+                // if (*sTalkState->str == CHAR_A)
+                // {
+                // brk;
+                // }
 
                 sTalkState->unk82 = 1;
                 int sfxID = GetBoopFirstID() + NextRN_N(GetNumberOfBoops());
@@ -122,12 +184,14 @@ void Talk_OnIdle(ProcPtr proc)
                 {
                     break;
                 }
+                // HandleBoops();
 
                 return;
 
             case 3:
                 sTalkState->printClock = sTalkState->printDelay;
                 sTalkState->instantScroll = 0;
+                // HandleBoops();
 
                 return;
 
