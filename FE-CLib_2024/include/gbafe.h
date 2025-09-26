@@ -1,4 +1,6 @@
 
+
+#define brk asm("mov r11, r11"); 
 #include "global.h"
 
 #include "constants/items.h"

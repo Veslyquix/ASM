@@ -1,19 +1,56 @@
 
 #ifndef callHackNew
 	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
-    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+    // #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
 #endif 
 
 
-PUSH 
-// ORG $7CAC 
-// callHackNew(ToggleSpritesWithSelect)
 
-POP 
+#include "sfx_defs.event" 
 
-#include "Asm.lyn.event" 
+// #include "Asm.lyn.event" 
 #include "C_Code.lyn.event" 
 
 
+#define VoiceDirect(Type,BaseNote,Pan,Address,EnvAtk,EnvDec,EnvSus,EnvRel) "BYTE Type BaseNote $00 Pan; WORD Address; BYTE EnvAtk EnvDec EnvSus EnvRel"
+
+// Processing the .wav files 
+// import each sfx as a track in febuilder using 13379 hz 
+// export as .s 
+// also export as instrument to get the .dmp file 
+// rename .s and .dmp to sfx256.s / sfx256.dmp 
+// in .s file, replace song01 with sfx256 or whatever 
+// replace voicegroup000 with GoldenSunVoices
+// replace VOICE 0 with whichever voice you want to use 
+
+// drag .s file onto s2ea.exe 
+
+
+// #define SongTableOffset  0x224470
+#define SongTableOffset  0x1C34504 // fe8srr current address 
+#define SongTable(index,SongPointer,Group) "PUSH; ORG SongTableOffset+(8*index); POIN SongPointer; SHORT Group Group; POP"
+SongTable(0x7a,sfx257,0) // or 14? 
+SongTable(0x6e,sfx257,0)
+
+#include "data/sfx256.event" 
+#include "data/sfx257.event" 
+
+
+
+ALIGN 4 
+GoldenSunVoices:
+// VoiceDirect(0x00, 0x3C, 0x00, 0x08512AB8, 0xFF, 0xFA, 0x00, 0xCC)
+VoiceDirect($00, $3C, $00, sfx256voice, $FF, $00, $FF, $A5)	//000 DirectSound (0x00)
+VoiceDirect($00, $3C, $00, sfx257voice, $FF, $00, $FF, $A5)	//000 DirectSound (0x00)
+
+
+
+
+ALIGN 4 
+sfx256voice:
+#incbin "data/sfx2560x00.DirectSound.bin" 
+ALIGN 4 
+sfx257voice:
+#incbin "data/sfx2570x00.DirectSound.bin" 
 
 
