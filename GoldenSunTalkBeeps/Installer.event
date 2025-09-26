@@ -2,7 +2,7 @@
 
 #define REPLACE_SLOW_NORMAL_TEXT_SPEED // make slow 4 frame delay (instead of 8) and normal 2 frame delay instead of 4 
 #define SongTableOffset  0x224470 // vanilla address - change if you repointed the song table 
-#define BeepVolume 50
+#define BeepVolume 127 // max volume is 127 
 ALIGN 4 
 EnableVanillaBeepsFlag:
 WORD 0 // set a flag here if you want to be able to toggle back to vanilla beeps ingame 
