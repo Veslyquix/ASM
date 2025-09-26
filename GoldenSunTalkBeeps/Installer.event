@@ -153,9 +153,9 @@ VoiceDirect($00, $3C, $00, sfx260voice, $FF, $00, $FF, $A5)	// highest
 VoiceDirect($00, $3C, $00, sfx256voice, $FF, $00, $FF, $A5)	
 VoiceDirect($00, $3C, $00, sfx268voice, $FF, $00, $FF, $A5)	
 VoiceDirect($00, $3C, $00, sfx264voice, $FF, $00, $FF, $A5)	
-VoiceDirect($00, $3C, $00, sfx276voice, $FF, $00, $FF, $A5)	
+VoiceDirect($00, $3C, $00, sfx276voice, $FF, $00, $FF, $A5)	// default if nothing entered 
 VoiceDirect($00, $3C, $00, sfx284voice, $FF, $00, $FF, $A5)	
-VoiceDirect($00, $3C, $00, sfx272voice, $FF, $00, $FF, $A5)	// default if nothing entered 
+VoiceDirect($00, $3C, $00, sfx272voice, $FF, $00, $FF, $A5)	
 VoiceDirect($00, $3C, $00, sfx280voice, $FF, $00, $FF, $A5)	// lowest 
 
 
