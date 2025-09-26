@@ -20,8 +20,8 @@ sfx257_001:
 @  #01 @000   ----------------------------------------
  .byte   VOL , 127*sfx257_mvl/mxv
  .byte   KEYSH , sfx257_key+0
- .byte   VOICE , 1
- .byte   TIE ,Cn3 ,v127
+ .byte   VOICE , 0
+ .byte   TIE ,Bn2 ,v127
  .byte   W96
 @  #01 @001   ----------------------------------------
  .byte   EOT
