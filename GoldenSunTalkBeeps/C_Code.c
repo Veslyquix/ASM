@@ -13,9 +13,10 @@ extern int SongTableNumberOfBoops;
 #define CHAR_NEWLINE 0x01
 #define CHAR_A 0x3 // 0x1f
 #define CHAR_SPACE 0x20
+extern int EnableVanillaBeepsFlag;
 int ShouldDoVanillaBoops()
 {
-    return false;
+    return CheckFlag(EnableVanillaBeepsFlag);
 }
 
 int GetNumberOfBoops()
@@ -58,6 +59,19 @@ int GetBoopFirstID()
     return SongTableStartID_Link + (voiceID << 2) - 1;
 }
 
+extern int ReplaceSlowTextSpeed;
+
+int GetTextDisplaySpeed(void)
+{
+    u8 speedLookup[4] = { 8, 4, 1, 0 };
+    if (ReplaceSlowTextSpeed)
+    {
+        speedLookup[0] = 4;
+        speedLookup[1] = 2;
+    }
+    return speedLookup[gPlaySt.config.textSpeed];
+}
+
 int HandleBoops()
 {
     if (!ShouldDoVanillaBoops())
@@ -81,6 +95,8 @@ int HandleBoops()
                 {
                     case 0:
                     case 1:
+                    case 2:
+                    case 3:
                     {
                         if (!((*sTalkState->str == CHAR_SPACE) || (*sTalkState->str == CHAR_NEWLINE) ||
                               (*sTalkState->str == CHAR_A))) // only boop after a space, newline, or [A]
@@ -89,10 +105,11 @@ int HandleBoops()
                         }
                         break;
                     }
-                    case 4:
+                    case 4: // vanilla speeds
                     case 8:
                     {
-                        // implement some sort of counter in the proc to see how long it's been since we played sfx
+                        // maybe implement some sort of counter in the proc to see how long it's been since we played
+                        // sfx
                         if (!((*sTalkState->str == CHAR_SPACE) || (*sTalkState->str == CHAR_NEWLINE) ||
                               (*sTalkState->str == CHAR_A)) &&
                             (proc->timer < 6))

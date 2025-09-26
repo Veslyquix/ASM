@@ -1,18 +1,28 @@
 
-#ifndef callHackNew
-	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
-    // #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+
+#define REPLACE_SLOW_NORMAL_TEXT_SPEED // make slow 4 frame delay (instead of 8) and normal 2 frame delay instead of 4 
+#define SongTableOffset  0x224470 // vanilla address - change if you repointed the song table 
+ALIGN 4 
+EnableVanillaBeepsFlag:
+WORD 0 // set a flag here if you want to be able to toggle back to vanilla beeps ingame 
+ReplaceSlowTextSpeed:
+#ifdef REPLACE_SLOW_NORMAL_TEXT_SPEED 
+WORD 1 
+#else 
+WORD 0 
 #endif 
 
-// fe8 srr test to give specific voices to Eirika's portrait and Seth's portrait 
-// PUSH 
-// ORG $1030051
-// BYTE 2 
+// fe8 srr test to give specific tones to Eirika's portrait and Seth's portrait when they speak in convos 
+/*
+#define SongTableOffset  0x1C34504 // fe8srr current address 
+PUSH 
+ORG $1030051
+BYTE 2 
 
-// ORG $1030089 
-// BYTE 7
-// POP 
-
+ORG $1030089 
+BYTE 7
+POP 
+*/
 
 #include "sfx_defs.event" 
 
@@ -32,8 +42,8 @@
 // drag .s file onto s2ea.exe 
 
 
-#define SongTableOffset  0x224470
-// #define SongTableOffset  0x1C34504 // fe8srr current address 
+
+
 #define SongTable(index,SongPointer,Group) "PUSH; ORG SongTableOffset+(8*(index)); POIN SongPointer; SHORT Group Group; POP"
 
 #define SongTableStartID 0x385 // or around 0x26D 
