@@ -16,6 +16,7 @@ extern int SongTableNumberOfBoops;
 extern int EnableVanillaBeepsFlag;
 int ShouldDoVanillaBoops()
 {
+    // return true;
     return CheckFlag(EnableVanillaBeepsFlag);
 }
 
@@ -84,12 +85,12 @@ int HandleBoops()
             }
             else
             {
-                struct FaceProcBoop * proc = (struct FaceProcBoop *)GetSpeaker();
-                proc->timer++;
-                if (proc->timer >= 6)
-                {
-                    proc->timer = 2;
-                }
+                // struct FaceProcBoop * proc = (struct FaceProcBoop *)GetSpeaker();
+                // proc->timer++;
+                // if (proc->timer >= 6)
+                // {
+                // proc->timer = 2;
+                // }
 
                 switch (GetTextDisplaySpeed())
                 {
@@ -111,8 +112,7 @@ int HandleBoops()
                         // maybe implement some sort of counter in the proc to see how long it's been since we played
                         // sfx
                         if (!((*sTalkState->str == CHAR_SPACE) || (*sTalkState->str == CHAR_NEWLINE) ||
-                              (*sTalkState->str == CHAR_A)) &&
-                            (proc->timer < 6))
+                              (*sTalkState->str == CHAR_A)))
                         {
                             return true;
                         }
@@ -166,7 +166,7 @@ int HandleBoops()
 }
 
 //! FE8U = 0x08006C34
-void Talk_OnIdle(ProcPtr proc)
+void Talk_OnIdle_(ProcPtr proc)
 {
 
     if (IsTalkFaceMoving())

@@ -13,6 +13,11 @@ WORD 1
 WORD 0 
 #endif 
 
+
+#ifndef callHackNew 
+	#define callHackNew(offset) 		"BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+#endif 
+
 // fe8 srr test to give specific tones to Eirika's portrait and Seth's portrait when they speak in convos 
 /*
 #define SongTableOffset  0x1C34504 // fe8srr current address 
@@ -24,6 +29,12 @@ ORG $1030089
 BYTE 7
 POP 
 */
+
+PUSH 
+ORG $6D10 
+callHackNew(HandleBoops) 
+SHORT $e02f // b 0x8006D7E 
+POP 
 
 #include "sfx_defs.event" 
 
@@ -48,38 +59,38 @@ POP
 #define SongTable(index,SongPointer,Group) "PUSH; ORG SongTableOffset+(8*(index)); POIN SongPointer; SHORT Group Group; POP"
 
 #define SongTableStartID 0x385 // or around 0x26D 
-SongTable(SongTableStartID+00, sfx256, 0)
-SongTable(SongTableStartID+01, sfx257, 0)
-SongTable(SongTableStartID+02, sfx258, 0)
-SongTable(SongTableStartID+03, sfx259, 0)
-SongTable(SongTableStartID+04, sfx260, 0)
-SongTable(SongTableStartID+05, sfx261, 0)
-SongTable(SongTableStartID+06, sfx262, 0)
-SongTable(SongTableStartID+07, sfx263, 0)
-SongTable(SongTableStartID+08, sfx264, 0)
-SongTable(SongTableStartID+09, sfx265, 0)
-SongTable(SongTableStartID+10, sfx266, 0)
-SongTable(SongTableStartID+11, sfx267, 0)
-SongTable(SongTableStartID+12, sfx268, 0)
-SongTable(SongTableStartID+13, sfx269, 0)
-SongTable(SongTableStartID+14, sfx270, 0)
-SongTable(SongTableStartID+15, sfx271, 0)
-SongTable(SongTableStartID+16, sfx272, 0)
-SongTable(SongTableStartID+17, sfx273, 0)
-SongTable(SongTableStartID+18, sfx274, 0)
-SongTable(SongTableStartID+19, sfx275, 0)
-SongTable(SongTableStartID+20, sfx276, 0)
-SongTable(SongTableStartID+21, sfx277, 0)
-SongTable(SongTableStartID+22, sfx278, 0)
-SongTable(SongTableStartID+23, sfx279, 0)
-SongTable(SongTableStartID+24, sfx280, 0)
-SongTable(SongTableStartID+25, sfx281, 0)
-SongTable(SongTableStartID+26, sfx282, 0)
-SongTable(SongTableStartID+27, sfx283, 0)
-SongTable(SongTableStartID+28, sfx284, 0)
-SongTable(SongTableStartID+29, sfx285, 0)
-SongTable(SongTableStartID+30, sfx286, 0)
-SongTable(SongTableStartID+31, sfx287, 0)
+SongTable((SongTableStartID+00), sfx256, 0)
+SongTable((SongTableStartID+01), sfx257, 0)
+SongTable((SongTableStartID+02), sfx258, 0)
+SongTable((SongTableStartID+03), sfx259, 0)
+SongTable((SongTableStartID+04), sfx260, 0)
+SongTable((SongTableStartID+05), sfx261, 0)
+SongTable((SongTableStartID+06), sfx262, 0)
+SongTable((SongTableStartID+07), sfx263, 0)
+SongTable((SongTableStartID+08), sfx264, 0)
+SongTable((SongTableStartID+09), sfx265, 0)
+SongTable((SongTableStartID+10), sfx266, 0)
+SongTable((SongTableStartID+11), sfx267, 0)
+SongTable((SongTableStartID+12), sfx268, 0)
+SongTable((SongTableStartID+13), sfx269, 0)
+SongTable((SongTableStartID+14), sfx270, 0)
+SongTable((SongTableStartID+15), sfx271, 0)
+SongTable((SongTableStartID+16), sfx272, 0)
+SongTable((SongTableStartID+17), sfx273, 0)
+SongTable((SongTableStartID+18), sfx274, 0)
+SongTable((SongTableStartID+19), sfx275, 0)
+SongTable((SongTableStartID+20), sfx276, 0)
+SongTable((SongTableStartID+21), sfx277, 0)
+SongTable((SongTableStartID+22), sfx278, 0)
+SongTable((SongTableStartID+23), sfx279, 0)
+SongTable((SongTableStartID+24), sfx280, 0)
+SongTable((SongTableStartID+25), sfx281, 0)
+SongTable((SongTableStartID+26), sfx282, 0)
+SongTable((SongTableStartID+27), sfx283, 0)
+SongTable((SongTableStartID+28), sfx284, 0)
+SongTable((SongTableStartID+29), sfx285, 0)
+SongTable((SongTableStartID+30), sfx286, 0)
+SongTable((SongTableStartID+31), sfx287, 0)
 
 
 ALIGN 4 
