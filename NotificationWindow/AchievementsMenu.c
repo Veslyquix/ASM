@@ -181,7 +181,7 @@ void AchievementSpriteDraw_Loop(void)
 
     GetGameClock();
 
-    PutSprite(3, 12, 8, gSprite_AchievementsBannerText, OAM2_PAL(2));
+    PutSprite(3, 4, 8, gSprite_AchievementsBannerText, OAM2_PAL(2));
 
     if (gGuideSt->state == GUIDE_STATE_0)
     {
