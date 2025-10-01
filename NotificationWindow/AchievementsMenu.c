@@ -66,12 +66,12 @@ extern u16 Pal_08B17B44[]; // pal
 // TODO: Implicit declarations
 // void UpdateMenuScrollBarConfig(int, int, int, int);
 // ProcPtr StartMenuScrollBarExt(ProcPtr, int, int, int, int);
-// void sub_8097668(void);
+// void achievement_8097668(void);
 // void LockMenuScrollBar(void);
 // void EndMenuScrollBar(void);
 
 //! FE8U = 0x080CDF4C
-bool IsGuideLocked(void)
+bool AreAchievementsLocked(void)
 {
     struct GuideEnt * it = gGuideTable;
 
@@ -91,15 +91,40 @@ bool IsGuideLocked(void)
     }
 }
 
+u8 MapMenu_IsAchievementsCommandAvailable(const struct MenuItemDef * def, int number)
+{
+    if (AreAchievementsLocked())
+    {
+        return MENU_NOTSHOWN;
+    }
+
+    return MENU_ENABLED;
+}
+const struct ProcCmd ProcScr_E_Achievements_Map[];
+const struct ProcCmd ProcScr_E_Achievements_WM[];
+u8 MapMenu_AchievementsCommand(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    Proc_Start(ProcScr_E_Achievements_Map, PROC_TREE_3);
+
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+// s8 WorldMap_CallGuide(ProcPtr proc)
+// {
+// Proc_BlockEachMarked(PROC_MARK_WMSTUFF);
+// Proc_StartBlocking(ProcScr_E_Achievements_WM, proc);
+// return 0;
+// }
+
 //! FE8U = 0x080CDF78
-void GuideSpriteDraw_Init(void)
+void AchievementSpriteDraw_Init(void)
 {
     UnpackUiVArrowGfx(0xe0, 3);
     return;
 }
 
 //! FE8U = 0x080CDF88
-void GuideSpriteDraw_Loop(void)
+void AchievementSpriteDraw_Loop(void)
 {
     int y1;
     int y2;
@@ -170,7 +195,7 @@ void GuideSpriteDraw_Loop(void)
 }
 
 //! FE8U = 0x080CE148
-void PutGuideBottomBarText(void)
+void PutAchievementBottomBarText(void)
 {
     if (gGuideSt->sortMode != GUIDE_SORT_MODE_TOPIC)
     {
@@ -190,7 +215,7 @@ void PutGuideBottomBarText(void)
 }
 
 //! FE8U = 0x080CE1C0
-void sub_80CE1C0(int strIndex, int textIndex, int y)
+void achievement_80CE1C0(int strIndex, int textIndex, int y)
 {
     const char * str;
 
@@ -206,7 +231,7 @@ void sub_80CE1C0(int strIndex, int textIndex, int y)
 }
 
 //! FE8U = 0x080CE248
-void sub_80CE248(void)
+void achievement_80CE248(void)
 {
     int i;
 
@@ -216,7 +241,7 @@ void sub_80CE248(void)
     {
         if (i < a)
         {
-            sub_80CE1C0(i, i, (i * 2) + 5);
+            achievement_80CE1C0(i, i, (i * 2) + 5);
         }
     }
 
@@ -224,7 +249,7 @@ void sub_80CE248(void)
 }
 
 //! FE8U = 0x080CE28C
-void sub_80CE28C(void)
+void achievement_80CE28C(void)
 {
     int iy;
     int ix;
@@ -250,21 +275,21 @@ void sub_80CE28C(void)
 }
 
 //! FE8U = 0x080CE2E4
-void GuideMenuRefresh_SyncBg1(void)
+void AchievementMenuRefresh_SyncBg1(void)
 {
     BG_EnableSyncByMask(BG1_SYNC_BIT);
     return;
 }
 
 //! FE8U = 0x080CE2F0
-void GuideMenuRefresh_SyncBg0Bg1(void)
+void AchievementMenuRefresh_SyncBg0Bg1(void)
 {
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
     return;
 }
 
 //! FE8U = 0x080CE2FC
-void GuideEntry_RedrawUp(struct GuideProc * proc)
+void AchievementEntry_RedrawUp(struct GuideProc * proc)
 {
     int idx = proc->unk_34;
     int textIdx = idx % 6;
@@ -280,7 +305,7 @@ void GuideEntry_RedrawUp(struct GuideProc * proc)
 }
 
 //! FE8U = 0x080CE388
-void GuideEntry_RedrawDown(struct GuideProc * proc)
+void AchievementEntry_RedrawDown(struct GuideProc * proc)
 {
     int idx = proc->unk_34;
     int textIdx = idx % 6;
@@ -296,7 +321,7 @@ void GuideEntry_RedrawDown(struct GuideProc * proc)
 }
 
 //! FE8U = 0x080CE414
-void sub_80CE414(void)
+void achievement_80CE414(void)
 {
     int r6;
 
@@ -354,7 +379,7 @@ void sub_80CE414(void)
 }
 
 //! FE8U = 0x080CE588
-void GuideEntry_DrawInitial(void)
+void AchievementEntry_DrawInitial(void)
 {
     int ix;
     int iy;
@@ -377,7 +402,7 @@ void GuideEntry_DrawInitial(void)
 }
 
 //! FE8U = 0x080CE5BC
-const char * GetStringNextLine(const char * str)
+const char * GetStringNextLine_Achievements(const char * str)
 {
     if (str == NULL)
     {
@@ -411,7 +436,7 @@ const char * GetStringNextLine(const char * str)
 }
 
 //! FE8U = 0x080CE5F0
-void MoveGuideDetailText(int idx, int moveDirection)
+void MoveAchievementDetailText(int idx, int moveDirection)
 {
     int detailLinesScrolled;
     int i;
@@ -421,7 +446,7 @@ void MoveGuideDetailText(int idx, int moveDirection)
     const char * str = GetStringFromIndex(gGuideTable[idx].details);
     while (1)
     {
-        str = GetStringNextLine(str);
+        str = GetStringNextLine_Achievements(str);
         if (str == NULL)
         {
             break;
@@ -468,7 +493,7 @@ void MoveGuideDetailText(int idx, int moveDirection)
         }
     }
 
-    GuideEntry_DrawInitial();
+    AchievementEntry_DrawInitial();
 
     gGuideSt->detailLinesScrolled = detailLinesScrolled;
 
@@ -485,7 +510,7 @@ void MoveGuideDetailText(int idx, int moveDirection)
 
         if (i != 0)
         {
-            str = GetStringNextLine(str);
+            str = GetStringNextLine_Achievements(str);
             if (str == NULL)
             {
                 break;
@@ -511,10 +536,10 @@ void MoveGuideDetailText(int idx, int moveDirection)
     return;
 }
 
-extern struct ProcCmd const gProcScrNew_GuideEntryListRedraw_Up[];
+extern struct ProcCmd const gProcScr_AchievementEntryListRedraw_Up[];
 
 //! FE8U = 0x080CE750
-void sub_80CE750(ProcPtr proc, int b)
+void achievement_80CE750(ProcPtr proc, int b)
 {
     struct GuideProc * child;
     int ix;
@@ -536,7 +561,7 @@ void sub_80CE750(ProcPtr proc, int b)
                 off = off - 0x40;
             }
 
-            sub_80CE1C0(hm, hm % 6, 5);
+            achievement_80CE1C0(hm, hm % 6, 5);
 
             break;
 
@@ -551,7 +576,7 @@ void sub_80CE750(ProcPtr proc, int b)
                 off = off - 0x40;
             }
 
-            child = Proc_Start(gProcScrNew_GuideEntryListRedraw_Up, proc);
+            child = Proc_Start(gProcScr_AchievementEntryListRedraw_Up, proc);
             child->unk_34 = hm;
     }
 
@@ -560,10 +585,10 @@ void sub_80CE750(ProcPtr proc, int b)
     return;
 }
 
-extern struct ProcCmd const gProcScrNew_GuideEntryListRedraw_Down[];
+extern struct ProcCmd const gProcScr_AchievementEntryListRedraw_Down[];
 
 //! FE8U = 0x080CE858
-void sub_80CE858(ProcPtr proc, int b)
+void achievement_80CE858(ProcPtr proc, int b)
 {
     struct GuideProc * child;
     int ix;
@@ -585,7 +610,7 @@ void sub_80CE858(ProcPtr proc, int b)
                 off = off + 0x40;
             }
 
-            sub_80CE1C0(hm, hm % 6, 15);
+            achievement_80CE1C0(hm, hm % 6, 15);
 
             break;
 
@@ -600,7 +625,7 @@ void sub_80CE858(ProcPtr proc, int b)
                 off = off + 0x40;
             }
 
-            child = Proc_Start(gProcScrNew_GuideEntryListRedraw_Down, proc);
+            child = Proc_Start(gProcScr_AchievementEntryListRedraw_Down, proc);
             child->unk_34 = hm;
     }
 
@@ -610,7 +635,7 @@ void sub_80CE858(ProcPtr proc, int b)
 }
 
 //! FE8U = 0x080CE95C
-void GuideDetailsRedraw_Init(struct GuideProc * proc)
+void AchievementDetailsRedraw_Init(struct GuideProc * proc)
 {
     int textIdx;
     const char * str;
@@ -623,7 +648,7 @@ void GuideDetailsRedraw_Init(struct GuideProc * proc)
 
     while (unk_34 != 0)
     {
-        str = GetStringNextLine(str);
+        str = GetStringNextLine_Achievements(str);
         if (str == NULL)
         {
             break;
@@ -643,7 +668,7 @@ void GuideDetailsRedraw_Init(struct GuideProc * proc)
 }
 
 //! FE8U = 0x080CE9E8
-void GuideDetailsRedraw_Loop(struct GuideProc * proc)
+void AchievementDetailsRedraw_Loop(struct GuideProc * proc)
 {
     int iy;
     int ix;
@@ -711,7 +736,7 @@ void GuideDetailsRedraw_Loop(struct GuideProc * proc)
 }
 
 //! FE8U = 0x080CEAE8
-void sub_80CEAE8(void)
+void achievement_80CEAE8(void)
 {
     int i;
     u8 local[20];
@@ -772,7 +797,7 @@ void sub_80CEAE8(void)
 }
 
 //! FE8U = 0x080CEBA4
-void sub_80CEBA4(void)
+void achievement_80CEBA4(void)
 {
     int i;
     u8 local[20];
@@ -835,7 +860,7 @@ void sub_80CEBA4(void)
 }
 
 //! FE8U = 0x080CEC68
-void sub_80CEC68(u16 off)
+void achievement_80CEC68(u16 off)
 {
     int ix;
     int iy;
@@ -857,20 +882,30 @@ void sub_80CEC68(u16 off)
 
 // clang-format off
 
-struct ProcCmd const gProcScrNew_Guide_DrawSprites[] =
+struct ProcCmd const gProcScr_Achievement_DrawSprites[] =
 {
     PROC_NAME("E_guideSub"),
 
-    PROC_CALL(GuideSpriteDraw_Init),
-    PROC_REPEAT(GuideSpriteDraw_Loop),
+    PROC_CALL(AchievementSpriteDraw_Init),
+    PROC_REPEAT(AchievementSpriteDraw_Loop),
 
     PROC_END,
 };
 
 // clang-format on
+void achievement_8097668(void)
+{
+    struct MenuScrollBarProc * proc = Proc_Find(ProcScr_menu_scroll);
 
+    if (proc)
+    {
+        Proc_Goto(proc, 0);
+    }
+
+    return;
+}
 //! FE8U = 0x080CECB0
-void Guide_Init(ProcPtr proc)
+void Achievement_Init(ProcPtr proc)
 {
     int i = 0;
 
@@ -885,8 +920,8 @@ void Guide_Init(ProcPtr proc)
     gGuideSt->unk_2b = 0;
     gGuideSt->unk_2c = 0;
 
-    sub_80CEAE8();
-    sub_80CEBA4();
+    achievement_80CEAE8();
+    achievement_80CEBA4();
     LoadUiFrameGraphics();
 
     SetDispEnable(1, 1, 1, 1, 1);
@@ -920,7 +955,7 @@ void Guide_Init(ProcPtr proc)
 
     InitText(&gGuideSt->unk_ec, 22);
 
-    PutGuideBottomBarText();
+    PutAchievementBottomBarText();
 
     InitText(&gGuideSt->unk_ac, 9);
     InitText(&gGuideSt->unk_e4, 18);
@@ -931,24 +966,24 @@ void Guide_Init(ProcPtr proc)
         InitText(&gGuideSt->unk_b4[i], 18);
     }
 
-    sub_80CE248();
-    sub_80CE414();
+    achievement_80CE248();
+    achievement_80CE414();
 
     StartMuralBackgroundExt(proc, 0, 18, 2, 0);
-    Proc_Start(gProcScrNew_Guide_DrawSprites, proc);
+    Proc_Start(gProcScr_Achievement_DrawSprites, proc);
 
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT | BG3_SYNC_BIT);
 
     StartMenuScrollBarExt(proc, 224, 47, 0x800, 4);
     UpdateMenuScrollBarConfig(10, gGuideSt->unk_2c * 16, gGuideSt->unk_3e, 6);
 
-    sub_8097668();
+    achievement_8097668();
 
     return;
 }
 
 //! FE8U = 0x080CEF10
-void Guide_SetBlend(void)
+void Achievement_SetBlend(void)
 {
     SetBlendAlpha(15, 4);
     SetBlendTargetA(0, 0, 1, 0, 0);
@@ -957,7 +992,7 @@ void Guide_SetBlend(void)
 }
 
 //! FE8U = 0x080CEF48
-int GetGuideAction(ProcPtr proc)
+int GetAchievementAction(ProcPtr proc)
 {
     switch (gGuideSt->state)
     {
@@ -1008,86 +1043,86 @@ int GetGuideAction(ProcPtr proc)
 
 // clang-format off
 
-struct ProcCmd const gProcScrNew_GuideCategoryRedraw[] =
+struct ProcCmd const gProcScr_AchievementCategoryRedraw[] =
 {
     PROC_NAME("E_guMenu1ReWrite"),
     PROC_SLEEP(1),
 
-    PROC_CALL(sub_80CE28C),
-    PROC_CALL(GuideMenuRefresh_SyncBg1),
+    PROC_CALL(achievement_80CE28C),
+    PROC_CALL(AchievementMenuRefresh_SyncBg1),
     PROC_SLEEP(1),
 
-    PROC_CALL(sub_80CE248),
+    PROC_CALL(achievement_80CE248),
     PROC_SLEEP(1),
 
-    PROC_CALL(sub_80CE414),
+    PROC_CALL(achievement_80CE414),
     PROC_SLEEP(1),
 
-    PROC_CALL(PutGuideBottomBarText),
-    PROC_CALL(GuideMenuRefresh_SyncBg0Bg1),
+    PROC_CALL(PutAchievementBottomBarText),
+    PROC_CALL(AchievementMenuRefresh_SyncBg0Bg1),
 
     PROC_END,
 };
 
-struct ProcCmd const gProcScrNew_GuideEntryListRedraw_Initial[] =
+struct ProcCmd const gProcScr_AchievementEntryListRedraw_Initial[] =
 {
     PROC_NAME("E_guMenu2ReWriteFirst"),
     PROC_SLEEP(1),
 
-    PROC_CALL(GuideEntry_DrawInitial),
-    PROC_CALL(GuideMenuRefresh_SyncBg1),
+    PROC_CALL(AchievementEntry_DrawInitial),
+    PROC_CALL(AchievementMenuRefresh_SyncBg1),
     PROC_SLEEP(1),
 
-    PROC_CALL(sub_80CE414),
+    PROC_CALL(achievement_80CE414),
     PROC_SLEEP(1),
 
-    PROC_CALL(PutGuideBottomBarText),
-    PROC_CALL(GuideMenuRefresh_SyncBg1),
+    PROC_CALL(PutAchievementBottomBarText),
+    PROC_CALL(AchievementMenuRefresh_SyncBg1),
 
     PROC_END,
 };
 
-struct ProcCmd const gProcScrNew_GuideEntryListRedraw_Up[] =
+struct ProcCmd const gProcScr_AchievementEntryListRedraw_Up[] =
 {
     PROC_NAME("E_guMenu2ReWriteUp"),
     PROC_SLEEP(1),
 
-    PROC_CALL(GuideEntry_RedrawUp),
-    PROC_CALL(GuideMenuRefresh_SyncBg1),
+    PROC_CALL(AchievementEntry_RedrawUp),
+    PROC_CALL(AchievementMenuRefresh_SyncBg1),
 
     PROC_END,
 };
 
-struct ProcCmd const gProcScrNew_GuideEntryListRedraw_Down[] =
+struct ProcCmd const gProcScr_AchievementEntryListRedraw_Down[] =
 {
     PROC_NAME("E_guMenu2ReWriteDown"),
     PROC_SLEEP(1),
 
-    PROC_CALL(GuideEntry_RedrawDown),
-    PROC_CALL(GuideMenuRefresh_SyncBg1),
+    PROC_CALL(AchievementEntry_RedrawDown),
+    PROC_CALL(AchievementMenuRefresh_SyncBg1),
 
     PROC_END,
 };
 
-struct ProcCmd const gProcScrNew_GuideDetailsRedraw[] =
+struct ProcCmd const gProcScr_AchievementDetailsRedraw[] =
 {
     PROC_NAME("E_guMess3ReWrite"),
     PROC_SLEEP(1),
 
-    PROC_CALL(GuideDetailsRedraw_Init),
-    PROC_REPEAT(GuideDetailsRedraw_Loop),
+    PROC_CALL(AchievementDetailsRedraw_Init),
+    PROC_REPEAT(AchievementDetailsRedraw_Loop),
 
     PROC_END,
 };
 
 // clang-format on
 
-void Guide_MainLoop(struct GuideProc * proc)
+void Achievement_MainLoop(struct GuideProc * proc)
 {
     struct GuideProc * proc_ = proc;
     s8 flag = 0;
 
-    switch (GetGuideAction(proc))
+    switch (GetAchievementAction(proc))
     {
         case GUIDE_ACTION_A_PRESS:
             PlaySoundEffect(SONG_SE_SYS_WINDOW_SELECT1);
@@ -1097,7 +1132,7 @@ void Guide_MainLoop(struct GuideProc * proc)
             switch (gGuideSt->state)
             {
                 case GUIDE_STATE_1:
-                    sub_80CEC68(0x2000);
+                    achievement_80CEC68(0x2000);
                     BG_EnableSyncByMask(BG2_SYNC_BIT);
 
                     break;
@@ -1105,7 +1140,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                 case GUIDE_STATE_2:
                     gGuideSt->detailLinesScrolled = 0;
                     SetFlag(gGuideTable[gGuideSt->unk_68[gGuideSt->unk_2b]].readFlag);
-                    MoveGuideDetailText(gGuideSt->unk_68[gGuideSt->unk_2b], GUIDE_DETAILS_STAY);
+                    MoveAchievementDetailText(gGuideSt->unk_68[gGuideSt->unk_2b], GUIDE_DETAILS_STAY);
                     LockMenuScrollBar();
 
                     return;
@@ -1117,11 +1152,11 @@ void Guide_MainLoop(struct GuideProc * proc)
             break;
 
         case GUIDE_ACTION_ADVANCE_TEXT:
-            MoveGuideDetailText(gGuideSt->unk_68[gGuideSt->unk_2b], GUIDE_DETAILS_ADVANCE);
+            MoveAchievementDetailText(gGuideSt->unk_68[gGuideSt->unk_2b], GUIDE_DETAILS_ADVANCE);
             break;
 
         case GUIDE_ACTION_REVERSE_TEXT:
-            MoveGuideDetailText(gGuideSt->unk_68[gGuideSt->unk_2b], GUIDE_DETAILS_REVERSE);
+            MoveAchievementDetailText(gGuideSt->unk_68[gGuideSt->unk_2b], GUIDE_DETAILS_REVERSE);
             break;
 
         case GUIDE_ACTION_CANCEL:
@@ -1134,13 +1169,13 @@ void Guide_MainLoop(struct GuideProc * proc)
                 switch (gGuideSt->state)
                 {
                     case GUIDE_STATE_0:
-                        sub_80CEC68(0x1000);
+                        achievement_80CEC68(0x1000);
                         BG_EnableSyncByMask(BG2_SYNC_BIT);
                         break;
 
                     case GUIDE_STATE_1:
-                        Proc_StartBlocking(gProcScrNew_GuideEntryListRedraw_Initial, proc_);
-                        sub_8097668();
+                        Proc_StartBlocking(gProcScr_AchievementEntryListRedraw_Initial, proc_);
+                        achievement_8097668();
                         return;
 
                     default:
@@ -1173,7 +1208,7 @@ void Guide_MainLoop(struct GuideProc * proc)
             gGuideSt->unk_2b = 0;
             gGuideSt->unk_2c = 0;
 
-            Proc_StartBlocking(gProcScrNew_GuideCategoryRedraw, proc_);
+            Proc_StartBlocking(gProcScr_AchievementCategoryRedraw, proc_);
 
             break;
 
@@ -1190,7 +1225,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                             if (((gGuideSt->categoryIdx - gGuideSt->unk_2a) < 1) && (gGuideSt->unk_2a != 0))
                             {
                                 gGuideSt->unk_2a--;
-                                sub_80CE750(proc_, gGuideSt->categoryIdx - 1);
+                                achievement_80CE750(proc_, gGuideSt->categoryIdx - 1);
                             }
 
                             flag = 1;
@@ -1216,7 +1251,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                                      1))
                                 {
                                     gGuideSt->unk_2a++;
-                                    sub_80CE858(proc_, gGuideSt->categoryIdx + 1);
+                                    achievement_80CE858(proc_, gGuideSt->categoryIdx + 1);
                                 }
                             }
                             flag = 1;
@@ -1228,7 +1263,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                         }
                     }
 
-                    Proc_Start(gProcScrNew_GuideEntryListRedraw_Initial, proc_);
+                    Proc_Start(gProcScr_AchievementEntryListRedraw_Initial, proc_);
                     gGuideSt->unk_2b = 0;
                     gGuideSt->unk_2c = 0;
 
@@ -1244,7 +1279,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                             if ((gGuideSt->unk_2b - gGuideSt->unk_2c < 1) && (gGuideSt->unk_2c != 0))
                             {
                                 gGuideSt->unk_2c--;
-                                sub_80CE750(proc_, gGuideSt->unk_2b - 1);
+                                achievement_80CE750(proc_, gGuideSt->unk_2b - 1);
                             }
 
                             flag = 1;
@@ -1259,7 +1294,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                             if ((gGuideSt->unk_2b - gGuideSt->unk_2c > 4) && (gGuideSt->unk_2b < gGuideSt->unk_3e - 1))
                             {
                                 gGuideSt->unk_2c++;
-                                sub_80CE858(proc_, gGuideSt->unk_2b + 1);
+                                achievement_80CE858(proc_, gGuideSt->unk_2b + 1);
                             }
 
                             flag = 1;
@@ -1274,7 +1309,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                         if (gGuideSt->detailLinesScrolled != 0)
                         {
                             gGuideSt->detailLinesScrolled--;
-                            proc_ = Proc_StartBlocking(gProcScrNew_GuideDetailsRedraw, proc_);
+                            proc_ = Proc_StartBlocking(gProcScr_AchievementDetailsRedraw, proc_);
                             proc_->unk_34 = gGuideSt->detailLinesScrolled;
                             proc_->unk_38 = 0;
                             flag = 1;
@@ -1286,7 +1321,7 @@ void Guide_MainLoop(struct GuideProc * proc)
                         {
                             gGuideSt->detailLinesScrolled++;
 
-                            proc_ = Proc_StartBlocking(gProcScrNew_GuideDetailsRedraw, proc_);
+                            proc_ = Proc_StartBlocking(gProcScr_AchievementDetailsRedraw, proc_);
                             proc_->unk_34 = gGuideSt->detailLinesScrolled + 3;
                             proc_->unk_38 = 1;
 
@@ -1307,19 +1342,19 @@ void Guide_MainLoop(struct GuideProc * proc)
 }
 
 //! FE8U = 0x080CF448
-void Guide_OnEnd(void)
+void Achievement_OnEnd(void)
 {
     EndMuralBackground();
-    Proc_EndEach(gProcScrNew_Guide_DrawSprites);
+    Proc_EndEach(gProcScr_Achievement_DrawSprites);
     EndMenuScrollBar();
     return;
 }
 
 // clang-format off
 
-const struct ProcCmd ProcScr_E_Guide1_New[] =
+const struct ProcCmd ProcScr_E_Achievements_Map[] =
 {
-    PROC_NAME("E_Guide"),
+    PROC_NAME("Achievements_Map"),
 
     PROC_CALL(LockGame),
     PROC_CALL(StartFastFadeToBlack),
@@ -1328,21 +1363,21 @@ const struct ProcCmd ProcScr_E_Guide1_New[] =
     PROC_CALL(BMapDispSuspend),
     PROC_YIELD,
 
-    PROC_CALL(Guide_Init),
+    PROC_CALL(Achievement_Init),
     PROC_CALL(StartGreenText),
 
     PROC_CALL(StartFastFadeFromBlack),
     PROC_REPEAT(WaitForFade),
 
-    PROC_CALL(Guide_SetBlend),
-    PROC_REPEAT(Guide_MainLoop),
+    PROC_CALL(Achievement_SetBlend),
+    PROC_REPEAT(Achievement_MainLoop),
 
     PROC_CALL(StartFastFadeToBlack),
     PROC_REPEAT(WaitForFade),
 
     PROC_CALL(EndGreenText),
 
-    PROC_CALL(Guide_OnEnd),
+    PROC_CALL(Achievement_OnEnd),
     PROC_YIELD,
 
     PROC_CALL(BMapDispResume),
@@ -1355,30 +1390,30 @@ const struct ProcCmd ProcScr_E_Guide1_New[] =
     PROC_END,
 };
 
-const struct ProcCmd ProcScr_E_Guide2_New[] =
+const struct ProcCmd ProcScr_E_Achievements_WM[] =
 {
-    PROC_NAME("E_Guide"),
+    PROC_NAME("Achievements_WM"),
 
     PROC_CALL(LockGame),
 
     PROC_CALL(BMapDispSuspend),
     PROC_YIELD,
 
-    PROC_CALL(Guide_Init),
+    PROC_CALL(Achievement_Init),
     PROC_CALL(StartGreenText),
 
     PROC_CALL(StartFastFadeFromBlack),
     PROC_REPEAT(WaitForFade),
 
-    PROC_CALL(Guide_SetBlend),
-    PROC_REPEAT(Guide_MainLoop),
+    PROC_CALL(Achievement_SetBlend),
+    PROC_REPEAT(Achievement_MainLoop),
 
     PROC_CALL(StartFastFadeToBlack),
     PROC_REPEAT(WaitForFade),
 
     PROC_CALL(EndGreenText),
 
-    PROC_CALL(Guide_OnEnd),
+    PROC_CALL(Achievement_OnEnd),
     PROC_YIELD,
 
     PROC_CALL(BMapDispResume),
@@ -1388,7 +1423,7 @@ const struct ProcCmd ProcScr_E_Guide2_New[] =
     PROC_END,
 };
 
-void BmGuideTextSetAllGreen(void)
+void BmAchievementTextSetAllGreen(void)
 {
     struct GuideEnt * it;
 
@@ -1399,7 +1434,7 @@ void BmGuideTextSetAllGreen(void)
     return;
 }
 
-bool BmGuideTextShowGreenOrNormal(void)
+bool BmAchievementTextShowGreenOrNormal(void)
 {
     struct GuideEnt * it;
 

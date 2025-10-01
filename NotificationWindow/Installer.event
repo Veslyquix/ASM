@@ -7,6 +7,16 @@
 #include "EAstdlib.event"
 #include "Definitions.enu.event" 
 
+// for testing 
+PUSH 
+ORG $1DED56C
+POIN MapMenu_IsAchievementsCommandAvailable
+
+ORG $1DED574
+POIN MapMenu_AchievementsCommand
+POP 
+
+
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
@@ -220,7 +230,7 @@ callHackNew(HookSetLocalFlag_NotificationWindow)
 #endif 
 #ifdef _FE8_ 
 ORG $226F4 
-POIN ProcScr_E_Guide1_New // take over guide menu for now 
+// POIN ProcScr_E_Achievements_Map // take over guide menu for now 
 
 ORG $81B 
 BYTE $2a // ? 
