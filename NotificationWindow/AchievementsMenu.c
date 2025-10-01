@@ -43,9 +43,9 @@ char* const gTextIds_AchievementsCategoriesChapter[] =
 char* const gTextIds_AchievementsCategoriesTopic[] =
 {
     "",
-    "Basic Rules",
-    "Movement"   ,
-    "Combat"     ,
+    "Recruitables",
+    "Equipment"   ,
+    "Misc."     ,
     "Rescue"     ,
     "Items"      ,
     "Terrain"    ,
@@ -56,44 +56,50 @@ char* const gTextIds_AchievementsCategoriesTopic[] =
     "Other"      ,
 };
 
+
+
+
 // based on GuideEnt / gGuideTable 
 struct AchievementsEnt
 {
-    /* 00 */ u8 category; // title
-    /* 01 */ u8 chapterTitle; // when sorting 
-             u16 displayFlag; 
-             u16 readFlag; 
-    /* 04 */ char* itemName;
-    /* 08 */ char* details;
+
+    /* 00 */ char* itemName;
+    /* 04 */ char* details;
+    /* 08 */ u16 category; // title
+    // /* 01 */ u8 chapterTitle; // when sorting 
+    /* 0A */ u16 flag; 
 };
 
 // struct AchievementsEnt gAchievementsTable[];
 // struct AchievementsEnt gGuideTable[];
 #define MAX_CATEGORY 12
+extern struct AchievementsEnt gAchievementsTable[]; 
+
+/*
 const struct AchievementsEnt gAchievementsTable[] = {
     {
         .category = 0x1,
-        .displayFlag = 0xB4,
-        .readFlag = 0,
+        .flag = 0xB4,
         .itemName = "Testing here",
         .details = "This is a test",
     },
     
     { // terminator 
         .category = MAX_CATEGORY,
-        .displayFlag = 0,
-        .readFlag = 0,
+        .flag = 0,
         .itemName = "",
         .details = "",
     },
 };
+*/ 
 
-int CheckAchievementFlag(int) { 
-    return true; 
-};
-void SetAchievementFlag(int) { 
-    return; 
-};
+
+// int CheckAchievementFlag(int) { 
+    // return true; 
+// };
+// void SetAchievementFlag(int) { 
+    // return; 
+// };
 
 // clang-format on
 
@@ -144,6 +150,7 @@ const struct ProcCmd ProcScr_E_Achievements_Map[];
 const struct ProcCmd ProcScr_E_Achievements_WM[];
 u8 MapMenu_AchievementsCommand(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
+    InitBonusClaimData();
     Proc_Start(ProcScr_E_Achievements_Map, PROC_TREE_3);
 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
@@ -234,21 +241,70 @@ void AchievementSpriteDraw_Loop(void)
     return;
 }
 
+//! FE8U = 0x080CE5BC
+const char * GetStringNextLine_Achievements(const char * str)
+{
+    if (str == NULL)
+    {
+        return NULL;
+    }
+
+    if (*str == 0) // [X]
+    {
+        return NULL;
+    }
+
+    while (1)
+    {
+        char c = *str;
+        u32 width;
+
+        if (c != 0)
+        {
+            if (c == 1) // [NL]
+            {
+                return str + 1;
+            }
+        }
+        else
+        {
+            return NULL;
+        }
+
+        str = GetCharTextLen(str, &width);
+    }
+}
+
 //! FE8U = 0x080CE148
 void PutAchievementBottomBarText(void)
 {
-    if (gGuideSt->sortMode != GUIDE_SORT_MODE_TOPIC)
+
+    ClearText(&gGuideSt->unk_ec);
+    if (!gGuideSt->state) // nothing selected yet
     {
         return;
     }
-
-    ClearText(&gGuideSt->unk_ec);
+    // brk; // 20201b3 188
+    // gGuideSt has max 20 entries
     PutDrawText(
         &gGuideSt->unk_ec, TILEMAP_LOCATED(gBG0TilemapBuffer, 4, 18), TEXT_COLOR_SYSTEM_WHITE, 0, 22,
         GetStringFromIndex(0x05D4)); // TODO: msgid "About"
 
-    Text_DrawString(&gGuideSt->unk_ec, gTextIds_AchievementsCategoriesTopic[gGuideSt->unk_54[gGuideSt->categoryIdx]]);
+    // const char * str = gAchievementsTable[gGuideSt->unk_54[gGuideSt->categoryIdx]].details;
+    // const char * str = gAchievementsTable[gGuideSt->unk_68[proc->unk_34]].details;
+    // int category = gGuideSt->unk_54[gGuideSt->categoryIdx];
 
+    // int id = gGuideSt->unk_2b;
+    int id = gGuideSt->unk_68[gGuideSt->unk_2b];
+    const char * str = gAchievementsTable[id].details;
+    // Text_DrawString(&gGuideSt->unk_ec,
+    // gTextIds_AchievementsCategoriesTopic[gGuideSt->unk_54[gGuideSt->categoryIdx]]);
+    Text_DrawString(&gGuideSt->unk_ec, str);
+    if (GetStringNextLine_Achievements(str))
+    {
+        Text_DrawString(&gGuideSt->unk_ec, " ...");
+    }
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
     return;
 }
 
@@ -336,8 +392,8 @@ void AchievementEntry_RedrawUp(struct GuideProc * proc)
 
     PutDrawText(
         &gGuideSt->unk_b4[textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 5),
-        CheckAchievementFlag(gAchievementsTable[gGuideSt->unk_68[idx]].readFlag) ? TEXT_COLOR_SYSTEM_WHITE
-                                                                                 : TEXT_COLOR_SYSTEM_GREEN,
+        IsAchievementComplete(gAchievementsTable[gGuideSt->unk_68[idx]].flag) ? TEXT_COLOR_SYSTEM_WHITE
+                                                                              : TEXT_COLOR_SYSTEM_GRAY,
         0, 18, gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
 
     return;
@@ -353,8 +409,8 @@ void AchievementEntry_RedrawDown(struct GuideProc * proc)
 
     PutDrawText(
         &gGuideSt->unk_b4[textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 15),
-        CheckAchievementFlag(gAchievementsTable[gGuideSt->unk_68[idx]].readFlag) ? TEXT_COLOR_SYSTEM_WHITE
-                                                                                 : TEXT_COLOR_SYSTEM_GREEN,
+        IsAchievementComplete(gAchievementsTable[gGuideSt->unk_68[idx]].flag) ? TEXT_COLOR_SYSTEM_WHITE
+                                                                              : TEXT_COLOR_SYSTEM_GRAY,
         0, 18, gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
 
     return;
@@ -375,26 +431,15 @@ void achievement_80CE414(void)
     for (r8 = 0, gGuideSt->unk_3e = 0; gAchievementsTable[r8].category != MAX_CATEGORY; r8++)
     {
 
-        if (!CheckFlag(gAchievementsTable[r8].displayFlag))
-        {
-            continue;
-        }
+        // if (!CheckFlag(gAchievementsTable[r8].flag))
+        // {
+        // continue;
+        // }
 
-        if (gGuideSt->sortMode != GUIDE_SORT_MODE_TOPIC)
+        if (gAchievementsTable[r8].category == gGuideSt->unk_54[gGuideSt->categoryIdx])
         {
-            if (gAchievementsTable[r8].chapterTitle == gGuideSt->unk_40[gGuideSt->categoryIdx])
-            {
-                gGuideSt->unk_68[idx] = r8;
-                idx++;
-            }
-        }
-        else
-        {
-            if (gAchievementsTable[r8].category == gGuideSt->unk_54[gGuideSt->categoryIdx])
-            {
-                gGuideSt->unk_68[idx] = r8;
-                idx++;
-            }
+            gGuideSt->unk_68[idx] = r8;
+            idx++;
         }
     }
 
@@ -410,10 +455,11 @@ void achievement_80CE414(void)
 
         PutDrawText(
             &gGuideSt->unk_b4[r5], gBG1TilemapBuffer + TILEMAP_INDEX(11, y),
-            (!CheckAchievementFlag(gAchievementsTable[gGuideSt->unk_68[r4]].readFlag)) ? TEXT_COLOR_SYSTEM_GREEN
-                                                                                       : TEXT_COLOR_SYSTEM_WHITE,
+            (!IsAchievementComplete(gAchievementsTable[gGuideSt->unk_68[r4]].flag)) ? TEXT_COLOR_SYSTEM_GRAY
+                                                                                    : TEXT_COLOR_SYSTEM_WHITE,
             0, 18, gAchievementsTable[gGuideSt->unk_68[r4]].itemName);
     }
+    PutAchievementBottomBarText();
 
     return;
 }
@@ -439,40 +485,6 @@ void AchievementEntry_DrawInitial(void)
     }
 
     return;
-}
-
-//! FE8U = 0x080CE5BC
-const char * GetStringNextLine_Achievements(const char * str)
-{
-    if (str == NULL)
-    {
-        return NULL;
-    }
-
-    if (*str == 0) // [X]
-    {
-        return NULL;
-    }
-
-    while (1)
-    {
-        char c = *str;
-        u32 width;
-
-        if (c != 0)
-        {
-            if (c == 1) // [NL]
-            {
-                return str + 1;
-            }
-        }
-        else
-        {
-            return NULL;
-        }
-
-        str = GetCharTextLen(str, &width);
-    }
 }
 
 //! FE8U = 0x080CE5F0
@@ -794,10 +806,10 @@ void achievement_80CEAE8(void)
 
     while (gAchievementsTable[i].category != MAX_CATEGORY)
     {
-        if (CheckFlag(gAchievementsTable[i].displayFlag))
-        {
-            local[r4] = r4;
-        }
+        // if (CheckFlag(gAchievementsTable[i].displayFlag))
+        // {
+        local[r4] = r4;
+        // }
 
         i++;
         r4 = gAchievementsTable[i].category;
@@ -855,11 +867,11 @@ void achievement_80CEBA4(void)
 
     while (r4 != MAX_CATEGORY)
     {
-        if (CheckFlag(gAchievementsTable[i].displayFlag))
-        {
-            r4 = gAchievementsTable[i].chapterTitle;
-            local[r4] = r4;
-        }
+        // if (CheckFlag(gAchievementsTable[i].displayFlag))
+        // {
+        // r4 = gAchievementsTable[i].chapterTitle;
+        local[r4] = r4;
+        // }
 
         i++;
         r4 = gAchievementsTable[i].category;
@@ -960,8 +972,8 @@ void Achievement_Init(ProcPtr proc)
     gGuideSt->unk_2b = 0;
     gGuideSt->unk_2c = 0;
 
-    achievement_80CEAE8();
-    achievement_80CEBA4();
+    achievement_80CEAE8(); // sort by category
+    // achievement_80CEBA4(); // sort by chapter
     LoadUiFrameGraphics();
 
     SetDispEnable(1, 1, 1, 1, 1);
@@ -993,9 +1005,9 @@ void Achievement_Init(ProcPtr proc)
 
     ResetTextFont();
 
-    InitText(&gGuideSt->unk_ec, 22);
-
     PutAchievementBottomBarText();
+
+    InitText(&gGuideSt->unk_ec, 22);
 
     InitText(&gGuideSt->unk_ac, 9);
     InitText(&gGuideSt->unk_e4, 18);
@@ -1098,7 +1110,7 @@ struct ProcCmd const gProcScr_AchievementCategoryRedraw[] =
     PROC_CALL(achievement_80CE414),
     PROC_SLEEP(1),
 
-    PROC_CALL(PutAchievementBottomBarText),
+    // PROC_CALL(PutAchievementBottomBarText),
     PROC_CALL(AchievementMenuRefresh_SyncBg0Bg1),
 
     PROC_END,
@@ -1116,7 +1128,7 @@ struct ProcCmd const gProcScr_AchievementEntryListRedraw_Initial[] =
     PROC_CALL(achievement_80CE414),
     PROC_SLEEP(1),
 
-    PROC_CALL(PutAchievementBottomBarText),
+    // PROC_CALL(PutAchievementBottomBarText),
     PROC_CALL(AchievementMenuRefresh_SyncBg1),
 
     PROC_END,
@@ -1128,6 +1140,7 @@ struct ProcCmd const gProcScr_AchievementEntryListRedraw_Up[] =
     PROC_SLEEP(1),
 
     PROC_CALL(AchievementEntry_RedrawUp),
+    PROC_CALL(PutAchievementBottomBarText),
     PROC_CALL(AchievementMenuRefresh_SyncBg1),
 
     PROC_END,
@@ -1139,6 +1152,7 @@ struct ProcCmd const gProcScr_AchievementEntryListRedraw_Down[] =
     PROC_SLEEP(1),
 
     PROC_CALL(AchievementEntry_RedrawDown),
+    PROC_CALL(PutAchievementBottomBarText),
     PROC_CALL(AchievementMenuRefresh_SyncBg1),
 
     PROC_END,
@@ -1150,6 +1164,7 @@ struct ProcCmd const gProcScr_AchievementDetailsRedraw[] =
     PROC_SLEEP(1),
 
     PROC_CALL(AchievementDetailsRedraw_Init),
+    PROC_CALL(PutAchievementBottomBarText),
     PROC_REPEAT(AchievementDetailsRedraw_Loop),
 
     PROC_END,
@@ -1173,13 +1188,14 @@ void Achievement_MainLoop(struct GuideProc * proc)
             {
                 case GUIDE_STATE_1:
                     achievement_80CEC68(0x2000);
+                    PutAchievementBottomBarText();
                     BG_EnableSyncByMask(BG2_SYNC_BIT);
 
                     break;
 
                 case GUIDE_STATE_2:
                     gGuideSt->detailLinesScrolled = 0;
-                    SetAchievementFlag(gAchievementsTable[gGuideSt->unk_68[gGuideSt->unk_2b]].readFlag);
+                    // SetAchievementFlag(gAchievementsTable[gGuideSt->unk_68[gGuideSt->unk_2b]].flag);
                     MoveAchievementDetailText(gGuideSt->unk_68[gGuideSt->unk_2b], GUIDE_DETAILS_STAY);
                     LockMenuScrollBar();
 
@@ -1209,6 +1225,7 @@ void Achievement_MainLoop(struct GuideProc * proc)
                 switch (gGuideSt->state)
                 {
                     case GUIDE_STATE_0:
+                        PutAchievementBottomBarText();
                         achievement_80CEC68(0x1000);
                         BG_EnableSyncByMask(BG2_SYNC_BIT);
                         break;
@@ -1233,10 +1250,10 @@ void Achievement_MainLoop(struct GuideProc * proc)
         case GUIDE_ACTION_SORT:
             PlaySoundEffect(SONG_SE_SYS_WINDOW_SELECT1);
 
-            gGuideSt->sortMode = (gGuideSt->sortMode + 1) & 1;
+            // gGuideSt->sortMode = (gGuideSt->sortMode + 1) & 1;
             if (gGuideSt->sortMode != GUIDE_SORT_MODE_TOPIC)
             {
-                SetFlag(0xb3);
+                // SetFlag(0xb3);
             }
             else
             {
@@ -1315,6 +1332,7 @@ void Achievement_MainLoop(struct GuideProc * proc)
                         if (gGuideSt->unk_2b != 0)
                         {
                             gGuideSt->unk_2b--;
+                            PutAchievementBottomBarText();
 
                             if ((gGuideSt->unk_2b - gGuideSt->unk_2c < 1) && (gGuideSt->unk_2c != 0))
                             {
@@ -1330,6 +1348,7 @@ void Achievement_MainLoop(struct GuideProc * proc)
                         if (gGuideSt->unk_2b < (gGuideSt->unk_3e - 1))
                         {
                             gGuideSt->unk_2b++;
+                            PutAchievementBottomBarText();
 
                             if ((gGuideSt->unk_2b - gGuideSt->unk_2c > 4) && (gGuideSt->unk_2b < gGuideSt->unk_3e - 1))
                             {
@@ -1464,28 +1483,33 @@ const struct ProcCmd ProcScr_E_Achievements_WM[] =
     PROC_END,
 };
 
+/*
 void BmAchievementTextSetAllGreen(void)
 {
     const struct AchievementsEnt * it;
 
     for (it = gAchievementsTable; it->category != MAX_CATEGORY; it++)
     {
-        SetFlag(it->displayFlag);
+        SetAchievementFlag(it->flag);
     }
     return;
 }
+*/
 
 bool BmAchievementTextShowGreenOrNormal(void)
 {
+    return false; 
+    /* 
     const struct AchievementsEnt * it;
 
     for (it = gAchievementsTable; it->category != MAX_CATEGORY; it++)
     {
-        if (CheckFlag(it->displayFlag) && !CheckFlag(it->readFlag))
+        if (CheckFlag(it->displayFlag) && !IsAchievementComplete(it->readFlag))
         {
             return FALSE;
         }
     }
     return TRUE;
+    */
 }
 

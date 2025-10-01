@@ -64,7 +64,7 @@ void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
     InitTextDb(proc->texts, 5);
 
     RestartNotificationProc();
-    CreateBonusContentData();
+    // CreateBonusContentData();
 
     return;
 }

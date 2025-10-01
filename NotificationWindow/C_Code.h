@@ -34,7 +34,13 @@ struct AchievementsStruct
 struct AchievementsRomStruct
 {
     const char * str; 
+    const char * details; 
+    /* 08 */ u16 category; // title
+    /* 0A */ u16 flag; 
 };
+
+int IsAchievementComplete(int); 
+
 extern struct AchievementsRomStruct achievementData[];
 
 extern u16 recruitmentAchievements[]; 

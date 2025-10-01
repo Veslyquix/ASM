@@ -68,24 +68,31 @@ bonusEnt(10, Dracoshield, "tank");
 bonusEnt(13, Dracoshield, "tank"); 
 bonusEnt(19, IronSword, "pointy"); 
 
-#define achievementEnt(id, str) "{ header: ; txt(str); BYTE 0 0; PUSH; ORG achievementData + ((id) * 4); POIN header; POP }" 
+#define achievementEntSize 12 
+#define achievementEnt(id, str, str2, category) "{ header: ; txt(str); BYTE 0 0; header2: ; txt(str2); BYTE 0 0; PUSH; ORG achievementData + ((id) * achievementEntSize); POIN header header2; SHORT category id; POP }" 
 // flag / func here don't make sense 
 // just call UnlockAchievement from func / SetFlag 
 
 
 
 
-
+#define Category_Recruitables 1 
+#define Category_LegendaryWeapons 2 
+#define Category_Miscellaneous 3 
+#define Category_Terminator 12 
 
 
 ALIGN 4 
+gAchievementsTable:
 achievementData: // these show up once ever 
-FILL (1000 * 4)
+FILL (1000 * achievementEntSize)
 // achievementEnt(RossRecruitID, "The Wounded Trainee") // done via recruitmentEnt
-achievementEnt(EndID, "Tanked")
-achievementEnt(EndID+1, "Lost")
+achievementEnt(EndID, "Tanked", "Survive with 25% or lower\\
+HP.", Category_Miscellaneous)
+achievementEnt(EndID+1, "Lost", "Defeat O'Neill in\\
+multiple battles.", Category_Miscellaneous)
 
-
+achievementEnt(EndID+2, "", "", Category_Terminator) 
 
 
 ALIGN 4 
@@ -103,54 +110,77 @@ FILL (512)
 
 // equip legendaries 
 
+/*
+const struct AchievementsEnt gAchievementsTable[] = {
+    {
+        .category = 0x1,
+        .displayFlag = 0xB4,
+        .readFlag = 0,
+        .itemName = "Testing here",
+        .details = "This is a test",
+    },
+    
+    { // terminator 
+        .category = MAX_CATEGORY,
+        .displayFlag = 0,
+        .readFlag = 0,
+        .itemName = "",
+        .details = "",
+    },
+};
+*/
+
 ALIGN 4 
 equipAchievements:
 FILL (512)
-#define equipEnt(itemID, id, str) "PUSH; ORG equipAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str)" 
-equipEnt(Vidofnir, VidofnirID, "The Rooster of Yggdrasil")
-equipEnt(Audhulma, AudhulmaID, "The Primordial Norse Cow")
-equipEnt(Siegmund, SiegmundID, "The Germanic Hero")
-equipEnt(Garm, GarmID, "The Guardian of Hel's Gate")
-equipEnt(Nidhogg, NidhoggID, "The Root-Gnawing Dragon")
-equipEnt(Sieglinde, SieglindeID, "The Germanic Heroine")
-equipEnt(Gleipnir, GleipnirID, "The Binding Chain of Fenrir")
-equipEnt(Excalibur, ExcaliburID, "The Sword of King Arthur")
-equipEnt(Ivaldi, IvaldiID, "The Norse Dwarf Blacksmith")
-equipEnt(Naglfar, NaglfarID, "The Ship of the Dead")
+#define equipEnt(itemID, id, str, str2) "PUSH; ORG equipAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_LegendaryWeapons)" 
+equipEnt(Vidofnir, VidofnirID, "The Rooster of Yggdrasil", "Equip Vidofnir")
+equipEnt(Audhulma, AudhulmaID, "The Primordial Norse Cow", "Equip Audhulma")
+equipEnt(Siegmund, SiegmundID, "The Germanic Hero", "Equip Siegmund")
+equipEnt(Garm, GarmID, "The Guardian of Hel's Gate", "Equip Garm")
+equipEnt(Nidhogg, NidhoggID, "The Root-Gnawing Dragon", "Equip Nidhogg")
+equipEnt(Sieglinde, SieglindeID, "The Germanic Heroine", "Equip Sieglinde")
+equipEnt(Gleipnir, GleipnirID, "The Binding Chain of Fenrir", "Equip Gleipnir")
+equipEnt(Excalibur, ExcaliburID, "The Sword of King Arthur", "Equip Excalibur")
+equipEnt(Ivaldi, IvaldiID, "The Norse Dwarf Blacksmith", "Equip Ivaldi")
+equipEnt(Naglfar, NaglfarID, "The Ship of the Dead", "Equip Naglfar")
 // These all use the same text / same achievement ID 
-equipEnt(WretchedAir, UnobtainableItemID, "How'd you get this?") 
-equipEnt(Forblaze, UnobtainableItemID, "How'd you get this?") 
-equipEnt(Luce, UnobtainableItemID, "How'd you get this?") 
-equipEnt(Aircalibur, UnobtainableItemID, "How'd you get this?") 
-equipEnt(Stone, UnobtainableItemID, "How'd you get this?") 
-equipEnt(CrimsonEye, UnobtainableItemID, "How'd you get this?") 
-equipEnt(EvilEye, UnobtainableItemID, "How'd you get this?") 
-equipEnt(DemonSurge, UnobtainableItemID, "How'd you get this?") 
-equipEnt(Shadowshot, UnobtainableItemID, "How'd you get this?") 
+equipEnt(WretchedAir, UnobtainableItemID, "", "")  
+equipEnt(Forblaze, UnobtainableItemID, "", "")  
+equipEnt(Luce, UnobtainableItemID, "", "")  
+equipEnt(Aircalibur, UnobtainableItemID, "", "")  
+equipEnt(Stone, UnobtainableItemID, "", "")  
+equipEnt(CrimsonEye, UnobtainableItemID, "", "")  
+equipEnt(EvilEye, UnobtainableItemID, "", "")  
+equipEnt(DemonSurge, UnobtainableItemID, "", "")  
+equipEnt(Shadowshot, UnobtainableItemID, "How'd you get this?", " Equip Wretched Air, Forblaze,\\
+Luce, Aircalibur, Stone,\\
+Crimson Eye, Evil Eye,\\
+Demon Surge, or Shadowshot.")  // They share an ID, so no need to write the text for all 
 
 
 
 ALIGN 4 
 recruitmentAchievements: 
 FILL (512) 
-#define recruitmentEnt(charID, id, str) "PUSH; ORG recruitmentAchievements + (charID * 2); SHORT id ; POP; achievementEnt(id, str)" 
-recruitmentEnt(Ross,    RossRecruitID, "The Wounded Trainee") 
-recruitmentEnt(Garcia,  GarciaRecruitID, "The Great Garcia") 
-recruitmentEnt(Colm,    ColmRecruitID, "The Thief from Renais") 
-recruitmentEnt(Lute,    LuteRecruitID, "The Prodigy") // "The Monk Watcher" 
-recruitmentEnt(Joshua,  JoshuaRecruitID, "The Wandering Swordsman") 
-recruitmentEnt(Amelia,  AmeliaRecruitID, "The Orphan of Grado") 
-recruitmentEnt(Innes,   InnesRecruitID, "The Strategician") 
-recruitmentEnt(Gerik,   GerikRecruitID, "The Desert Tiger") 
-recruitmentEnt(Tethys,  TethysRecruitID, "The Beloved Dancer") 
-recruitmentEnt(LArachel, LArachelRecruitID, "The Princess of Light") 
-recruitmentEnt(Dozla,   DozlaRecruitID, "The Steady Axe") 
-recruitmentEnt(Marisa,  MarisaRecruitID, "The Crimson Flash") 
-recruitmentEnt(Ewan,    EwanRecruitID, "The Pupil") // some of these don't use CUSA 
-recruitmentEnt(Cormag,  CormagRecruitID, "The Aloof Lanceman") 
-recruitmentEnt(Rennac,  RennacRecruitID, "The 'Merchant'") 
-recruitmentEnt(Duessel, DuesselRecruitID, "The Obsidian") 
-recruitmentEnt(Syrene,  SyreneRecruitID, "The Graceful Rider") 
+#define recruitmentEnt(charID, id, str, str2) "PUSH; ORG recruitmentAchievements + (charID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Recruitables)" 
+recruitmentEnt(Ross,    RossRecruitID, "The Wounded Trainee", "Recruit Ross") 
+recruitmentEnt(Garcia,  GarciaRecruitID, "The Great Garcia", "Recruit Garcia") 
+recruitmentEnt(Colm,    ColmRecruitID, "The Thief from Renais", "Recruit Colm") 
+recruitmentEnt(Lute,    LuteRecruitID, "The Prodigy", "Recruit Lute") // "The Monk Watcher" 
+recruitmentEnt(Joshua,  JoshuaRecruitID, "The Wandering Swordsman", "Recruit Joshua") 
+recruitmentEnt(Amelia,  AmeliaRecruitID, "The Orphan of Grado", "Recruit Amelia") 
+recruitmentEnt(Innes,   InnesRecruitID, "The Strategician", "Recruit Innes") 
+recruitmentEnt(Gerik,   GerikRecruitID, "The Desert Tiger", "Recruit Gerik") 
+recruitmentEnt(Tethys,  TethysRecruitID, "The Beloved Dancer", "Recruit Tethys") 
+recruitmentEnt(LArachel, LArachelRecruitID, "The Princess of Light", "Recruit L'Arachel") 
+recruitmentEnt(Dozla,   DozlaRecruitID, "The Steady Axe", "Recruit Dozla") 
+recruitmentEnt(Marisa,  MarisaRecruitID, "The Crimson Flash", "Recruit Marisa") 
+recruitmentEnt(Ewan,    EwanRecruitID, "The Pupil", "Recruit Ewan") // some of these don't use CUSA 
+recruitmentEnt(Cormag,  CormagRecruitID, "The Aloof Lanceman", "Recruit Cormag" ) 
+recruitmentEnt(Rennac,  RennacRecruitID, "The 'Merchant'", "Recruit Rennac" ) 
+recruitmentEnt(Duessel, DuesselRecruitID, "The Obsidian", "Recruit Duessel" ) 
+recruitmentEnt(Syrene,  SyreneRecruitID, "The Graceful Rider", "Recruit Syrene") 
 // recruit all characters? 
 
 
