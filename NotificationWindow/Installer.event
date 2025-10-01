@@ -81,6 +81,10 @@ bonusEnt(19, IronSword, "pointy");
 #define Category_Miscellaneous 3 
 #define Category_Terminator 12 
 
+ALIGN 4 
+Img_Achievements:
+#incbin "png/Achievements.dmp" 
+
 
 ALIGN 4 
 gAchievementsTable:

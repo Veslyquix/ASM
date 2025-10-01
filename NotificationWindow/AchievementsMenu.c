@@ -4,13 +4,16 @@ extern struct GuideSt * const gGuideSt;
 
 // clang-format off
 
+extern const u8 Img_Achievements[]; 
 u16 const gSprite_AchievementsBannerText[] =
 {
-    4,
+    6,
     OAM0_SHAPE_32x8, OAM1_SIZE_32x8, OAM2_CHR(0xC0),
     OAM0_SHAPE_32x8, OAM1_SIZE_32x8 + OAM1_X(32), OAM2_CHR(0xC4),
-    OAM0_SHAPE_32x8 + OAM0_Y(8), OAM1_SIZE_32x8, OAM2_CHR(0xC8),
-    OAM0_SHAPE_32x8 + OAM0_Y(8), OAM1_SIZE_32x8 + OAM1_X(32), OAM2_CHR(0xCC),
+    OAM0_SHAPE_32x8, OAM1_SIZE_32x8 + OAM1_X(64), OAM2_CHR(0xC8),
+    OAM0_SHAPE_32x8 + OAM0_Y(8), OAM1_SIZE_32x8, OAM2_CHR(0xCC),
+    OAM0_SHAPE_32x8 + OAM0_Y(8), OAM1_SIZE_32x8 + OAM1_X(32), OAM2_CHR(0xD0),
+    OAM0_SHAPE_32x8 + OAM0_Y(8), OAM1_SIZE_32x8 + OAM1_X(64), OAM2_CHR(0xD4),
 };
 
 u16 const gSprite_AchievementsSelectButtonSort[] =
@@ -178,7 +181,7 @@ void AchievementSpriteDraw_Loop(void)
 
     GetGameClock();
 
-    PutSprite(3, 16, 8, gSprite_AchievementsBannerText, OAM2_PAL(2));
+    PutSprite(3, 12, 8, gSprite_AchievementsBannerText, OAM2_PAL(2));
 
     if (gGuideSt->state == GUIDE_STATE_0)
     {
@@ -996,7 +999,8 @@ void Achievement_Init(ProcPtr proc)
 
     ApplyPalette(Pal_08B17B44, 0x12);
     Decompress(Img_08B17864, (void *)0x06011000);
-    Decompress(Img_08B177C0, (void *)0x06011800);
+    // Decompress(Img_08B177C0, (void *)0x06011800); // "Guide"
+    Decompress(Img_Achievements, (void *)0x06011800); // "Guide"
 
     Decompress(Tsa_08B176CC, gGenericBuffer + 0x100);
     CallARM_FillTileRect(gBG2TilemapBuffer, gGenericBuffer + 0x100, 0x1000);
