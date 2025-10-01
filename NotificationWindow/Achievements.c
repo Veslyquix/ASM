@@ -62,11 +62,13 @@ void CreateBonusContentData()
 
 void UnlockAchievementByRecruitment(int charID)
 {
-
     UnlockAchievement(recruitmentAchievements[charID]);
 }
 void UnlockAchievementByEquip(int itemID)
 {
-
     UnlockAchievement(equipAchievements[itemID]);
+}
+void UnlockAchievementByPromo(int jid)
+{
+    UnlockAchievement(promoAchievements[jid]);
 }

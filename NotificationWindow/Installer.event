@@ -78,7 +78,8 @@ bonusEnt(19, IronSword, "pointy");
 
 #define Category_Recruitables 1 
 #define Category_LegendaryWeapons 2 
-#define Category_Miscellaneous 3 
+#define Category_Promotions 3 
+#define Category_Miscellaneous 4 
 #define Category_Terminator 12 
 
 ALIGN 4 
@@ -88,51 +89,124 @@ Img_Achievements:
 
 ALIGN 4 
 gAchievementsTable:
-achievementData: // these show up once ever 
+achievementData: // these show up once ever atm
 FILL (1000 * achievementEntSize)
-// achievementEnt(RossRecruitID, "The Wounded Trainee") // done via recruitmentEnt
-achievementEnt(EndID, "Tanked", "Survive with 25% or lower\\
-HP.", Category_Miscellaneous)
-achievementEnt(EndID+1, "Lost", "Defeat O'Neill in\\
-multiple battles.", Category_Miscellaneous)
-
-achievementEnt(EndID+2, "", "", Category_Terminator) 
+// other macros write to this 
+achievementEnt(EndID, "", "", Category_Terminator) 
 
 
-ALIGN 4 
-flagAchievements:
-FILL (512)
 
 
-// clear valni / lagdou 
-// recruit CC characters 
 // promotions into specific classes 
 
 // achieve A rank support 
 // reach level 20 
 // reach promoted level 20 
 
-// equip legendaries 
 
-/*
-const struct AchievementsEnt gAchievementsTable[] = {
-    {
-        .category = 0x1,
-        .displayFlag = 0xB4,
-        .readFlag = 0,
-        .itemName = "Testing here",
-        .details = "This is a test",
-    },
-    
-    { // terminator 
-        .category = MAX_CATEGORY,
-        .displayFlag = 0,
-        .readFlag = 0,
-        .itemName = "",
-        .details = "",
-    },
-};
-*/
+
+
+ALIGN 4 
+recruitmentAchievements: 
+FILL (512) 
+#define recruitmentEnt(charID, id, str, str2) "PUSH; ORG recruitmentAchievements + (charID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Recruitables)" 
+recruitmentEnt(Ross,    RossRecruitID, "The Wounded Trainee", "Recruit Ross") 
+recruitmentEnt(Garcia,  GarciaRecruitID, "The Great Garcia", "Recruit Garcia") 
+recruitmentEnt(Colm,    ColmRecruitID, "The Thief from Renais", "Recruit Colm") 
+recruitmentEnt(Lute,    LuteRecruitID, "The Prodigy", "Recruit Lute") // "The Monk Watcher" 
+recruitmentEnt(Joshua,  JoshuaRecruitID, "The Wandering Swordsman", "Recruit Joshua") 
+recruitmentEnt(Amelia,  AmeliaRecruitID, "The Orphan of Grado", "Recruit Amelia") 
+recruitmentEnt(Innes,   InnesRecruitID, "The Strategician", "Recruit Innes") 
+recruitmentEnt(Gerik,   GerikRecruitID, "The Desert Tiger", "Recruit Gerik") 
+recruitmentEnt(Tethys,  TethysRecruitID, "The Beloved Dancer", "Recruit Tethys") 
+recruitmentEnt(LArachel, LArachelRecruitID, "The Princess of Light", "Recruit L'Arachel") 
+recruitmentEnt(Dozla,   DozlaRecruitID, "The Steady Axe", "Recruit Dozla") 
+recruitmentEnt(Marisa,  MarisaRecruitID, "The Crimson Flash", "Recruit Marisa") 
+recruitmentEnt(Ewan,    EwanRecruitID, "The Pupil", "Recruit Ewan") // some of these don't use CUSA 
+recruitmentEnt(Cormag,  CormagRecruitID, "The Aloof Lanceman", "Recruit Cormag" ) 
+recruitmentEnt(Rennac,  RennacRecruitID, "The 'Merchant'", "Recruit Rennac" ) 
+recruitmentEnt(Duessel, DuesselRecruitID, "The Obsidian", "Recruit Duessel" ) 
+recruitmentEnt(Syrene,  SyreneRecruitID, "The Graceful Rider", "Recruit Syrene") 
+// recruit all characters? 
+
+
+#define flagEnt(flagID, id, header, desc) "PUSH; ORG flagAchievements + (flagID * 2); SHORT id ; POP; achievementEnt(id, header, desc, Category_Miscellaneous)" 
+#define ccEnt(flagID, id, header, desc) "PUSH; ORG flagAchievements + (flagID * 2); SHORT id ; POP; achievementEnt(id, header, desc, Category_Recruitables)" 
+ALIGN 4 
+flagAchievements:
+FILL (512)
+ccEnt(0x67, CaellachID, "The Tiger's Eye", "Unlock Caellach") 
+ccEnt(0x68, GlenID, "The Sunstone", "Unlock Glen") 
+ccEnt(0x69, OrsonID, "The Devoted Husband", "Unlock Orson") 
+ccEnt(0x6A, ValterID, "The Moonstone", "Unlock Valter") 
+ccEnt(0x6B, RievID, "The Blood Beryl", "Unlock Riev") 
+ccEnt(0x6C, HaydenID, "The King of Frelia", "Unlock Hayden") 
+ccEnt(0x6D, FadoID, "The King of Renais", "Unlock Fado") 
+ccEnt(0x6E, IsmaireID, "The Queen of Jehanna", "Unlock Ismaire") 
+ccEnt(0x6F, SelenaID, "The Fluorspar", "Unlock Selena") 
+ccEnt(0x70, LyonID, "The Dark Prince", "Unlock Lyon") 
+
+flagEnt(0x7F, TriangleAttackID, "", "") 
+flagEnt(0x80, TriangleAttackID, "", "") 
+flagEnt(0x81, TriangleAttackID, "Triangular", "Perform a triangle attack.") 
+flagEnt(0x82, FightDemonKingID, "Demonic", "Battle the Demon King.") 
+
+
+#define promoEnt(classID, id, str, str2) "PUSH; ORG promoAchievements + (classID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Promotions)" 
+ALIGN 4 
+promoAchievements:
+FILL (512) 
+promoEnt(EphraimMasterLord, EphraimMasterLordID, "Path of Greatness (1)", "Promote Ephraim.")
+promoEnt(EirikaMasterLord, EirikaMasterLordID, "Path of Greatness (2)", "Promote Eirika.")
+promoEnt(Paladin, PaladinID, "", "")
+promoEnt(Paladin_F, PaladinID, "Path of Honor", "Promote into a Paladin.")
+promoEnt(GreatKnight, GreatKnightID, "", "")
+promoEnt(GreatKnight_F, GreatKnightID, "Path of Loyalty", "Promote into a Great Knight.")
+promoEnt(General, GeneralID, "", "")
+promoEnt(General_F, GeneralID, "Path of the Shield", "Promote into a General.")
+promoEnt(Hero, HeroID, "", "")
+promoEnt(Hero_F, HeroID, "Path of Gold", "Promote into a Hero.")
+promoEnt(Swordmaster, SwordmasterID, "", "")
+promoEnt(Swordmaster_F, SwordmasterID, "Path of the Sword", "Promote into a Swordmaster.")
+promoEnt(Rogue, RogueID, "Path of Silence", "Promote into a Rogue.")
+promoEnt(Assassin, AssassinID, "", "")
+promoEnt(Assassin_F, AssassinID, "Path of Death", "Promote into an Assassin.")
+promoEnt(Sniper, SniperID, "", "")
+promoEnt(Sniper_F, SniperID, "Path of the Bow", "Promote into a Sniper.")
+promoEnt(Ranger, RangerID, "", "")
+promoEnt(Ranger_F, RangerID, "Path of the Land", "Promote into a Ranger.")
+promoEnt(WyvernLord, WyvernLordID, "", "")
+promoEnt(WyvernLord_F, WyvernLordID, "Path of the World", "Promote into a Wyvern Lord.")
+promoEnt(WyvernKnight, WyvernKnightID, "", "")
+promoEnt(WyvernKnight_F, WyvernKnightID, "Path of the Sky", "Promote into a Wyvern Knight.")
+promoEnt(Warrior, WarriorID, "Path of the Axe", "Promote into a Warrior.")
+promoEnt(Berserker, BerserkerID, "Path of Might", "Promote into a Berserker.")
+promoEnt(Sage, SageID, "", "")
+promoEnt(Sage_F, SageID, "Path of Anima", "Promote into a Sage.")
+promoEnt(MageKnight, MageKnightID, "", "")
+promoEnt(MageKnight_F, MageKnightID, "Path of Arcana", "Promote into a Mage Knight.")
+promoEnt(Bishop, BishopID, "", "")
+promoEnt(Bishop_F, BishopID, "Path of Light", "Promote into a Bishop.")
+promoEnt(Druid, DruidID, "", "")
+promoEnt(Druid_F, DruidID, "Path of Darkness", "Promote into a Druid.")
+promoEnt(Summoner, SummonerID, "", "")
+promoEnt(Summoner_F, SummonerID, "Path of Phantoms", "Promote into a Summoner.")
+promoEnt(Journeyman_3, Journeyman_3ID, "Path of the Journeyman", "Promote into a Super Journeyman.")
+promoEnt(Pupil_3, Pupil_3ID, "Path of the Pupil", "Promote into a Super Pupil.")
+promoEnt(Recruit_3, Recruit_3ID, "Path of the Recruit", "Promote into a Super Recruit.")
+
+promoEnt(FalcoKnight, FalcoKnightID, "Path of the Wind", "Promote into a Falco Knight.")
+promoEnt(Entombed, EntombedID, "Path of the Zombie", "Promote into an Entombed.")
+promoEnt(Wight, WightID, "", "")
+promoEnt(Wight_Bow, WightID, "Path of the Bones", "Promote into a Wight.")
+promoEnt(Maelduin, MaelduinID, "Path of the Centaur", "Promote into a Maelduin.")
+promoEnt(Gwyllgi, GwyllgiID, "Path of the Dog", "Promote into a Gwyllgi.")
+promoEnt(Deathgoyle, DeathgoyleID, "Path of the Gargoyle", "Promote into a Deathgoyle.")
+promoEnt(ArchMogall, ArchMogallID, "Path of the Eye", "Promote into an Arch Mogall.")
+promoEnt(ElderBael, ElderBaelID, "Path of the Spider", "Promote into an Elder Bael.")
+
+
+
 
 ALIGN 4 
 equipAchievements:
@@ -162,30 +236,6 @@ Luce, Aircalibur, Stone,\\
 Crimson Eye, Evil Eye,\\
 Demon Surge, or Shadowshot.")  // They share an ID, so no need to write the text for all 
 
-
-
-ALIGN 4 
-recruitmentAchievements: 
-FILL (512) 
-#define recruitmentEnt(charID, id, str, str2) "PUSH; ORG recruitmentAchievements + (charID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Recruitables)" 
-recruitmentEnt(Ross,    RossRecruitID, "The Wounded Trainee", "Recruit Ross") 
-recruitmentEnt(Garcia,  GarciaRecruitID, "The Great Garcia", "Recruit Garcia") 
-recruitmentEnt(Colm,    ColmRecruitID, "The Thief from Renais", "Recruit Colm") 
-recruitmentEnt(Lute,    LuteRecruitID, "The Prodigy", "Recruit Lute") // "The Monk Watcher" 
-recruitmentEnt(Joshua,  JoshuaRecruitID, "The Wandering Swordsman", "Recruit Joshua") 
-recruitmentEnt(Amelia,  AmeliaRecruitID, "The Orphan of Grado", "Recruit Amelia") 
-recruitmentEnt(Innes,   InnesRecruitID, "The Strategician", "Recruit Innes") 
-recruitmentEnt(Gerik,   GerikRecruitID, "The Desert Tiger", "Recruit Gerik") 
-recruitmentEnt(Tethys,  TethysRecruitID, "The Beloved Dancer", "Recruit Tethys") 
-recruitmentEnt(LArachel, LArachelRecruitID, "The Princess of Light", "Recruit L'Arachel") 
-recruitmentEnt(Dozla,   DozlaRecruitID, "The Steady Axe", "Recruit Dozla") 
-recruitmentEnt(Marisa,  MarisaRecruitID, "The Crimson Flash", "Recruit Marisa") 
-recruitmentEnt(Ewan,    EwanRecruitID, "The Pupil", "Recruit Ewan") // some of these don't use CUSA 
-recruitmentEnt(Cormag,  CormagRecruitID, "The Aloof Lanceman", "Recruit Cormag" ) 
-recruitmentEnt(Rennac,  RennacRecruitID, "The 'Merchant'", "Recruit Rennac" ) 
-recruitmentEnt(Duessel, DuesselRecruitID, "The Obsidian", "Recruit Duessel" ) 
-recruitmentEnt(Syrene,  SyreneRecruitID, "The Graceful Rider", "Recruit Syrene") 
-// recruit all characters? 
 
 
 ALIGN 4 
@@ -265,6 +315,10 @@ callHackNew(HookSetLocalFlag_NotificationWindow)
 #ifdef _FE8_ 
 ORG $226F4 
 // POIN ProcScr_E_Achievements_Map // take over guide menu for now 
+
+ORG $2f672 
+SHORT $4688 $4699 $46c0 // mov r8, r1 and mov r9, r3 
+callHackNew(Hook_ExecUnitPromotion) 
 
 ORG $81B 
 BYTE $2a // ? 

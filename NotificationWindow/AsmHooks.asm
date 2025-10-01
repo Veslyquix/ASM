@@ -45,6 +45,20 @@ pop {r2}
 bx r2 
 .ltorg 
 
+.global Hook_ExecUnitPromotion 
+.type Hook_ExecUnitPromotion, %function 
+Hook_ExecUnitPromotion: 
+push {lr} 
+
+mov r0, r8 
+bl UnlockAchievementByPromo
+
+mov r0, #1 
+neg r0, r0 
+mov r10, r0 
+pop {r3} 
+bx r3 
+.ltorg 
 
 
 
