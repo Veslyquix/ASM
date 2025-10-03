@@ -397,9 +397,8 @@ void AchievementEntry_RedrawUp(struct GuideProc * proc)
 
     PutDrawText(
         &gGuideSt->unk_b4[textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 5),
-        IsAchievementComplete(gAchievementsTable[gGuideSt->unk_68[idx]].flag) ? TEXT_COLOR_SYSTEM_WHITE
-                                                                              : TEXT_COLOR_SYSTEM_GRAY,
-        0, 18, gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
+        GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[idx]].flag), 0, 18,
+        gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
 
     return;
 }
@@ -414,9 +413,8 @@ void AchievementEntry_RedrawDown(struct GuideProc * proc)
 
     PutDrawText(
         &gGuideSt->unk_b4[textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 15),
-        IsAchievementComplete(gAchievementsTable[gGuideSt->unk_68[idx]].flag) ? TEXT_COLOR_SYSTEM_WHITE
-                                                                              : TEXT_COLOR_SYSTEM_GRAY,
-        0, 18, gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
+        GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[idx]].flag), 0, 18,
+        gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
 
     return;
 }
@@ -460,9 +458,8 @@ void achievement_80CE414(void)
 
         PutDrawText(
             &gGuideSt->unk_b4[r5], gBG1TilemapBuffer + TILEMAP_INDEX(11, y),
-            (!IsAchievementComplete(gAchievementsTable[gGuideSt->unk_68[r4]].flag)) ? TEXT_COLOR_SYSTEM_GRAY
-                                                                                    : TEXT_COLOR_SYSTEM_WHITE,
-            0, 18, gAchievementsTable[gGuideSt->unk_68[r4]].itemName);
+            (GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[r4]].flag)), 0, 18,
+            gAchievementsTable[gGuideSt->unk_68[r4]].itemName);
     }
     PutAchievementBottomBarText();
 

@@ -41,6 +41,7 @@ struct AchievementsRomStruct
 };
 
 int IsAchievementComplete(int); 
+int GetAchievementColour(int id);
 
 extern struct AchievementsRomStruct achievementData[];
 

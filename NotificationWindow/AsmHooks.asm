@@ -86,38 +86,53 @@ pop {r3}
 bx r3 
 .ltorg 
 
-
-.global Hook_RegisterChapterTimeAndTurnCount
-.type Hook_RegisterChapterTimeAndTurnCount, %function 
-Hook_RegisterChapterTimeAndTurnCount: 
-push {r4-r7, lr} 
-
-mov r4, r0 @ chapter index 
-@ mov r5, r5 @ struct ChapterStat 
-@ mov r6, r6 @ time 
-mov r7, r3 @ turn count 
-
-orr r0, r1 
-strb r0, [r5] 
-lsl r2, r3, #7 
-ldrh r1, [r5] 
-mov r0, #0x7F 
-and r0, r1 
-orr r0, r2 
-mov r5, r0 @ bitpacked turn count/ch index 
+.global Hook_RunWaitEvents
+.type Hook_RunWaitEvents, %function 
+Hook_RunWaitEvents: 
+push {lr} 
+mov r1, r13 
+ldr r0, =gActiveUnit 
+ldr r2, [r0] 
+ldrb r0, [r2, #0x10] 
+strb r0, [r1, #0x18] 
+ldrb r0, [r2, #0x11] 
+strb r0, [r1, #0x19] 
 
 
-mov r0, r7 @ turn count 
-mov r1, r4 @ ch index 
+mov r0, #2 
+blh CheckFlag @ defeated boss 
+cmp r0, #0 
+bne ChDone 
+mov r0, #3 
+blh CheckFlag 
+cmp r0, #0 
+bne ChDone 
+mov r0, #6 
+blh CheckFlag 
+cmp r0, #0 
+bne ChDone 
+b ChNotDone 
+
+ChDone: 
 bl UnlockAchievementByTurnCount
-mov r0, r6 @ chapter time 
-mov r1, r4 @ ch index 
 bl UnlockAchievementByChapterTime
+ChNotDone: 
+mov r0, r13 
+
+pop {r3} 
+bx r3 
+.ltorg 
 
 
-mov r0, r5 @ vanilla will store bitpacked turn count/ch index next 
-
-pop {r4-r7}
+.global Hook_InitSave
+.type Hook_InitSave, %function 
+Hook_InitSave: 
+push {lr} 
+blh 0x8030CF4 
+blh 0x80177C4 
+blh 0x8031508 
+mov r0, r10 @ slot 
+bl ClearAchievementsForSlot
 pop {r3} 
 bx r3 
 .ltorg 

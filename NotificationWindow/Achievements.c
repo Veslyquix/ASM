@@ -1,8 +1,8 @@
 
 
 // to do:
-// on new game, wipe shown[0], shown[1], or shown[2]
-// on copy save, overwrite shown[0], shown[1], or shown[2]
+// on new game, wipe shown[0], shown[1], or shown[2] - DONE
+// on copy save, overwrite shown[0], shown[1], or shown[2] - not done
 #define AchBits (8 / 4);
 
 extern int AlwaysShowAchievement;
@@ -36,6 +36,23 @@ int IsAchievementShown(int id)
     return ent->shown[slot] & (1 << (id % 8));
 }
 
+int GetAchievementColour(int id)
+{
+    int everComplete = IsAchievementComplete(id);
+    int doneOnThisSaveFile = IsAchievementShown(id);
+
+    if (everComplete && doneOnThisSaveFile)
+    {
+        return TEXT_COLOR_SYSTEM_GOLD;
+    }
+
+    if (!everComplete && !doneOnThisSaveFile)
+    {
+        return TEXT_COLOR_SYSTEM_GRAY;
+    }
+    return TEXT_COLOR_SYSTEM_WHITE;
+}
+
 void UnlockAllAchievements(void)
 {
     CpuFill16(0, gpBonusClaimData, 0x144);
@@ -60,6 +77,20 @@ void LockAll(void)
 {
     CpuFill16(0, gpBonusClaimData, 0x144);
     SaveBonusContentData(gpBonusClaimData);
+}
+
+#define SRAM_alloc 0x140
+void ClearAchievementsForSlot(int slot)
+{
+    CpuFill16(0, gpBonusClaimData, 0x144);
+    LoadBonusContentData(gpBonusClaimData);
+    struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
+    struct AchievementsStruct * achievements = (void *)&data[4];
+    for (int i = 0; i < SRAM_alloc; ++i)
+    {
+        achievements[i].shown[slot] = 0;
+    }
+    SaveBonusContentData(data);
 }
 
 void UnlockAchievement(int id)

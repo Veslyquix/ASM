@@ -282,7 +282,7 @@ ALIGN 4
 chapterTimeAchievements:
 FILL (512)
 #define speedEnt(chapterID, chapterTime, id, str, str2) "PUSH; ORG chapterTimeAchievements + (chapterID * 2); SHORT id (chapterTime*60); POP; achievementEnt(id, str, str2, Category_ChapterTime)" 
-speedEnt(0, 1, PrologueSR, "Make haste!", "Complete Ch. 0 witihin 1 minute.")
+speedEnt(0, 2, PrologueSR, "Make haste!", "Complete Ch. 0 witihin 2 minutes.")
 
 
 ALIGN 4 
@@ -372,12 +372,15 @@ BYTE $2a // ?
 // copied into 3003D70 / 300487c
 
 
-ORG $a4390 
-// callHackNew_r2(Hook_RegisterChapterTimeAndTurnCount) 
-// SHORT $46c0 
+ORG $a4eb0
+callHackNew(Hook_InitSave) 
 
 ORG $83288 
 callHackNew(Hook_CallEndEvent) 
+
+ORG $84420 
+callHackNew(Hook_RunWaitEvents) 
+SHORT $46c0 
 
 ORG 0x83CAC
 #endif 
