@@ -1,18 +1,41 @@
 
 
+// to do:
+// on new game, wipe shown[0], shown[1], or shown[2]
+// on copy save, overwrite shown[0], shown[1], or shown[2]
+#define AchBits (8 / 4);
+
+extern int AlwaysShowAchievement;
 void SetAchievement(struct AchievementsStruct * data, int i)
 {
     int bit = i % 8;
-    int offset = i / 8;
+    int offset = i / AchBits;
     data[offset].complete |= 1 << bit;
 }
+void ShownAchievement(struct AchievementsStruct * data, int i)
+{
+    int slot = gPlaySt.gameSaveSlot;
+    int bit = i % 8;
+    int offset = i / AchBits;
+    data[offset].shown[slot] |= 1 << bit;
+}
+
 int IsAchievementComplete(int id)
 {
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&data[4];
-    ent += id / 8;
+    ent += id / AchBits;
     return ent->complete & (1 << (id % 8));
 }
+int IsAchievementShown(int id)
+{
+    int slot = gPlaySt.gameSaveSlot;
+    struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
+    struct AchievementsStruct * ent = (void *)&data[4];
+    ent += id / AchBits;
+    return ent->shown[slot] & (1 << (id % 8));
+}
+
 void UnlockAllAchievements(void)
 {
     CpuFill16(0, gpBonusClaimData, 0x144);
@@ -41,15 +64,24 @@ void LockAll(void)
 
 void UnlockAchievement(int id)
 {
-
+    if (!id)
+    {
+        return;
+    }
+    int saveData = false;
     CpuFill16(0, gpBonusClaimData, 0x144);
     LoadBonusContentData(gpBonusClaimData);
-    if (IsAchievementComplete(id))
-        return;
-
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * achievements = (void *)&data[4];
-    DoNotificationForAchievement(id);
+    if (!IsAchievementShown(id))
+    {
+        ShownAchievement(achievements, id);
+        DoNotificationForAchievement(id);
+        saveData = true;
+    }
+    if (IsAchievementComplete(id) && !saveData)
+        return;
+
     SetAchievement(achievements, id);
     SaveBonusContentData(data);
 }
@@ -71,4 +103,18 @@ void UnlockAchievementByEquip(int itemID)
 void UnlockAchievementByPromo(int jid)
 {
     UnlockAchievement(promoAchievements[jid]);
+}
+void UnlockAchievementByTurnCount()
+{
+    int turnCount = gPlaySt.chapterTurnNumber;
+    int chapterId = gPlaySt.chapterIndex;
+    if (turnCount <= turnCountAchievements[chapterId].turnCount)
+        UnlockAchievement(turnCountAchievements[chapterId].achievementDataID);
+}
+void UnlockAchievementByChapterTime()
+{
+    int time = (GetGameClock() - gPlaySt.time_chapter_started) / 60;
+    int chapterId = gPlaySt.chapterIndex;
+    if (time <= chapterTimeAchievements[chapterId].chapterTime)
+        UnlockAchievement(chapterTimeAchievements[chapterId].achievementDataID);
 }

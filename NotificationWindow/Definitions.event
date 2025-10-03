@@ -1,4 +1,4 @@
-RossRecruitID 0
+RossRecruitID 1
 GarciaRecruitID 
 ColmRecruitID 
 LuteRecruitID 
@@ -77,7 +77,8 @@ DeathgoyleID
 ArchMogallID
 ElderBaelID
 
-
+PrologueLTC
+PrologueSR
 
 
 TriangleAttackID

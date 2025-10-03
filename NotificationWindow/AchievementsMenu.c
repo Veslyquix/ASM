@@ -42,8 +42,10 @@ char* const gTextIds_AchievementsCategoriesChapter[] =
     "Chapter 7",
     "Chapter 8",
 };
+ 
+extern char* const gTextIds_AchievementsCategoriesTopic[]; 
 
-char* const gTextIds_AchievementsCategoriesTopic[] =
+/*=
 {
     "",
     "Recruitables",
@@ -58,7 +60,7 @@ char* const gTextIds_AchievementsCategoriesTopic[] =
     "World Map"  ,
     "Other"      ,
 };
-
+*/ 
 
 
 

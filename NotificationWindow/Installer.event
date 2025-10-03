@@ -79,10 +79,46 @@ bonusEnt(19, IronSword, "pointy");
 #define Category_Recruitables 1 
 #define Category_LegendaryWeapons 2 
 #define Category_Promotions 3 
-#define Category_Miscellaneous 4 
+#define Category_TurnCount 4 
+#define Category_ChapterTime 5 
+#define Category_Miscellaneous 6 
 #define Category_Terminator 12 
 
 ALIGN 4 
+gTextIds_AchievementsCategoriesTopic: 
+POIN blankStr 
+POIN RecruitablesHeader
+POIN EquipmentHeader 
+POIN PromotionsHeader 
+POIN LowTurnCountHeader
+POIN ChapterTimeHeader
+POIN MiscHeader
+POIN OtherHeader 
+
+
+blankStr:
+txt("")
+
+RecruitablesHeader: 
+txt("Recruitables") 
+
+EquipmentHeader:
+txt("Equipment") 
+PromotionsHeader:
+txt("Promotions")
+LowTurnCountHeader:
+txt("Turn Count")
+ChapterTimeHeader:
+txt("Chapter Time")
+MiscHeader:
+txt("Misc.")
+OtherHeader:
+txt("Other") 
+
+
+ALIGN 4 
+AlwaysShowAchievement:
+WORD 1 
 Img_Achievements:
 #incbin "png/Achievements.dmp" 
 
@@ -236,14 +272,25 @@ Luce, Aircalibur, Stone,\\
 Crimson Eye, Evil Eye,\\
 Demon Surge, or Shadowshot.")  // They share an ID, so no need to write the text for all 
 
+ALIGN 4 
+turnCountAchievements:
+FILL (512)
+#define turnEnt(chapterID, turnCount, id, str, str2) "PUSH; ORG turnCountAchievements + (chapterID * 2); SHORT id turnCount; POP; achievementEnt(id, str, str2, Category_TurnCount)" 
+turnEnt(0, 3, PrologueLTC, "A hasty escape", "Complete Ch. 0 within 3 turns.")
+
+ALIGN 4 
+chapterTimeAchievements:
+FILL (512)
+#define speedEnt(chapterID, chapterTime, id, str, str2) "PUSH; ORG chapterTimeAchievements + (chapterID * 2); SHORT id (chapterTime*60); POP; achievementEnt(id, str, str2, Category_ChapterTime)" 
+speedEnt(0, 1, PrologueSR, "Make haste!", "Complete Ch. 0 witihin 1 minute.")
 
 
 ALIGN 4 
 gNotificationsData: // these show up when a flag is turned on 
 // NotificationEntryTextID(0x505, 1) // textID "Sword", flagID 
 // NotificationEntryTextID(0x3D, 1) // textID, flagID 
-NotificationEntry(text0, 1) // text label, flagID 
-NotificationEntry(text1, 0xA, TEXT_COLOR_SYSTEM_WHITE, TEXT_COLOR_SYSTEM_GREEN) 
+// NotificationEntry(text0, 1) // text label, flagID 
+// NotificationEntry(text1, 0xA, TEXT_COLOR_SYSTEM_WHITE, TEXT_COLOR_SYSTEM_GREEN) 
 // NotificationEntry(text2, 0x65) 
 
 // NotificationEntry(text3, 0) 
@@ -287,8 +334,8 @@ txt("Critical security updates are required."); BYTE 0
 
 
 #ifndef callHackNew
-	#define callHackNew(offset) "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
-    #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1); PROTECT CURRENTOFFSET-8 CURRENTOFFSET-1"
+	#define callHackNew(offset)         "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+	#define callHackNew_r2(offset) 		"BYTE $01 $4A $96 $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
 
 PUSH 
@@ -323,6 +370,14 @@ callHackNew(Hook_ExecUnitPromotion)
 ORG $81B 
 BYTE $2a // ? 
 // copied into 3003D70 / 300487c
+
+
+ORG $a4390 
+// callHackNew_r2(Hook_RegisterChapterTimeAndTurnCount) 
+// SHORT $46c0 
+
+ORG $83288 
+callHackNew(Hook_CallEndEvent) 
 
 ORG 0x83CAC
 #endif 

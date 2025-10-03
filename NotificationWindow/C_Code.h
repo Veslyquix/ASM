@@ -30,6 +30,7 @@ struct NewBonusClaimRamStruct
 struct AchievementsStruct
 {
     u8 complete;
+    u8 shown[3]; // save file 0, 1, or 2 
 };
 struct AchievementsRomStruct
 {
@@ -46,6 +47,18 @@ extern struct AchievementsRomStruct achievementData[];
 extern u16 recruitmentAchievements[]; 
 extern u16 equipAchievements[]; 
 extern u16 promoAchievements[]; 
+
+struct turnCountStruct { 
+    u16 achievementDataID; 
+    u16 turnCount; 
+}; 
+struct chapterTimeStruct { 
+    u16 achievementDataID; 
+    u16 chapterTime; 
+}; 
+
+extern struct turnCountStruct turnCountAchievements[]; 
+extern struct chapterTimeStruct chapterTimeAchievements[]; 
 
 void DoNotificationForAchievement(int id); 
 #define ACHIEVEMENT_TYPE 1 
