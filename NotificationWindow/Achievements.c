@@ -8,8 +8,8 @@
 extern int DebugFlag_Link;
 int CannotUnlockAchievements(void)
 {
-    return false;
-    // return !CheckFlag(DebugFlag_Link);
+    // return false;
+    return !CheckFlag(DebugFlag_Link);
 }
 
 extern int AlwaysShowAchievement;
