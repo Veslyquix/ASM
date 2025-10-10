@@ -246,38 +246,120 @@ void AchievementSpriteDraw_Loop(void)
     return;
 }
 
+// used in Achievement_Init and PutDrawText calls
+#define BoxMaxTileWidth 18 // normally 18
+#define BottomMaxTileWidth 27
+#define TitleTileWidth 9
+
+#define BoxMaxWidth (BoxMaxTileWidth * 8)
+#define BottomLineMaxWidth (BottomMaxTileWidth * 8)
+
 //! FE8U = 0x080CE5BC
-const char * GetStringNextLine_Achievements(const char * str)
+const char * GetStringNextLine_Achievements(const char * str, int maxWidth)
 {
-    if (str == NULL)
-    {
+    if (!str || !*str)
         return NULL;
-    }
 
-    if (*str == 0) // [X]
+    const char * iter = str;
+    int ttlWidth = 0;
+    u32 width;
+
+    while (*iter)
     {
-        return NULL;
-    }
+        char c = *iter;
 
-    while (1)
-    {
-        char c = *str;
-        u32 width;
+        // Stop at newline markers
+        if (c == CHAR_NEWLINE || c == 1)
+            return iter + 1;
 
-        if (c != 0)
+        const char * charEnd = GetCharTextLen(iter, &width);
+
+        // Lookahead for spaces
+        if (c == CHAR_SPACE)
         {
-            if (c == 1) // [NL]
+            const char * lookahead = charEnd;
+            int nextWordWidth = 0;
+
+            // Measure next word
+            while (*lookahead && *lookahead != CHAR_SPACE && *lookahead != CHAR_NEWLINE && *lookahead != 1)
             {
-                return str + 1;
+                u32 gw;
+                lookahead = GetCharTextLen(lookahead, &gw);
+                nextWordWidth += gw;
+            }
+
+            if (ttlWidth + width + nextWordWidth > maxWidth)
+            {
+                // Break here before the space and return pointer to first character of next word
+                const char * nextWordStart = charEnd; // skip the space itself
+                while (*nextWordStart == CHAR_SPACE)
+                    nextWordStart++;
+                return nextWordStart;
             }
         }
-        else
+
+        if (ttlWidth + width > maxWidth)
         {
-            return NULL;
+            // Break at this character
+            return iter;
         }
 
-        str = GetCharTextLen(str, &width);
+        ttlWidth += width;
+        iter = charEnd;
     }
+
+    return NULL;
+}
+
+#define CHAR_SPACE 0x20
+void TextDrawLineMaxWidth(const char * str, struct Text * th, int maxWidth)
+{
+    if (!str || !*str)
+        return;
+
+    // Skip initial newlines
+    while (*str == CHAR_NEWLINE || *str == CHAR_SPACE)
+        str++;
+
+    if (!*str)
+        return;
+
+    // Compute where this line should break
+    const char * lineEnd = GetStringNextLine_Achievements(str, maxWidth);
+    if (!lineEnd)
+        lineEnd = str + strlen(str); // draw until the end of string
+
+    const char * iter = str;
+
+    // Draw characters up to the break position
+    while (iter < lineEnd)
+    {
+        if (*iter == CHAR_NEWLINE)
+        {
+            iter++;
+            continue;
+        }
+        iter = Text_DrawCharacterAscii(th, iter);
+    }
+}
+
+void PutDrawAchievementBodyText(struct Text * text, u16 * dest, int colorId, int x, int tileWidth, const char * string)
+{
+
+    struct Text tmpText;
+
+    if (text == NULL)
+    {
+        text = &tmpText;
+        InitText(text, tileWidth);
+    }
+    Text_SetCursor(text, x);
+    Text_SetColor(text, colorId);
+    TextDrawLineMaxWidth(string, text, tileWidth * 8);
+
+    // Text_DrawString(text, str);
+
+    PutText(text, dest);
 }
 
 //! FE8U = 0x080CE148
@@ -291,21 +373,22 @@ void PutAchievementBottomBarText(void)
     }
     // brk; // 20201b3 188
     // gGuideSt has max 20 entries
-    PutDrawText(
-        &gGuideSt->unk_ec, TILEMAP_LOCATED(gBG0TilemapBuffer, 4, 18), TEXT_COLOR_SYSTEM_WHITE, 0, 22,
-        GetStringFromIndex(0x05D4)); // TODO: msgid "About"
+    int id = gGuideSt->unk_68[gGuideSt->unk_2b];
+    const char * str = gAchievementsTable[id].details;
+    PutDrawAchievementBodyText(
+        &gGuideSt->unk_ec, TILEMAP_LOCATED(gBG0TilemapBuffer, 2, 18), TEXT_COLOR_SYSTEM_WHITE, 0, BottomMaxTileWidth,
+        str); // TODO: msgid "About"
 
     // const char * str = gAchievementsTable[gGuideSt->unk_54[gGuideSt->categoryIdx]].details;
     // const char * str = gAchievementsTable[gGuideSt->unk_68[proc->unk_34]].details;
     // int category = gGuideSt->unk_54[gGuideSt->categoryIdx];
 
     // int id = gGuideSt->unk_2b;
-    int id = gGuideSt->unk_68[gGuideSt->unk_2b];
-    const char * str = gAchievementsTable[id].details;
+
     // Text_DrawString(&gGuideSt->unk_ec,
     // gTextIds_AchievementsCategoriesTopic[gGuideSt->unk_54[gGuideSt->categoryIdx]]);
-    Text_DrawString(&gGuideSt->unk_ec, str);
-    if (GetStringNextLine_Achievements(str))
+    // Text_DrawString(&gGuideSt->unk_ec, str);
+    if (GetStringNextLine_Achievements(str, BottomLineMaxWidth))
     {
         Text_DrawString(&gGuideSt->unk_ec, " ...");
     }
@@ -325,7 +408,8 @@ void achievement_80CE1C0(int strIndex, int textIndex, int y)
         : gTextIds_AchievementsCategoriesTopic[gGuideSt->unk_54[strIndex]];
 
     PutDrawText(
-        &gGuideSt->unk_7c[textIndex], TILEMAP_LOCATED(gBG1TilemapBuffer, 2, y), TEXT_COLOR_SYSTEM_WHITE, 0, 9, str);
+        &gGuideSt->unk_7c[textIndex], TILEMAP_LOCATED(gBG1TilemapBuffer, 2, y), TEXT_COLOR_SYSTEM_WHITE, 0,
+        TitleTileWidth, str);
     return;
 }
 
@@ -395,9 +479,9 @@ void AchievementEntry_RedrawUp(struct GuideProc * proc)
 
     ClearText(&gGuideSt->unk_b4[textIdx]);
 
-    PutDrawText(
+    PutDrawAchievementBodyText(
         &gGuideSt->unk_b4[textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 5),
-        GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[idx]].flag), 0, 18,
+        GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[idx]].flag), 0, BoxMaxTileWidth,
         gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
 
     return;
@@ -411,9 +495,9 @@ void AchievementEntry_RedrawDown(struct GuideProc * proc)
 
     ClearText(&gGuideSt->unk_b4[textIdx]);
 
-    PutDrawText(
+    PutDrawAchievementBodyText(
         &gGuideSt->unk_b4[textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 15),
-        GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[idx]].flag), 0, 18,
+        GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[idx]].flag), 0, BoxMaxTileWidth,
         gAchievementsTable[gGuideSt->unk_68[idx]].itemName);
 
     return;
@@ -456,9 +540,9 @@ void achievement_80CE414(void)
 
         ClearText(&gGuideSt->unk_b4[r5]);
 
-        PutDrawText(
+        PutDrawAchievementBodyText(
             &gGuideSt->unk_b4[r5], gBG1TilemapBuffer + TILEMAP_INDEX(11, y),
-            (GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[r4]].flag)), 0, 18,
+            (GetAchievementColour(gAchievementsTable[gGuideSt->unk_68[r4]].flag)), 0, BoxMaxTileWidth,
             gAchievementsTable[gGuideSt->unk_68[r4]].itemName);
     }
     PutAchievementBottomBarText();
@@ -500,7 +584,7 @@ void MoveAchievementDetailText(int idx, int moveDirection)
     const char * str = gAchievementsTable[idx].details;
     while (1)
     {
-        str = GetStringNextLine_Achievements(str);
+        str = GetStringNextLine_Achievements(str, BoxMaxWidth);
         if (str == NULL)
         {
             break;
@@ -553,8 +637,8 @@ void MoveAchievementDetailText(int idx, int moveDirection)
 
     ClearText(gGuideSt->unk_b4);
 
-    PutDrawText(
-        gGuideSt->unk_b4, TILEMAP_LOCATED(gBG1TilemapBuffer, 10, 5), TEXT_COLOR_SYSTEM_GOLD, 2, 18,
+    PutDrawAchievementBodyText(
+        gGuideSt->unk_b4, TILEMAP_LOCATED(gBG1TilemapBuffer, 10, 5), TEXT_COLOR_SYSTEM_GOLD, 2, BoxMaxTileWidth,
         gAchievementsTable[idx].itemName);
 
     str = gAchievementsTable[idx].details;
@@ -564,7 +648,7 @@ void MoveAchievementDetailText(int idx, int moveDirection)
 
         if (i != 0)
         {
-            str = GetStringNextLine_Achievements(str);
+            str = GetStringNextLine_Achievements(str, BoxMaxWidth);
             if (str == NULL)
             {
                 break;
@@ -578,10 +662,10 @@ void MoveAchievementDetailText(int idx, int moveDirection)
 
             ClearText(&gGuideSt->unk_b4[1 + textIndex]);
 
-            PutDrawText(
+            PutDrawAchievementBodyText(
                 &gGuideSt->unk_b4[1 + textIndex],
                 gBG1TilemapBuffer + 11 + ((((i - detailLinesScrolled) % 4) * 0x40) + (off = 0x100)),
-                TEXT_COLOR_SYSTEM_WHITE, 0, 17, str);
+                TEXT_COLOR_SYSTEM_WHITE, 0, BoxMaxTileWidth, str); // - 1
         }
     }
 
@@ -702,7 +786,7 @@ void AchievementDetailsRedraw_Init(struct GuideProc * proc)
 
     while (unk_34 != 0)
     {
-        str = GetStringNextLine_Achievements(str);
+        str = GetStringNextLine_Achievements(str, BoxMaxWidth);
         if (str == NULL)
         {
             break;
@@ -712,9 +796,9 @@ void AchievementDetailsRedraw_Init(struct GuideProc * proc)
     }
 
     ClearText(&gGuideSt->unk_b4[1 + textIdx]);
-    PutDrawText(
-        &gGuideSt->unk_b4[1 + textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 18), TEXT_COLOR_SYSTEM_WHITE, 0, 17,
-        str);
+    PutDrawAchievementBodyText(
+        &gGuideSt->unk_b4[1 + textIdx], TILEMAP_LOCATED(gBG1TilemapBuffer, 11, 18), TEXT_COLOR_SYSTEM_WHITE, 0,
+        BoxMaxTileWidth, str); // -1
 
     proc->unk_34 = 0;
 
@@ -1010,15 +1094,15 @@ void Achievement_Init(ProcPtr proc)
 
     PutAchievementBottomBarText();
 
-    InitText(&gGuideSt->unk_ec, 22);
+    InitText(&gGuideSt->unk_ec, BottomMaxTileWidth);
 
     InitText(&gGuideSt->unk_ac, 9);
     InitText(&gGuideSt->unk_e4, 18);
 
     for (i = 0; i < 6; i++)
     {
-        InitText(&gGuideSt->unk_7c[i], 9);
-        InitText(&gGuideSt->unk_b4[i], 18);
+        InitText(&gGuideSt->unk_7c[i], TitleTileWidth);
+        InitText(&gGuideSt->unk_b4[i], BoxMaxTileWidth);
     }
 
     achievement_80CE248();

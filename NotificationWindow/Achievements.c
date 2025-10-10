@@ -8,7 +8,8 @@
 extern int DebugFlag_Link;
 int CannotUnlockAchievements(void)
 {
-    return !CheckFlag(DebugFlag_Link);
+    return false;
+    // return !CheckFlag(DebugFlag_Link);
 }
 extern int AlwaysShowAchievement;
 void SetAchievement(struct AchievementsStruct * data, int i)
