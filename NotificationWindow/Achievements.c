@@ -5,6 +5,11 @@
 // on copy save, overwrite shown[0], shown[1], or shown[2] - not done
 #define AchBits (8 / 4);
 
+extern int DebugFlag_Link;
+int CannotUnlockAchievements(void)
+{
+    return !CheckFlag(DebugFlag_Link);
+}
 extern int AlwaysShowAchievement;
 void SetAchievement(struct AchievementsStruct * data, int i)
 {
@@ -96,6 +101,10 @@ void ClearAchievementsForSlot(int slot)
 void UnlockAchievement(int id)
 {
     if (!id)
+    {
+        return;
+    }
+    if (CannotUnlockAchievements())
     {
         return;
     }

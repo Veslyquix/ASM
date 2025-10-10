@@ -7,6 +7,10 @@
 #include "EAstdlib.event"
 #include "Definitions.enu.event" 
 
+ALIGN 4 
+DebugFlag_Link: 
+WORD 0xEC 
+
 // for testing 
 PUSH 
 ORG $1DED56C
@@ -275,14 +279,116 @@ Demon Surge, or Shadowshot.")  // They share an ID, so no need to write the text
 ALIGN 4 
 turnCountAchievements:
 FILL (512)
-#define turnEnt(chapterID, turnCount, id, str, str2) "PUSH; ORG turnCountAchievements + (chapterID * 2); SHORT id turnCount; POP; achievementEnt(id, str, str2, Category_TurnCount)" 
-turnEnt(0, 3, PrologueLTC, "A hasty escape", "Complete Ch. 0 within 3 turns.")
-
 ALIGN 4 
 chapterTimeAchievements:
 FILL (512)
+
+
+#define turnEnt(chapterID, turnCount, id, str, str2) "PUSH; ORG turnCountAchievements + (chapterID * 2); SHORT id turnCount; POP; achievementEnt(id, str, str2, Category_TurnCount)" 
 #define speedEnt(chapterID, chapterTime, id, str, str2) "PUSH; ORG chapterTimeAchievements + (chapterID * 2); SHORT id (chapterTime*60); POP; achievementEnt(id, str, str2, Category_ChapterTime)" 
-speedEnt(0, 2, PrologueSR, "Make haste!", "Complete Ch. 0 witihin 2 minutes.")
+
+
+speedEnt(Prologue, 1, PrologueSR , "Outta here", "Complete Ch. 0 witihin 1 minute.")
+turnEnt( Prologue, 1, PrologueLTC, "Fallen Renais", "Complete Ch. 0 within 1 turn.")
+
+speedEnt(Ch1, 2, Ch1SR , "Make haste!", "Complete Ch. 1 witihin 2 minutes.")
+turnEnt( Ch1, 3, Ch1LTC, "A hasty escape", "Complete Ch. 1 within 3 turns.")
+
+speedEnt(Ch2, 5, Ch2SR , "", "Complete Ch. 2 witihin 3 minutes.")
+turnEnt( Ch2, 5, Ch2LTC, "", "Complete Ch. 2 within 5 turns.")
+
+speedEnt(Ch3, 5, Ch3SR , "What bandits?", "Complete Ch. 3 witihin 4 minutes.")
+turnEnt( Ch3, 5, Ch3LTC, "Protected", "Complete Ch. 3 within 5 turns.")
+
+speedEnt(Ch4, 6, Ch4SR , "Protected", "Complete Ch. 3 witihin 4 minutes.")
+turnEnt( Ch4, 4, Ch4LTC, "Protected", "Complete Ch. 3 within 4 turns.")
+
+speedEnt(Ch5, 9, Ch5SR, "", "Complete Ch. 5 within 4 minutes.")
+turnEnt(Ch5, 4, Ch5LTC, "", "Complete Ch. 5 within 4 turns.")
+
+speedEnt(Ch5x, 9, Ch5xSR, "", "Complete Ch. 5x within 6 minutes.")
+turnEnt(Ch5x, 9, Ch5xLTC, "", "Complete Ch. 5x within 9 turns.")
+
+speedEnt(Ch6, 8, Ch6SR, "", "Complete Ch. 6 within 3 minutes.")
+turnEnt(Ch6, 3, Ch6LTC, "", "Complete Ch. 6 within 3 turns.")
+
+speedEnt(Ch7, 5, Ch7SR, "", "Complete Ch. 7 within 4 minutes.")
+turnEnt(Ch7, 4, Ch7LTC, "", "Complete Ch. 7 within 4 turns.")
+
+speedEnt(Ch8, 13, Ch8SR, "", "Complete Ch. 8 within 7 minutes.")
+turnEnt(Ch8, 6, Ch8LTC, "", "Complete Ch. 8 within 6 turns.")
+
+speedEnt(Ch9Eirika, 12, Ch9SREirika, "", "Complete Ch. 9 within 12 minutes.")
+turnEnt(Ch9Eirika, 12, Ch9LTCEirika, "", "Complete Ch. 9 within 12 turns.")
+speedEnt(Ch9Ephraim, 12, Ch9SREphraim, "", "Complete Ch. 9 within 12 minutes.")
+turnEnt(Ch9Ephraim, 12, Ch9LTCEphraim, "", "Complete Ch. 9 within 12 turns.")
+
+speedEnt(Ch10Eirika, 11, Ch10SREirika, "", "Complete Ch. 10 within 11 minutes.")
+turnEnt(Ch10Eirika, 8, Ch10LTCEirika, "", "Complete Ch. 10 within 8 turns.")
+speedEnt(Ch10Ephraim, 11, Ch10SREphraim, "", "Complete Ch. 10 within 11 minutes.")
+turnEnt(Ch10Ephraim, 8, Ch10LTCEphraim, "", "Complete Ch. 10 within 8 turns.")
+
+speedEnt(Ch11Eirika, 16, Ch11SREirika, "", "Complete Ch. 11 within 16 minutes.")
+turnEnt(Ch11Eirika, 8, Ch11LTCEirika, "", "Complete Ch. 11 within 8 turns.")
+speedEnt(Ch11Ephraim, 16, Ch11SREphraim, "", "Complete Ch. 11 within 16 minutes.")
+turnEnt(Ch11Ephraim, 8, Ch11LTCEphraim, "", "Complete Ch. 11 within 8 turns.")
+
+speedEnt(Ch12Eirika, 9, Ch12SREirika, "", "Complete Ch. 12 within 9 minutes.")
+turnEnt(Ch12Eirika, 5, Ch12LTCEirika, "", "Complete Ch. 12 within 5 turns.")
+speedEnt(Ch12Ephraim, 9, Ch12SREphraim, "", "Complete Ch. 12 within 9 minutes.")
+turnEnt(Ch12Ephraim, 5, Ch12LTCEphraim, "", "Complete Ch. 12 within 5 turns.")
+
+speedEnt(Ch13Eirika, 15, Ch13SREirika, "", "Complete Ch. 13 within 15 minutes.")
+turnEnt(Ch13Eirika, 6, Ch13LTCEirika, "", "Complete Ch. 13 within 6 turns.")
+speedEnt(Ch13Ephraim, 15, Ch13SREphraim, "", "Complete Ch. 13 within 15 minutes.")
+turnEnt(Ch13Ephraim, 6, Ch13LTCEphraim, "", "Complete Ch. 13 within 6 turns.")
+
+speedEnt(Ch14Eirika, 12, Ch14SREirika, "", "Complete Ch. 14 within 12 minutes.")
+turnEnt(Ch14Eirika, 8, Ch14LTCEirika, "", "Complete Ch. 14 within 8 turns.")
+speedEnt(Ch14Ephraim, 12, Ch14SREphraim, "", "Complete Ch. 14 within 12 minutes.")
+turnEnt(Ch14Ephraim, 8, Ch14LTCEphraim, "", "Complete Ch. 14 within 8 turns.")
+
+speedEnt(Ch15Eirika, 15, Ch15SR, "")
+speedEnt(Ch15Ephraim, 15, Ch15SR, "Treasure? What treasure?", "Complete Ch. 15 within 15 minutes.")
+turnEnt(Ch15Eirika, 7, Ch15LTC, "", "")
+turnEnt(Ch15Ephraim, 7, Ch15LTC, "", "Complete Ch. 15 within 8 turns.")
+
+speedEnt(Ch16Eirika, 10, Ch16SR, "", "")
+speedEnt(Ch16Ephraim, 10, Ch16SR, "", "Complete Ch. 16 within 10 minutes.")
+turnEnt(Ch16Eirika, 4, Ch16LTC, "", "")
+turnEnt(Ch16Ephraim, 4, Ch16LTC, "", "Complete Ch. 16 within 6 turns.")
+
+speedEnt(Ch17Eirika, 4, Ch17SR, "", "")
+speedEnt(Ch17Ephraim, 4, Ch17SR, "", "Complete Ch. 17 within 4 minutes.")
+turnEnt(Ch17Eirika, 3, Ch17LTC, "", "")
+turnEnt(Ch17Ephraim, 3, Ch17LTC, "", "Complete Ch. 17 within 3 turns.")
+
+speedEnt(Ch18Eirika, 15, Ch18SR, "", "")
+speedEnt(Ch18Ephraim, 15, Ch18SR, "", "Complete Ch. 18 within 15 minutes.")
+turnEnt(Ch18Eirika, 12, Ch18LTC, "", "")
+turnEnt(Ch18Ephraim, 12, Ch18LTC, "", "Complete Ch. 18 within 12 turns.")
+
+speedEnt(Ch19Eirika, 4, Ch19SR, "", "")
+speedEnt(Ch19Ephraim, 4, Ch19SR, "", "Complete Ch. 19 within 4 minutes.")
+turnEnt(Ch19Eirika, 5, Ch19LTC, "", "")
+turnEnt(Ch19Ephraim, 5, Ch19LTC, "", "Complete Ch. 19 within 5 turns.")
+
+speedEnt(Ch20Eirika, 4, Ch20SR, "", "")
+speedEnt(Ch20Ephraim, 4, Ch20SR, "", "Complete Ch. 20 within 12 minutes.")
+turnEnt(Ch20Eirika, 5, Ch20LTC, "", "")
+turnEnt(Ch20Ephraim, 5, Ch20LTC, "", "Complete Ch. 20 within 8 turns.")
+
+speedEnt(FinalCh1Eirika, 5, Ch21SR, "", "")
+speedEnt(FinalCh1Ephraim, 5, Ch21SR, "", "Complete Ch. 21 within 5 minutes.")
+turnEnt(FinalCh1Eirika, 7, Ch21LTC, "", "")
+turnEnt(FinalCh1Ephraim, 7, Ch21LTC, "", "Complete Ch. 21 within 7 turns.")
+
+speedEnt(FinalCh2Eirika, 1, Ch22SR, "", "")
+speedEnt(FinalCh2Ephraim, 1, Ch22SR, "", "Defeat the Demon King within 1 minute.")
+turnEnt(FinalCh2Eirika, 2, Ch22LTC, "", "")
+turnEnt(FinalCh2Ephraim, 2, Ch22LTC, "", "Defeat the Demon King within 2 turns.")
+
+
 
 
 ALIGN 4 
@@ -366,10 +472,6 @@ ORG $226F4
 ORG $2f672 
 SHORT $4688 $4699 $46c0 // mov r8, r1 and mov r9, r3 
 callHackNew(Hook_ExecUnitPromotion) 
-
-ORG $81B 
-BYTE $2a // ? 
-// copied into 3003D70 / 300487c
 
 
 ORG $a4eb0
