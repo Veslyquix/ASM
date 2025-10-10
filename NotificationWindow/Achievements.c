@@ -11,6 +11,7 @@ int CannotUnlockAchievements(void)
     return false;
     // return !CheckFlag(DebugFlag_Link);
 }
+
 extern int AlwaysShowAchievement;
 void SetAchievement(struct AchievementsStruct * data, int i)
 {
@@ -40,6 +41,56 @@ int IsAchievementShown(int id)
     struct AchievementsStruct * ent = (void *)&data[4];
     ent += id / AchBits;
     return ent->shown[slot] & (1 << (id % 8));
+}
+
+int CountTotalAchievements()
+{
+    int i = 0;
+    struct AchievementsRomStruct * data = achievementData;
+    while (data->category != Category_Terminator_Link)
+    {
+        if (data->category == Category_Rewards_Link)
+        {
+            data++;
+            continue;
+        }
+
+        data++;
+        i++;
+    }
+    return i;
+}
+
+int IsAchievementCompletePerc(int id, struct AchievementsStruct * ent, struct AchievementsRomStruct * data)
+{
+    data += id;
+    if (data->category == Category_Rewards_Link)
+        return false;
+    ent += id / AchBits;
+    return ent->complete & (1 << (id % 8));
+}
+
+int CountCompletedAchievements()
+{
+    int max = CountTotalAchievements();
+    struct NewBonusClaimRamStruct * tmp = (void *)gpBonusClaimData;
+    struct AchievementsStruct * ent = (void *)&tmp[4];
+    struct AchievementsRomStruct * data = achievementData;
+    int c = 0;
+    for (int i = 0; i < max; ++i)
+    {
+        if (IsAchievementCompletePerc(i, ent, data))
+            c++;
+    }
+    return c;
+}
+
+int GetAchievementPercentage()
+{
+    int done = CountCompletedAchievements();
+    int max = CountTotalAchievements();
+    int result = (done * 100) / max;
+    return result;
 }
 
 int GetAchievementColour(int id)

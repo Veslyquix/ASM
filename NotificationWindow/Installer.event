@@ -79,18 +79,25 @@ bonusEnt(19, IronSword, "pointy");
 
 
 
-
-#define Category_Recruitables 1 
-#define Category_LegendaryWeapons 2 
-#define Category_Promotions 3 
-#define Category_ChapterTime 4 
-#define Category_TurnCount 5 
-#define Category_Miscellaneous 6 
+#define Category_Rewards 1 
+#define Category_Recruitables 2 
+#define Category_LegendaryWeapons 3
+#define Category_Promotions 4
+#define Category_ChapterTime 5 
+#define Category_TurnCount 6
+#define Category_Miscellaneous 7
 #define Category_Terminator 12 
+
+ALIGN 4 
+Category_Terminator_Link: 
+WORD Category_Terminator 
+Category_Rewards_Link:
+WORD Category_Rewards
 
 ALIGN 4 
 gTextIds_AchievementsCategoriesTopic: 
 POIN blankStr 
+POIN RewardsHeader
 POIN RecruitablesHeader
 POIN EquipmentHeader 
 POIN PromotionsHeader 
@@ -102,7 +109,8 @@ POIN OtherHeader
 
 blankStr:
 txt("")
-
+RewardsHeader: 
+txt("Rewards") 
 RecruitablesHeader: 
 txt("Recruitables") 
 
@@ -143,6 +151,13 @@ achievementEnt(EndID, "", "", Category_Terminator)
 // reach level 20 
 // reach promoted level 20 
 
+ALIGN 4 
+rewardsByPercentage:
+FILL(512) 
+#define rewardEnt(id1, id, str, str2) "PUSH; ORG rewardsByPercentage + (id1 * 2); SHORT id ; POP; achievementEnt(id, str2, str, Category_Rewards)" 
+// str1 and str2 are swapped in this macro 
+rewardEnt(1, Reward_1, "1% completion", "FE7 characters unlocked.") 
+rewardEnt(2, Reward_2, "2% completion", "Silver Sword") 
 
 
 
@@ -382,8 +397,8 @@ turnEnt(FinalCh1Ephraim, 7, Ch21LTC, "Flawless Finish", "Complete Ch. 21 within 
 
 speedEnt(FinalCh2Erika, 1, Ch22SR, "", "") // ea has a typo 
 speedEnt(FinalCh2Ephraim, 1, Ch22SR, "Demon King? Defeated!", "Defeat the Demon King within 1 minute.")
-turnEnt(FinalCh2Erika, 2, Ch22LTC, "", "")
-turnEnt(FinalCh2Ephraim, 2, Ch22LTC, "No Time to Spare", "Defeat the Demon King within 2 turns.")
+turnEnt(FinalCh2Erika, 1, Ch22LTC, "", "")
+turnEnt(FinalCh2Ephraim, 1, Ch22LTC, "No Time to Spare", "Defeat the Demon King within 1 turn.")
 
 
 

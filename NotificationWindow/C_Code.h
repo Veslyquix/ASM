@@ -2,7 +2,30 @@
 //#include "include/gbafe.h" 
 #include "gbafe.h" 
 
+struct NewGuideSt
+{
+    /* 29 */ s8 categoryIdx;
+    /* 2A */ s8 unk_2a;
+    /* 2B */ s8 unk_2b;
+    /* 2C */ s8 unk_2c;
+    /* 2D */ u8 unk_2d;
+    /* 2E */ s8 detailLinesScrolled;
+    /* 2F */ u8 state;
+    /* 30 */ u8 sortMode;
+    /* 3C */ u8 unk_3c;
+    /* 3D */ u8 unk_3d;
+    /* 3E */ u8 unk_3e;
+    /* 3F */ u8 numDetailLines;
+    /* 40 */ u8 unk_40[60];
+    /* 54 */ u8 unk_54[60]; // size unknown
+    /* 68 */ u8 unk_68[60];
 
+    /* 7C */ struct Text unk_7c[6];
+    /* AC */ struct Text unk_ac;
+    /* B4 */ struct Text unk_b4[6];
+    /* E4 */ struct Text unk_e4;
+    /* EC */ struct Text unk_ec;
+};
 
 extern struct ClassData* classTablePoin[]; 
 
@@ -39,9 +62,18 @@ struct AchievementsRomStruct
     /* 08 */ u16 category; // title
     /* 0A */ u16 flag; 
 };
-
+extern int __aeabi_idivmod(int a, int b);
+static int Modulo(int a, int b)
+{
+    return __aeabi_idivmod(a, b); // uses swi 6
+}
 int IsAchievementComplete(int); 
 int GetAchievementColour(int id);
+int GetAchievementPercentage(); 
+int CountCompletedAchievements(); 
+int CountTotalAchievements(); 
+extern int Category_Terminator_Link; 
+extern int Category_Rewards_Link; 
 
 extern struct AchievementsRomStruct achievementData[];
 

@@ -1,6 +1,6 @@
 
 // copied bmguide.c
-extern struct GuideSt * const gGuideSt;
+extern struct NewGuideSt * const gGuideSt;
 
 // clang-format off
 
@@ -77,7 +77,6 @@ struct AchievementsEnt
 
 // struct AchievementsEnt gAchievementsTable[];
 // struct AchievementsEnt gGuideTable[];
-#define MAX_CATEGORY 12
 extern struct AchievementsEnt gAchievementsTable[]; 
 
 /*
@@ -90,7 +89,7 @@ const struct AchievementsEnt gAchievementsTable[] = {
     },
     
     { // terminator 
-        .category = MAX_CATEGORY,
+        .category = Category_Terminator_Link,
         .flag = 0,
         .itemName = "",
         .details = "",
@@ -187,10 +186,10 @@ void AchievementSpriteDraw_Loop(void)
 
     if (gGuideSt->state == GUIDE_STATE_0)
     {
-        PutSprite(3, 176, 3, gSprite_AchievementsSelectButtonSort, OAM2_PAL(2));
+        // PutSprite(3, 176, 3, gSprite_AchievementsSelectButtonSort, OAM2_PAL(2));
     }
 
-    PutSprite(3, 176, 15, gSprite_AchievementsBButtonBack, OAM2_PAL(2));
+    PutSprite(3, 176, 3, gSprite_AchievementsBButtonBack, OAM2_PAL(2));
 
     y1 = (gGuideSt->categoryIdx - gGuideSt->unk_2a) * 2 + 5;
     y2 = (gGuideSt->unk_2b - gGuideSt->unk_2c) * 2 + 5;
@@ -269,7 +268,7 @@ const char * GetStringNextLine_Achievements(const char * str, int maxWidth)
         char c = *iter;
 
         // Stop at newline markers
-        if (c == CHAR_NEWLINE || c == 1)
+        if (c == CHAR_NEWLINE)
             return iter + 1;
 
         const char * charEnd = GetCharTextLen(iter, &width);
@@ -281,7 +280,7 @@ const char * GetStringNextLine_Achievements(const char * str, int maxWidth)
             int nextWordWidth = 0;
 
             // Measure next word
-            while (*lookahead && *lookahead != CHAR_SPACE && *lookahead != CHAR_NEWLINE && *lookahead != 1)
+            while (*lookahead && *lookahead != CHAR_SPACE && *lookahead != CHAR_NEWLINE)
             {
                 u32 gw;
                 lookahead = GetCharTextLen(lookahead, &gw);
@@ -362,6 +361,28 @@ void PutDrawAchievementBodyText(struct Text * text, u16 * dest, int colorId, int
     PutText(text, dest);
 }
 
+void PutAchievementPercentageText()
+{
+    int perc = GetAchievementPercentage();
+    struct Text * th = gStatScreen.text;
+    ClearText(th + 0);
+    Text_InsertDrawString(
+        th + 0, 0, perc == 100 ? 4 : 0,
+        GetStringFromIndex(0x5AA) // TODO: msgid "Success[.]"
+    );
+
+    Text_SetCursor(th + 0, 52);
+    Text_SetColor(th + 0, perc == 100 ? 4 : 2);
+    Text_DrawNumberOrBlank(th + 0, perc);
+
+    Text_InsertDrawString(
+        th + 0, 60, perc == 100 ? 4 : 0,
+        GetStringFromIndex(0x5AE) // TODO: msgid "%[.]"
+    );
+
+    PutText(th + 0, TILEMAP_LOCATED(gBG0TilemapBuffer, 20, 2));
+}
+
 //! FE8U = 0x080CE148
 void PutAchievementBottomBarText(void)
 {
@@ -399,6 +420,7 @@ void PutAchievementBottomBarText(void)
 //! FE8U = 0x080CE1C0
 void achievement_80CE1C0(int strIndex, int textIndex, int y)
 {
+
     const char * str;
 
     ClearText(&gGuideSt->unk_7c[textIndex]);
@@ -419,7 +441,6 @@ void achievement_80CE248(void)
     int i;
 
     int a = (gGuideSt->sortMode != GUIDE_SORT_MODE_TOPIC) ? gGuideSt->unk_3c : gGuideSt->unk_3d;
-
     for (i = 0; i < 6; i++)
     {
         if (i < a)
@@ -475,7 +496,7 @@ void AchievementMenuRefresh_SyncBg0Bg1(void)
 void AchievementEntry_RedrawUp(struct GuideProc * proc)
 {
     int idx = proc->unk_34;
-    int textIdx = idx % 6;
+    int textIdx = Modulo(idx, 6);
 
     ClearText(&gGuideSt->unk_b4[textIdx]);
 
@@ -491,7 +512,7 @@ void AchievementEntry_RedrawUp(struct GuideProc * proc)
 void AchievementEntry_RedrawDown(struct GuideProc * proc)
 {
     int idx = proc->unk_34;
-    int textIdx = idx % 6;
+    int textIdx = Modulo(idx, 6);
 
     ClearText(&gGuideSt->unk_b4[textIdx]);
 
@@ -515,7 +536,7 @@ void achievement_80CE414(void)
     int y = 5;
     int idx = 0;
 
-    for (r8 = 0, gGuideSt->unk_3e = 0; gAchievementsTable[r8].category != MAX_CATEGORY; r8++)
+    for (r8 = 0, gGuideSt->unk_3e = 0; gAchievementsTable[r8].category != Category_Terminator_Link; r8++)
     {
 
         // if (!CheckFlag(gAchievementsTable[r8].flag))
@@ -536,7 +557,7 @@ void achievement_80CE414(void)
 
     for (r8 = 0; r8 <= 5 && r6 != 0; y += 2, r5++, r6--, r4++, r8++)
     {
-        r5 = r5 % 6;
+        r5 = Modulo(r5, 6);
 
         ClearText(&gGuideSt->unk_b4[r5]);
 
@@ -658,13 +679,13 @@ void MoveAchievementDetailText(int idx, int moveDirection)
         if (i >= detailLinesScrolled)
         {
             int off;
-            int textIndex = i % 5;
+            int textIndex = Modulo(i, 5);
 
             ClearText(&gGuideSt->unk_b4[1 + textIndex]);
 
             PutDrawAchievementBodyText(
                 &gGuideSt->unk_b4[1 + textIndex],
-                gBG1TilemapBuffer + 11 + ((((i - detailLinesScrolled) % 4) * 0x40) + (off = 0x100)),
+                gBG1TilemapBuffer + 11 + ((Modulo((i - detailLinesScrolled), 4) * 0x40) + (off = 0x100)),
                 TEXT_COLOR_SYSTEM_WHITE, 0, BoxMaxTileWidth, str); // - 1
         }
     }
@@ -682,7 +703,6 @@ void achievement_80CE750(ProcPtr proc, int b)
     struct GuideProc * child;
     int ix;
     int iy;
-    register int hm asm("r9") = b;
 
     int off = 0x1a0;
 
@@ -698,8 +718,8 @@ void achievement_80CE750(ProcPtr proc, int b)
                 }
                 off = off - 0x40;
             }
-
-            achievement_80CE1C0(hm, hm % 6, 5);
+            // achievement_80CE248();
+            achievement_80CE1C0(b, Modulo(b, 6), 5);
 
             break;
 
@@ -715,7 +735,7 @@ void achievement_80CE750(ProcPtr proc, int b)
             }
 
             child = Proc_Start(gProcScr_AchievementEntryListRedraw_Up, proc);
-            child->unk_34 = hm;
+            child->unk_34 = b;
     }
 
     BG_EnableSyncByMask(BG1_SYNC_BIT);
@@ -731,7 +751,6 @@ void achievement_80CE858(ProcPtr proc, int b)
     struct GuideProc * child;
     int ix;
     int iy;
-    register int hm asm("r9") = b;
 
     int off = 0xa0;
 
@@ -747,8 +766,9 @@ void achievement_80CE858(ProcPtr proc, int b)
                 }
                 off = off + 0x40;
             }
-
-            achievement_80CE1C0(hm, hm % 6, 15);
+            // brk;
+            // achievement_80CE248();
+            achievement_80CE1C0(b, Modulo(b, 6), 15);
 
             break;
 
@@ -764,7 +784,7 @@ void achievement_80CE858(ProcPtr proc, int b)
             }
 
             child = Proc_Start(gProcScr_AchievementEntryListRedraw_Down, proc);
-            child->unk_34 = hm;
+            child->unk_34 = b;
     }
 
     BG_EnableSyncByMask(BG1_SYNC_BIT);
@@ -780,7 +800,7 @@ void AchievementDetailsRedraw_Init(struct GuideProc * proc)
     int unk_34;
 
     unk_34 = proc->unk_34;
-    textIdx = (unk_34 % 5);
+    textIdx = Modulo(unk_34, 5);
 
     str = gAchievementsTable[gGuideSt->unk_68[gGuideSt->unk_2b]].details;
 
@@ -890,7 +910,7 @@ void achievement_80CEAE8(void)
     i = 0;
     r4 = gAchievementsTable[i].category;
 
-    while (gAchievementsTable[i].category != MAX_CATEGORY)
+    while (gAchievementsTable[i].category != Category_Terminator_Link)
     {
         // if (CheckFlag(gAchievementsTable[i].displayFlag))
         // {
@@ -903,7 +923,7 @@ void achievement_80CEAE8(void)
 
     gGuideSt->unk_3d = 0;
 
-    for (i = 0; i < MAX_CATEGORY; i++)
+    for (i = 0; i < Category_Terminator_Link; i++)
     {
         int tmp2;
 
@@ -951,7 +971,7 @@ void achievement_80CEBA4(void)
     i = 0;
     r4 = gAchievementsTable[i].category;
 
-    while (r4 != MAX_CATEGORY)
+    while (r4 != Category_Terminator_Link)
     {
         // if (CheckFlag(gAchievementsTable[i].displayFlag))
         // {
@@ -965,7 +985,7 @@ void achievement_80CEBA4(void)
 
     gGuideSt->unk_3c = 0;
 
-    for (i = 0; i < MAX_CATEGORY; i++)
+    for (i = 0; i < Category_Terminator_Link; i++)
     {
         int tmp2;
 
@@ -1092,7 +1112,7 @@ void Achievement_Init(ProcPtr proc)
 
     ResetTextFont();
 
-    PutAchievementBottomBarText();
+    InitText(gStatScreen.text, 9);
 
     InitText(&gGuideSt->unk_ec, BottomMaxTileWidth);
 
@@ -1104,6 +1124,8 @@ void Achievement_Init(ProcPtr proc)
         InitText(&gGuideSt->unk_7c[i], TitleTileWidth);
         InitText(&gGuideSt->unk_b4[i], BoxMaxTileWidth);
     }
+    // PutAchievementBottomBarText();
+    PutAchievementPercentageText();
 
     achievement_80CE248();
     achievement_80CE414();
@@ -1575,7 +1597,7 @@ void BmAchievementTextSetAllGreen(void)
 {
     const struct AchievementsEnt * it;
 
-    for (it = gAchievementsTable; it->category != MAX_CATEGORY; it++)
+    for (it = gAchievementsTable; it->category != Category_Terminator_Link; it++)
     {
         SetAchievementFlag(it->flag);
     }
@@ -1589,7 +1611,7 @@ bool BmAchievementTextShowGreenOrNormal(void)
     /* 
     const struct AchievementsEnt * it;
 
-    for (it = gAchievementsTable; it->category != MAX_CATEGORY; it++)
+    for (it = gAchievementsTable; it->category != Category_Terminator_Link; it++)
     {
         if (CheckFlag(it->displayFlag) && !IsAchievementComplete(it->readFlag))
         {
