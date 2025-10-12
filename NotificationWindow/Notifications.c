@@ -424,7 +424,8 @@ extern const int MAX_LINE_WIDTH;
 int ClearNotificationText(
     struct NotificationWindowProc * proc, struct Text * text, int tileWidth, int chr_counter, int line)
 {
-
+    struct Font * font = gActiveFont;
+    SetTextFont(&gHelpBoxSt.font);
     // save where text was drawing
     u32 chr = gActiveFont->chr_counter;
 
@@ -435,10 +436,10 @@ int ClearNotificationText(
     // if we wanted to start at 0x200 tile, then we'd put 0xC0 here, or change NotifChr to 0x200
     if (!line)
     {
-        gActiveFont->chr_counter = ((GetSpriteTextCHR(proc) - DefaultTextChr) >> 1) + proc->chr_counter;
+        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
         if (proc->spriteText)
         {
-            gActiveFont->chr_counter = 0x80;
+            gActiveFont->chr_counter = 0;
         }
     }
     else
@@ -463,14 +464,17 @@ int ClearNotificationText(
     int result = gActiveFont->chr_counter;
     proc->chr_counter = gActiveFont->chr_counter;
     gActiveFont->chr_counter = chr;
-
+    SetTextFont(font);
     return result;
 }
 
 void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 {
+    struct Font * font = gActiveFont;
+    SetTextFont(&gHelpBoxSt.font);
     if (!proc->fastPrint && (GetGameClock() & 1))
     {
+        SetTextFont(font);
         return;
     }
     struct Text * th = &gStatScreen.text[proc->line];
@@ -488,10 +492,10 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 
     if (!proc->line)
     {
-        gActiveFont->chr_counter = ((GetSpriteTextCHR(proc) - DefaultTextChr) >> 1) + proc->chr_counter;
+        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
         if (proc->spriteText)
         {
-            gActiveFont->chr_counter = 0x80;
+            gActiveFont->chr_counter = 0;
         }
     }
     else
@@ -514,6 +518,7 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 
     // restore where text was drawing
     gActiveFont->chr_counter = chr;
+    SetTextFont(font);
 }
 
 const static u16 lut[] = {
@@ -612,8 +617,10 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 
         // ResetText();
         // ResetTextFont();
+        struct Font * font = gActiveFont;
+
         void * vram = GetSpriteTextVRAM(proc);
-        InitSpriteTextFont(&gHelpBoxSt.font, vram - 0x1000, NotificationObjPalID);
+        InitSpriteTextFont(&gHelpBoxSt.font, vram, NotificationObjPalID);
         SetTextFontGlyphs(1);
         ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
 
@@ -626,6 +633,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
         ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
         BlendSprites(proc, 2);
+        SetTextFont(font);
     }
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
