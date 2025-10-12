@@ -383,6 +383,37 @@ extern struct Font * gActiveFont;
 // draw text farther down in tile1 page
 #define DefaultTextChr 0x80
 #define NotificationChr 0x180
+int CheckInBattle(void)
+{
+    struct ProcEkrBattle * battleProc = gpProcEkrBattle;
+    if (!battleProc)
+    {
+        return false;
+    } // 0 after suspend until battle start
+    // if (!proc->anim2)
+    // {
+    // return false;
+    // }
+    if (gEkrBattleEndFlag)
+    {
+        return false;
+    } // 0 after suspend until battle done
+    return true;
+}
+int GetSpriteTextCHR(struct NotificationWindowProc * proc)
+{
+
+    if (CheckInBattle())
+    {
+        // brk;
+        return 0x140;
+    }
+    return 0x180;
+}
+void * GetSpriteTextVRAM(struct NotificationWindowProc * proc)
+{
+    return VRAM + (void *)0x10000 + (GetSpriteTextCHR(proc) << 5);
+}
 
 // #define MAX_LINE_WIDTH 151
 extern const int MAX_LINE_WIDTH;
@@ -404,7 +435,11 @@ int ClearNotificationText(
     // if we wanted to start at 0x200 tile, then we'd put 0xC0 here, or change NotifChr to 0x200
     if (!line)
     {
-        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
+        gActiveFont->chr_counter = ((GetSpriteTextCHR(proc) - DefaultTextChr) >> 1) + proc->chr_counter;
+        if (proc->spriteText)
+        {
+            gActiveFont->chr_counter = 0x80;
+        }
     }
     else
     {
@@ -438,7 +473,7 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
     {
         return;
     }
-    struct Text * th = &gStatScreen.text[0];
+    struct Text * th = &gStatScreen.text[proc->line];
     const char * str = (const char *)proc->str;
     // chr_counter = InitNotificationText(proc, th, str, tileWidth, chr_counter);
 
@@ -453,14 +488,23 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 
     if (!proc->line)
     {
-        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
+        gActiveFont->chr_counter = ((GetSpriteTextCHR(proc) - DefaultTextChr) >> 1) + proc->chr_counter;
+        if (proc->spriteText)
+        {
+            gActiveFont->chr_counter = 0x80;
+        }
     }
     else
     {
         gActiveFont->chr_counter = proc->chr_counter;
     }
 
-    proc->str = NotificationPrintText(proc, th, str);
+    while (proc->str && *proc->str)
+    {
+        proc->str = NotificationPrintText(proc, th, proc->str);
+        // brk;
+    }
+
     if (!proc->str || !*proc->str)
     {
         proc->finishedPrinting = true;
@@ -476,10 +520,6 @@ const static u16 lut[] = {
     0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C,
 };
 
-int GetSpriteTextCHR(struct NotificationWindowProc * proc)
-{
-    return 0x200;
-}
 int GetSpriteTextNumOfSprites(struct NotificationWindowProc * proc)
 {
     return 4; // 32 tiles is full screen, but we're doing 4 tiles at once
@@ -487,15 +527,16 @@ int GetSpriteTextNumOfSprites(struct NotificationWindowProc * proc)
 }
 int GetSpriteTextXPos(struct NotificationWindowProc * proc)
 {
-    return 12;
+    return 10;
 }
 int GetSpriteTextYPos(struct NotificationWindowProc * proc)
 {
-    return 16;
+    return 10;
 }
 
 #define NotificationObjPalID 0x15
 // PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
+/*
 static void PutNormalSpriteText(int x, int y, int line, int numberOfSprites)
 { // see  PutSubtitleHelpText
     // const u16 * object = gObject_32x32
@@ -515,25 +556,34 @@ static void PutNormalSpriteText(int x, int y, int line, int numberOfSprites)
 
     return;
 }
-
+*/
+void DisplayNotifBoxObj(int x, int y, int w, int h, int hideHelpText);
 void NotificationWindow_LoopDrawSpriteText(struct NotificationWindowProc * proc)
 {
     // int lines = (proc->lines + 1) >> 1; // 32x32 sprites, so always 2 lines at once
-    int lines = (proc->lines + 1); // 32x32 sprites, so always 2 lines at once
-    int chr = GetSpriteTextCHR(proc);
+    int lines = proc->lines; // 32x32 sprites, so always 2 lines at once
+    // int chr = GetSpriteTextCHR(proc);
     int x = GetSpriteTextXPos(proc);
     int y = GetSpriteTextYPos(proc);
     int numberOfSprites = GetSpriteTextNumOfSprites(proc);
-
-    // DisplayHelpBoxObj(int x, int y, int w, int h, int unk);
-    DisplayHelpBoxObj(x, y, 144, lines * 16 + 32, 0);
-    for (int i = 0; i < lines; i++)
-    {
-        // PutNormalSpriteText(x, y + (32 * i), (chr >> 6) + (i << 1), numberOfSprites);
-    }
+    DisplayNotifBoxObj(x, y, numberOfSprites * 32 + 16, lines * 16, true);
+    // for (int i = 0; i < lines; i++)
+    // {
+    // PutNormalSpriteText(x, y + (32 * i), (chr >> 6) + (i << 1), numberOfSprites);
+    // }
     NotificationWindow_LoopDrawText(proc);
 }
+void BlendSprites(struct NotificationWindowProc * proc, int spriteTransparency)
+{
+    gLCDControlBuffer.bldcnt.effect = BLEND_EFFECT_ALPHA;
+    gLCDControlBuffer.bldcnt.target1_obj_on = 1;                    // Background being blended
+    gLCDControlBuffer.bldcnt.target2_bd_on = 1;                     // Blend with backdrop
+    gLCDControlBuffer.blendCoeffA = 16 - spriteTransparency;        // Strength of first layer
+    gLCDControlBuffer.blendCoeffB = 16 - (16 - spriteTransparency); // Strength of second layer
 
+    gLCDControlBuffer.dispcnt.bg3_on = 1;
+    gLCDControlBuffer.dispcnt.obj_on = 1; // If blending objects
+}
 void NotificationWindow_Init(struct NotificationWindowProc * proc)
 {
     proc->showingBgm = false;
@@ -562,11 +612,11 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 
         // ResetText();
         // ResetTextFont();
-        InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x3000, NotificationObjPalID);
+        void * vram = GetSpriteTextVRAM(proc);
+        InitSpriteTextFont(&gHelpBoxSt.font, vram - 0x1000, NotificationObjPalID);
         SetTextFontGlyphs(1);
         ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
-        void * vram = VRAM + (void *)0x10000 + (GetSpriteTextCHR(proc) << 5); // should be 0x10000, not 0xF000.
-        // to do: make it so drawing the sprite text to vram doesn't consume the whole line of vram
+
         Decompress(gGfx_HelpTextBox, vram + 0x360);
         Decompress(gGfx_HelpTextBox2, vram + 0x760);
         Decompress(gGfx_HelpTextBox3, vram + 0xb60);
@@ -575,6 +625,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         gHelpBoxSt.oam2_base = (((u32)vram << 0x11) >> 0x16) + (NotificationObjPalID & 0xF) * 0x1000;
         // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
         ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
+        BlendSprites(proc, 2);
     }
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
@@ -712,7 +763,6 @@ int CountStrLines(const char * str)
 
 char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str)
 {
-
     char * iter = (void *)str;
     int curX;
     int line = proc->line;
@@ -748,7 +798,6 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
             // If the next word doesn't fit, break before this space
             if (curX + nextWordWidth > MAX_LINE_WIDTH)
             {
-                // brk;
                 forceNewLine = true;
                 // proc->line++;
                 // iter++; // so next line does not start with a space
@@ -802,6 +851,12 @@ void NotificationWindowClean(struct NotificationWindowProc * proc)
 
     ClearUiFrame(BG_GetMapBuffer(0), x, y, w, h);
     ClearUiFrame(BG_GetMapBuffer(1), x, y, w, h);
+    if (proc->spriteText)
+    {
+        CpuFastFill(0, GetSpriteTextVRAM(proc), 0x800 * proc->lines);
+        BlendSprites(proc, 0);
+    }
+
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
 }
 
@@ -838,29 +893,39 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
     {
         proc->delayFrames = 0;
     }
+
+    if (CheckInBattle())
+    {
+        return result;
+    }
+
     if (GetGameLock())
     {
         return UpdateIdleDelayFrames(proc);
     }
     // playerCursorDisplay
-    if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x])
-    // if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x] ||
-    // gBmMapUnit[gBmSt.cursorPrevious.y][gBmSt.cursorPrevious.x])
+    if (!proc->spriteText)
+    {
+        // sprite text appears over the minimug box, so not an issue
+        if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x])
+        // if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x] ||
+        // gBmMapUnit[gBmSt.cursorPrevious.y][gBmSt.cursorPrevious.x])
 
-    { // then minimug will show up
-        struct PlayerInterfaceProc * mmb = Proc_Find(gProcScr_UnitDisplay_MinimugBox);
+        { // then minimug will show up
+            struct PlayerInterfaceProc * mmb = Proc_Find(gProcScr_UnitDisplay_MinimugBox);
 
-        if (mmb)
-        {
-            if (mmb->windowQuadrant == 0) // top left
+            if (mmb)
             {
-                return UpdateIdleDelayFrames(proc);
-            }
+                if (mmb->windowQuadrant == 0) // top left
+                {
+                    return UpdateIdleDelayFrames(proc);
+                }
 
-            // if (mmb->isRetracting || mmb->showHideClock)
-            // {
-            // return UpdateIdleDelayFrames(proc);
-            // }
+                // if (mmb->isRetracting || mmb->showHideClock)
+                // {
+                // return UpdateIdleDelayFrames(proc);
+                // }
+            }
         }
     }
     if (Proc_Find(sProc_Menu))
@@ -885,10 +950,18 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
 
 void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
 {
+
+    if (CheckInBattle())
+    {
+        Proc_Break(proc);
+        return;
+    }
+
     if (CheckNotificationInterrupted(proc))
     {
         return;
     }
+
     struct PlayerInterfaceProc * terrainProc = Proc_Find(gProcScr_TerrainDisplay);
     if (terrainProc)
     {
@@ -951,4 +1024,145 @@ void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc)
             ContinueToNextNotification(proc);
         }
     }
+}
+
+void DisplayNotifBoxObj(int x, int y, int w, int h, int hideHelpText)
+{
+    s8 flag;
+    s8 flag_;
+    s8 anotherFlag;
+
+    int xCount;
+    int yCount;
+
+    int xPx;
+    int yPx;
+    int iy;
+    int ix;
+
+    flag = (w + 7) & 0x10;
+    anotherFlag = w & 0xf;
+
+    if (w < 0x20)
+    {
+        w = 0x20;
+    }
+
+    if (w > 0xC0)
+    {
+        w = 0xc0;
+    }
+
+    if (h < 0x10)
+    {
+        h = 0x10;
+    }
+
+    if (h > 0x60)
+    {
+        h = 0x60;
+    }
+
+    xCount = (w + 0x1f) / 0x20;
+    yCount = (h + 0x0f) / 0x10;
+
+    flag_ = flag;
+
+    for (ix = xCount - 1; ix >= 0; ix--)
+    {
+        for (iy = yCount; iy >= 0; iy--)
+        {
+
+            yPx = (iy + 1) * 0x10;
+            if (yPx > h)
+            {
+                yPx = h;
+            }
+            yPx -= 0x10;
+
+            xPx = (ix + 1) * 0x20;
+
+            if (flag_ != 0)
+            {
+                xPx -= 0x20;
+                PutSprite(0, x + xPx, y + yPx, gObject_16x16, gHelpBoxSt.oam2_base + ix * 4 + iy * 0x40);
+            }
+            else
+            {
+
+                if (xPx > w)
+                    xPx = w;
+
+                xPx -= 0x20;
+
+                PutSprite(0, x + xPx, y + yPx, gObject_32x16, gHelpBoxSt.oam2_base + ix * 4 + iy * 0x40);
+            }
+        }
+
+        flag_ = 0;
+    }
+
+    flag_ = flag;
+
+    for (ix = xCount - 1; ix >= 0; ix--)
+    {
+        xPx = (ix + 1) * 0x20;
+
+        if (flag_ != 0)
+        {
+            xPx -= 0x20;
+
+            PutSprite(0, x + xPx, y - 8, gObject_16x8, gHelpBoxSt.oam2_base + 0x1b);
+            PutSprite(0, x + xPx, y + h, gObject_16x8, gHelpBoxSt.oam2_base + 0x3b);
+
+            flag_ = 0;
+        }
+        else
+        {
+            if (xPx > w)
+            {
+                xPx = w;
+            }
+            xPx -= 0x20;
+
+            PutSprite(0, x + xPx, y - 8, gObject_32x8, gHelpBoxSt.oam2_base + 0x1b);
+            PutSprite(0, x + xPx, y + h, gObject_32x8, gHelpBoxSt.oam2_base + 0x3b);
+        }
+    }
+
+    for (iy = yCount; iy >= 0; iy--)
+    {
+        yPx = (iy + 1) * 0x10;
+        if (yPx > h)
+        {
+            yPx = h;
+        }
+        yPx -= 0x10;
+
+        PutSprite(0, x - 8, y + yPx, gObject_8x16, gHelpBoxSt.oam2_base + 0x5f);
+        PutSprite(0, x + w, y + yPx, gObject_8x16, gHelpBoxSt.oam2_base + 0x1f);
+
+        if (anotherFlag != 0)
+        {
+            PutSprite(0, x + w - 8, y + yPx, gObject_8x16, gHelpBoxSt.oam2_base + 0x1a);
+        }
+    }
+
+    PutSprite(0, x - 8, y - 8, gObject_8x8, gHelpBoxSt.oam2_base + 0x5b); // top left
+    PutSprite(0, x + w, y - 8, gObject_8x8, gHelpBoxSt.oam2_base + 0x5c); // top right
+    PutSprite(0, x - 8, y + h, gObject_8x8, gHelpBoxSt.oam2_base + 0x5d); // bottom left
+    PutSprite(0, x + w, y + h, gObject_8x8, gHelpBoxSt.oam2_base + 0x5e); // bottom right
+
+    if (anotherFlag != 0)
+    {
+        PutSprite(0, x + w - 8, y - 8, gObject_8x8, gHelpBoxSt.oam2_base + 0x1b);
+        PutSprite(0, x + w - 8, y + h, gObject_8x8, gHelpBoxSt.oam2_base + 0x3b);
+    }
+
+    if (hideHelpText == 0)
+    {
+        PutSprite(0, x, y - 0xb, gObject_32x16, (0x3FF & gHelpBoxSt.oam2_base) + 0x7b);
+    }
+
+    return;
 }

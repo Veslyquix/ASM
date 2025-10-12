@@ -410,7 +410,7 @@ gNotificationsData: // these show up when a flag is turned on
 // NotificationEntryTextID(0x3D, 1) // textID, flagID 
 NotificationEntry(text0, 0) // text label, flagID 
 // NotificationEntry(text1, 0xA, TEXT_COLOR_SYSTEM_WHITE, TEXT_COLOR_SYSTEM_GREEN) 
-// NotificationEntry(text2, 0x65) 
+NotificationEntry(text2, 0x65) 
 
 // NotificationEntry(text3, 0) 
 // NotificationEntry(text4, 0) 
@@ -440,7 +440,7 @@ For His Civility -")
 text1: 
 txt("Critical security updates are required."); BYTE 0 
 text2: 
-txt("Achievement unlocked: Pacifist."); BYTE 0 
+txt("Achievement unlocked: Loser."); BYTE 0 
 // text0: 
 txt("A new update for CandyCrushSaga is available."); BYTE 0 
 text4: 
