@@ -415,7 +415,8 @@ int ClearNotificationText(
     {
         InitSpriteText(text);
 #ifdef SpriteTextBG
-        SpriteText_DrawBackgroundExt(text, 0x44444444); // tileWidth?
+        // SpriteText_DrawBackgroundExt(text, 0x44444444);
+        SpriteText_DrawBackground(text);
 #else
         SpriteText_DrawBackgroundExt(text, 0); // tileWidth?
 #endif
@@ -490,7 +491,7 @@ int GetSpriteTextXPos(struct NotificationWindowProc * proc)
 }
 int GetSpriteTextYPos(struct NotificationWindowProc * proc)
 {
-    return 8;
+    return 16;
 }
 
 #define NotificationObjPalID 0x15
@@ -517,14 +518,18 @@ static void PutNormalSpriteText(int x, int y, int line, int numberOfSprites)
 
 void NotificationWindow_LoopDrawSpriteText(struct NotificationWindowProc * proc)
 {
-    int lines = (proc->lines + 1) >> 1; // 32x32 sprites, so always 2 lines at once
+    // int lines = (proc->lines + 1) >> 1; // 32x32 sprites, so always 2 lines at once
+    int lines = (proc->lines + 1); // 32x32 sprites, so always 2 lines at once
     int chr = GetSpriteTextCHR(proc);
     int x = GetSpriteTextXPos(proc);
     int y = GetSpriteTextYPos(proc);
     int numberOfSprites = GetSpriteTextNumOfSprites(proc);
+
+    // DisplayHelpBoxObj(int x, int y, int w, int h, int unk);
+    DisplayHelpBoxObj(x, y, 144, lines * 16 + 32, 0);
     for (int i = 0; i < lines; i++)
     {
-        PutNormalSpriteText(x, y + (32 * i), (chr >> 6) + (i << 1), numberOfSprites);
+        // PutNormalSpriteText(x, y + (32 * i), (chr >> 6) + (i << 1), numberOfSprites);
     }
     NotificationWindow_LoopDrawText(proc);
 }
@@ -560,14 +565,16 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x3000, NotificationObjPalID);
         SetTextFontGlyphs(1);
         ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
-        void * vram = VRAM + (void *)0xF000 + (GetSpriteTextCHR(proc) << 5); // should be 0x10000, not 0xF000.
+        void * vram = VRAM + (void *)0x10000 + (GetSpriteTextCHR(proc) << 5); // should be 0x10000, not 0xF000.
         // to do: make it so drawing the sprite text to vram doesn't consume the whole line of vram
         Decompress(gGfx_HelpTextBox, vram + 0x360);
         Decompress(gGfx_HelpTextBox2, vram + 0x760);
         Decompress(gGfx_HelpTextBox3, vram + 0xb60);
         Decompress(gGfx_HelpTextBox4, vram + 0xf60);
         Decompress(gGfx_HelpTextBox5, vram + 0x1360);
+        gHelpBoxSt.oam2_base = (((u32)vram << 0x11) >> 0x16) + (NotificationObjPalID & 0xF) * 0x1000;
         // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
+        ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
     }
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
