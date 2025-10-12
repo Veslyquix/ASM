@@ -388,6 +388,7 @@ extern struct Font * gActiveFont;
 extern const int MAX_LINE_WIDTH;
 #define CHAR_NEWLINE 1
 #define CHAR_SPACE 0x20
+#define SpriteTextBG
 
 int ClearNotificationText(
     struct NotificationWindowProc * proc, struct Text * text, int tileWidth, int chr_counter, int line)
@@ -413,7 +414,11 @@ int ClearNotificationText(
     if (proc->spriteText)
     {
         InitSpriteText(text);
+#ifdef SpriteTextBG
+        SpriteText_DrawBackgroundExt(text, 0x44444444); // tileWidth?
+#else
         SpriteText_DrawBackgroundExt(text, 0); // tileWidth?
+#endif
     }
     else
     {
@@ -488,7 +493,7 @@ int GetSpriteTextYPos(struct NotificationWindowProc * proc)
     return 8;
 }
 
-#define NotificationObjPalID 1
+#define NotificationObjPalID 0x15
 // PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
 static void PutNormalSpriteText(int x, int y, int line, int numberOfSprites)
 { // see  PutSubtitleHelpText
@@ -552,16 +557,27 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 
         // ResetText();
         // ResetTextFont();
-        InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x3000, 0x11);
+        InitSpriteTextFont(&gHelpBoxSt.font, OBJ_VRAM0 + 0x3000, NotificationObjPalID);
         SetTextFontGlyphs(1);
-        ApplyPalette(gUnknown_0859EF20, 0x11);
+        ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
+        void * vram = VRAM + (void *)0xF000 + (GetSpriteTextCHR(proc) << 5); // should be 0x10000, not 0xF000.
+        // to do: make it so drawing the sprite text to vram doesn't consume the whole line of vram
+        Decompress(gGfx_HelpTextBox, vram + 0x360);
+        Decompress(gGfx_HelpTextBox2, vram + 0x760);
+        Decompress(gGfx_HelpTextBox3, vram + 0xb60);
+        Decompress(gGfx_HelpTextBox4, vram + 0xf60);
+        Decompress(gGfx_HelpTextBox5, vram + 0x1360);
+        // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
     }
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
     proc->line = 0;
     proc->lines = CountStrLines(str);
     int chr_counter = 0;
-    NotificationWindowDraw(proc);
+    if (!proc->spriteText)
+    {
+        NotificationWindowDraw(proc);
+    }
     proc->chr_counter = 0;
     struct Text * th = &gStatScreen.text[proc->line];
 
