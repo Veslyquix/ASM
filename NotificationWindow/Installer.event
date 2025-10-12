@@ -408,7 +408,7 @@ ALIGN 4
 gNotificationsData: // these show up when a flag is turned on 
 // NotificationEntryTextID(0x505, 1) // textID "Sword", flagID 
 // NotificationEntryTextID(0x3D, 1) // textID, flagID 
-// NotificationEntry(text0, 1) // text label, flagID 
+NotificationEntry(text0, 0) // text label, flagID 
 // NotificationEntry(text1, 0xA, TEXT_COLOR_SYSTEM_WHITE, TEXT_COLOR_SYSTEM_GREEN) 
 // NotificationEntry(text2, 0x65) 
 
@@ -417,7 +417,7 @@ gNotificationsData: // these show up when a flag is turned on
 WORD 0 0 // Terminator 
 
 // don't exceed 6 lines 
-text0: 
+// text0: 
 txt("Achievement Completed:\\
 Scuffed."); BYTE 0 
 
@@ -427,8 +427,8 @@ Silver Sword."); BYTE 0
 
 
 
-/*
-// text0: 
+
+text0: 
 txt("Because I could not stop for Death- \He kindly stopped for me- \The Carriage held but just Ourselves- \And Immortality."); BYTE 0 
 
 text3: 
@@ -441,14 +441,14 @@ text1:
 txt("Critical security updates are required."); BYTE 0 
 text2: 
 txt("Achievement unlocked: Pacifist."); BYTE 0 
-text0: 
+// text0: 
 txt("A new update for CandyCrushSaga is available."); BYTE 0 
 text4: 
 txt("NG+ feature unlocked: Silver Sword."); BYTE 0 
 text5: 
 txt("Critical security updates are required."); BYTE 0 
 
-*/
+
 
 
 
