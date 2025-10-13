@@ -28,8 +28,8 @@ WORD 120 // Disappear 2 seconds after it finishes printing
 DisableBGMNotificationsFlag:
 WORD 0x12A // Choose a flag if you want to disable new BGM notifications ingame 
 MAX_LINE_WIDTH:
-WORD 144 // 152 will cause a little text to be outside the right side of the box 
-
+// WORD 144 // 152 will cause a little text to be outside the right side of the box 
+WORD 184 // longer for sprite text 
 
 
 
@@ -427,9 +427,9 @@ Silver Sword."); BYTE 0
 
 
 
-
-text0: 
-txt("Because I could not stop for Death- \He kindly stopped for me- \The Carriage held but just Ourselves- \And Immortality."); BYTE 0 
+text0:
+// txt("11\22\33\4444")
+txt("Because I could not stop for Death\He kindly stopped for me\The Carriage held but just Ourselves\And Immortality."); BYTE 0 
 
 text3: 
 txt("We slowly drove - He knew no haste\\

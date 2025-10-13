@@ -22,7 +22,6 @@ struct NotificationWindowProc
     char * str;
     char * strOriginal;
     s16 id;
-    u16 chr_counter;
     u16 bgm;
 
     s16 unitClock;
@@ -65,6 +64,17 @@ int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 // after x seconds, disappear
 // if B is pressed twice, disappear
 // if interrupted, enqueue again
+
+// #define MAX_LINE_WIDTH 151
+extern const int MAX_LINE_WIDTH;
+#define CHAR_NEWLINE 1
+#define CHAR_SPACE 0x20
+#define SpriteTextBG
+// draw text farther down in tile1 page
+#define DefaultTextChr 0x80
+#define NotificationChr 0x180
+
+#define NotificationObjPalID 0x15
 
 #define StartLabel 0
 #define LoopLabel 1
@@ -380,9 +390,6 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 
 extern struct Font * gActiveFont;
 
-// draw text farther down in tile1 page
-#define DefaultTextChr 0x80
-#define NotificationChr 0x180
 int CheckInBattle(void)
 {
     struct ProcEkrBattle * battleProc = gpProcEkrBattle;
@@ -405,7 +412,6 @@ int GetSpriteTextCHR(struct NotificationWindowProc * proc)
 
     if (CheckInBattle())
     {
-        // brk;
         return 0x140;
     }
     return 0x180;
@@ -415,37 +421,10 @@ void * GetSpriteTextVRAM(struct NotificationWindowProc * proc)
     return VRAM + (void *)0x10000 + (GetSpriteTextCHR(proc) << 5);
 }
 
-// #define MAX_LINE_WIDTH 151
-extern const int MAX_LINE_WIDTH;
-#define CHAR_NEWLINE 1
-#define CHAR_SPACE 0x20
-#define SpriteTextBG
-
-int ClearNotificationText(
-    struct NotificationWindowProc * proc, struct Text * text, int tileWidth, int chr_counter, int line)
+void ClearNotificationText(struct NotificationWindowProc * proc, struct Text * text, int tileWidth, int line)
 {
     struct Font * font = gActiveFont;
-    SetTextFont(&gHelpBoxSt.font);
-    // save where text was drawing
-    u32 chr = gActiveFont->chr_counter;
-
-    // change it to after MMB
-    // ResetText does: InitTextFont(&gDefaultFont, (void *)(VRAM + 0x1000), 0x80, 0);
-    // then, chr_counter * 2 is the chr tile ID we want
-    // (0x200 - 0x80) / 2 = 0xC0;
-    // if we wanted to start at 0x200 tile, then we'd put 0xC0 here, or change NotifChr to 0x200
-    if (!line)
-    {
-        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
-        if (proc->spriteText)
-        {
-            gActiveFont->chr_counter = 0;
-        }
-    }
-    else
-    {
-        gActiveFont->chr_counter = proc->chr_counter;
-    }
+    SetTextFont(&gHelpBoxSt.font); // use our own chr_counter
 
     if (proc->spriteText)
     {
@@ -461,75 +440,29 @@ int ClearNotificationText(
     {
         InitText(text, tileWidth);
     }
-    int result = gActiveFont->chr_counter;
-    proc->chr_counter = gActiveFont->chr_counter;
-    gActiveFont->chr_counter = chr;
     SetTextFont(font);
-    return result;
 }
 
 void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 {
     struct Font * font = gActiveFont;
-    SetTextFont(&gHelpBoxSt.font);
+    SetTextFont(&gHelpBoxSt.font); // use our own chr_counter
     if (!proc->fastPrint && (GetGameClock() & 1))
     {
         SetTextFont(font);
         return;
     }
     struct Text * th = &gStatScreen.text[proc->line];
-    const char * str = (const char *)proc->str;
-    // chr_counter = InitNotificationText(proc, th, str, tileWidth, chr_counter);
 
-    // save where text was drawing
-    u32 chr = gActiveFont->chr_counter;
-
-    // change it to after MMB
-    // ResetText does: InitTextFont(&gDefaultFont, (void *)(VRAM + 0x1000), 0x80, 0);
-    // then, chr_counter * 2 is the chr tile ID we want
-    // (0x200 - 0x80) / 2 = 0xC0;
-    // if we wanted to start at 0x200 tile, then we'd put 0xC0 here, or change NotifChr to 0x200
-
-    if (!proc->line)
-    {
-        gActiveFont->chr_counter = ((NotificationChr - DefaultTextChr) >> 1) + proc->chr_counter;
-        if (proc->spriteText)
-        {
-            gActiveFont->chr_counter = 0;
-        }
-    }
-    else
-    {
-        gActiveFont->chr_counter = proc->chr_counter;
-    }
-
-    while (proc->str && *proc->str)
-    {
-        proc->str = NotificationPrintText(proc, th, proc->str);
-        // brk;
-    }
+    proc->str = NotificationPrintText(proc, th, proc->str);
 
     if (!proc->str || !*proc->str)
     {
         proc->finishedPrinting = true;
     }
-
-    proc->chr_counter = gActiveFont->chr_counter;
-
-    // restore where text was drawing
-    gActiveFont->chr_counter = chr;
     SetTextFont(font);
 }
 
-const static u16 lut[] = {
-    0x00, 0x04, 0x08, 0x0C, 0x10, 0x14, 0x18, 0x1C,
-};
-
-int GetSpriteTextNumOfSprites(struct NotificationWindowProc * proc)
-{
-    return 4; // 32 tiles is full screen, but we're doing 4 tiles at once
-    // 4 is half the screen
-}
 int GetSpriteTextXPos(struct NotificationWindowProc * proc)
 {
     return 10;
@@ -539,43 +472,14 @@ int GetSpriteTextYPos(struct NotificationWindowProc * proc)
     return 10;
 }
 
-#define NotificationObjPalID 0x15
-// PutSprite(2, x, proc->y + (i * 32), gObject_32x16, 0x4240 + lut[index]);
-/*
-static void PutNormalSpriteText(int x, int y, int line, int numberOfSprites)
-{ // see  PutSubtitleHelpText
-    // const u16 * object = gObject_32x32
-    if (y > 160 || y < (-16))
-    {
-        return;
-    }
-    int layer = 2;
-
-    int i;
-    int ix;
-    for (i = 0; i < numberOfSprites; i++)
-    {
-        ix = x + (i * 32);
-        PutSprite(layer, ix, y, gObject_32x32, OAM2_PAL(NotificationObjPalID) + (line * 0x40) + lut[i]);
-    }
-
-    return;
-}
-*/
 void DisplayNotifBoxObj(int x, int y, int w, int h, int hideHelpText);
+int GetNotificationSpriteWindowWidth(struct NotificationWindowProc * proc);
 void NotificationWindow_LoopDrawSpriteText(struct NotificationWindowProc * proc)
 {
-    // int lines = (proc->lines + 1) >> 1; // 32x32 sprites, so always 2 lines at once
-    int lines = proc->lines; // 32x32 sprites, so always 2 lines at once
-    // int chr = GetSpriteTextCHR(proc);
+    int lines = proc->lines;
     int x = GetSpriteTextXPos(proc);
     int y = GetSpriteTextYPos(proc);
-    int numberOfSprites = GetSpriteTextNumOfSprites(proc);
-    DisplayNotifBoxObj(x, y, numberOfSprites * 32 + 16, lines * 16, true);
-    // for (int i = 0; i < lines; i++)
-    // {
-    // PutNormalSpriteText(x, y + (32 * i), (chr >> 6) + (i << 1), numberOfSprites);
-    // }
+    DisplayNotifBoxObj(x, y, GetNotificationSpriteWindowWidth(proc), lines * 16, true);
     NotificationWindow_LoopDrawText(proc);
 }
 void BlendSprites(struct NotificationWindowProc * proc, int spriteTransparency)
@@ -611,13 +515,14 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     proc->str = (void *)str;
     proc->strOriginal = (void *)str;
     proc->unitClock = 0;
+    struct Font * font = gActiveFont;
+    InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, NotificationObjPalID);
 
     if (proc->spriteText)
     {
 
         // ResetText();
         // ResetTextFont();
-        struct Font * font = gActiveFont;
 
         void * vram = GetSpriteTextVRAM(proc);
         InitSpriteTextFont(&gHelpBoxSt.font, vram, NotificationObjPalID);
@@ -633,26 +538,21 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
         ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
         BlendSprites(proc, 2);
-        SetTextFont(font);
     }
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
     proc->line = 0;
     proc->lines = CountStrLines(str);
-    int chr_counter = 0;
     if (!proc->spriteText)
     {
         NotificationWindowDraw(proc);
     }
-    proc->chr_counter = 0;
-    struct Text * th = &gStatScreen.text[proc->line];
+    struct Text * th = &gStatScreen.text[0];
 
     for (int i = 0; i < proc->lines; i++)
     {
-        chr_counter = ClearNotificationText(proc, &th[i], tileWidth, chr_counter, i);
+        ClearNotificationText(proc, &th[i], tileWidth, i);
     }
-    // chr_counter = InitNotificationText(proc, th, str, tileWidth, chr_counter);
-    proc->chr_counter = 0;
     for (int i = 0; i < proc->lines; i++)
     {
         if (i < 4)
@@ -668,9 +568,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
             PutText(&th[i], &gBG0TilemapBuffer[TILEMAP_INDEX(1, 1 + (i * 2))]);
         }
     }
-
-    // Text_InsertDrawString(&proc->texts[0], GetStringTextCenteredPos(64, str), TEXT_COLOR_SYSTEM_WHITE, str);
-
+    SetTextFont(font);
     return;
 }
 
@@ -773,19 +671,14 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
 {
     char * iter = (void *)str;
     int curX;
-    int line = proc->line;
     int forceNewLine = false;
 
     int nextWordWidth = 0;
-    // while (*iter == CHAR_NEWLINE)
-    // {
-    // iter++;
-    // }
 
     while (*iter > CHAR_NEWLINE)
     {
 
-        curX = Text_GetCursor(&th[line]); // current x position
+        curX = Text_GetCursor(th); // current x position
         if (proc->spriteText && !curX)
         {
             // InitSpriteText(th);
@@ -817,7 +710,7 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
             forceNewLine = true;
             break;
         }
-        iter = (void *)Text_DrawCharacterAscii(&th[line], (void *)iter);
+        iter = (void *)Text_DrawCharacterAscii(th, (void *)iter);
         break;
     }
     if (*iter == CHAR_NEWLINE || forceNewLine)
@@ -841,6 +734,15 @@ int GetNotificationWindowWidth(struct NotificationWindowProc * proc)
     }
     return width;
 }
+int GetNotificationSpriteWindowWidth(struct NotificationWindowProc * proc)
+{
+    int width = ((GetNotificationStringTextLenASCII_Wrapped(proc->strOriginal) + 7));
+    if (width > MAX_LINE_WIDTH)
+    {
+        width = MAX_LINE_WIDTH;
+    }
+    return width + 16;
+}
 
 int GetNotificationWindowHeight(struct NotificationWindowProc * proc)
 {
@@ -850,22 +752,24 @@ int GetNotificationWindowHeight(struct NotificationWindowProc * proc)
 void NotificationWindowClean(struct NotificationWindowProc * proc)
 {
 
-    int w = GetNotificationWindowWidth(proc);
-    int h = GetNotificationWindowHeight(proc);
-    int x = 0;
-    int y = 0;
-
-    // DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
-
-    ClearUiFrame(BG_GetMapBuffer(0), x, y, w, h);
-    ClearUiFrame(BG_GetMapBuffer(1), x, y, w, h);
     if (proc->spriteText)
     {
         CpuFastFill(0, GetSpriteTextVRAM(proc), 0x800 * proc->lines);
         BlendSprites(proc, 0);
     }
+    else
+    {
+        int w = GetNotificationWindowWidth(proc);
+        int h = GetNotificationWindowHeight(proc);
+        int x = 0;
+        int y = 0;
 
-    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+        // DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
+
+        ClearUiFrame(BG_GetMapBuffer(0), x, y, w, h);
+        ClearUiFrame(BG_GetMapBuffer(1), x, y, w, h);
+        BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+    }
 }
 
 void NotificationWindowDraw(struct NotificationWindowProc * proc)
