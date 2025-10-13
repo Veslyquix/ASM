@@ -514,3 +514,21 @@ POP
 #endif 
 
 
+ALIGN 4 
+gGfx_NotificationTextBox1:
+#incbin "png/Helpbox_1.dmp"
+ALIGN 4 
+gGfx_NotificationTextBox2:
+#incbin "png/Helpbox_2.dmp"
+ALIGN 4 
+gGfx_NotificationTextBox3:
+#incbin "png/Helpbox_3.dmp"
+ALIGN 4 
+gGfx_NotificationTextBox4:
+#incbin "png/Helpbox_4.dmp"
+ALIGN 4 
+gGfx_NotificationTextBox5:
+#incbin "png/Helpbox_5.dmp"
+
+
+

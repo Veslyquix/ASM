@@ -493,6 +493,11 @@ void BlendSprites(struct NotificationWindowProc * proc, int spriteTransparency)
     gLCDControlBuffer.dispcnt.bg3_on = 1;
     gLCDControlBuffer.dispcnt.obj_on = 1; // If blending objects
 }
+extern u8 gGfx_NotificationTextBox1[];
+extern u8 gGfx_NotificationTextBox2[];
+extern u8 gGfx_NotificationTextBox3[];
+extern u8 gGfx_NotificationTextBox4[];
+extern u8 gGfx_NotificationTextBox5[];
 void NotificationWindow_Init(struct NotificationWindowProc * proc)
 {
     proc->showingBgm = false;
@@ -529,11 +534,11 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         SetTextFontGlyphs(1);
         ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
 
-        Decompress(gGfx_HelpTextBox, vram + 0x360);
-        Decompress(gGfx_HelpTextBox2, vram + 0x760);
-        Decompress(gGfx_HelpTextBox3, vram + 0xb60);
-        Decompress(gGfx_HelpTextBox4, vram + 0xf60);
-        Decompress(gGfx_HelpTextBox5, vram + 0x1360);
+        Decompress(gGfx_NotificationTextBox1, vram + 0x360);
+        Decompress(gGfx_NotificationTextBox2, vram + 0x760);
+        Decompress(gGfx_NotificationTextBox3, vram + 0xb60);
+        Decompress(gGfx_NotificationTextBox4, vram + 0xf60);
+        Decompress(gGfx_NotificationTextBox5, vram + 0x1360);
         gHelpBoxSt.oam2_base = (((u32)vram << 0x11) >> 0x16) + (NotificationObjPalID & 0xF) * 0x1000;
         // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
         ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
