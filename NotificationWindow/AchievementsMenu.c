@@ -1308,11 +1308,12 @@ struct NewGuideProc
 void HandleItemReward(struct NewGuideProc * proc, int id)
 {
     LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
-    int itemId = 5;
+    int itemId = 0xD3;
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x200);
-    gGuideSt->popupText.x = 16;
+
+    AchievementsPopup_DrawText("Sent: ");
+    gGuideSt->popupText.x += 16;
     AchievementsPopup_DrawText(GetItemName(itemId));
-    AchievementsPopup_DrawText(" was sent to convoy.");
 }
 
 void HandleReward(struct NewGuideProc * proc, int id)
@@ -1365,7 +1366,7 @@ void AchievementsPopupSentTimer(struct NewGuideProc * proc)
 
     // DisplayNotifBoxObj
     DisplayNotifBoxObj(x, y, 184, 1 * 16, true);
-    PutSprite(0, x, y, gObject_16x16, OAM2_CHR(0x200) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
+    PutSprite(0, x + 28, y, gObject_16x16, OAM2_CHR(0x200) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
     if (gGuideSt->timer > 10)
     {
         if (gKeyStatusPtr->newKeys & (B_BUTTON | A_BUTTON))

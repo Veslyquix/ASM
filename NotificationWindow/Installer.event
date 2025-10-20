@@ -156,7 +156,8 @@ rewardsByPercentage:
 FILL(512) 
 #define rewardEnt(id1, id, str, str2) "PUSH; ORG rewardsByPercentage + (id1 * 2); SHORT id ; POP; achievementEnt(id, str2, str, Category_Rewards)" 
 // str1 and str2 are swapped in this macro 
-rewardEnt(1, Reward_1, "1% completion", "FE7 characters unlocked.") 
+// rewardEnt(1, Reward_1, "1% completion", "FE7 characters unlocked.") 
+rewardEnt(1, Reward_1, "1% completion", "Oboro's Nagnta") 
 rewardEnt(2, Reward_2, "2% completion", "Silver Sword") 
 
 
