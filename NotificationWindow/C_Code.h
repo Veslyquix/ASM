@@ -68,6 +68,7 @@ static int Modulo(int a, int b)
 {
     return __aeabi_idivmod(a, b); // uses swi 6
 }
+void RestartNotificationProc(struct PlayerInterfaceProc * parent); 
 int IsAchievementComplete(int); 
 int GetAchievementColour(int id);
 int GetAchievementPercentage(); 

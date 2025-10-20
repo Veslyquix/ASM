@@ -13,10 +13,10 @@ WORD 0xEC
 
 // for testing 
 PUSH 
-ORG $1DED56C
+ORG $1DF2F30
 POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1DED574
+ORG $1DF2F38
 POIN MapMenu_AchievementsCommand
 POP 
 
@@ -24,7 +24,7 @@ POP
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
-WORD 120 // Disappear 2 seconds after it finishes printing 
+WORD 30 // Disappear 0.5 seconds after it finishes printing 
 DisableBGMNotificationsFlag:
 WORD 0x12A // Choose a flag if you want to disable new BGM notifications ingame 
 MAX_LINE_WIDTH:
@@ -497,10 +497,16 @@ ORG $84420
 callHackNew(Hook_RunWaitEvents) 
 SHORT $46c0 
 
+ORG $8d14c 
+POIN New_gProcScr_SideWindowMaker 
+
 ORG 0x83CAC
 #endif 
 callHackNew(HookSetGlobalFlag_NotificationWindow) 
 POP 
+
+
+
 
 #ifdef _FE8_ 
 #include "Data/FE8.lyn.event" 

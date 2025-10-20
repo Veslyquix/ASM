@@ -54,7 +54,7 @@ void UnitChangeFaction(struct Unit * unit, int faction)
 }
 
 //! FE8U = 0x0808CB34
-void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
+void TerrainDisplay_Init_asdf(struct PlayerInterfaceProc * proc) // start
 {
     proc->windowQuadrant = -1;
     proc->isRetracting = false;
@@ -63,7 +63,7 @@ void TerrainDisplay_Init(struct PlayerInterfaceProc * proc) // start
 
     InitTextDb(proc->texts, 5);
 
-    RestartNotificationProc();
+    RestartNotificationProc(proc);
     // CreateBonusContentData();
 
     return;

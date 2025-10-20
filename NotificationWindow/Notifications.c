@@ -28,6 +28,7 @@ struct NotificationWindowProc
     u8 line;
     u8 lines;
     u8 spriteText;
+    u8 active;
 
     u8 fastPrint;
 
@@ -45,6 +46,20 @@ extern s8 sGoalSlideOutWidthLut[3];
 extern int GetCursorQuadrant();
 extern int GetWindowQuadrant(int, int);
 extern void sub_808D514(int quadrant, int param_2, int param_3);
+
+int IsNotificationActive(struct NotificationWindowProc * proc)
+{
+    return proc->active;
+}
+struct ProcCmd const gProcScr_NotificationWindow[];
+void WhileNotificationActive(struct PlayerInterfaceProc * parent)
+{
+    struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
+    if (!IsNotificationActive(proc))
+    {
+        Proc_Break(parent);
+    }
+}
 
 void NotificationWindow_Init(struct NotificationWindowProc * proc);
 void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc);
@@ -102,7 +117,7 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
 
     PROC_WHILE_EXISTS(ProcScr_CamMove),
 
-    PROC_REPEAT(NotificationWindow_Loop_Display),
+    PROC_REPEAT(NotificationWindow_Loop_Display), // usually goes to ContinueToNextNotification
 
     PROC_GOTO(LoopLabel),
 
@@ -118,6 +133,14 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_REPEAT(NotificationWindow_Idle),
     PROC_GOTO(StartLabel),
 
+    PROC_END,
+};
+
+struct ProcCmd const New_gProcScr_SideWindowMaker[] = {
+    PROC_WHILE(DoesBMXFADEExist),
+    PROC_CALL(RestartNotificationProc),
+    PROC_REPEAT(WhileNotificationActive),
+    PROC_CALL(InitPlayerPhaseInterface),
     PROC_END,
 };
 
@@ -173,6 +196,7 @@ void StartNotificationProc(int id, int type)
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
         NotificationInitVariables(proc);
         int slot = GetFreeQueueSlot(proc);
+        proc->active = true;
         proc->type[slot] = type;
         proc->queue[slot] = id;
         proc->id = slot;
@@ -181,6 +205,7 @@ void StartNotificationProc(int id, int type)
     else
     {
         int slot = GetFreeQueueSlot(proc);
+        proc->active = true;
         proc->type[slot] = type;
         proc->queue[slot] = id;
         proc->id = slot;
@@ -213,14 +238,16 @@ void DoNotificationForAchievement(int id)
     return;
 }
 
-void RestartNotificationProc(void)
+void RestartNotificationProc(struct PlayerInterfaceProc * parent)
 {
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!proc)
     {
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        // proc = Proc_StartBlocking(gProcScr_NotificationWindow, parent);
         NotificationInitVariables(proc);
         proc->id = (-1); // bgm only
+        proc->active = true;
 
         int slot = GetFreeQueueSlot(proc); // show first notification for testing !
         proc->type[slot] = 0;              // flag           // show first notification for testing !
@@ -231,6 +258,7 @@ void RestartNotificationProc(void)
     }
     else
     {
+        proc->active = true;
         Proc_Goto(proc, StartLabel); // maybe ?
     }
 }
@@ -330,6 +358,10 @@ void NotificationWindow_Idle(struct NotificationWindowProc * proc)
     if (ShowBgm(proc))
     {
         Proc_Goto(proc, StartLabel);
+    }
+    else
+    {
+        proc->active = false;
     }
 }
 
@@ -517,6 +549,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     // proc->spriteText = false;
     proc->delayFrames = 0;
     proc->finishedPrinting = false;
+    proc->active = true;
     proc->str = (void *)str;
     proc->strOriginal = (void *)str;
     proc->unitClock = 0;
@@ -890,8 +923,8 @@ void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
         {
             return;
         }
-        Proc_Break(proc);
     }
+    Proc_Break(proc);
 }
 
 void ContinueToNextNotification(struct NotificationWindowProc * proc)
