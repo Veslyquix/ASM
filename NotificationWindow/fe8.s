@@ -12,8 +12,8 @@
     .type \name, object
     .set \name, \value
 .endm
-SET_FUNC __aeabi_idiv,    __divsi3
-SET_FUNC __aeabi_idivmod, __modsi3
+fun __aeabi_idiv,    __divsi3
+fun __aeabi_idivmod, __modsi3
 
 dat 0x02000000, gUnk_Sio_02000000
 dat 0x02000010, gUnknown_02000010

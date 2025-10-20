@@ -32,6 +32,8 @@ HookSetGlobalFlag_NotificationWindow:
 push {r4, lr} 
 mov r4, r0 
 bl DoNotificationsForFlag 
+mov r0, r4 
+bl UnlockAchievementByFlag
 mov r3, r4 
 sub r3, #0x65 
 ldr r1, =gPermanentFlagBits @ 3005250 

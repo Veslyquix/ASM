@@ -249,10 +249,10 @@ void RestartNotificationProc(struct PlayerInterfaceProc * parent)
         proc->id = (-1); // bgm only
         proc->active = true;
 
-        int slot = GetFreeQueueSlot(proc); // show first notification for testing !
-        proc->type[slot] = 0;              // flag           // show first notification for testing !
-        proc->queue[slot] = 0;             // show first notification for testing !
-        proc->id = slot;                   // show first notification for testing !
+        // int slot = GetFreeQueueSlot(proc); // show first notification for testing !
+        // proc->type[slot] = 0;              // flag           // show first notification for testing !
+        // proc->queue[slot] = 0;             // show first notification for testing !
+        // proc->id = slot;                   // show first notification for testing !
 
         proc->bgm = 0xFFFF;
     }

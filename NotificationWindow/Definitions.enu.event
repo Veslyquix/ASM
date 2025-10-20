@@ -129,6 +129,7 @@
 #define Ch20LTC 0x81
 #define Ch21LTC 0x82
 #define Ch22LTC 0x83
-#define TriangleAttackID 0x84
-#define FightDemonKingID 0x85
-#define EndID 0x86
+#define LoserID 0x84
+#define TriangleAttackID 0x85
+#define FightDemonKingID 0x86
+#define EndID 0x87

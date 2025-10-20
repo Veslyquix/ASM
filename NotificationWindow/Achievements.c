@@ -8,8 +8,8 @@
 extern int DebugFlag_Link;
 int CannotUnlockAchievements(void)
 {
-    // return false;
-    return !CheckFlag(DebugFlag_Link);
+    return false;
+    // return !CheckFlag(DebugFlag_Link);
 }
 
 extern int AlwaysShowAchievement;
@@ -183,7 +183,10 @@ void CreateBonusContentData()
     // UnlockAchievement(0);
     // UnlockAll();
 }
-
+void UnlockAchievementByFlag(int flagID)
+{
+    UnlockAchievement(flagAchievements[flagID]);
+}
 void UnlockAchievementByRecruitment(int charID)
 {
     UnlockAchievement(recruitmentAchievements[charID]);

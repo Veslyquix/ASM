@@ -79,6 +79,7 @@ extern int Category_Rewards_Link;
 
 extern struct AchievementsRomStruct achievementData[];
 
+extern u16 flagAchievements[]; 
 extern u16 recruitmentAchievements[]; 
 extern u16 equipAchievements[]; 
 extern u16 promoAchievements[]; 

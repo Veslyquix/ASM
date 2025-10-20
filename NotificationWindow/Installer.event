@@ -24,7 +24,7 @@ POP
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
-WORD 30 // Disappear 0.5 seconds after it finishes printing 
+WORD 60 // Disappear 1 seconds after it finishes printing 
 DisableBGMNotificationsFlag:
 WORD 0x12A // Choose a flag if you want to disable new BGM notifications ingame 
 MAX_LINE_WIDTH:
@@ -201,10 +201,12 @@ ccEnt(0x6E, IsmaireID, "The Queen of Jehanna", "Unlock Ismaire")
 ccEnt(0x6F, SelenaID, "The Fluorspar", "Unlock Selena") 
 ccEnt(0x70, LyonID, "The Dark Prince", "Unlock Lyon") 
 
+flagEnt(0x65, LoserID, "Loser", "Get a game over.") 
 flagEnt(0x7F, TriangleAttackID, "", "") 
 flagEnt(0x80, TriangleAttackID, "", "") 
 flagEnt(0x81, TriangleAttackID, "Triangular", "Perform a triangle attack.") 
 flagEnt(0x82, FightDemonKingID, "Demonic", "Battle the Demon King.") 
+
 
 
 #define promoEnt(classID, id, str, str2) "PUSH; ORG promoAchievements + (classID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Promotions)" 
@@ -408,9 +410,9 @@ ALIGN 4
 gNotificationsData: // these show up when a flag is turned on 
 // NotificationEntryTextID(0x505, 1) // textID "Sword", flagID 
 // NotificationEntryTextID(0x3D, 1) // textID, flagID 
-NotificationEntry(text0, 0) // text label, flagID 
+// NotificationEntry(text0, 0) // text label, flagID 
 // NotificationEntry(text1, 0xA, TEXT_COLOR_SYSTEM_WHITE, TEXT_COLOR_SYSTEM_GREEN) 
-NotificationEntry(text2, 0x65) 
+// NotificationEntry(text2, 0x65) 
 
 // NotificationEntry(text3, 0) 
 // NotificationEntry(text4, 0) 
