@@ -208,6 +208,13 @@ flagEnt(0x81, TriangleAttackID, "Triangular", "Perform a triangle attack.")
 flagEnt(0x82, FightDemonKingID, "Demonic", "Battle the Demon King.") 
 
 
+// #define sideEnt(flagID, id, header, desc) "PUSH; ORG flagAchievements + (flagID * 2); SHORT id ; POP; achievementEnt(id, header, desc, Category_Miscellaneous)" 
+// ALIGN 4 
+// sideAchievements: 
+// FILL(512) 
+// specific villages, chests, secret shops, etc ? 
+
+
 
 #define promoEnt(classID, id, str, str2) "PUSH; ORG promoAchievements + (classID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Promotions)" 
 ALIGN 4 

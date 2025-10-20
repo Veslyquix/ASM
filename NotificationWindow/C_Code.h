@@ -17,10 +17,11 @@ struct NewGuideSt
     /* 3D */ u8 unk_3d;
     /* 3E */ u8 entriesInCat; // unk_3e 
     /* 3F */ u8 numDetailLines;
+             u8 timer; // Vesly added 
     /* 40 */ u8 cat_chID[60]; // unk_40 CategoriesChapter 
     /* 54 */ u8 cat_topicID[60]; // unk_54 CategoriesTopic
     /* 68 */ u8 detailsEntry[60]; // unk_68 detailsID entry gives you the guide entry 
-
+            struct Text popupText; 
     /* 7C */ struct Text unk_7c[6];
     /* AC */ struct Text unk_ac;
     /* B4 */ struct Text unk_b4[6];
@@ -68,7 +69,46 @@ static int Modulo(int a, int b)
 {
     return __aeabi_idivmod(a, b); // uses swi 6
 }
+
+#define QueueSize 10
+struct NotificationWindowProc
+{
+    PROC_HEADER;
+    u8 finishedPrinting;
+    u8 showingBgm;
+    s8 delayFrames;
+    char * str;
+    char * strOriginal;
+    s16 id;
+    u16 bgm;
+
+    s16 unitClock;
+    u8 line;
+    u8 lines;
+    u8 spriteText;
+    u8 active;
+
+    u8 fastPrint;
+
+    u8 colour[4]; // up to 0x41
+    u16 queue[QueueSize];
+    u8 type[QueueSize];
+};
+
 void RestartNotificationProc(struct PlayerInterfaceProc * parent); 
+void DisplayNotifBoxObj(int x, int y, int w, int h, int hideHelpText); 
+void NotificationInitSpriteText(void * vram); 
+void NotificationWindow_Init(struct NotificationWindowProc * proc);
+void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc);
+void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc);
+void NotificationWindowDraw(struct NotificationWindowProc * proc);
+void NotificationWindowClean(struct NotificationWindowProc * proc);
+char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str);
+void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc);
+void NotificationWindow_Idle(struct NotificationWindowProc * proc);
+void StartNotificationProc(int id, int type);
+int CountStrLines(const char * str);
+int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 int IsAchievementComplete(int); 
 int GetAchievementColour(int id);
 int GetAchievementPercentage(); 

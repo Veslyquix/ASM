@@ -12,31 +12,6 @@ struct NotificationsStruct
 };
 extern const struct NotificationsStruct gNotificationsData[];
 
-#define QueueSize 10
-struct NotificationWindowProc
-{
-    PROC_HEADER;
-    u8 finishedPrinting;
-    u8 showingBgm;
-    s8 delayFrames;
-    char * str;
-    char * strOriginal;
-    s16 id;
-    u16 bgm;
-
-    s16 unitClock;
-    u8 line;
-    u8 lines;
-    u8 spriteText;
-    u8 active;
-
-    u8 fastPrint;
-
-    u8 colour[4]; // up to 0x41
-    u16 queue[QueueSize];
-    u8 type[QueueSize];
-};
-
 extern struct ProcCmd gProcScr_UnitDisplay_MinimugBox[];
 extern struct ProcCmd gProcScr_TerrainDisplay[];
 extern struct ProcCmd sProc_Menu[];
@@ -61,17 +36,6 @@ void WhileNotificationActive(struct PlayerInterfaceProc * parent)
     }
 }
 
-void NotificationWindow_Init(struct NotificationWindowProc * proc);
-void NotificationWindow_Loop_Display(struct NotificationWindowProc * proc);
-void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc);
-void NotificationWindowDraw(struct NotificationWindowProc * proc);
-void NotificationWindowClean(struct NotificationWindowProc * proc);
-char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str);
-void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc);
-void NotificationWindow_Idle(struct NotificationWindowProc * proc);
-void StartNotificationProc(int id, int type);
-int CountStrLines(const char * str);
-int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 // notifications eg. new BGM, ingame achievements, NG+ unlocks, or spam
 
 // queue a notification
@@ -504,7 +468,6 @@ int GetSpriteTextYPos(struct NotificationWindowProc * proc)
     return 10;
 }
 
-void DisplayNotifBoxObj(int x, int y, int w, int h, int hideHelpText);
 int GetNotificationSpriteWindowWidth(struct NotificationWindowProc * proc);
 void NotificationWindow_LoopDrawSpriteText(struct NotificationWindowProc * proc)
 {
@@ -514,7 +477,7 @@ void NotificationWindow_LoopDrawSpriteText(struct NotificationWindowProc * proc)
     DisplayNotifBoxObj(x, y, GetNotificationSpriteWindowWidth(proc), lines * 16, true);
     NotificationWindow_LoopDrawText(proc);
 }
-void BlendSprites(struct NotificationWindowProc * proc, int spriteTransparency)
+void BlendSprites(int spriteTransparency)
 {
     gLCDControlBuffer.bldcnt.effect = BLEND_EFFECT_ALPHA;
     gLCDControlBuffer.bldcnt.target1_obj_on = 1;                    // Background being blended
@@ -530,6 +493,24 @@ extern u8 gGfx_NotificationTextBox2[];
 extern u8 gGfx_NotificationTextBox3[];
 extern u8 gGfx_NotificationTextBox4[];
 extern u8 gGfx_NotificationTextBox5[];
+void NotificationInitSpriteText(void * vram)
+{
+    // InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, NotificationObjPalID);
+    InitSpriteTextFont(&gHelpBoxSt.font, vram, NotificationObjPalID);
+    SetTextFontGlyphs(1);
+    // ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
+
+    Decompress(gGfx_NotificationTextBox1, vram + 0x360);
+    Decompress(gGfx_NotificationTextBox2, vram + 0x760);
+    Decompress(gGfx_NotificationTextBox3, vram + 0xb60);
+    Decompress(gGfx_NotificationTextBox4, vram + 0xf60);
+    Decompress(gGfx_NotificationTextBox5, vram + 0x1360);
+    gHelpBoxSt.oam2_base = (((u32)vram << 0x11) >> 0x16) + (NotificationObjPalID & 0xF) * 0x1000;
+    // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
+    ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
+    BlendSprites(2);
+}
+
 void NotificationWindow_Init(struct NotificationWindowProc * proc)
 {
     proc->showingBgm = false;
@@ -563,19 +544,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         // ResetTextFont();
 
         void * vram = GetSpriteTextVRAM(proc);
-        InitSpriteTextFont(&gHelpBoxSt.font, vram, NotificationObjPalID);
-        SetTextFontGlyphs(1);
-        ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
-
-        Decompress(gGfx_NotificationTextBox1, vram + 0x360);
-        Decompress(gGfx_NotificationTextBox2, vram + 0x760);
-        Decompress(gGfx_NotificationTextBox3, vram + 0xb60);
-        Decompress(gGfx_NotificationTextBox4, vram + 0xf60);
-        Decompress(gGfx_NotificationTextBox5, vram + 0x1360);
-        gHelpBoxSt.oam2_base = (((u32)vram << 0x11) >> 0x16) + (NotificationObjPalID & 0xF) * 0x1000;
-        // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
-        ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
-        BlendSprites(proc, 2);
+        NotificationInitSpriteText(vram);
     }
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
@@ -793,7 +762,7 @@ void NotificationWindowClean(struct NotificationWindowProc * proc)
     if (proc->spriteText)
     {
         CpuFastFill(0, GetSpriteTextVRAM(proc), 0x800 * proc->lines);
-        BlendSprites(proc, 0);
+        BlendSprites(0);
     }
     else
     {

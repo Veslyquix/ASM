@@ -179,6 +179,7 @@ void AchievementSpriteDraw_Init(void)
     return;
 }
 
+#define AchievementBannerPalette 6
 //! FE8U = 0x080CDF88
 void AchievementSpriteDraw_Loop(void)
 {
@@ -187,14 +188,14 @@ void AchievementSpriteDraw_Loop(void)
 
     GetGameClock();
 
-    PutSprite(3, 4, 8, gSprite_AchievementsBannerText, OAM2_PAL(2));
+    PutSprite(3, 4, 8, gSprite_AchievementsBannerText, OAM2_PAL(AchievementBannerPalette & 0xF));
 
     if (gGuideSt->state == GUIDE_STATE_0)
     {
         // PutSprite(3, 176, 3, gSprite_AchievementsSelectButtonSort, OAM2_PAL(2));
     }
 
-    PutSprite(3, 176, 3, gSprite_AchievementsBButtonBack, OAM2_PAL(2));
+    PutSprite(3, 176, 3, gSprite_AchievementsBButtonBack, OAM2_PAL(AchievementBannerPalette & 0xF));
 
     y1 = (gGuideSt->categoryIdx - gGuideSt->cat_offset) * 2 + 5;
     y2 = (gGuideSt->detailsID - gGuideSt->details_offset) * 2 + 5;
@@ -1067,6 +1068,7 @@ void achievement_8097668(void)
 
     return;
 }
+
 //! FE8U = 0x080CECB0
 void Achievement_Init(ProcPtr proc)
 {
@@ -1105,7 +1107,7 @@ void Achievement_Init(ProcPtr proc)
     SetWin0Layers(1, 1, 1, 1, 1);
     SetWOutLayers(1, 0, 1, 1, 1);
 
-    ApplyPalette(Pal_08B17B44, 0x12);
+    ApplyPalette(Pal_08B17B44, 0x10 + AchievementBannerPalette);
     Decompress(Img_08B17864, (void *)0x06011000);
     // Decompress(Img_08B177C0, (void *)0x06011800); // "Guide"
     Decompress(Img_Achievements, (void *)0x06011800); // "Guide"
@@ -1285,6 +1287,100 @@ struct ProcCmd const gProcScr_AchievementDetailsRedraw[] =
 };
 
 // clang-format on
+int CanObtainReward(int id)
+{
+
+    return true;
+}
+
+#define AchievementPopupItemIconPal 7
+void AchievementsPopup_DrawText(char * str);
+struct NewGuideProc
+{
+    /* 00 */ PROC_HEADER;
+    /* 2C */ int unk_2c;
+    /* 3C */ int unk_3c;
+    /* 34 */ int unk_34;
+    /* 38 */ int unk_38;
+    u8 timer;
+    u8 pressed;
+};
+void HandleItemReward(struct NewGuideProc * proc, int id)
+{
+    LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
+    int itemId = 5;
+    LoadIconObjectGraphics(GetItemIconId(itemId), 0x200);
+    gGuideSt->popupText.x = 16;
+    AchievementsPopup_DrawText(GetItemName(itemId));
+    AchievementsPopup_DrawText(" was sent to convoy.");
+}
+
+void HandleReward(struct NewGuideProc * proc, int id)
+{
+    struct Font * font = gActiveFont;
+    gGuideSt->timer = 0;
+    proc->pressed = false;
+    if (CanObtainReward(id))
+    {
+        // LockMenuScrollBar();
+
+        Proc_Goto(proc, 2);
+
+        NotificationInitSpriteText(VRAM + (void *)0x10000 + (0x180 << 5));
+        InitSpriteText(&gGuideSt->popupText);
+        SpriteText_DrawBackground(&gGuideSt->popupText);
+        HandleItemReward(proc, id);
+
+        PlaySoundEffect(SONG_SE_SYS_WINDOW_SELECT1);
+    }
+    else
+    {
+        PlaySoundEffect(SONG_SE_SYS_WINDOW_CANSEL1);
+    }
+    SetTextFont(font);
+}
+
+void AchievementsPopup_DrawText(char * str)
+{
+    struct Font * font = gActiveFont;
+    SetTextFont(&gHelpBoxSt.font); // use our own chr_counter
+    struct Text * th = &gGuideSt->popupText;
+    struct NotificationWindowProc proc = { 0 };
+    proc.spriteText = true;
+    proc.line = 0;
+    while (str && *str && !proc.line)
+    {
+        str = NotificationPrintText(&proc, th, str);
+    }
+    SetTextFont(font);
+}
+
+void AchievementsPopupSentTimer(struct NewGuideProc * proc)
+{
+    gGuideSt->timer++;
+    // void PutSprite(int layer, int x, int y, const u16 * object, int oam2);
+    int x = 24;
+    int y = 60;
+    // PutSprite(0, x, y, gObject_16x16, OAM2_CHR(0x280) + OAM2_PAL(2));
+
+    // DisplayNotifBoxObj
+    DisplayNotifBoxObj(x, y, 184, 1 * 16, true);
+    PutSprite(0, x, y, gObject_16x16, OAM2_CHR(0x200) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
+    if (gGuideSt->timer > 10)
+    {
+        if (gKeyStatusPtr->newKeys & (B_BUTTON | A_BUTTON))
+        {
+            proc->pressed = true;
+        }
+    }
+    if (gGuideSt->timer > 40)
+    {
+        if (gGuideSt->timer > 120 || proc->pressed)
+        {
+            Proc_Break(proc);
+        }
+    }
+}
 
 void Achievement_MainLoop(struct GuideProc * proc)
 {
@@ -1314,7 +1410,8 @@ void Achievement_MainLoop(struct GuideProc * proc)
                     if (GetCategoryIdx() == 0)
                     {
                         gGuideSt->state--;
-                        PlaySoundEffect(SONG_SE_SYS_WINDOW_CANSEL1);
+                        HandleReward((void *)proc, gGuideSt->detailsID);
+
                         // case for granting rewards
                         return;
                     }
@@ -1553,7 +1650,16 @@ const struct ProcCmd ProcScr_E_Achievements_Map[] =
 
     PROC_CALL(StartFastFadeFromBlack),
     PROC_REPEAT(WaitForFade),
+    PROC_GOTO(1), 
+    
+    PROC_LABEL(2),
+    PROC_REPEAT(AchievementsPopupSentTimer), 
+    // PROC_CALL(BonusClaim_DrawItemSentPopup),
+    // PROC_REPEAT(BonusClaim_Loop_PopupDisplayTimer),
+    // PROC_CALL(BonusClaim_ClearItemSentPopup),
+    // fallthrough 
 
+    PROC_LABEL(1), 
     PROC_CALL(Achievement_SetBlend),
     PROC_REPEAT(Achievement_MainLoop),
 
