@@ -162,9 +162,9 @@ FILL(512)
 #define rewardItem(orderId, achievementDataId, item, percent, str, str2) "PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT achievementDataId; BYTE percent RewardTypeItem ; WORD item; POP; achievementEnt(achievementDataId, str2, str, Category_Rewards)" 
 #define rewardGold(orderId, achievementDataId, gold, percent, str, str2) "PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT achievementDataId; BYTE percent RewardTypeGold ; WORD gold; POP; achievementEnt(achievementDataId, str2, str, Category_Rewards)" 
 // str1 and str2 are swapped in this macro 
-rewardEnt(0, Reward_1, 1, "1% completion", "Unlock FE7", "FE7 Characters have been unlocked.") 
-rewardItem(1, Reward_2, 0xD3, 1, "1% completion", "Oboro's Nagnta") 
-rewardGold(2, Reward_3, 3643, 2, "2% completion", "3643 Gold") 
+rewardEnt(1, Reward_1, 1, "1% completion", "Unlock FE7", "FE7 Characters have been unlocked.") 
+rewardItem(2, Reward_2, 0xD3, 1, "1% completion", "Oboro's Nagnta") 
+rewardGold(3, Reward_3, 3643, 5, "5% completion", "3643 Gold") 
 
 
 

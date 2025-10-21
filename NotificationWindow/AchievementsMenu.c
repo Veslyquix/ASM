@@ -1287,10 +1287,21 @@ struct ProcCmd const gProcScr_AchievementDetailsRedraw[] =
 };
 
 // clang-format on
+#define RewardUnavailable (-1)
+#define RewardClaimed 0
+#define RewardAvailable 1
 int CanObtainReward(int id)
 {
-
-    return true;
+    if (IsAchievementShown(id)) // data for whether it's had a popup is instead used as whether it's been claimed here
+    {
+        return RewardClaimed; // already claimed
+    }
+    int perc = GetAchievementPercentage();
+    if (rewardsByPercentage[id].percent <= perc)
+    {
+        return RewardAvailable;
+    }
+    return RewardUnavailable; // we don't have enough percentage completion
 }
 
 #define AchievementPopupItemIconPal 7
@@ -1318,6 +1329,7 @@ void HandleItemReward(struct NewGuideProc * proc, int id)
     LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
     int itemId = rewardsByPercentage[id].reward.item;
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
+    AddItemToConvoy(MakeNewItem(itemId));
 
     AchievementsPopup_DrawText("Sent: ");
     gGuideSt->popupText[0].x += 16;
@@ -1328,6 +1340,7 @@ void HandleGoldReward(struct NewGuideProc * proc, int id)
     LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
     int itemId = 0x9A;
     int gold = rewardsByPercentage[id].reward.item;
+    SetPartyGoldAmount(gold + GetPartyGoldAmount());
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
 
     AchievementsPopup_DrawText("Sent: ");
@@ -1338,15 +1351,8 @@ void HandleGoldReward(struct NewGuideProc * proc, int id)
 
 void HandleCharReward(struct NewGuideProc * proc, int id)
 {
-    LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
-    int itemId = 0x9A;
-    int gold = 3564;
-    LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
-
-    AchievementsPopup_DrawText("Sent: ");
-    gGuideSt->popupText[0].x += 16;
-    DrawNumAsString(gold);
-    AchievementsPopup_DrawText(" Gold");
+    PlaySoundEffect(SONG_SE_SYS_WINDOW_CANSEL1);
+    AchievementsPopup_DrawText("Non-functional");
 }
 
 void HandleMiscReward(struct NewGuideProc * proc, int id)
@@ -1357,13 +1363,19 @@ void HandleMiscReward(struct NewGuideProc * proc, int id)
 
 void HandleReward(struct NewGuideProc * proc, int id)
 {
+    id += 1;
     struct Font * font = gActiveFont;
     gGuideSt->timer = 0;
     proc->pressed = false;
     proc->line = 0;
-    if (CanObtainReward(id))
+    int available = CanObtainReward(id);
+    if (available == RewardAvailable)
     {
         // LockMenuScrollBar();
+        UnlockAchievementNoMsg(id); // we've now claimed it
+        // achievement_80CE414((void *)proc);
+        Proc_StartBlocking(gProcScr_AchievementCategoryRedraw, proc);
+        // AchievementEntry_RedrawUp((void *)proc);
 
         Proc_Goto(proc, 2);
         proc->type = rewardsByPercentage[id].type;
@@ -1387,7 +1399,8 @@ void HandleReward(struct NewGuideProc * proc, int id)
             }
             case RewardTypeChar:
             {
-                HandleCharReward(proc, id);
+                // HandleCharReward(proc, id);
+                return;
                 break;
             }
             case RewardTypeMisc:
@@ -1399,8 +1412,19 @@ void HandleReward(struct NewGuideProc * proc, int id)
 
         PlaySoundEffect(SONG_SE_SYS_WINDOW_SELECT1);
     }
-    else
+    else if (available == RewardUnavailable)
     {
+        PlaySoundEffect(SONG_SE_SYS_WINDOW_CANSEL1);
+    }
+    else if (available == RewardClaimed)
+    {
+        Proc_Goto(proc, 2);
+        proc->type = RewardTypeMisc;
+
+        NotificationInitSpriteText(VRAM + (void *)0x10000 + (0x180 << 5));
+        InitSpriteText(&gGuideSt->popupText[0]);
+        SpriteText_DrawBackground(&gGuideSt->popupText[0]);
+        AchievementsPopup_DrawText("Already claimed.");
         PlaySoundEffect(SONG_SE_SYS_WINDOW_CANSEL1);
     }
     SetTextFont(font);

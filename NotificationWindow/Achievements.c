@@ -98,6 +98,23 @@ int GetAchievementColour(int id)
     int everComplete = IsAchievementComplete(id);
     int doneOnThisSaveFile = IsAchievementShown(id);
 
+    struct AchievementsRomStruct * data = achievementData;
+    data += id;
+    if (data->category == Category_Rewards_Link)
+    {
+        if (doneOnThisSaveFile)
+        {
+            return TEXT_COLOR_SYSTEM_WHITE; // already claimed
+        }
+        int perc = GetAchievementPercentage();
+        if (rewardsByPercentage[id].percent <= perc)
+        {
+            return TEXT_COLOR_SYSTEM_GOLD; // available to claim
+        }
+        return TEXT_COLOR_SYSTEM_GRAY; // not enough percentage completion
+    }
+
+    // not rewards
     if (everComplete && doneOnThisSaveFile)
     {
         return TEXT_COLOR_SYSTEM_GOLD;
@@ -169,6 +186,28 @@ void UnlockAchievement(int id)
     {
         ShownAchievement(achievements, id);
         DoNotificationForAchievement(id);
+        saveData = true;
+    }
+    if (IsAchievementComplete(id) && !saveData)
+        return;
+
+    SetAchievement(achievements, id);
+    SaveBonusContentData(data);
+}
+void UnlockAchievementNoMsg(int id)
+{
+    if (!id)
+    {
+        return;
+    }
+    int saveData = false;
+    CpuFill16(0, gpBonusClaimData, 0x144);
+    LoadBonusContentData(gpBonusClaimData);
+    struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
+    struct AchievementsStruct * achievements = (void *)&data[4];
+    if (!IsAchievementShown(id))
+    {
+        ShownAchievement(achievements, id);
         saveData = true;
     }
     if (IsAchievementComplete(id) && !saveData)

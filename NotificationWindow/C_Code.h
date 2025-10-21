@@ -108,6 +108,8 @@ struct NotificationWindowProc
     u8 type[QueueSize];
 };
 
+void UnlockAchievement(int id); 
+void UnlockAchievementNoMsg(int id); 
 void RestartNotificationProc(struct PlayerInterfaceProc * parent); 
 void DisplayNotifBoxObj(int x, int y, int w, int h, int hideHelpText); 
 void NotificationInitSpriteText(void * vram); 
