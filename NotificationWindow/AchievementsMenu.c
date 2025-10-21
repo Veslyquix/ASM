@@ -1294,7 +1294,13 @@ int CanObtainReward(int id)
 }
 
 #define AchievementPopupItemIconPal 7
+
+#define RewardTypeItem 0
+#define RewardTypeGold 1
+#define RewardTypeChar 2
+#define RewardTypeMisc 3
 void AchievementsPopup_DrawText(char * str);
+void DrawNumAsString(int num);
 struct NewGuideProc
 {
     /* 00 */ PROC_HEADER;
@@ -1303,17 +1309,50 @@ struct NewGuideProc
     /* 34 */ int unk_34;
     /* 38 */ int unk_38;
     u8 timer;
+    u8 line;
+    u8 type;
     u8 pressed;
 };
 void HandleItemReward(struct NewGuideProc * proc, int id)
 {
     LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
-    int itemId = 0xD3;
-    LoadIconObjectGraphics(GetItemIconId(itemId), 0x200);
+    int itemId = rewardsByPercentage[id].reward.item;
+    LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
 
     AchievementsPopup_DrawText("Sent: ");
-    gGuideSt->popupText.x += 16;
+    gGuideSt->popupText[0].x += 16;
     AchievementsPopup_DrawText(GetItemName(itemId));
+}
+void HandleGoldReward(struct NewGuideProc * proc, int id)
+{
+    LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
+    int itemId = 0x9A;
+    int gold = rewardsByPercentage[id].reward.item;
+    LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
+
+    AchievementsPopup_DrawText("Sent: ");
+    gGuideSt->popupText[0].x += 16;
+    DrawNumAsString(gold);
+    AchievementsPopup_DrawText(" Gold");
+}
+
+void HandleCharReward(struct NewGuideProc * proc, int id)
+{
+    LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
+    int itemId = 0x9A;
+    int gold = 3564;
+    LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
+
+    AchievementsPopup_DrawText("Sent: ");
+    gGuideSt->popupText[0].x += 16;
+    DrawNumAsString(gold);
+    AchievementsPopup_DrawText(" Gold");
+}
+
+void HandleMiscReward(struct NewGuideProc * proc, int id)
+{
+
+    AchievementsPopup_DrawText(rewardsByPercentage[id].reward.str);
 }
 
 void HandleReward(struct NewGuideProc * proc, int id)
@@ -1321,16 +1360,42 @@ void HandleReward(struct NewGuideProc * proc, int id)
     struct Font * font = gActiveFont;
     gGuideSt->timer = 0;
     proc->pressed = false;
+    proc->line = 0;
     if (CanObtainReward(id))
     {
         // LockMenuScrollBar();
 
         Proc_Goto(proc, 2);
+        proc->type = rewardsByPercentage[id].type;
 
         NotificationInitSpriteText(VRAM + (void *)0x10000 + (0x180 << 5));
-        InitSpriteText(&gGuideSt->popupText);
-        SpriteText_DrawBackground(&gGuideSt->popupText);
-        HandleItemReward(proc, id);
+        InitSpriteText(&gGuideSt->popupText[0]);
+        SpriteText_DrawBackground(&gGuideSt->popupText[0]);
+
+        switch (proc->type)
+        {
+
+            case RewardTypeItem:
+            {
+                HandleItemReward(proc, id);
+                break;
+            }
+            case RewardTypeGold:
+            {
+                HandleGoldReward(proc, id);
+                break;
+            }
+            case RewardTypeChar:
+            {
+                HandleCharReward(proc, id);
+                break;
+            }
+            case RewardTypeMisc:
+            {
+                HandleMiscReward(proc, id);
+                break;
+            }
+        }
 
         PlaySoundEffect(SONG_SE_SYS_WINDOW_SELECT1);
     }
@@ -1345,15 +1410,44 @@ void AchievementsPopup_DrawText(char * str)
 {
     struct Font * font = gActiveFont;
     SetTextFont(&gHelpBoxSt.font); // use our own chr_counter
-    struct Text * th = &gGuideSt->popupText;
+    struct Text * th = &gGuideSt->popupText[0];
     struct NotificationWindowProc proc = { 0 };
     proc.spriteText = true;
     proc.line = 0;
-    while (str && *str && !proc.line)
+    while (str && *str)
     {
-        str = NotificationPrintText(&proc, th, str);
+        str = NotificationPrintText(&proc, &th[proc.line], str);
     }
     SetTextFont(font);
+}
+void DrawNumAsString(int num)
+{
+    if (num == 0)
+    {
+        AchievementsPopup_DrawText("0");
+        return;
+    }
+
+    int digits = 0;
+    u8 digit[10];
+    int tmp = num;
+
+    // extract digits in reverse order
+    while (tmp)
+    {
+        digit[digits++] = tmp % 10;
+        tmp /= 10;
+    }
+
+    char str[11] = { 0 }; // enough for 10 digits + null terminator
+
+    // rebuild number string in correct order
+    for (int i = 0; i < digits; ++i)
+    {
+        str[i] = '0' + digit[digits - 1 - i];
+    }
+
+    AchievementsPopup_DrawText(str);
 }
 
 void AchievementsPopupSentTimer(struct NewGuideProc * proc)
@@ -1366,7 +1460,10 @@ void AchievementsPopupSentTimer(struct NewGuideProc * proc)
 
     // DisplayNotifBoxObj
     DisplayNotifBoxObj(x, y, 184, 1 * 16, true);
-    PutSprite(0, x + 28, y, gObject_16x16, OAM2_CHR(0x200) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
+    if (proc->type == RewardTypeItem || proc->type == RewardTypeGold)
+    {
+        PutSprite(0, x + 28, y, gObject_16x16, OAM2_CHR(0x140) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
+    }
     if (gGuideSt->timer > 10)
     {
         if (gKeyStatusPtr->newKeys & (B_BUTTON | A_BUTTON))
@@ -1376,7 +1473,7 @@ void AchievementsPopupSentTimer(struct NewGuideProc * proc)
     }
     if (gGuideSt->timer > 40)
     {
-        if (gGuideSt->timer > 120 || proc->pressed)
+        if (proc->pressed)
         {
             Proc_Break(proc);
         }

@@ -21,7 +21,7 @@ struct NewGuideSt
     /* 40 */ u8 cat_chID[60]; // unk_40 CategoriesChapter 
     /* 54 */ u8 cat_topicID[60]; // unk_54 CategoriesTopic
     /* 68 */ u8 detailsEntry[60]; // unk_68 detailsID entry gives you the guide entry 
-            struct Text popupText; 
+            struct Text popupText[5]; 
     /* 7C */ struct Text unk_7c[6];
     /* AC */ struct Text unk_ac;
     /* B4 */ struct Text unk_b4[6];
@@ -64,6 +64,19 @@ struct AchievementsRomStruct
     /* 08 */ u16 category; // title
     /* 0A */ u16 flag; 
 };
+struct RewardsStruct
+{
+    u16 id;
+    u8 percent;
+    u8 type;
+
+    union
+    {
+        u32 item;
+        char* str;
+    } reward;
+};
+
 extern int __aeabi_idivmod(int a, int b);
 static int Modulo(int a, int b)
 {
@@ -123,6 +136,7 @@ extern u16 flagAchievements[];
 extern u16 recruitmentAchievements[]; 
 extern u16 equipAchievements[]; 
 extern u16 promoAchievements[]; 
+extern struct RewardsStruct rewardsByPercentage[]; 
 
 struct turnCountStruct { 
     u16 achievementDataID; 
