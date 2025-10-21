@@ -12,6 +12,7 @@ DebugFlag_Link:
 WORD 0xEC 
 
 // for testing 
+/*
 PUSH 
 ORG $1DF2F30
 POIN MapMenu_IsAchievementsCommandAvailable
@@ -19,7 +20,7 @@ POIN MapMenu_IsAchievementsCommandAvailable
 ORG $1DF2F38
 POIN MapMenu_AchievementsCommand
 POP 
-
+*/ 
 
 
 ALIGN 4 
@@ -148,7 +149,7 @@ FILL (32 * 20) // BONUS_CLAIM_NUM_ENTRIES * size
 
 
 #define RewardTypeItem 0
-#define RewardTypeGold 1
+#define RewardTypeGold 1 
 #define RewardTypeChar 2
 #define RewardTypeMisc 3
 ALIGN 4 
@@ -159,7 +160,40 @@ FILL(512)
 // #define rewardGold(orderId, achievementDataId, bonusId, gold, percent, str, str2) "bonusEnt(bonusId, gold, str); PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT orderId; BYTE percent RewardTypeGold ; SHORT gold bonusId; POP; achievementEnt(orderId, str2, str, Category_Rewards)" 
 // str1 and str2 are swapped in this macro 
 
+ALIGN 4 
+Reward_Classes_Link:
+WORD Reward_Classes 
+Reward_Growths_Link:
+WORD Reward_Growths 
+Reward_StatCaps_Link:
+WORD Reward_StatCaps 
+Reward_CasualMode_Link:
+WORD Reward_CasualMode 
+Reward_FromGame_Link:
+WORD Reward_NES 
 
+Reward_BonusLevels_Link:
+WORD Reward_BonusLevels 
+Reward_Recruitment_Link:
+WORD Reward_NES 
+
+Reward_FilterClasses_Link:
+WORD Reward_FilterClasses 
+Reward_FilterChars_Link:
+WORD Reward_FilterChars
+Reward_Skills_Link:
+WORD Reward_Skills
+Reward_TimedHits_Link:
+WORD Reward_TimedHits
+
+Reward_Clutter1_Link:
+WORD Reward_Clutter1
+Reward_Clutter2_Link:
+WORD Reward_Clutter2
+Reward_Clutter3_Link:
+WORD Reward_Clutter3
+Reward_Clutter4_Link:
+WORD Reward_Clutter4
 
 rewardEnt(Reward_Classes, 1, "1% completion", "Unlock Random Classes", "Classes can now be randomized.") 
 rewardEnt(Reward_Growths, 2, "2% completion", "Unlock Growths", "Growths has been added to Config.") 

@@ -252,3 +252,80 @@ void UnlockAchievementByChapterTime()
     if (time <= chapterTimeAchievements[chapterId].chapterTime)
         UnlockAchievement(chapterTimeAchievements[chapterId].achievementDataID);
 }
+
+extern int Reward_Classes_Link;
+int IsClassesOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Classes_Link);
+}
+extern int Reward_Growths_Link;
+int IsGrowthsOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Growths_Link);
+}
+extern int Reward_StatCaps_Link;
+int IsStatCapsOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_StatCaps_Link);
+}
+extern int Reward_CasualMode_Link;
+int IsCasualModeOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_CasualMode_Link);
+}
+extern int Reward_FromGame_Link;
+int IsFromGameOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_FromGame_Link);
+}
+
+extern int Reward_BonusLevels_Link;
+int IsBonusLevelsOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_BonusLevels_Link);
+}
+extern int Reward_Recruitment_Link;
+int IsRecruitmentOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Recruitment_Link);
+}
+extern int Reward_FilterClasses_Link;
+int IsFilterClassesOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_FilterClasses_Link);
+}
+extern int Reward_FilterChars_Link;
+int IsFilterCharsOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_FilterChars_Link);
+}
+extern int Reward_Skills_Link;
+int IsSkillsOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Skills_Link);
+}
+extern int Reward_TimedHits_Link;
+int IsTimedHitsOptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_TimedHits_Link);
+}
+extern int Reward_Clutter1_Link;
+int IsClutter1OptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Clutter1_Link);
+}
+extern int Reward_Clutter2_Link;
+int IsClutter2OptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Clutter2_Link);
+}
+extern int Reward_Clutter3_Link;
+int IsClutter3OptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Clutter3_Link);
+}
+extern int Reward_Clutter4_Link;
+int IsClutter4OptionAvailable(void)
+{
+    return IsAchievementComplete(Reward_Clutter4_Link);
+}
