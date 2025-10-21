@@ -72,7 +72,11 @@ struct RewardsStruct
 
     union
     {
-        u32 item;
+        struct
+        {
+            u16 item;
+            u16 bonusId;
+        };
         char* str;
     } reward;
 };
@@ -108,6 +112,7 @@ struct NotificationWindowProc
     u8 type[QueueSize];
 };
 
+void UnlockBonusItem(int id);
 void UnlockAchievement(int id); 
 void UnlockAchievementNoMsg(int id); 
 void RestartNotificationProc(struct PlayerInterfaceProc * parent); 

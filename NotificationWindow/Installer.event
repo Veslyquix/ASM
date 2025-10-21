@@ -56,21 +56,7 @@ WORD 184 // longer for sprite text
 
 
 
-ALIGN 4 
-bonusData:
-FILL (32 * 0x14) // BONUS_CLAIM_NUM_ENTRIES * size 
 
-#define bonusEnt(id, itemID, str) "PUSH; ORG bonusData + (id * 0x14); BYTE 0 0 itemID; txt(str); BYTE 0; POP" 
-
-bonusEnt(0, SteelSword, "Enjoy"); 
-bonusEnt(1, Speedwings, "gotta go fast"); 
-bonusEnt(2, EnergyRing, "so strong"); 
-bonusEnt(3, SecretBook, "skillful"); 
-bonusEnt(6, AngelicRobe, "can't die lol"); 
-bonusEnt(8, Dracoshield, "tank"); 
-bonusEnt(10, Dracoshield, "tank"); 
-bonusEnt(13, Dracoshield, "tank"); 
-bonusEnt(19, IronSword, "pointy"); 
 
 #define achievementEntSize 12 
 #define achievementEnt(id, str, str2, category) "{ header: ; txt(str); BYTE 0 0; header2: ; txt(str2); BYTE 0 0; PUSH; ORG achievementData + ((id) * achievementEntSize); POIN header header2; SHORT category id; POP }" 
@@ -151,6 +137,16 @@ achievementEnt(EndID, "", "", Category_Terminator)
 // reach level 20 
 // reach promoted level 20 
 
+
+ALIGN 4 
+bonusData:
+FILL (32 * 20) // BONUS_CLAIM_NUM_ENTRIES * size 
+
+#define bonusEnt(id, itemID, str) "PUSH; ORG bonusData + (id * 0x14); BYTE 0 0 itemID; txt(str); BYTE 0; POP" 
+
+// bonusEnt(0, SteelSword, "Enjoy"); 
+
+
 #define RewardTypeItem 0
 #define RewardTypeGold 1
 #define RewardTypeChar 2
@@ -158,14 +154,80 @@ achievementEnt(EndID, "", "", Category_Terminator)
 ALIGN 4 
 rewardsByPercentage:
 FILL(512) 
-#define rewardEnt(orderId, achievementDataId, percent, str, str2, str3) "{ header3: ; txt(str3); BYTE 0 0; PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT achievementDataId; BYTE percent RewardTypeMisc ; POIN header3; POP; } ; achievementEnt(achievementDataId, str2, str, Category_Rewards)" 
-#define rewardItem(orderId, achievementDataId, item, percent, str, str2) "PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT achievementDataId; BYTE percent RewardTypeItem ; WORD item; POP; achievementEnt(achievementDataId, str2, str, Category_Rewards)" 
-#define rewardGold(orderId, achievementDataId, gold, percent, str, str2) "PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT achievementDataId; BYTE percent RewardTypeGold ; WORD gold; POP; achievementEnt(achievementDataId, str2, str, Category_Rewards)" 
+#define rewardEnt(orderId, percent, str, str2, str3) "{ header3: ; txt(str3); BYTE 0 0; PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT orderId; BYTE percent RewardTypeMisc ; POIN header3; POP; } ; achievementEnt(orderId, str2, str, Category_Rewards)" 
+#define rewardItem(orderId, bonusId, item, percent, str, str2) "bonusEnt(bonusId, item, str); PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT orderId; BYTE percent RewardTypeItem ; SHORT item bonusId; POP; achievementEnt(orderId, str2, str, Category_Rewards)" 
+// #define rewardGold(orderId, achievementDataId, bonusId, gold, percent, str, str2) "bonusEnt(bonusId, gold, str); PUSH; ORG rewardsByPercentage + (orderId * 8); SHORT orderId; BYTE percent RewardTypeGold ; SHORT gold bonusId; POP; achievementEnt(orderId, str2, str, Category_Rewards)" 
 // str1 and str2 are swapped in this macro 
-rewardEnt(1, Reward_1, 1, "1% completion", "Unlock FE7", "FE7 Characters have been unlocked.") 
-rewardItem(2, Reward_2, SilverSword, 1, "1% completion", "Silver Sword") 
-rewardGold(3, Reward_3, 3643, 2, "2% completion", "3643 Gold") 
-rewardGold(4, Reward_4, 12454, 5, "5% completion", "12454 Gold") 
+
+
+
+rewardEnt(Reward_Classes, 1, "1% completion", "Unlock Random Classes", "Classes can now be randomized.") 
+rewardEnt(Reward_Growths, 2, "2% completion", "Unlock Growths", "Growths has been added to Config.") 
+rewardEnt(Reward_StatCaps, 3, "3% completion", "Unlock Stat Caps", "Stat Caps has been added to Config.") 
+rewardEnt(Reward_CasualMode, 4, "4% completion", "Unlock Casual Mode", "Casual Mode has been added to Config.") 
+
+rewardEnt(Reward_NES, 5, "5% completion", "Unlock NES Characters", "FE1-FE3 Characters have been unlocked.") 
+
+rewardEnt(Reward_BonusLevels, 6, "6% completion", "Unlock Bonus Levels", "Bonus Levels has been added to Config.") 
+rewardEnt(Reward_Recruitment, 7, "7% completion", "Unlock Recruitment Order", "Recruitment order has been added to Config.") 
+
+rewardItem(Reward_GoddessIcon, 0, GoddessIcon, 8, "8% completion", "Goddess Icon") 
+rewardItem(Reward_JunaFruit, 1, JunaFruit, 9, "9% completion", "Heart Seal") // Heart seal
+rewardItem(Reward_Physic, 2, Physic, 10, "10% completion", "Physic") 
+rewardEnt(Reward_SNES, 10, "10% completion", "Unlock SNES Characters", "FE4-FE5 Characters have been unlocked.") 
+
+rewardEnt(Reward_FilterClasses, 11, "11% completion", "Unlock Class Filtering", "Player Classes has been added to Config.") 
+rewardEnt(Reward_Clutter1, 12, "12% completion", "Unlock More Configs (1)", "Stuff has been added to Config.") 
+rewardItem(Reward_Item3000G, 3, Item3000G, 13, "13% completion", "3000 Gold") 
+rewardItem(Reward_BodyRing, 4, BodyRing, 14, "14% completion", "Body Ring") 
+rewardItem(Reward_Warp, 5, Warp, 15, "15% completion", "Warp") 
+rewardEnt(Reward_GBA, 15, "15% completion", "Unlock GBA Characters", "FE6-FE8 Characters have been unlocked.") 
+
+rewardEnt(Reward_FilterChars, 16, "16% completion", "Unlock Character Filtering", "Filter Units has been added to Config.") 
+rewardEnt(Reward_Clutter2, 17, "17% completion", "Unlock More Configs (2)", "More stuff has been added to Config.") 
+rewardItem(Reward_Talisman, 6, Talisman, 18, "18% completion", "Talisman") 
+rewardItem(Reward_GuidingRing, 7, GuidingRing, 19, "19% completion", "Guiding Ring") 
+rewardItem(Reward_MetissTome, 8, MetissTome, 20, "20% completion", "Metis' Tome") 
+rewardEnt(Reward_GCN, 20, "20% completion", "Unlock GCN/Wii Characters", "FE9-FE10 Characters have been unlocked.") 
+
+rewardEnt(Reward_Skills, 21, "21% completion", "Unlock Skills", "Skills has been added to Config.") 
+rewardEnt(Reward_Clutter3, 22, "22% completion", "Unlock More Configs (3)", "Even more stuff has been added to Config.") 
+rewardItem(Reward_Dracoshield, 9, Dracoshield, 23, "23% completion", "Dracoshield") 
+rewardItem(Reward_KnightCrest, 10, KnightCrest, 24, "24% completion", "Knight's Crest") 
+rewardItem(Reward_Item5000G, 11, Item5000G, 25, "25% completion", "5000 Gold") 
+rewardEnt(Reward_3DS, 25, "25% completion", "Unlock 3DS Characters", "FE13-FE14 Characters have been unlocked.") 
+
+rewardEnt(Reward_TimedHits, 26, "26% completion", "Unlock Timed Hits", "Timed Hits has been added to Config.") 
+rewardEnt(Reward_Clutter4, 27, "27% completion", "Unlock More Configs (4)", "Clutter has been added to Config.") 
+rewardItem(Reward_EnergyRing, 12, EnergyRing, 28, "28% completion", "Energy Ring") 
+rewardItem(Reward_HeroCrest, 13, HeroCrest, 29, "29% completion", "Hero's Crest") 
+rewardItem(Reward_HoplonShield, 14, HoplonShield, 30, "30% completion", "Hoplon Guard") 
+rewardEnt(Reward_Switch, 30, "30% completion", "Unlock Switch Characters", "FE16+ Characters have been unlocked.") 
+
+
+rewardItem(Reward_SecretBook, 15, SecretBook, 33, "33% completion", "Secret Book") 
+rewardItem(Reward_OrionBolt, 16, OrionBolt, 34, "34% completion", "Orion's Bolt") 
+rewardItem(Reward_WhiteGem, 17, WhiteGem, 35, "35% completion", "White Gem") 
+
+rewardItem(Reward_Speedwings, 18, Speedwings, 38, "38% completion", "Speedwings") 
+rewardItem(Reward_ElysianWhip, 19, ElysianWhip, 39, "39% completion", "Elysian Whip") 
+rewardItem(Reward_DelphiShield, 20, DelphiShield, 40, "40% completion", "Delphi Shield") 
+
+rewardItem(Reward_AngelicRobe, 21, AngelicRobe, 43, "43% completion", "Angelic Robe") 
+rewardItem(Reward_OceanSeal, 22, OceanSeal, 44, "44% completion", "Ocean Seal") 
+rewardItem(Reward_MemberCard, 23, MemberCard, 45, "45% completion", "Member Card") 
+
+rewardItem(Reward_Boots, 24, Boots, 48, "48% completion", "Boots") 
+rewardItem(Reward_MasterSeal, 25, MasterSeal, 49, "49% completion", "Master Seal") 
+rewardItem(Reward_SilverCard, 26, SilverCard, 50, "50% completion", "Silver Card") 
+
+
+
+
+
+
+
+
 
 
 

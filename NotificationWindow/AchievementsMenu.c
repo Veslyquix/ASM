@@ -1329,7 +1329,7 @@ void HandleItemReward(struct NewGuideProc * proc, int id)
     LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
     int itemId = rewardsByPercentage[id].reward.item;
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
-    AddItemToConvoy(MakeNewItem(itemId));
+    // AddItemToConvoy(MakeNewItem(itemId));
 
     AchievementsPopup_DrawText("Sent: ");
     gGuideSt->popupText[0].x += 16;
@@ -1340,7 +1340,7 @@ void HandleGoldReward(struct NewGuideProc * proc, int id)
     LoadIconPalette(0, 0x10 + AchievementPopupItemIconPal);
     int itemId = 0x9A;
     int gold = rewardsByPercentage[id].reward.item;
-    SetPartyGoldAmount(gold + GetPartyGoldAmount());
+    // SetPartyGoldAmount(gold + GetPartyGoldAmount());
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
 
     AchievementsPopup_DrawText("Sent: ");
@@ -1373,6 +1373,7 @@ void HandleReward(struct NewGuideProc * proc, int id)
     {
         // LockMenuScrollBar();
         UnlockAchievementNoMsg(id); // we've now claimed it
+
         // achievement_80CE414((void *)proc);
         Proc_StartBlocking(gProcScr_AchievementCategoryRedraw, proc);
         // AchievementEntry_RedrawUp((void *)proc);
@@ -1390,11 +1391,13 @@ void HandleReward(struct NewGuideProc * proc, int id)
             case RewardTypeItem:
             {
                 HandleItemReward(proc, id);
+                UnlockBonusItem(rewardsByPercentage[id].reward.bonusId);
                 break;
             }
             case RewardTypeGold:
             {
                 HandleGoldReward(proc, id);
+                UnlockBonusItem(rewardsByPercentage[id].reward.bonusId);
                 break;
             }
             case RewardTypeChar:
