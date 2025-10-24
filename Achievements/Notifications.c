@@ -134,7 +134,7 @@ int GetTakenQueueSlot(struct NotificationWindowProc * proc)
 {
     for (int i = 0; i < QueueSize; ++i)
     {
-        if (proc->queue[i] != 0xFF)
+        if (proc->queue[i] != (-1))
         {
             return i;
         }
@@ -148,7 +148,8 @@ void NotificationInitVariables(struct NotificationWindowProc * proc)
     StartGreenText(proc);
     for (int i = 0; i < QueueSize; i++)
     {
-        proc->queue[i] = 0xFF;
+        proc->queue[i] = (-1);
+        proc->type[i] = 0; // notification type, or 1 = ACHIEVEMENT_TYPE
     }
 }
 
@@ -175,6 +176,8 @@ void StartNotificationProc(int id, int type)
         proc->id = slot;
         Proc_Goto(proc, StartLabel);
     }
+    proc->str = "Error";
+    proc->strOriginal = "Error";
 }
 
 void DoNotificationsForFlag(int id)
@@ -225,6 +228,8 @@ void RestartNotificationProc(struct PlayerInterfaceProc * parent)
         proc->active = true;
         Proc_Goto(proc, StartLabel); // maybe ?
     }
+    proc->str = "Error";
+    proc->strOriginal = "Error";
 }
 
 // Hooks:
@@ -514,6 +519,9 @@ void NotificationInitSpriteText(void * vram)
 void NotificationWindow_Init(struct NotificationWindowProc * proc)
 {
     proc->showingBgm = false;
+    proc->spriteText = true;
+    proc->lines = 1;
+
     for (int i = 0; i < 4; ++i)
     {
         proc->colour[i] = TEXT_COLOR_SYSTEM_WHITE;
@@ -521,12 +529,10 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     const char * str = GetNextNotificationStr(proc);
     if (!str || !*str)
     {
-
         Proc_Goto(proc, EndLabel);
         return;
     }
 
-    proc->spriteText = true;
     // proc->spriteText = false;
     proc->delayFrames = 0;
     proc->finishedPrinting = false;
@@ -613,15 +619,10 @@ int GetNotificationStringTextLenASCII_Wrapped(const char * str)
             wordWidth += glyph->width;
         }
 
-        // if word doesn’t fit, wrap before it
+        // if word doesn’t fit, we've hit the max width
         if (curX > 0 && curX + wordWidth > MAX_LINE_WIDTH)
         {
-            if (curX > maxWidth)
-                maxWidth = curX;
-            curX = 0;
-            if (wordWidth > MAX_LINE_WIDTH)
-                str = lookahead; // skip this oversized word
-            continue;
+            return MAX_LINE_WIDTH;
         }
 
         // place word
@@ -903,7 +904,7 @@ void ContinueToNextNotification(struct NotificationWindowProc * proc)
     NotificationWindowClean(proc);
     if (!proc->showingBgm)
     {
-        proc->queue[proc->id] = 0xFF;
+        proc->queue[proc->id] = (-1);
         proc->id = GetTakenQueueSlot(proc);
         proc->fastPrint = false;
         // proc->id++;

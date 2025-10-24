@@ -108,8 +108,8 @@ struct NotificationWindowProc
     u8 fastPrint;
 
     u8 colour[4]; // up to 0x41
-    u16 queue[QueueSize];
-    u8 type[QueueSize];
+    s16 queue[QueueSize];
+    s8 type[QueueSize];
 };
 
 void UnlockBonusItem(int id);

@@ -293,7 +293,7 @@ recruitmentEnt(Syrene,  SyreneRecruitID, "The Graceful Rider", "Recruit Syrene")
 #define ccEnt(flagID, id, header, desc) "PUSH; ORG flagAchievements + (flagID * 2); SHORT id ; POP; achievementEnt(id, header, desc, Category_Recruitables)" 
 ALIGN 4 
 flagAchievements:
-FILL (512)
+FILL (0x130*2)
 ccEnt(0x67, CaellachID, "The Tiger's Eye", "Unlock Caellach") 
 ccEnt(0x68, GlenID, "The Sunstone", "Unlock Glen") 
 ccEnt(0x69, OrsonID, "The Devoted Husband", "Unlock Orson") 
