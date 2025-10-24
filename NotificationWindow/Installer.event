@@ -306,9 +306,9 @@ ccEnt(0x6F, SelenaID, "The Fluorspar", "Unlock Selena")
 ccEnt(0x70, LyonID, "The Dark Prince", "Unlock Lyon") 
 
 flagEnt(0x65, LoserID, "Loser", "Get a game over.") 
-flagEnt(0x7F, TriangleAttackID, "", "") 
-flagEnt(0x80, TriangleAttackID, "", "") 
-flagEnt(0x81, TriangleAttackID, "Triangular", "Perform a triangle attack.") 
+flagEnt(0x7F, TriangleAttackAchievementID, "", "") 
+flagEnt(0x80, TriangleAttackAchievementID, "", "") 
+flagEnt(0x81, TriangleAttackAchievementID, "Triangular", "Perform a triangle attack.") 
 flagEnt(0x82, FightDemonKingID, "Demonic", "Battle the Demon King.") 
 
 
@@ -332,8 +332,8 @@ promoEnt(GreatKnight, GreatKnightID, "", "")
 promoEnt(GreatKnight_F, GreatKnightID, "Path of Loyalty", "Promote into a Great Knight.")
 promoEnt(General, GeneralID, "", "")
 promoEnt(General_F, GeneralID, "Path of the Shield", "Promote into a General.")
-promoEnt(Hero, HeroID, "", "")
-promoEnt(Hero_F, HeroID, "Path of Gold", "Promote into a Hero.")
+promoEnt(Hero, HeroAchievementID, "", "")
+promoEnt(Hero_F, HeroAchievementID, "Path of Gold", "Promote into a Hero.")
 promoEnt(Swordmaster, SwordmasterID, "", "")
 promoEnt(Swordmaster_F, SwordmasterID, "Path of the Sword", "Promote into a Swordmaster.")
 promoEnt(Rogue, RogueID, "Path of Silence", "Promote into a Rogue.")
@@ -550,8 +550,8 @@ And I had put away\\
 My labor and my leisure too,\\
 For His Civility -")
 
-text1: 
-txt("Critical security updates are required."); BYTE 0 
+// text1: 
+// txt("Critical security updates are required."); BYTE 0 
 text2: 
 txt("Achievement unlocked: Loser."); BYTE 0 
 // text0: 

@@ -88,7 +88,7 @@
 #define PaladinID 0x58
 #define GreatKnightID 0x59
 #define GeneralID 0x5A
-#define HeroID 0x5B
+#define HeroAchievementID 0x5B
 #define SwordmasterID 0x5C
 #define RogueID 0x5D
 #define AssassinID 0x5E
@@ -175,6 +175,6 @@
 #define Ch21LTC 0xAF
 #define Ch22LTC 0xB0
 #define LoserID 0xB1
-#define TriangleAttackID 0xB2
+#define TriangleAttackAchievementID 0xB2
 #define FightDemonKingID 0xB3
 #define EndID 0xB4

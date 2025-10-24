@@ -116,7 +116,7 @@ EirikaMasterLordID
 PaladinID
 GreatKnightID
 GeneralID
-HeroID
+HeroAchievementID
 SwordmasterID
 RogueID
 AssassinID
@@ -214,7 +214,7 @@ Ch22LTC
 
 
 LoserID
-TriangleAttackID
+TriangleAttackAchievementID
 FightDemonKingID
 
 EndID

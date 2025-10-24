@@ -619,7 +619,9 @@ int GetNotificationStringTextLenASCII_Wrapped(const char * str)
             if (curX > maxWidth)
                 maxWidth = curX;
             curX = 0;
-            continue; // retry this word on new line
+            if (wordWidth > MAX_LINE_WIDTH)
+                str = lookahead; // skip this oversized word
+            continue;
         }
 
         // place word
