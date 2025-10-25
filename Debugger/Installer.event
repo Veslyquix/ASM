@@ -67,7 +67,10 @@ ENDA
 #endif 
 
 
-
+#ifndef Mod 
+ALIGN 4 ; PUSH; ORG CURRENTOFFSET+1; mod_label: ; POP ; SHORT $2900 $d101 $2000 $4770 $df06 $1c08 $4770; 
+#define Mod "mod_label"
+#endif 
 
 #ifdef _FE8_ 
     #include "Data/FE8_AsmHooks.lyn.event" 
