@@ -17,7 +17,7 @@ PUSH
 // ORG $1DFF720
 // POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1E001B8
+ORG $1DFF758
 POIN MapMenu_AchievementsCommand
 POP 
 
@@ -717,9 +717,6 @@ SHORT $46c0
 
 ORG $8d14c 
 POIN New_gProcScr_SideWindowMaker 
-
-ORG $8d150 
-// jumpToHack(Hook_EndPlayerPhaseSideWindows) 
 
 ORG $28e64 // from 0x8028e60 DoItemUse 
 callHackNew(Hook_DoItemUse) 
