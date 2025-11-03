@@ -101,6 +101,7 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
 };
 
 struct ProcCmd const New_gProcScr_SideWindowMaker[] = {
+    PROC_END_IF_DUPLICATE, // fixes a nasty bug where text was being drawn to tile space twice
     PROC_WHILE(DoesBMXFADEExist),
     PROC_CALL(RestartNotificationProc),
     PROC_REPEAT(WhileNotificationActive),
