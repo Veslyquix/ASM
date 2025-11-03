@@ -96,6 +96,22 @@ LyonID
 
 
 
+PoisonWepID 
+EffectiveWepID 
+JavelinWepID
+LongRangeWepID
+DevilWepID 
+KillerWepID 
+NosferatuWepID 
+RestoreWepID
+PhysicWepID
+SilenceWepID
+SleepWepID
+BerserkWepID
+WarpWepID
+BraveWepID 
+SilverWepID 
+
 
 VidofnirID
 AudhulmaID
@@ -212,8 +228,19 @@ Ch20LTC
 Ch21LTC
 Ch22LTC
 
-
 LoserID
+VulneraryUseID
+ElixirUseID
+TorchUseID
+ResUseID
+TrapsUseID
+DoorKeyUseID
+LockpickChestKeyUseID
+HeartSealUseID
+PromotionItemUseID
+StatboosterUseID
+DancerRingUseID
+MetisTomeUseID
 TriangleAttackAchievementID
 FightDemonKingID
 

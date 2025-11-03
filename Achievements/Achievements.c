@@ -253,6 +253,11 @@ void UnlockAchievementByChapterTime()
         UnlockAchievement(chapterTimeAchievements[chapterId].achievementDataID);
 }
 
+void UnlockAchievementByItemUse(int item)
+{
+    UnlockAchievement(itemUseAchievements[item & 0xFF]);
+}
+
 extern int Reward_Classes_Link;
 int IsClassesOptionAvailable(void)
 {

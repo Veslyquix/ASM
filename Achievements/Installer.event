@@ -12,15 +12,15 @@ DebugFlag_Link:
 WORD 0xEC 
 
 // for testing 
-/*
-PUSH 
-ORG $1DF2F30
-POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1DF2F38
+PUSH 
+// ORG $1DFF720
+// POIN MapMenu_IsAchievementsCommandAvailable
+
+ORG $1DFF758
 POIN MapMenu_AchievementsCommand
 POP 
-*/ 
+
 
 
 ALIGN 4 
@@ -57,8 +57,6 @@ WORD 184 // longer for sprite text
 
 
 
-
-
 #define achievementEntSize 12 
 #define achievementEnt(id, str, str2, category) "{ header: ; txt(str); BYTE 0 0; header2: ; txt(str2); BYTE 0 0; PUSH; ORG achievementData + ((id) * achievementEntSize); POIN header header2; SHORT category id; POP }" 
 // flag / func here don't make sense 
@@ -68,7 +66,7 @@ WORD 184 // longer for sprite text
 
 #define Category_Rewards 1 
 #define Category_Recruitables 2 
-#define Category_LegendaryWeapons 3
+#define Category_Equipment 3
 #define Category_Promotions 4
 #define Category_ChapterTime 5 
 #define Category_TurnCount 6
@@ -379,18 +377,71 @@ promoEnt(ElderBael, ElderBaelID, "Path of the Spider", "Promote into an Elder Ba
 ALIGN 4 
 equipAchievements:
 FILL (512)
-#define equipEnt(itemID, id, str, str2) "PUSH; ORG equipAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_LegendaryWeapons)" 
-equipEnt(Vidofnir, VidofnirID, "The Rooster of Yggdrasil", "Equip Vidofnir")
-equipEnt(Audhulma, AudhulmaID, "The Primordial Norse Cow", "Equip Audhulma")
-equipEnt(Siegmund, SiegmundID, "The Germanic Hero", "Equip Siegmund")
-equipEnt(Garm, GarmID, "The Guardian of Hel's Gate", "Equip Garm")
-equipEnt(Nidhogg, NidhoggID, "The Root-Gnawing Dragon", "Equip Nidhogg")
-equipEnt(Sieglinde, SieglindeID, "The Germanic Heroine", "Equip Sieglinde")
-equipEnt(Gleipnir, GleipnirID, "The Binding Chain of Fenrir", "Equip Gleipnir")
-equipEnt(Excalibur, ExcaliburID, "The Sword of King Arthur", "Equip Excalibur")
-equipEnt(Ivaldi, IvaldiID, "The Norse Dwarf Blacksmith", "Equip Ivaldi")
-equipEnt(Naglfar, NaglfarID, "The Ship of the Dead", "Equip Naglfar")
+#define equipEnt(itemID, id, str, str2) "PUSH; ORG equipAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Equipment)" 
+
 // These all use the same text / same achievement ID 
+// so only need the text for the last one 
+equipEnt(PoisonSword, PoisonWepID, "", "")
+equipEnt(PoisonAxe, PoisonWepID, "", "")
+equipEnt(ToxinLance, PoisonWepID, "", "")
+equipEnt(PoisonBow, PoisonWepID, "Dirty Fighter", "Equip a poisoned weapon.")
+
+equipEnt(Shadowkiller, EffectiveWepID, "", "")
+equipEnt(BrightLance, EffectiveWepID, "", "")
+equipEnt(Fiendcleaver, EffectiveWepID, "", "")
+equipEnt(BeaconBow, EffectiveWepID, "", "")
+equipEnt(Swordslayer, EffectiveWepID, "", "")
+equipEnt(HeavySpear, EffectiveWepID, "", "")
+equipEnt(Hammer, EffectiveWepID, "", "")
+equipEnt(Halberd, EffectiveWepID, "", "")
+equipEnt(Horseslayer, EffectiveWepID, "", "")
+equipEnt(Zanbato, EffectiveWepID, "", "")
+equipEnt(Armorslayer, EffectiveWepID, "It's Super Effective", "Equip a specialized weapon (other than Rapier).")
+
+equipEnt(Javelin, JavelinWepID, "", "")
+equipEnt(HandAxe, JavelinWepID, "Enemy Phaser", "Equip a Javelin or Handaxe")
+
+equipEnt(Ballista, LongRangeWepID, "", "")
+equipEnt(IronBallista, LongRangeWepID, "", "")
+equipEnt(KillerBallista, LongRangeWepID, "", "")
+equipEnt(Eclipse, LongRangeWepID, "", "")
+equipEnt(Purge, LongRangeWepID, "", "")
+equipEnt(Bolting, LongRangeWepID, "Sniper", "Equip a siege (3-10 range) weapon.")
+equipEnt(DevilAxe, DevilWepID, "Death Wish", "Equip a Devil Axe.")
+equipEnt(KillingEdge, KillerWepID, "", "")
+equipEnt(KillerLance, KillerWepID, "", "")
+equipEnt(KillerAxe, KillerWepID, "", "")
+equipEnt(KillerBow, KillerWepID, "Killer Instinct", "Equip a Killer Bow, Axe, Lance, or Sword.")
+
+equipEnt(Runesword, NosferatuWepID, "", "")
+equipEnt(Nosferatu, NosferatuWepID, "Soul Devourer", "Equip Nosferatu or a Runesword.")
+equipEnt(Restore, RestoreWepID, "Esuna", "Use or equip a Restore staff.")
+equipEnt(Physic, PhysicWepID, "Safe Distance", "Use or equip a Physic staff.")
+equipEnt(Silence, SilenceWepID, "Hush, now!", "Use or equip a Silence staff.")
+equipEnt(Sleep, SleepWepID, "Sleep, now..", "Use or equip a Sleep staff.")
+equipEnt(Berserk, BerserkWepID, "Fight, now!", "Use or equip a Berserk staff.")
+equipEnt(Warp, WarpWepID, "Dimension Twister", "Use or equip a Warp staff.")
+
+equipEnt(BraveSword, BraveWepID, "", "")
+equipEnt(BraveLance, BraveWepID, "", "")
+equipEnt(BraveAxe, BraveWepID, "", "")
+equipEnt(BraveBow, BraveWepID, "Bravery Equipped", "Equip a Brave Sword, Lance, Axe, or Bow.")
+equipEnt(SilverSword, SilverWepID, "", "")
+equipEnt(SilverLance, SilverWepID, "", "")
+equipEnt(SilverAxe, SilverWepID, "", "")
+equipEnt(SilverSword, SilverWepID, "Silver Swag", "Equip a Silver Sword, Lance, Axe, or Bow.")
+
+equipEnt(Vidofnir, VidofnirID, "The Rooster of Yggdrasil", "Equip Vidofnir.")
+equipEnt(Audhulma, AudhulmaID, "The Primordial Norse Cow", "Equip Audhulma.")
+equipEnt(Siegmund, SiegmundID, "The Germanic Hero", "Equip Siegmund.")
+equipEnt(Garm, GarmID, "The Guardian of Hel's Gate", "Equip Garm.")
+equipEnt(Nidhogg, NidhoggID, "The Root-Gnawing Dragon", "Equip Nidhogg.")
+equipEnt(Sieglinde, SieglindeID, "The Germanic Heroine", "Equip Sieglinde.")
+equipEnt(Gleipnir, GleipnirID, "The Binding Chain of Fenrir", "Equip Gleipnir.")
+equipEnt(Excalibur, ExcaliburID, "The Sword of King Arthur", "Equip Excalibur.")
+equipEnt(Ivaldi, IvaldiID, "The Norse Dwarf Blacksmith", "Equip Ivaldi.")
+equipEnt(Naglfar, NaglfarID, "The Ship of the Dead", "Equip Naglfar.")
+
 equipEnt(WretchedAir, UnobtainableItemID, "", "")  
 equipEnt(Forblaze, UnobtainableItemID, "", "")  
 equipEnt(Luce, UnobtainableItemID, "", "")  
@@ -400,6 +451,60 @@ equipEnt(CrimsonEye, UnobtainableItemID, "", "")
 equipEnt(EvilEye, UnobtainableItemID, "", "")  
 equipEnt(DemonSurge, UnobtainableItemID, "", "")  
 equipEnt(Shadowshot, UnobtainableItemID, "How'd you get this?", "Equip Wretched Air, Forblaze, Luce, Aircalibur, Stone, Crimson Eye, Evil Eye, Demon Surge, or Shadowshot.")  // They share an ID, so no need to write the text for all 
+
+
+ALIGN 4 
+itemUseAchievements:
+FILL (512)
+#define itemUseEnt(itemID, id, str, str2) "PUSH; ORG itemUseAchievements + (itemID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Miscellaneous)" 
+
+itemUseEnt(Vulnerary, VulneraryUseID, "Feeling Better Now", "Use a Vulnerary.")
+itemUseEnt(Elixir, ElixirUseID, "Tis but a flesh wound", "Use an Elixir.")
+itemUseEnt(TorchStaff, TorchUseID, "", "")
+itemUseEnt(TorchItem, TorchUseID, "Fog? Shmog", "Use a Torch.")
+itemUseEnt(PureWater, ResUseID, "", "")
+itemUseEnt(Barrier, ResUseID, "Resistant", "Use a Pure Water or Barrier staff.")
+
+itemUseEnt(LightRune, TrapsUseID, "", "")
+itemUseEnt(Mine, TrapsUseID, "Traps Expert", "Use a Mine or Light Rune.")
+itemUseEnt(DoorKey, DoorKeyUseID, "Skeleton Key", "Use a Door Key.")
+itemUseEnt(ChestKey_5, LockpickChestKeyUseID, "", "")
+itemUseEnt(ChestKey, LockpickChestKeyUseID, "", "")
+itemUseEnt(Lockpick, LockpickChestKeyUseID, "Treasure Hunter", "Use a Lockpick or Chest Key.")
+
+itemUseEnt(JunaFruit, HeartSealUseID, "Reclasser", "Use a Heart Seal.")
+itemUseEnt(HeroCrest, PromotionItemUseID, "", "")
+itemUseEnt(KnightCrest, PromotionItemUseID, "", "")
+itemUseEnt(OrionsBolt, PromotionItemUseID, "", "")
+itemUseEnt(ElysianWhip, PromotionItemUseID, "", "")
+itemUseEnt(GuidingRing, PromotionItemUseID, "", "")
+itemUseEnt(HeavenSeal, PromotionItemUseID, "", "")
+itemUseEnt(MasterSeal, PromotionItemUseID, "", "")
+itemUseEnt(OceanSeal, PromotionItemUseID, "", "")
+itemUseEnt(LunarBracelet, PromotionItemUseID, "", "")
+itemUseEnt(SolarBracelet, PromotionItemUseID, "Unlocked Potential", "Use a Promotion Item.")
+
+
+itemUseEnt(EnergyRing, StatboosterUseID, "", "")
+itemUseEnt(SecretBook, StatboosterUseID, "", "")
+itemUseEnt(Speedwings, StatboosterUseID, "", "")
+itemUseEnt(GoddessIcon, StatboosterUseID, "", "")
+itemUseEnt(Dragonshield, StatboosterUseID, "", "")
+itemUseEnt(Talisman, StatboosterUseID, "", "")
+itemUseEnt(Boots, StatboosterUseID, "", "")
+itemUseEnt(BodyRing, StatboosterUseID, "", "")
+itemUseEnt(AngelicRobe, StatboosterUseID, "Snowballing Time", "Use a stat booster.")
+
+itemUseEnt(FillasMight, DancerRingUseID, "", "")
+itemUseEnt(NinissGrace, DancerRingUseID, "", "")
+itemUseEnt(ThorsIre, DancerRingUseID, "", "")
+itemUseEnt(SetsLitany, DancerRingUseID, "Grace's Embodiment", "Use a dancer's ring.")
+
+
+itemUseEnt(MetissTome, MetisTomeUseID, "Favouritism", "Use Metis's Tome.")
+
+
+
 
 ALIGN 4 
 turnCountAchievements:
@@ -489,9 +594,9 @@ turnEnt(Ch17Eirika, 3, Ch17LTC, "", "")
 turnEnt(Ch17Ephraim, 3, Ch17LTC, "Regret Nothing", "Complete Ch. 17 within 3 turns.")
 
 speedEnt(Ch18Eirika, 15, Ch18SR, "", "")
-speedEnt(Ch18Ephraim, 15, Ch18SR, "Double Time", "Complete Ch. 18 within 15 minutes.")
+speedEnt(Ch18Ephraim, 15, Ch18SR, "Eggcellent Time", "Complete Ch. 18 within 15 minutes.")
 turnEnt(Ch18Eirika, 12, Ch18LTC, "", "")
-turnEnt(Ch18Ephraim, 12, Ch18LTC, "One-Turned", "Complete Ch. 18 within 12 turns.")
+turnEnt(Ch18Ephraim, 12, Ch18LTC, "Egg Smasher", "Complete Ch. 18 within 12 turns.")
 
 speedEnt(Ch19Eirika, 4, Ch19SR, "", "")
 speedEnt(Ch19Ephraim, 4, Ch19SR, "Hope in a Hurry", "Complete Ch. 19 within 4 minutes.")
@@ -613,9 +718,23 @@ SHORT $46c0
 ORG $8d14c 
 POIN New_gProcScr_SideWindowMaker 
 
+ORG $28e64 // from 0x8028e60 DoItemUse 
+callHackNew(Hook_DoItemUse) 
+
+
+  // Chapter Menu stuff
+  ORG $59D216
+    BYTE 10 // ChapterMenuWidth
+  ORG $1CA86
+    BYTE 20 // ChapterMenuRightXCoord
+
+
 ORG 0x83CAC
 #endif 
 callHackNew(HookSetGlobalFlag_NotificationWindow) 
+
+
+
 POP 
 
 

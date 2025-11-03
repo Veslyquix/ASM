@@ -142,6 +142,7 @@ extern struct AchievementsRomStruct achievementData[];
 extern u16 flagAchievements[]; 
 extern u16 recruitmentAchievements[]; 
 extern u16 equipAchievements[]; 
+extern u16 itemUseAchievements[]; 
 extern u16 promoAchievements[]; 
 extern struct RewardsStruct rewardsByPercentage[]; 
 

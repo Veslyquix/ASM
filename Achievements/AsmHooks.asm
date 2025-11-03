@@ -140,4 +140,19 @@ bx r3
 .ltorg 
 
 
+.global Hook_DoItemUse 
+.type Hook_DoItemUse, %function 
+Hook_DoItemUse: 
+push {lr} 
+mov r4, r1 @ vanilla 
+blh ClearBg0Bg1
+mov r0, #0 
+blh EndFaceById 
+mov r0, r4 @ item 
+bl UnlockAchievementByItemUse 
+
+
+pop {r3} 
+bx r3 
+.ltorg 
 
