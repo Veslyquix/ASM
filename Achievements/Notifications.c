@@ -57,6 +57,8 @@ extern const int MAX_LINE_WIDTH;
 
 #define StartLabel 0
 #define LoopLabel 1
+#define InitializeLabel 10
+
 #define ClearGfxLabel 97
 #define EnqueueLabel 98
 #define EndLabel 99
@@ -93,18 +95,35 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_GOTO(StartLabel),
     PROC_YIELD,
 
+    PROC_LABEL(InitializeLabel),
+    // PROC_CALL(InitPlayerPhaseInterface),
+    // PROC_SLEEP(100),
+    // PROC_CALL(EndPlayerPhaseSideWindows),
+    PROC_GOTO(StartLabel),
+    PROC_YIELD,
+
     PROC_LABEL(EndLabel),
     PROC_REPEAT(NotificationWindow_Idle),
     PROC_GOTO(StartLabel),
 
     PROC_END,
 };
-
+void BreakHereNow(void)
+{
+    // ResetText();
+    // ResetTextFont();
+    brk;
+}
 struct ProcCmd const New_gProcScr_SideWindowMaker[] = {
+    PROC_END_IF_DUPLICATE,
     PROC_WHILE(DoesBMXFADEExist),
+    PROC_YIELD,
+    PROC_CALL(EndPlayerPhaseSideWindows),
     PROC_CALL(RestartNotificationProc),
     PROC_REPEAT(WhileNotificationActive),
+    PROC_CALL(BreakHereNow),
     PROC_CALL(InitPlayerPhaseInterface),
+    PROC_CALL(BreakHereNow),
     PROC_END,
 };
 
@@ -159,6 +178,7 @@ void StartNotificationProc(int id, int type)
     if (!proc)
     {
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        Proc_Goto(proc, InitializeLabel);
         NotificationInitVariables(proc);
         int slot = GetFreeQueueSlot(proc);
         proc->active = true;
@@ -211,6 +231,7 @@ void RestartNotificationProc(struct PlayerInterfaceProc * parent)
     if (!proc)
     {
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
+        Proc_Goto(proc, InitializeLabel);
         // proc = Proc_StartBlocking(gProcScr_NotificationWindow, parent);
         NotificationInitVariables(proc);
         proc->id = (-1); // bgm only
@@ -455,6 +476,11 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
     }
     struct Text * th = &gStatScreen.text[proc->line];
 
+    proc->finishedPrinting = true;
+    proc->str = NULL;
+    SetTextFont(font);
+    return;
+
     proc->str = NotificationPrintText(proc, th, proc->str);
 
     if (!proc->str || !*proc->str)
@@ -472,7 +498,7 @@ int GetSpriteTextYPos(struct NotificationWindowProc * proc)
 {
     return 10;
 }
-
+// 2028e58
 int GetNotificationSpriteWindowWidth(struct NotificationWindowProc * proc);
 void NotificationWindow_LoopDrawSpriteText(struct NotificationWindowProc * proc)
 {
@@ -520,6 +546,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 {
     proc->showingBgm = false;
     proc->spriteText = true;
+    // proc->spriteText = false;
     proc->lines = 1;
 
     for (int i = 0; i < 4; ++i)
@@ -532,6 +559,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         Proc_Goto(proc, EndLabel);
         return;
     }
+    struct Font * font = gActiveFont;
 
     // proc->spriteText = false;
     proc->delayFrames = 0;
@@ -540,18 +568,14 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     proc->str = (void *)str;
     proc->strOriginal = (void *)str;
     proc->unitClock = 0;
-    struct Font * font = gActiveFont;
     InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, NotificationObjPalID);
-
     if (proc->spriteText)
     {
-
-        // ResetText();
-        // ResetTextFont();
 
         void * vram = GetSpriteTextVRAM(proc);
         NotificationInitSpriteText(vram);
     }
+
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
     proc->line = 0;
@@ -581,8 +605,8 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
             PutText(&th[i], &gBG0TilemapBuffer[TILEMAP_INDEX(1, 1 + (i * 2))]);
         }
     }
+
     SetTextFont(font);
-    return;
 }
 
 int GetNotificationStringTextLenASCII_Wrapped(const char * str)
@@ -797,9 +821,40 @@ void NotificationWindowDraw(struct NotificationWindowProc * proc)
 
 int UpdateIdleDelayFrames(struct NotificationWindowProc * proc)
 {
-    proc->delayFrames = 2;
+    proc->delayFrames = 0;
 
     return true;
+}
+
+extern void Hook_EndPlayerPhaseSideWindows2(void);
+struct ProcCmd const gProcScr_VeslyEndPlayerPhaseSideWindows[] = {
+    PROC_NAME("VeslyEndPlayerPhaseSideWindows"),
+    // PROC_YIELD,
+    // PROC_SLEEP(2),
+    PROC_CALL(Hook_EndPlayerPhaseSideWindows2),
+    PROC_END,
+};
+
+void InterruptNotification(void)
+{
+    struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
+    if (!proc)
+    {
+        return;
+    }
+    // brk;
+
+    Hook_EndPlayerPhaseSideWindows2();
+    return;
+
+    InitPlayerPhaseInterface();
+    Hook_EndPlayerPhaseSideWindows2();
+
+    // Proc_Start(gProcScr_VeslyEndPlayerPhaseSideWindows, (void *)3);
+    // if (gActiveFont->chr_counter < 0x40)
+    // {
+    // gActiveFont->chr_counter = 0x40;
+    // }
 }
 
 // idle for a couple extra frames so menu closing to MMB opening doesn't trigger

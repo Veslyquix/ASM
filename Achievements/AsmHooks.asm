@@ -156,3 +156,44 @@ pop {r3}
 bx r3 
 .ltorg 
 
+.global Hook_EndPlayerPhaseSideWindows
+.type Hook_EndPlayerPhaseSideWindows, %function 
+Hook_EndPlayerPhaseSideWindows: 
+push {lr} 
+
+bl InterruptNotification 
+
+pop {r3} 
+bx r3 
+.ltorg 
+
+
+.global Hook_EndPlayerPhaseSideWindows2
+.type Hook_EndPlayerPhaseSideWindows2, %function 
+Hook_EndPlayerPhaseSideWindows2: 
+push {lr} 
+
+ldr r0, =0x808d17c 
+ldr r0, [r0] 
+blh Proc_EndEach
+
+ldr r0, =0x808d180 
+ldr r0, [r0] @ gProcScr_UnitDisplay_Burst 
+blh Proc_EndEach
+ldr r0, =0x808d184
+ldr r0, [r0] @ gProcScr_TerrainDisplay 
+blh Proc_EndEach
+
+ldr r0, =0x808d188 
+ldr r0, [r0] 
+blh Proc_EndEach 
+
+ldr r0, =0x808d18c 
+ldr r0, [r0] 
+blh Proc_EndEach 
+
+
+ldr r3, =0x808d171 
+bx r3 
+.ltorg 
+
