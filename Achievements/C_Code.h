@@ -139,7 +139,12 @@ extern int Category_Rewards_Link;
 
 extern struct AchievementsRomStruct achievementData[];
 
-extern u16 combatAchievements[]; 
+struct combatStruct {
+    int (*customFunc)(struct BattleHit *round, struct BattleUnit *bunitA, struct BattleUnit *bunitB);
+    u16 id;
+    u16 pad;
+};
+extern struct combatStruct combatAchievements[];
 extern u16 flagAchievements[]; 
 extern u16 recruitmentAchievements[]; 
 extern u16 equipAchievements[]; 

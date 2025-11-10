@@ -18,21 +18,47 @@ extern struct BattleHit * GetRoundData(int roundID)
     return (struct BattleHit *)round;
 }
 
-void UnlockAchievementByCombat(int pid)
+void UnlockAchievementByCombat(int pid, int roundID)
 {
     struct Unit * unit = GetUnitFromCharId(pid);
-    struct BattleUnit * bunit = &gBattleActor;
+    struct BattleUnit * bunitA = &gBattleActor;
+    struct BattleUnit * bunitB = &gBattleTarget;
 
-    if (unit->index != bunit->unit.index)
+    if (unit->index != bunitA->unit.index)
     {
-        bunit = &gBattleTarget;
+        bunitA = &gBattleTarget;
+        bunitB = &gBattleActor;
     }
-    struct BattleHit * round = GetRoundData(0);
-    brk;
-    bunit->unit.def = round->hpChange;
-    round = GetRoundData(1);
-    bunit->unit.skl = round->hpChange;
-    brk;
+    struct BattleHit * round = GetRoundData(roundID);
+    int (*customFunc)(struct BattleHit *, struct BattleUnit *, struct BattleUnit *);
+    for (int i = 0; i < 512; ++i)
+    {
+        customFunc = combatAchievements[i].customFunc;
+        if ((int)customFunc == (-1))
+        {
+            break;
+        }
+        if (customFunc && customFunc(round, bunitA, bunitB))
+        {
 
-    return;
+            UnlockAchievement(combatAchievements[i].id);
+        }
+    }
+}
+
+int Check30DmgFunc(struct BattleHit * round, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (round->hpChange > 3)
+    {
+        return true;
+    }
+    return false;
+}
+int Check50DmgFunc(struct BattleHit * round, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (round->hpChange > 5)
+    {
+        return true;
+    }
+    return false;
 }

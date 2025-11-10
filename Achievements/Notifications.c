@@ -59,8 +59,6 @@ extern const int MAX_LINE_WIDTH;
 #define DefaultTextChr 0x80
 #define NotificationChr 0x180
 
-#define NotificationObjPalID 0x15
-
 #define StartLabel 0
 #define LoopLabel 1
 #define ClearGfxLabel 97
@@ -317,6 +315,23 @@ const char * GetPlayingBGMName(struct NotificationWindowProc * proc)
     return buf;
 }
 
+int CheckInBattle(void)
+{
+    struct ProcEkrBattle * battleProc = gpProcEkrBattle;
+    if (!battleProc)
+    {
+        return false;
+    } // 0 after suspend until battle start
+    // if (!proc->anim2)
+    // {
+    // return false;
+    // }
+    if (gEkrBattleEndFlag)
+    {
+        return false;
+    } // 0 after suspend until battle done
+    return true;
+}
 extern const int DisableBGMNotificationsFlag;
 int ShowBgm(struct NotificationWindowProc * proc)
 {
@@ -326,6 +341,10 @@ int ShowBgm(struct NotificationWindowProc * proc)
         return false;
     }
     proc->bgm = songID;
+    if (CheckInBattle())
+    {
+        return false;
+    }
     return !CheckFlag(DisableBGMNotificationsFlag);
 }
 
@@ -398,32 +417,26 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 
 extern struct Font * gActiveFont;
 
-int CheckInBattle(void)
-{
-    struct ProcEkrBattle * battleProc = gpProcEkrBattle;
-    if (!battleProc)
-    {
-        return false;
-    } // 0 after suspend until battle start
-    // if (!proc->anim2)
-    // {
-    // return false;
-    // }
-    if (gEkrBattleEndFlag)
-    {
-        return false;
-    } // 0 after suspend until battle done
-    return true;
-}
 int GetSpriteTextCHR(struct NotificationWindowProc * proc)
 {
 
     if (CheckInBattle())
     {
-        return 0x140;
+        return 0xC0;
+        // return 0x140;
     }
     return 0x180;
 }
+#define NotificationObjPalID 0x15
+int GetNotifObjPalID(void)
+{
+    if (CheckInBattle())
+    {
+        return 0x12;
+    }
+    return 0x15;
+}
+
 void * GetSpriteTextVRAM(struct NotificationWindowProc * proc)
 {
     return VRAM + (void *)0x10000 + (GetSpriteTextCHR(proc) << 5);
@@ -439,9 +452,10 @@ void ClearNotificationText(struct NotificationWindowProc * proc, struct Text * t
         InitSpriteText(text);
 #ifdef SpriteTextBG
         // SpriteText_DrawBackgroundExt(text, 0x44444444);
+        // SpriteText_DrawBackgroundExt(text, 0);
         SpriteText_DrawBackground(text);
 #else
-        SpriteText_DrawBackgroundExt(text, 0); // tileWidth?
+        SpriteText_DrawBackgroundExt(text, 0);
 #endif
     }
     else
@@ -450,7 +464,12 @@ void ClearNotificationText(struct NotificationWindowProc * proc, struct Text * t
     }
     SetTextFont(font);
 }
-
+struct Text * GetTextHandleForLine(int line)
+{
+    // return &gHelpBoxSt.text[line]; // max 3 lines
+    return &gLinkArenaSt.texts[line]; // max 11
+    // return &gStatScreen.text[line]; // doesn't work in battle fsr
+}
 void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 {
     struct Font * font = gActiveFont;
@@ -460,7 +479,8 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
         SetTextFont(font);
         return;
     }
-    struct Text * th = &gStatScreen.text[proc->line];
+
+    struct Text * th = GetTextHandleForLine(proc->line);
 
     proc->str = NotificationPrintText(proc, th, proc->str);
 
@@ -507,19 +527,19 @@ extern u8 gGfx_NotificationTextBox4[];
 extern u8 gGfx_NotificationTextBox5[];
 void NotificationInitSpriteText(void * vram)
 {
-    // InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, NotificationObjPalID);
-    InitSpriteTextFont(&gHelpBoxSt.font, vram, NotificationObjPalID);
+    // InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, GetNotifObjPalID());
+    InitSpriteTextFont(&gHelpBoxSt.font, vram, GetNotifObjPalID());
     SetTextFontGlyphs(1);
-    // ApplyPalette(gUnknown_0859EF20, NotificationObjPalID);
+    // ApplyPalette(gUnknown_0859EF20, GetNotifObjPalID());
 
     Decompress(gGfx_NotificationTextBox1, vram + 0x360);
     Decompress(gGfx_NotificationTextBox2, vram + 0x760);
     Decompress(gGfx_NotificationTextBox3, vram + 0xb60);
     Decompress(gGfx_NotificationTextBox4, vram + 0xf60);
     Decompress(gGfx_NotificationTextBox5, vram + 0x1360);
-    gHelpBoxSt.oam2_base = (((u32)vram << 0x11) >> 0x16) + (NotificationObjPalID & 0xF) * 0x1000;
-    // ApplyPalette(Pal_HelpBox, NotificationObjPalID);
-    ApplyPalette(gPal_HelpTextBox, NotificationObjPalID);
+    gHelpBoxSt.oam2_base = (((u32)vram << 0x11) >> 0x16) + (GetNotifObjPalID() & 0xF) * 0x1000;
+    // ApplyPalette(Pal_HelpBox, GetNotifObjPalID());
+    ApplyPalette(gPal_HelpTextBox, GetNotifObjPalID());
     BlendSprites(2);
 }
 
@@ -548,7 +568,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     proc->strOriginal = (void *)str;
     proc->unitClock = 0;
     struct Font * font = gActiveFont;
-    InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, NotificationObjPalID);
+    InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, GetNotifObjPalID());
 
     if (proc->spriteText)
     {
@@ -567,7 +587,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     {
         NotificationWindowDraw(proc);
     }
-    struct Text * th = &gStatScreen.text[0];
+    struct Text * th = GetTextHandleForLine(0);
 
     for (int i = 0; i < proc->lines; i++)
     {

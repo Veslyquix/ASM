@@ -264,9 +264,10 @@ rewardItem(Reward_SilverCard, 26, SilverCard, 50, "50% completion", "Silver Card
 
 ALIGN 4 
 combatAchievements: 
-FILL (512) 
-#define combatEnt(cmbID, id, str, str2) "PUSH; ORG combatAchievements + (cmbID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Combat)" 
-combatEnt(1,    GameOverCombatID, "The Wounded Trainee", "Recruit Ross") 
+FILL (512*4) 
+#define combatEnt(func, cmbID, id, str, str2) "PUSH; ORG combatAchievements + (cmbID * 8); POIN func; SHORT id 0 ; POP; achievementEnt(id, str, str2, Category_Combat)" 
+combatEnt(Check30DmgFunc, 1,    GameOverCombatID, "Combat King I", "Deal 30+ damage in one hit.") 
+combatEnt((-1), 2,    RossRecruitID, "", "") // Terminator function 
 
 // Triangle Reversed: Defeat an enemy with weapon triangle disadvantage. 
 
@@ -740,18 +741,11 @@ callHackNew(Hook_DoItemUse)
 ORG $7a9B8 
 callHackNew_r4(Hook_MapAnim_DisplayDeathQuote) // 807a984
 
-
-ORG $52ef8 
-callHackNew(Hook_sub_8052EAC) // sub_8052EAC
-ORG $52470 
-callHackNew(Hook_EfxHpBar_DeclineToDeath) 
-
 ORG $52518 
-callHackNew(Hook_EfxHpBar_MoveCameraOnEnd) 
-//8052504 T EfxHpBar_MoveCameraOnEnd
+callHackNew(Hook_EfxHpBar_MoveCameraOnEnd) //8052504 T EfxHpBar_MoveCameraOnEnd
 
 
-  // Chapter Menu stuff
+  // Chapter Menu to fit "Achievements" 
   ORG $59D216
     BYTE 10 // ChapterMenuWidth
   ORG $1CA86
