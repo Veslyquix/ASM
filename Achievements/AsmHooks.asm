@@ -156,3 +156,84 @@ pop {r3}
 bx r3 
 .ltorg 
 
+.global Hook_MapAnim_DisplayDeathQuote 
+.type Hook_MapAnim_DisplayDeathQuote, %function 
+Hook_MapAnim_DisplayDeathQuote: 
+push {r5, lr} 
+add r0, r2 
+lsl r0, #2 
+add r0, r3 
+ldr r0, [r0] @ gManimSt.actor
+ldr r5, [r0] @ unit 
+
+ldrb r4, [r5, #4] @ vanilla puts unit ID in r4 
+mov r0, r4 
+bl UnlockAchievementByCombat
+pop {r5} 
+pop {r0} 
+bx r0 
+.ltorg 
+
+.global Hook_sub_8052EAC 
+.type Hook_sub_8052EAC, %function 
+Hook_sub_8052EAC: 
+push {r4, lr}
+blh 0x805A16C @ GetAISSubject 
+@ if 0, gpEkrBattleUnitLeft, if 1, gpEkrBattleUnitRight 
+add r0, r0, r4 
+ldrb r0, [r0] 
+push {r0} 
+bl UnlockAchievementByCombat
+pop {r0} 
+blh 0x80835DC @ display death quote 
+pop {r4} 
+pop {r0} 
+bx r0 
+.ltorg 
+
+.global Hook_EfxHpBar_DeclineToDeath
+.type Hook_EfxHpBar_DeclineToDeath, %function 
+Hook_EfxHpBar_DeclineToDeath: 
+push {r5, lr} 
+blh 0x805a16c 
+mov r5, r0 @ for Vesly 
+ldr r1, =0x805249c 
+ldr r1, [r1] 
+lsl r0, #1 
+add r0, r1 
+strh r4, [r0] 
+
+ldrb r0, [r5] 
+bl UnlockAchievementByCombat
+
+pop {r5} 
+pop {r0} 
+bx r0 
+.ltorg 
+
+.global Hook_EfxHpBar_MoveCameraOnEnd 
+.type Hook_EfxHpBar_MoveCameraOnEnd, %function 
+Hook_EfxHpBar_MoveCameraOnEnd: 
+push {r4, lr} 
+strh r0, [r5, #0x2c] 
+mov r0, #1 
+strh r0, [r5, #0x2e] 
+
+ldr r0, [r5, #0x60] 
+blh 0x805a16c @ GetAISSubject
+ldr r1, =gEkrPids 
+ldrb r0, [r1, r0] 
+bl UnlockAchievementByCombat
+
+
+ldr r0, [r5, #0x64] 
+blh 0x805a2b4 
+
+
+
+pop {r4} 
+pop {r1} 
+bx r1 
+.ltorg 
+
+

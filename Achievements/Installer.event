@@ -65,12 +65,13 @@ WORD 184 // longer for sprite text
 
 
 #define Category_Rewards 1 
-#define Category_Recruitables 2 
-#define Category_Equipment 3
-#define Category_Promotions 4
-#define Category_ChapterTime 5 
-#define Category_TurnCount 6
-#define Category_Miscellaneous 7
+#define Category_Combat 2 
+#define Category_Recruitables 3 
+#define Category_Equipment 4
+#define Category_Promotions 5
+#define Category_ChapterTime 6 
+#define Category_TurnCount 7
+#define Category_Miscellaneous 8
 #define Category_Terminator 12 
 
 ALIGN 4 
@@ -83,6 +84,7 @@ ALIGN 4
 gTextIds_AchievementsCategoriesTopic: 
 POIN blankStr 
 POIN RewardsHeader
+POIN CombatHeader
 POIN RecruitablesHeader
 POIN EquipmentHeader 
 POIN PromotionsHeader 
@@ -96,6 +98,8 @@ blankStr:
 txt("")
 RewardsHeader: 
 txt("Rewards") 
+CombatHeader: 
+txt("Combat") 
 RecruitablesHeader: 
 txt("Recruitables") 
 
@@ -258,10 +262,20 @@ rewardItem(Reward_SilverCard, 26, SilverCard, 50, "50% completion", "Silver Card
 
 
 
+ALIGN 4 
+combatAchievements: 
+FILL (512) 
+#define combatEnt(cmbID, id, str, str2) "PUSH; ORG combatAchievements + (cmbID * 2); SHORT id ; POP; achievementEnt(id, str, str2, Category_Combat)" 
+combatEnt(1,    GameOverCombatID, "The Wounded Trainee", "Recruit Ross") 
 
+// Triangle Reversed: Defeat an enemy with weapon triangle disadvantage. 
 
-
-
+// Against all odds: Survive a battle with only 1 HP
+// Combat King I: Deal 30+ in one attack
+// Combat King II: Deal 50+ in one attack
+// Combat King III: Deal 100+ in one attack
+// Well, shit: Break a weapon
+// One punch man: Kill a unit in one attack
 
 ALIGN 4 
 recruitmentAchievements: 
@@ -671,6 +685,7 @@ txt("Critical security updates are required."); BYTE 0
 
 
 #ifndef callHackNew
+	#define callHackNew_r4(offset) 		"BYTE $01 $4C $A6 $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 	#define callHackNew(offset)         "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 	#define callHackNew_r2(offset) 		"BYTE $01 $4A $96 $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
@@ -720,6 +735,20 @@ POIN New_gProcScr_SideWindowMaker
 
 ORG $28e64 // from 0x8028e60 DoItemUse 
 callHackNew(Hook_DoItemUse) 
+
+
+ORG $7a9B8 
+callHackNew_r4(Hook_MapAnim_DisplayDeathQuote) // 807a984
+
+
+ORG $52ef8 
+callHackNew(Hook_sub_8052EAC) // sub_8052EAC
+ORG $52470 
+callHackNew(Hook_EfxHpBar_DeclineToDeath) 
+
+ORG $52518 
+callHackNew(Hook_EfxHpBar_MoveCameraOnEnd) 
+//8052504 T EfxHpBar_MoveCameraOnEnd
 
 
   // Chapter Menu stuff

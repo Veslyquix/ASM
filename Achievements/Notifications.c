@@ -32,7 +32,7 @@ void WhileNotificationActive(struct PlayerInterfaceProc * parent)
     struct Menu * menu = Proc_Find(sProc_Menu);
     if (menu)
     {
-        return;
+        Proc_End(parent);
     }
 
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);

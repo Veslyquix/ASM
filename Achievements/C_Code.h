@@ -139,6 +139,7 @@ extern int Category_Rewards_Link;
 
 extern struct AchievementsRomStruct achievementData[];
 
+extern u16 combatAchievements[]; 
 extern u16 flagAchievements[]; 
 extern u16 recruitmentAchievements[]; 
 extern u16 equipAchievements[]; 
@@ -163,6 +164,7 @@ void DoNotificationForAchievement(int id);
 
 #include "BonusClaim.c"
 #include "Achievements.c"
+#include "Combat.c"
 #include "Notifications.c"
 #include "AchievementsMenu.c" 
 #include "Autohooks.c" 
