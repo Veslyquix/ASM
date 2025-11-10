@@ -52,11 +52,7 @@ struct NewBonusClaimRamStruct
     u8 viewable;
 };
 
-struct AchievementsStruct
-{
-    u8 complete;
-    u8 shown[3]; // save file 0, 1, or 2 
-};
+
 struct AchievementsRomStruct
 {
     const char * str; 
@@ -140,7 +136,7 @@ extern int Category_Rewards_Link;
 extern struct AchievementsRomStruct achievementData[];
 
 struct combatStruct {
-    int (*customFunc)(struct BattleHit *round, struct BattleUnit *bunitA, struct BattleUnit *bunitB);
+    int (*customFunc)(struct BattleHit *round, struct BattleHit *roundNext, struct BattleUnit *bunitA, struct BattleUnit *bunitB);
     u16 id;
     u16 pad;
 };

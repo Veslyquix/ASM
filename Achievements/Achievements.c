@@ -3,8 +3,8 @@
 // to do:
 // on new game, wipe shown[0], shown[1], or shown[2] - DONE
 // on copy save, overwrite shown[0], shown[1], or shown[2] - not done
-#define AchBits (8 / 4);
-
+#define AchMod 4
+#define AchDiv 8
 extern int DebugFlag_Link;
 int CannotUnlockAchievements(void)
 {
@@ -13,34 +13,73 @@ int CannotUnlockAchievements(void)
 }
 
 extern int AlwaysShowAchievement;
+struct AchievementsStruct
+{
+    u16 complete : 4;
+    u16 shown0 : 4; // save 0
+    u16 shown1 : 4; // save 1
+    u16 shown2 : 4; // save 2
+};
 void SetAchievement(struct AchievementsStruct * data, int i)
 {
-    int bit = i % 8;
-    int offset = i / AchBits;
+    int bit = i % AchMod;
+    int offset = i / AchDiv;
+    brk;
     data[offset].complete |= 1 << bit;
 }
 void ShownAchievement(struct AchievementsStruct * data, int i)
 {
     int slot = gPlaySt.gameSaveSlot;
-    int bit = i % 8;
-    int offset = i / AchBits;
-    data[offset].shown[slot] |= 1 << bit;
+    int bit = i % AchMod;
+    int offset = i / AchDiv;
+    switch (slot)
+    {
+        case 0:
+        {
+            data[offset].shown0 |= 1 << bit;
+            break;
+        }
+        case 1:
+        {
+            data[offset].shown1 |= 1 << bit;
+            break;
+        }
+        case 2:
+        {
+            data[offset].shown2 |= 1 << bit;
+            break;
+        }
+    }
 }
-
 int IsAchievementComplete(int id)
 {
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&data[4];
-    ent += id / AchBits;
-    return ent->complete & (1 << (id % 8));
+    ent += id / AchDiv;
+    return ent->complete & (1 << (id % AchMod));
 }
 int IsAchievementShown(int id)
 {
     int slot = gPlaySt.gameSaveSlot;
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&data[4];
-    ent += id / AchBits;
-    return ent->shown[slot] & (1 << (id % 8));
+    ent += id / AchDiv;
+    switch (slot)
+    {
+        case 0:
+        {
+            return ent->shown0 & (1 << (id % AchMod));
+        }
+        case 1:
+        {
+            return ent->shown1 & (1 << (id % AchMod));
+        }
+        case 2:
+        {
+            return ent->shown2 & (1 << (id % AchMod));
+        }
+    }
+    return 0;
 }
 
 int CountTotalAchievements()
@@ -58,6 +97,7 @@ int CountTotalAchievements()
         data++;
         i++;
     }
+
     return i;
 }
 
@@ -65,9 +105,11 @@ int IsAchievementCompletePerc(int id, struct AchievementsStruct * ent, struct Ac
 {
     data += id;
     if (data->category == Category_Rewards_Link)
+    {
         return false;
-    ent += id / AchBits;
-    return ent->complete & (1 << (id % 8));
+    }
+    ent += id / AchDiv;
+    return ent->complete & (1 << (id % AchMod));
 }
 
 int CountCompletedAchievements()
@@ -89,6 +131,7 @@ int GetAchievementPercentage()
 {
     int done = CountCompletedAchievements();
     int max = CountTotalAchievements();
+    // brk;
     int result = (done * 100) / max;
     return result;
 }
@@ -162,7 +205,9 @@ void ClearAchievementsForSlot(int slot)
     struct AchievementsStruct * achievements = (void *)&data[4];
     for (int i = 0; i < SRAM_alloc; ++i)
     {
-        achievements[i].shown[slot] = 0;
+        achievements[i].shown0 = 0;
+        achievements[i].shown1 = 0;
+        achievements[i].shown2 = 0;
     }
     SaveBonusContentData(data);
 }

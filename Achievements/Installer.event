@@ -266,17 +266,17 @@ ALIGN 4
 combatAchievements: 
 FILL (512*4) 
 #define combatEnt(func, cmbID, id, str, str2) "PUSH; ORG combatAchievements + (cmbID * 8); POIN func; SHORT id 0 ; POP; achievementEnt(id, str, str2, Category_Combat)" 
-combatEnt(Check30DmgFunc, 1,    GameOverCombatID, "Combat King I", "Deal 30+ damage in one hit.") 
-combatEnt((-1), 2,    RossRecruitID, "", "") // Terminator function 
+// combatEnt(Check30DmgFunc, 1,    GameOverCombatID, "Combat King I", "Deal 30+ damage in one hit.") 
+combatEnt(Check30DmgFunc, 1,    Damage30CombatID, "Combat King I", "Deal 30+ damage in one hit.") 
+combatEnt(Check50DmgFunc, 2,    Damage50CombatID, "Combat King II", "Deal 50+ damage in one hit.") 
+combatEnt(Check100DmgFunc, 3,    Damage100CombatID, "Combat King III", "Deal 100+ damage in one hit.") 
+combatEnt(CheckOHKODmgFunc, 4,    DamageOHKOCombatID, "One Punch Man", "Defeat a full hp enemy in one hit.") 
+combatEnt(Check1HPSurvFunc, 5,    OneHPSurvCombatID, "Hanging on by a Thread ", "Survive combat with 1 hp.") // space after thread because of weird width issue 
+combatEnt(Check1HPWinFunc, 6,    OneHPWinCombatID, "Against All Odds", "Defeat an enemy with 1 hp.") 
+combatEnt(CheckWTDFunc, 7,    WTDCombatID, "Triangle Reverser", "Defeat an enemy with weapon triangle disadvantage. ") 
+combatEnt(CheckBrokeLastWepFunc, 8,    BreakWepCombatID, "That was my last one!", "Break your weapon without any extras.") 
+combatEnt((-1), 30,    RossRecruitID, "", "") // Terminator function 
 
-// Triangle Reversed: Defeat an enemy with weapon triangle disadvantage. 
-
-// Against all odds: Survive a battle with only 1 HP
-// Combat King I: Deal 30+ in one attack
-// Combat King II: Deal 50+ in one attack
-// Combat King III: Deal 100+ in one attack
-// Well, shit: Break a weapon
-// One punch man: Kill a unit in one attack
 
 ALIGN 4 
 recruitmentAchievements: 

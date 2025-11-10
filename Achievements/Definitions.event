@@ -59,10 +59,14 @@ Reward_SilverCard
 
 
 
-
-
-
-GameOverCombatID
+Damage30CombatID
+Damage50CombatID
+Damage100CombatID
+DamageOHKOCombatID
+OneHPSurvCombatID
+OneHPWinCombatID
+WTDCombatID 
+BreakWepCombatID 
 
 
 
