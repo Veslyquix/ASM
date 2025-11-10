@@ -29,6 +29,12 @@ int IsNotificationActive(struct NotificationWindowProc * proc)
 struct ProcCmd const gProcScr_NotificationWindow[];
 void WhileNotificationActive(struct PlayerInterfaceProc * parent)
 {
+    struct Menu * menu = Proc_Find(sProc_Menu);
+    if (menu)
+    {
+        return;
+    }
+
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!IsNotificationActive(proc))
     {
@@ -822,10 +828,10 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
         return result;
     }
 
-    if (GetGameLock())
-    {
-        return UpdateIdleDelayFrames(proc);
-    }
+    // if (GetGameLock())
+    // {
+    // return UpdateIdleDelayFrames(proc);
+    // }
     // playerCursorDisplay
     if (!proc->spriteText)
     {
@@ -860,7 +866,7 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
     {
         if (playerPhase->proc_lockCnt) // player phase has a blocking proc (such as the debugger)
         {
-            return UpdateIdleDelayFrames(proc);
+            // return UpdateIdleDelayFrames(proc);
         }
     }
     else

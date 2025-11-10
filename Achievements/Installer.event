@@ -17,7 +17,7 @@ PUSH
 // ORG $1DFF720
 // POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1DFF758
+ORG $1E00064
 POIN MapMenu_AchievementsCommand
 POP 
 
