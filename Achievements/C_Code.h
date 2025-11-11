@@ -2,6 +2,11 @@
 //#include "include/gbafe.h" 
 #include "gbafe.h" 
 
+
+#define Ach_SRAM_Size 0x144 
+#define Ach_Section_Size 0x50 
+#define Ach_Max (Ach_Section_Size*8) // 640 
+
 #define MaxEntriesPerCategory 60 
 struct NewGuideSt
 {

@@ -3,7 +3,7 @@
 // to do:
 // on new game, wipe shown[0], shown[1], or shown[2] - DONE
 // on copy save, overwrite shown[0], shown[1], or shown[2] - not done
-#define AchMod 4
+#define AchMod 8
 #define AchDiv 8
 extern int DebugFlag_Link;
 int CannotUnlockAchievements(void)
@@ -15,73 +15,54 @@ int CannotUnlockAchievements(void)
 extern int AlwaysShowAchievement;
 struct AchievementsStruct
 {
-    u16 complete : 4;
-    u16 shown0 : 4; // save 0
-    u16 shown1 : 4; // save 1
-    u16 shown2 : 4; // save 2
+    u8 complete[Ach_Section_Size];
+    u8 shown[Ach_Section_Size * 3];
 };
 void SetAchievement(struct AchievementsStruct * data, int i)
 {
     int bit = i % AchMod;
     int offset = i / AchDiv;
-    brk;
-    data[offset].complete |= 1 << bit;
+    data->complete[offset] |= 1 << bit;
 }
 void ShownAchievement(struct AchievementsStruct * data, int i)
 {
     int slot = gPlaySt.gameSaveSlot;
     int bit = i % AchMod;
     int offset = i / AchDiv;
-    switch (slot)
-    {
-        case 0:
-        {
-            data[offset].shown0 |= 1 << bit;
-            break;
-        }
-        case 1:
-        {
-            data[offset].shown1 |= 1 << bit;
-            break;
-        }
-        case 2:
-        {
-            data[offset].shown2 |= 1 << bit;
-            break;
-        }
-    }
+    offset += slot * Ach_Section_Size;
+
+    data->shown[offset] |= 1 << bit;
 }
-int IsAchievementComplete(int id)
+int IsAchievementComplete(int i)
 {
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&data[4];
-    ent += id / AchDiv;
-    return ent->complete & (1 << (id % AchMod));
+    int bit = i % AchMod;
+    int offset = i / AchDiv;
+    return ent->complete[offset] & (1 << bit);
 }
-int IsAchievementShown(int id)
+int IsAchievementShown(int i)
 {
     int slot = gPlaySt.gameSaveSlot;
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&data[4];
-    ent += id / AchDiv;
-    switch (slot)
-    {
-        case 0:
-        {
-            return ent->shown0 & (1 << (id % AchMod));
-        }
-        case 1:
-        {
-            return ent->shown1 & (1 << (id % AchMod));
-        }
-        case 2:
-        {
-            return ent->shown2 & (1 << (id % AchMod));
-        }
-    }
-    return 0;
+    int bit = i % AchMod;
+    int offset = i / AchDiv;
+    offset += slot * Ach_Section_Size;
+    return ent->shown[offset] & (1 << bit);
 }
 
+int IsAchievementCompletePerc(int id, struct AchievementsStruct * ent, struct AchievementsRomStruct * data)
+{
+    data += id;
+    if (data->category == Category_Rewards_Link)
+    {
+        return false;
+    }
+    int bit = id % AchMod;
+    int offset = id / AchDiv;
+    return ent->complete[offset] & (1 << bit);
+}
 int CountTotalAchievements()
 {
     int i = 0;
@@ -99,17 +80,6 @@ int CountTotalAchievements()
     }
 
     return i;
-}
-
-int IsAchievementCompletePerc(int id, struct AchievementsStruct * ent, struct AchievementsRomStruct * data)
-{
-    data += id;
-    if (data->category == Category_Rewards_Link)
-    {
-        return false;
-    }
-    ent += id / AchDiv;
-    return ent->complete & (1 << (id % AchMod));
 }
 
 int CountCompletedAchievements()
@@ -131,7 +101,7 @@ int GetAchievementPercentage()
 {
     int done = CountCompletedAchievements();
     int max = CountTotalAchievements();
-    // brk;
+    brk;
     int result = (done * 100) / max;
     return result;
 }
@@ -172,7 +142,7 @@ int GetAchievementColour(int id)
 
 void UnlockAllAchievements(void)
 {
-    CpuFill16(0, gpBonusClaimData, 0x144);
+    CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
     LoadBonusContentData(gpBonusClaimData);
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     // should use up 4 bytes
@@ -187,27 +157,24 @@ void UnlockAllAchievements(void)
 
 void UnlockAll(void)
 {
-    CpuFill16(0xFF, gpBonusClaimData, 0x144);
+    CpuFill16(0xFF, gpBonusClaimData, Ach_SRAM_Size);
     SaveBonusContentData(gpBonusClaimData);
 }
 void LockAll(void)
 {
-    CpuFill16(0, gpBonusClaimData, 0x144);
+    CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
     SaveBonusContentData(gpBonusClaimData);
 }
 
-#define SRAM_alloc 0x140
 void ClearAchievementsForSlot(int slot)
 {
-    CpuFill16(0, gpBonusClaimData, 0x144);
+    CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
     LoadBonusContentData(gpBonusClaimData);
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * achievements = (void *)&data[4];
-    for (int i = 0; i < SRAM_alloc; ++i)
+    for (int i = 0; i < (Ach_Section_Size * 3); ++i)
     {
-        achievements[i].shown0 = 0;
-        achievements[i].shown1 = 0;
-        achievements[i].shown2 = 0;
+        achievements->shown[i] = 0;
     }
     SaveBonusContentData(data);
 }
@@ -223,7 +190,7 @@ void UnlockAchievement(int id)
         return;
     }
     int saveData = false;
-    CpuFill16(0, gpBonusClaimData, 0x144);
+    CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
     LoadBonusContentData(gpBonusClaimData);
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * achievements = (void *)&data[4];
@@ -246,7 +213,7 @@ void UnlockAchievementNoMsg(int id)
         return;
     }
     int saveData = false;
-    CpuFill16(0, gpBonusClaimData, 0x144);
+    CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
     LoadBonusContentData(gpBonusClaimData);
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * achievements = (void *)&data[4];
