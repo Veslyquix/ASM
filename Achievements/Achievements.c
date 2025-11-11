@@ -101,7 +101,6 @@ int GetAchievementPercentage()
 {
     int done = CountCompletedAchievements();
     int max = CountTotalAchievements();
-    brk;
     int result = (done * 100) / max;
     return result;
 }

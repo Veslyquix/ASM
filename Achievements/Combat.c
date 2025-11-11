@@ -166,13 +166,23 @@ int DoesUnitHaveMoreOfWep(struct BattleUnit * bunit)
     int wep = bunit->weapon;
     int weaponSlotIndex = bunit->weaponSlotIndex;
     struct Unit * unit = &bunit->unit;
+    int item;
     for (int i = 0; i < 5; ++i)
     {
+        item = unit->items[i];
+        if (!item)
+        {
+            break;
+        }
         if (i == weaponSlotIndex)
         {
             continue;
         }
-        if (ITEM_INDEX(unit->items[i]) == ITEM_INDEX(wep))
+        if (CanUnitUseWeapon(&bunit->unit, item))
+        {
+            return true;
+        }
+        if (ITEM_INDEX(item) == ITEM_INDEX(wep))
         {
             return true;
         }
@@ -185,13 +195,183 @@ int CheckBrokeLastWepFunc(
 {
     if (roundNext->info & BATTLE_HIT_INFO_END)
     {
-        if (bunitA->weaponBroke && DoesUnitHaveMoreOfWep(bunitA) && IsPlayer(bunitA) && bunitB->unit.curHP == 0)
+        if (bunitA->weaponBroke && !DoesUnitHaveMoreOfWep(bunitA) && IsPlayer(bunitA))
         {
             return true;
         }
-        if (bunitB->weaponBroke && DoesUnitHaveMoreOfWep(bunitA) && IsPlayer(bunitB) && bunitA->unit.curHP == 0)
+        if (bunitB->weaponBroke && !DoesUnitHaveMoreOfWep(bunitA) && IsPlayer(bunitB))
         {
             return true;
+        }
+    }
+    return false;
+}
+
+int CheckDevilAxe2Func(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!IsPlayer(bunitA))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_DEVIL)
+    {
+        return true;
+    }
+    return false;
+}
+int CheckDevilAxe3Func(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!IsPlayer(bunitA))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_DEVIL)
+    {
+        if (bunitA->unit.curHP <= 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int CheckLowPercCritPlayerFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!IsPlayer(bunitA))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_CRIT)
+    {
+        if (bunitA->battleEffectiveCritRate <= 3)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+int CheckLowPercCritEnemyFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!(UNIT_FACTION(&bunitA->unit) == FACTION_RED))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_CRIT)
+    {
+        if (bunitA->battleEffectiveCritRate <= 3)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int CheckHighPercMissFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!IsPlayer(bunitA))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_MISS)
+    {
+        if (bunitA->battleEffectiveHitRate >= 90)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+int CheckLowPercHitFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!(UNIT_FACTION(&bunitA->unit) == FACTION_RED))
+    {
+        return false;
+    }
+    if (!(round->attributes & BATTLE_HIT_ATTR_MISS))
+    {
+        if (bunitA->battleEffectiveHitRate <= 10)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int RetaliateKOFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (IsPlayer(bunitB)) // just in case we're the battle actor
+    {
+        return false;
+    }
+    if (roundNext->info & BATTLE_HIT_INFO_END)
+    {
+        if (bunitB->hpInitial >= bunitB->unit.maxHP && IsPlayer(&gBattleActor) && bunitB->unit.curHP == 0)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int CheckTriangleAttackFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!IsPlayer(bunitA))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_TATTACK)
+    {
+        return true;
+    }
+    return false;
+}
+
+int CheckStonedFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!(UNIT_FACTION(&bunitA->unit) == FACTION_RED))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_PETRIFY)
+    {
+        return true;
+    }
+    return false;
+}
+
+int CheckAssassinateFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (!IsPlayer(bunitA))
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_SILENCER)
+    {
+        return true;
+    }
+    return false;
+}
+int CheckDoubleMissFunc(
+    struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
+{
+    if (roundNext->info & BATTLE_HIT_INFO_END)
+    {
+        if (round->attributes & BATTLE_HIT_ATTR_FOLLOWUP)
+        {
+            if (bunitB->unit.curHP >= bunitB->hpInitial && IsPlayer(bunitA))
+            {
+                return true;
+            }
         }
     }
     return false;

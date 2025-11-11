@@ -273,9 +273,22 @@ combatEnt(Check100DmgFunc, 3,    Damage100CombatID, "Combat King III", "Deal 100
 combatEnt(CheckOHKODmgFunc, 4,    DamageOHKOCombatID, "One Punch Man", "Defeat a full hp enemy in one hit.") 
 combatEnt(Check1HPSurvFunc, 5,    OneHPSurvCombatID, "Hanging on by a Thread ", "Survive combat with 1 hp.") // space after thread because of weird width issue 
 combatEnt(Check1HPWinFunc, 6,    OneHPWinCombatID, "Against All Odds", "Defeat an enemy with 1 hp.") 
-combatEnt(CheckWTDFunc, 7,    WTDCombatID, "Triangle Reverser", "Defeat an enemy with weapon triangle disadvantage. ") 
-combatEnt(CheckBrokeLastWepFunc, 8,    BreakWepCombatID, "That was my last one!", "Break your weapon without any extras.") 
+combatEnt(CheckWTDFunc, 7,            WTDCombatID, "Triangle Reverser", "Defeat an enemy with weapon triangle disadvantage.") 
+combatEnt(CheckBrokeLastWepFunc, 8,    BreakWepCombatID, "Unprepared", "Break your weapon without any extras on hand.") 
+combatEnt(CheckDevilAxe2Func, 9,    DevilAxe2CombatID, "Death Wish II", "Have a Devil Axe backfire.") 
+combatEnt(CheckDevilAxe3Func, 10,    DevilAxe3CombatID, "Death Wish III", "Have a Devil Axe backfire and kill your unit.") 
+combatEnt(CheckLowPercCritPlayerFunc, 11,    LowPercCritPlayerCombatID, "Lucky Crit", "Get a Critical Hit with 3% or less chance.") 
+combatEnt(CheckLowPercCritEnemyFunc, 12,    LowPercCritEnemyCombatID, "Unlucky Crit", "Get hit by a Critical Hit with 3% or less chance.") 
+combatEnt(CheckHighPercMissFunc, 13,    HighPercMissCombatID, "Never Lucky I", "Miss with 90% or higher hitrate.") 
+combatEnt(CheckLowPercHitFunc, 14,    LowPercHitCombatID, "Never Lucky II", "Get hit from 10% or lower hitrate.") 
+combatEnt(RetaliateKOFunc, 15,    RetaliateCombatID, "Enemy Phaser II", "Defeat a full health enemy on their phase.") 
+combatEnt(CheckTriangleAttackFunc, 16,    TriangleAttackCombatID, "Triangular", "Perform a triangle attack.") 
+combatEnt(CheckStonedFunc, 17,    StonedCombatID, "Stoned", "Become Petrified by Stone magic.") 
+combatEnt(CheckAssassinateFunc, 18,    AssassinateCombatID, "Assassinate", "Defeat an enemy with the Silencer ability.") 
+combatEnt(CheckDoubleMissFunc, 19,    DoubleMissCombatID, "A for Effort", "Fail to harm an enemy you double.") 
 combatEnt((-1), 30,    RossRecruitID, "", "") // Terminator function 
+
+// miss with a 3-10 range wep? 
 
 
 ALIGN 4 
@@ -319,9 +332,6 @@ ccEnt(0x6F, SelenaID, "The Fluorspar", "Unlock Selena")
 ccEnt(0x70, LyonID, "The Dark Prince", "Unlock Lyon") 
 
 flagEnt(0x65, LoserID, "Loser", "Get a game over.") 
-flagEnt(0x7F, TriangleAttackAchievementID, "", "") 
-flagEnt(0x80, TriangleAttackAchievementID, "", "") 
-flagEnt(0x81, TriangleAttackAchievementID, "Triangular", "Perform a triangle attack.") 
 flagEnt(0x82, FightDemonKingID, "Demonic", "Battle the Demon King.") 
 
 
@@ -414,7 +424,7 @@ equipEnt(Zanbato, EffectiveWepID, "", "")
 equipEnt(Armorslayer, EffectiveWepID, "It's Super Effective", "Equip a specialized weapon (other than Rapier).")
 
 equipEnt(Javelin, JavelinWepID, "", "")
-equipEnt(HandAxe, JavelinWepID, "Enemy Phaser", "Equip a Javelin or Handaxe")
+equipEnt(HandAxe, JavelinWepID, "Enemy Phaser I", "Equip a Javelin or Handaxe")
 
 equipEnt(Ballista, LongRangeWepID, "", "")
 equipEnt(IronBallista, LongRangeWepID, "", "")

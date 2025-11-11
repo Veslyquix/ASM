@@ -67,7 +67,17 @@ OneHPSurvCombatID
 OneHPWinCombatID
 WTDCombatID 
 BreakWepCombatID 
-
+DevilAxe2CombatID
+DevilAxe3CombatID
+LowPercCritPlayerCombatID
+LowPercCritEnemyCombatID
+HighPercMissCombatID
+LowPercHitCombatID
+RetaliateCombatID
+TriangleAttackCombatID
+StonedCombatID
+AssassinateCombatID
+DoubleMissCombatID
 
 
 RossRecruitID 
@@ -245,7 +255,6 @@ PromotionItemUseID
 StatboosterUseID
 DancerRingUseID
 MetisTomeUseID
-TriangleAttackAchievementID
 FightDemonKingID
 
 EndID
