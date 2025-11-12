@@ -402,6 +402,10 @@ void PutAchievementBottomBarText(void)
     // brk; // 20201b3 188
     // gAchMenuSt has max 20 entries
     int id = gAchMenuSt->detailsEntry[gAchMenuSt->detailsID];
+    if (!gAchMenuSt->entriesInCat)
+    {
+        return;
+    }
     const char * str = gAchievementsTable[id].details;
     PutDrawAchievementBodyText(
         &gAchMenuSt->unk_ec, TILEMAP_LOCATED(gBG0TilemapBuffer, 2, 18), TEXT_COLOR_SYSTEM_WHITE, 0, BottomMaxTileWidth,
@@ -425,16 +429,14 @@ void PutAchievementBottomBarText(void)
 }
 
 //! FE8U = 0x080CE1C0
-void achievement_80CE1C0(int strIndex, int textIndex, int y)
+void achievement_DrawCategory(int strIndex, int textIndex, int y)
 {
 
     const char * str;
 
     ClearText(&gAchMenuSt->unk_7c[textIndex]);
 
-    str = (gAchMenuSt->sortMode != GUIDE_SORT_MODE_TOPIC)
-        ? gTextIds_AchievementsCategoriesChapter[gAchMenuSt->cat_chID[strIndex]]
-        : gTextIds_AchievementsCategoriesTopic[gAchMenuSt->cat_topicID[strIndex]];
+    str = gTextIds_AchievementsCategoriesTopic[gAchMenuSt->cat_topicID[strIndex]];
 
     PutDrawText(
         &gAchMenuSt->unk_7c[textIndex], TILEMAP_LOCATED(gBG1TilemapBuffer, 2, y), TEXT_COLOR_SYSTEM_WHITE, 0,
@@ -443,16 +445,19 @@ void achievement_80CE1C0(int strIndex, int textIndex, int y)
 }
 
 //! FE8U = 0x080CE248
-void achievement_80CE248(void)
+void achievement_DrawCategories(void)
 {
-    int i;
+    int line;
+    int offset = gAchMenuSt->cat_offset;
 
     int a = (gAchMenuSt->sortMode != GUIDE_SORT_MODE_TOPIC) ? gAchMenuSt->unk_3c : gAchMenuSt->unk_3d;
-    for (i = 0; i < 6; i++)
+    for (line = 0; line < 6; line++)
     {
-        if (i < a)
+        if (line < a)
         {
-            achievement_80CE1C0(i, i, (i * 2) + 5);
+            // achievement_DrawCategory(line + offset, line, (line * 2) + 5); // unsure if it matters between these two
+            // options of Modulo 6 with offset or not
+            achievement_DrawCategory(line + offset, Modulo(line + offset, 6), (line * 2) + 5);
         }
     }
 
@@ -532,7 +537,7 @@ void AchievementEntry_RedrawDown(struct GuideProc * proc)
 }
 
 //! FE8U = 0x080CE414
-void achievement_80CE414(void)
+void achievement_DrawMoreText(void)
 {
 
     struct NewBonusClaimRamStruct * tmp = (void *)gpBonusClaimData;
@@ -548,6 +553,7 @@ void achievement_80CE414(void)
 
     for (gAchMenuSt->entriesInCat = 0; gAchievementsTable[i].category != Category_Terminator_Link; i++)
     {
+
         int displayType = GetDisplayType();
         if (displayType == ShowIncomplete)
         { // filter out complete ones
@@ -572,16 +578,28 @@ void achievement_80CE414(void)
     }
 
     gAchMenuSt->entriesInCat = ttlDisplayedEntries;
+    while (gAchMenuSt->detailsID >= ttlDisplayedEntries)
+    {
+        if (ttlDisplayedEntries <= 0)
+        {
+            gAchMenuSt->detailsID = 0;
+            gAchMenuSt->details_offset = 0;
+            break;
+        }
+        gAchMenuSt->detailsID--;
+    }
+    gAchMenuSt->details_offset = gAchMenuSt->detailsID - 4; // idk why but this works
+    if (gAchMenuSt->details_offset < 0)
+    {
+        gAchMenuSt->details_offset = 0;
+    }
 
     line = details_offset = gAchMenuSt->details_offset;
 
     for (i = 0; i <= 5 && ttlDisplayedEntries != 0; y += 2, line++, ttlDisplayedEntries--, details_offset++, i++)
     {
         line = Modulo(line, 6);
-
         ClearText(&gAchMenuSt->unk_b4[line]);
-        // if (GetDisplayType()) { // filter out complete ones
-        // if (IsAchievementCompletePerc(i, gAchievementsTable[i], data))
 
         PutDrawAchievementBodyText(
             &gAchMenuSt->unk_b4[line], gBG1TilemapBuffer + TILEMAP_INDEX(11, y),
@@ -740,8 +758,8 @@ void achievement_80CE750(ProcPtr proc, int b)
                 }
                 off = off - 0x40;
             }
-            // achievement_80CE248();
-            achievement_80CE1C0(b, Modulo(b, 6), 5);
+            // achievement_DrawCategories();
+            achievement_DrawCategory(b, Modulo(b, 6), 5);
 
             break;
 
@@ -789,8 +807,8 @@ void achievement_80CE858(ProcPtr proc, int b)
                 off = off + 0x40;
             }
             // brk;
-            // achievement_80CE248();
-            achievement_80CE1C0(b, Modulo(b, 6), 15);
+            // achievement_DrawCategories();
+            achievement_DrawCategory(b, Modulo(b, 6), 15);
 
             break;
 
@@ -1155,8 +1173,8 @@ void Achievement_Init(ProcPtr proc)
     // PutAchievementBottomBarText();
     PutAchievementPercentageText();
 
-    achievement_80CE248();
-    achievement_80CE414();
+    achievement_DrawCategories();
+    achievement_DrawMoreText();
 
     StartMuralBackgroundExt(proc, 0, 18, 2, 0);
     Proc_Start(gProcScr_Achievement_DrawSprites, proc);
@@ -1242,10 +1260,10 @@ struct ProcCmd const gProcScr_AchievementCategoryRedraw[] =
     PROC_CALL(AchievementMenuRefresh_SyncBg1),
     PROC_SLEEP(1),
 
-    PROC_CALL(achievement_80CE248),
+    PROC_CALL(achievement_DrawCategories),
     PROC_SLEEP(1),
 
-    PROC_CALL(achievement_80CE414),
+    PROC_CALL(achievement_DrawMoreText),
     PROC_SLEEP(1),
 
     // PROC_CALL(PutAchievementBottomBarText),
@@ -1263,7 +1281,7 @@ struct ProcCmd const gProcScr_AchievementEntryListRedraw_Initial[] =
     PROC_CALL(AchievementMenuRefresh_SyncBg1),
     PROC_SLEEP(1),
 
-    PROC_CALL(achievement_80CE414),
+    PROC_CALL(achievement_DrawMoreText),
     PROC_SLEEP(1),
 
     // PROC_CALL(PutAchievementBottomBarText),
@@ -1396,7 +1414,7 @@ void HandleReward(struct NewGuideProc * proc, int id)
         // LockMenuScrollBar();
         UnlockAchievementNoMsg(id); // we've now claimed it
 
-        // achievement_80CE414((void *)proc);
+        // achievement_DrawMoreText((void *)proc);
         Proc_StartBlocking(gProcScr_AchievementCategoryRedraw, proc);
         // AchievementEntry_RedrawUp((void *)proc);
 
@@ -1554,20 +1572,28 @@ void Achievement_MainLoop(struct GuideProc * proc)
 
                 case GUIDE_STATE_2:
                 {
-                    if (GetCategoryIdx() == 0)
+                    if (gAchMenuSt->entriesInCat)
                     {
-                        gAchMenuSt->state--;
-                        HandleReward((void *)proc, gAchMenuSt->detailsID);
+                        if (GetCategoryIdx() == 0)
+                        {
+                            gAchMenuSt->state--;
+                            HandleReward((void *)proc, gAchMenuSt->detailsID);
 
-                        // case for granting rewards
+                            // case for granting rewards
+                            return;
+                        }
+                        gAchMenuSt->detailLinesScrolled = 0;
+                        // SetAchievementFlag(gAchievementsTable[gAchMenuSt->detailsEntry[gAchMenuSt->detailsID]].flag);
+                        MoveAchievementDetailText(gAchMenuSt->detailsEntry[gAchMenuSt->detailsID], GUIDE_DETAILS_STAY);
+                        LockMenuScrollBar();
+
                         return;
                     }
-                    gAchMenuSt->detailLinesScrolled = 0;
-                    // SetAchievementFlag(gAchievementsTable[gAchMenuSt->detailsEntry[gAchMenuSt->detailsID]].flag);
-                    MoveAchievementDetailText(gAchMenuSt->detailsEntry[gAchMenuSt->detailsID], GUIDE_DETAILS_STAY);
-                    LockMenuScrollBar();
-
-                    return;
+                    else
+                    {
+                        gAchMenuSt->state--;
+                        PlaySoundEffect(SONG_SE_SYS_WINDOW_CANSEL1);
+                    }
                 }
 
                 default:
@@ -1624,8 +1650,8 @@ void Achievement_MainLoop(struct GuideProc * proc)
 
             // gAchMenuSt->categoryIdx = 0;
             // gAchMenuSt->cat_offset = 0;
-            gAchMenuSt->detailsID = 0; // otherwise it's buggy, letting you scroll past the end etc.
-            gAchMenuSt->details_offset = 0;
+            // gAchMenuSt->detailsID = 0; // otherwise it's buggy, letting you scroll past the end etc.
+            // gAchMenuSt->details_offset = 0;
 
             Proc_StartBlocking(gProcScr_AchievementCategoryRedraw, proc_);
 
