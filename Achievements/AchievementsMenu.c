@@ -5,7 +5,10 @@ struct AchMenuSt * const gAchMenuSt = (void *)gGenericBuffer;
 // clang-format off
 
 extern const u8 Img_Achievements[]; 
-extern const u8 gGfx_Filter[]; 
+// extern const u8 gGfx_Filter[]; 
+extern const u8 gGfx_ShowAll[]; 
+extern const u8 gGfx_ShowToDo[]; 
+extern const u8 gGfx_ShowDone[]; 
 u16 const gSprite_AchievementsBannerText[] =
 {
     6,
@@ -17,11 +20,23 @@ u16 const gSprite_AchievementsBannerText[] =
     OAM0_SHAPE_32x8 + OAM0_Y(8), OAM1_SIZE_32x8 + OAM1_X(64), OAM2_CHR(0xD4),
 };
 
+// u16 const gSprite_AchievementsSelectButtonSort[] =
+// {
+    // 2,
+    // OAM0_SHAPE_32x16, OAM1_SIZE_32x16, OAM2_CHR(0x92),
+    // OAM0_SHAPE_32x16, OAM1_SIZE_32x16 + OAM1_X(32), OAM2_CHR(0x98),
+// };
 u16 const gSprite_AchievementsSelectButtonSort[] =
 {
     2,
     OAM0_SHAPE_32x16, OAM1_SIZE_32x16, OAM2_CHR(0x92),
-    OAM0_SHAPE_32x16, OAM1_SIZE_32x16 + OAM1_X(32), OAM2_CHR(0x98),
+    OAM0_SHAPE_32x16, OAM1_SIZE_32x16 + OAM1_X(32), OAM2_CHR(0x86),
+    // OAM0_SHAPE_16x16, OAM1_SIZE_16x16 + OAM1_X(16), OAM2_CHR(0x8A),
+};
+u16 const gSprite_AchievementsSelectButtonSort2[] =
+{
+    1,
+    OAM0_SHAPE_16x16, OAM1_SIZE_16x16 + OAM1_X(16), OAM2_CHR(0x8A),
 };
 
 u16 const gSprite_AchievementsBButtonBack[] =
@@ -29,19 +44,6 @@ u16 const gSprite_AchievementsBButtonBack[] =
     2,
     OAM0_SHAPE_16x16, OAM1_SIZE_16x16 + OAM1_X(16), OAM2_CHR(0x96),
     OAM0_SHAPE_32x16, OAM1_SIZE_32x16 + OAM1_X(32), OAM2_CHR(0x9C),
-};
-
-char* const gTextIds_AchievementsCategoriesChapter[] =
-{
-    "Prologue" ,
-    "Chapter 1",
-    "Chapter 2",
-    "Chapter 3",
-    "Chapter 4",
-    "Chapter 5",
-    "Chapter 6",
-    "Chapter 7",
-    "Chapter 8",
 };
  
 extern char* const gTextIds_AchievementsCategoriesTopic[]; 
@@ -193,7 +195,8 @@ void AchievementSpriteDraw_Loop(void)
 
     if (gAchMenuSt->state == GUIDE_STATE_0 || gAchMenuSt->state == GUIDE_STATE_1)
     {
-        PutSprite(3, 132, 3, gSprite_AchievementsSelectButtonSort, OAM2_PAL(AchievementBannerPalette)); // pal 2
+        PutSprite(3, 112, 3, gSprite_AchievementsSelectButtonSort, OAM2_PAL(AchievementBannerPalette));       // pal 2
+        PutSprite(3, 112 + 48, 3, gSprite_AchievementsSelectButtonSort2, OAM2_PAL(AchievementBannerPalette)); // pal 2
     }
 
     PutSprite(3, 176, 3, gSprite_AchievementsBButtonBack, OAM2_PAL(AchievementBannerPalette & 0xF));
@@ -444,9 +447,13 @@ void achievement_DrawCategory(int strIndex, int textIndex, int y)
     return;
 }
 
+void DrawFilterText(void);
+void UpdateFilterText(void);
 //! FE8U = 0x080CE248
 void achievement_DrawCategories(void)
 {
+    // DrawFilterText();
+    UpdateFilterText();
     int line;
     int offset = gAchMenuSt->cat_offset;
 
@@ -550,6 +557,7 @@ void achievement_DrawMoreText(void)
 
     int y = 5;
     int ttlDisplayedEntries = 0;
+    int perc = GetAchievementPercentage();
 
     for (gAchMenuSt->entriesInCat = 0; gAchievementsTable[i].category != Category_Terminator_Link; i++)
     {
@@ -557,14 +565,14 @@ void achievement_DrawMoreText(void)
         int displayType = GetDisplayType();
         if (displayType == ShowIncomplete)
         { // filter out complete ones
-            if (IsAchievementCompletePerc(i, ent, data))
+            if (IsAchievementCompleteFilter(i, ent, data, perc))
             {
                 continue;
             }
         }
         else if (displayType == ShowComplete)
         { // filter out incomplete ones
-            if (!IsAchievementCompletePerc(i, ent, data))
+            if (!IsAchievementCompleteFilter(i, ent, data, perc))
             {
                 continue;
             }
@@ -1103,6 +1111,64 @@ void achievement_8097668(void)
     return;
 }
 
+void InitFilterText()
+{
+    int chr = 0x98;
+    brk;
+    InitSpriteTextFont(&gHelpBoxSt.font, (void *)(VRAM + 0x10000 + (chr << 5)), 0x16);
+    SetTextFontGlyphs(1);
+    // ApplyPalette(gPal_HelpTextBox, GetNotifObjPalID());
+    return;
+};
+
+void ClearFilterText(struct Text * text)
+{
+    struct Font * font = gActiveFont;
+    InitFilterText();
+    SetTextFont(&gHelpBoxSt.font); // use our own chr_counter
+    InitSpriteText(text);
+    // SpriteText_DrawBackground(text);
+    // SpriteText_DrawBackgroundExt(text, 0);
+    SetTextFont(font);
+}
+const char * const FilterText[] = {
+    "Show All",
+    "Show Done",
+    "Show To Do",
+};
+void DrawFilterText()
+{
+    struct Font * font = gActiveFont;
+    SetTextFont(&gHelpBoxSt.font); // use our own chr_counter
+    struct Text * th = &gStatScreen.text[1];
+    ClearFilterText(th);
+    char * iter = (void *)FilterText[GetDisplayType()];
+    while (*iter)
+    {
+        iter = (void *)Text_DrawCharacterAscii(th, (void *)iter);
+    }
+    SetTextFont(font);
+}
+
+void UpdateFilterText(void)
+{
+
+    switch (GetDisplayType())
+    {
+        case ShowAll:
+            Decompress(gGfx_ShowAll, gGenericBuffer + 0x200);
+            break;
+        case ShowComplete:
+            Decompress(gGfx_ShowDone, gGenericBuffer + 0x200);
+            break;
+        case ShowIncomplete:
+            Decompress(gGfx_ShowToDo, gGenericBuffer + 0x200);
+            break;
+    }
+    // Copy2dChr(gGenericBuffer + 0x100, (void *)0x06011300, 4, 4);
+    Copy2dChr(gGenericBuffer + 0x200, (void *)0x060110C0, 6, 2);
+}
+
 //! FE8U = 0x080CECB0
 void Achievement_Init(ProcPtr proc)
 {
@@ -1145,8 +1211,8 @@ void Achievement_Init(ProcPtr proc)
 
     ApplyPalette(Pal_08B17B44, 0x10 + AchievementBannerPalette);
     Decompress(Img_08B17864, (void *)0x06011000);
-    Decompress(gGfx_Filter, gGenericBuffer + 0x100);
-    Copy2dChr(gGenericBuffer + 0x100, (void *)0x06011300, 4, 4);
+    // DrawFilterText();
+    UpdateFilterText();
 
     // Decompress(Img_08B177C0, (void *)0x06011800); // "Guide"
     Decompress(Img_Achievements, (void *)0x06011800); // "Guide"
@@ -1650,7 +1716,7 @@ void Achievement_MainLoop(struct GuideProc * proc)
 
             // gAchMenuSt->categoryIdx = 0;
             // gAchMenuSt->cat_offset = 0;
-            // gAchMenuSt->detailsID = 0; // otherwise it's buggy, letting you scroll past the end etc.
+            // gAchMenuSt->detailsID = 0; // adjusted other things to handle these as non-zero
             // gAchMenuSt->details_offset = 0;
 
             Proc_StartBlocking(gProcScr_AchievementCategoryRedraw, proc_);

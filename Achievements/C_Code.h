@@ -144,6 +144,15 @@ void StartNotificationProc(int id, int type);
 int CountStrLines(const char * str);
 int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 int IsAchievementComplete(int); 
+
+struct AchievementsStruct
+{
+    u8 complete[Ach_Section_Size];
+    u8 shown[Ach_Section_Size * 3];
+};
+int IsAchievementCompleteFilter(int id, struct AchievementsStruct * ent, struct AchievementsRomStruct * data, int perc); 
+
+
 int GetAchievementColour(int id);
 int GetAchievementPercentage(); 
 int CountCompletedAchievements(); 

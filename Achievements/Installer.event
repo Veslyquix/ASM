@@ -801,7 +801,13 @@ ALIGN 4
 gGfx_NotificationTextBox5:
 #incbin "png/Helpbox_5.dmp"
 ALIGN 4 
-gGfx_Filter:
-#incbin "png/sort_back_gfx_filter.dmp" 
+gGfx_ShowAll:
+#incbin "png/sort_back_gfx_show_all.dmp" 
+ALIGN 4 
+gGfx_ShowDone:
+#incbin "png/sort_back_gfx_show_done.dmp" 
+ALIGN 4 
+gGfx_ShowToDo:
+#incbin "png/sort_back_gfx_show_to_do.dmp" 
 
 

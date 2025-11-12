@@ -13,11 +13,7 @@ int CannotUnlockAchievements(void)
 }
 
 extern int AlwaysShowAchievement;
-struct AchievementsStruct
-{
-    u8 complete[Ach_Section_Size];
-    u8 shown[Ach_Section_Size * 3];
-};
+
 void SetAchievement(struct AchievementsStruct * data, int i)
 {
     int bit = i % AchMod;
@@ -63,6 +59,38 @@ int IsAchievementCompletePerc(int id, struct AchievementsStruct * ent, struct Ac
     int offset = id / AchDiv;
     return ent->complete[offset] & (1 << bit);
 }
+int IsAchievementShown2(int i, struct AchievementsStruct * ent)
+{
+    int slot = gPlaySt.gameSaveSlot;
+    int bit = i % AchMod;
+    int offset = i / AchDiv;
+    offset += slot * Ach_Section_Size;
+    return ent->shown[offset] & (1 << bit);
+}
+
+int IsAchievementCompleteFilter(int id, struct AchievementsStruct * ent, struct AchievementsRomStruct * data, int perc)
+{
+
+    data += id;
+    int bit = id % AchMod;
+    int offset = id / AchDiv;
+    if (data->category == Category_Rewards_Link)
+    {
+        if (IsAchievementShown2(id, ent))
+        {
+            return true;
+        }
+        if (rewardsByPercentage[id].percent <= perc)
+        {
+            return true;
+        }
+        return false;
+
+        // return IsAchievementShown(id);
+    }
+    return ent->complete[offset] & (1 << bit);
+}
+
 int CountTotalAchievements()
 {
     int i = 0;
