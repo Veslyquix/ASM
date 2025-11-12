@@ -370,7 +370,7 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
     {
         if (proc->type[proc->id] == ACHIEVEMENT_TYPE)
         {
-            data2 = &achievementData[id];
+            data2 = &gAchievementsTable[id];
         }
         data = &gNotificationsData[id];
     }
@@ -382,12 +382,12 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 
     if (proc->type[proc->id] == ACHIEVEMENT_TYPE)
     {
-        if (!data2 || (data2->str == NULL))
+        if (!data2 || (data2->entryName == NULL))
         {
             return NULL;
         }
 
-        str = data2->str;
+        str = data2->entryName;
         for (int i = 0; i < 4; i++)
         {
             proc->colour[i] = 0;

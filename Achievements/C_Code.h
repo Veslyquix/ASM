@@ -8,8 +8,9 @@
 #define Ach_Max (Ach_Section_Size*8) // 640 
 
 #define MaxEntriesPerCategory 60 
-struct NewGuideSt
+struct AchMenuSt
 {
+    s8 displayType; 
     /* 29 */ s8 categoryIdx;
     /* 2A */ s8 cat_offset; // unk_2a 
     /* 2B */ s8 detailsID; // unk_2b details ID id 
@@ -60,11 +61,23 @@ struct NewBonusClaimRamStruct
 
 struct AchievementsRomStruct
 {
-    const char * str; 
+    const char * entryName; 
     const char * details; 
     /* 08 */ u16 category; // title
     /* 0A */ u16 flag; 
 };
+
+// based on GuideEnt / gGuideTable 
+// struct AchievementsEnt
+// {
+
+    // /* 00 */ char* itemName;
+    // /* 04 */ char* details;
+    // /* 08 */ u16 category; // title
+    // unused /* 01 */ u8 chapterTitle; // when sorting 
+    // /* 0A */ u16 flag; 
+// };
+
 struct RewardsStruct
 {
     u16 id;
@@ -138,7 +151,8 @@ int CountTotalAchievements();
 extern int Category_Terminator_Link; 
 extern int Category_Rewards_Link; 
 
-extern struct AchievementsRomStruct achievementData[];
+// extern struct AchievementsRomStruct achievementData[];
+extern struct AchievementsRomStruct gAchievementsTable[]; 
 
 struct combatStruct {
     int (*customFunc)(struct BattleHit *round, struct BattleHit *roundNext, struct BattleUnit *bunitA, struct BattleUnit *bunitB);

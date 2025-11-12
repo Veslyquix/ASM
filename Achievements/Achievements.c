@@ -66,7 +66,7 @@ int IsAchievementCompletePerc(int id, struct AchievementsStruct * ent, struct Ac
 int CountTotalAchievements()
 {
     int i = 0;
-    struct AchievementsRomStruct * data = achievementData;
+    struct AchievementsRomStruct * data = gAchievementsTable;
     while (data->category != Category_Terminator_Link)
     {
         if (data->category == Category_Rewards_Link)
@@ -87,7 +87,7 @@ int CountCompletedAchievements()
     int max = CountTotalAchievements();
     struct NewBonusClaimRamStruct * tmp = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&tmp[4];
-    struct AchievementsRomStruct * data = achievementData;
+    struct AchievementsRomStruct * data = gAchievementsTable;
     int c = 0;
     for (int i = 0; i < max; ++i)
     {
@@ -110,7 +110,7 @@ int GetAchievementColour(int id)
     int everComplete = IsAchievementComplete(id);
     int doneOnThisSaveFile = IsAchievementShown(id);
 
-    struct AchievementsRomStruct * data = achievementData;
+    struct AchievementsRomStruct * data = gAchievementsTable;
     data += id;
     if (data->category == Category_Rewards_Link)
     {

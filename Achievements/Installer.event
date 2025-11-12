@@ -800,6 +800,8 @@ gGfx_NotificationTextBox4:
 ALIGN 4 
 gGfx_NotificationTextBox5:
 #incbin "png/Helpbox_5.dmp"
-
+ALIGN 4 
+gGfx_Filter:
+#incbin "png/sort_back_gfx_filter.dmp" 
 
 
