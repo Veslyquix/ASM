@@ -1,6 +1,5 @@
 
 // copied bmguide.c
-struct AchMenuSt * const gAchMenuSt = (void *)gGenericBuffer;
 
 // clang-format off
 
@@ -1177,15 +1176,16 @@ void Achievement_Init(ProcPtr proc)
     SetupBackgrounds(NULL);
 
     gAchMenuSt->state = GUIDE_STATE_0;
-    gAchMenuSt->displayType = 0;
+
     gAchMenuSt->entriesInCat = 0;
 
     gAchMenuSt->sortMode = 0; // CheckFlag(0xb3);
 
-    gAchMenuSt->categoryIdx = 0;
-    gAchMenuSt->cat_offset = 0;
-    gAchMenuSt->detailsID = 0;
-    gAchMenuSt->details_offset = 0;
+    gAchMenuSt->displayType = gAchMenuSaveSt.displayType;
+    gAchMenuSt->categoryIdx = gAchMenuSaveSt.categoryIdx;
+    gAchMenuSt->cat_offset = gAchMenuSaveSt.cat_offset;
+    gAchMenuSt->detailsID = gAchMenuSaveSt.detailsID;
+    gAchMenuSt->details_offset = gAchMenuSaveSt.details_offset;
 
     achievement_80CEAE8(); // sort by category
     // achievement_80CEBA4(); // sort by chapter
@@ -1613,6 +1613,15 @@ void AchievementsPopupSentTimer(struct NewGuideProc * proc)
     }
 }
 
+void InitAchievementMenuSt(void)
+{
+    gAchMenuSaveSt.displayType = 0;
+    gAchMenuSaveSt.categoryIdx = 0;
+    gAchMenuSaveSt.cat_offset = 0;
+    gAchMenuSaveSt.detailsID = 0;
+    gAchMenuSaveSt.details_offset = 0;
+}
+
 void Achievement_MainLoop(struct GuideProc * proc)
 {
     struct GuideProc * proc_ = proc;
@@ -1702,6 +1711,11 @@ void Achievement_MainLoop(struct GuideProc * proc)
             }
             else
             {
+                gAchMenuSaveSt.displayType = gAchMenuSt->displayType;
+                gAchMenuSaveSt.categoryIdx = gAchMenuSt->categoryIdx;
+                gAchMenuSaveSt.cat_offset = gAchMenuSt->cat_offset;
+                gAchMenuSaveSt.detailsID = gAchMenuSt->detailsID;
+                gAchMenuSaveSt.details_offset = gAchMenuSt->details_offset;
                 Proc_Break(proc_);
                 return;
             }

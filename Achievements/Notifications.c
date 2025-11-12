@@ -163,6 +163,7 @@ void StartNotificationProc(int id, int type)
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!proc)
     {
+        InitAchievementMenuSt();
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
         NotificationInitVariables(proc);
         int slot = GetFreeQueueSlot(proc);
@@ -215,6 +216,7 @@ void RestartNotificationProc(struct PlayerInterfaceProc * parent)
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!proc)
     {
+        InitAchievementMenuSt();
         proc = Proc_Start(gProcScr_NotificationWindow, PROC_TREE_3);
         // proc = Proc_StartBlocking(gProcScr_NotificationWindow, parent);
         NotificationInitVariables(proc);

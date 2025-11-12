@@ -7,6 +7,21 @@
 #define Ach_Section_Size 0x50 
 #define Ach_Max (Ach_Section_Size*8) // 640 
 
+
+struct AchMenuSaveSt
+{ 
+    u32 displayType : 2; 
+    u32 categoryIdx : 5; 
+    u32 cat_offset : 5; 
+    u32 detailsID : 6; 
+    u32 details_offset : 6; 
+}; 
+extern struct AchMenuSaveSt gAchMenuSaveSt; // = 0x2022280 after gOpAnimSt;
+// struct AchMenuSaveSt * const gAchMenuSaveSt = (void *)gGenericBuffer;
+// struct AchMenuSt * const gAchMenuSt = (void *)gGenericBuffer;
+void InitAchievementMenuSt(void); 
+
+
 #define MaxEntriesPerCategory 60 
 struct AchMenuSt
 {
@@ -34,7 +49,7 @@ struct AchMenuSt
     /* E4 */ struct Text unk_e4;
     /* EC */ struct Text unk_ec;
 };
-
+struct AchMenuSt * const gAchMenuSt = (void *)gGenericBuffer;
 extern struct ClassData* classTablePoin[]; 
 
 #define BONUS_CLAIM_NUM_ENTRIES 32

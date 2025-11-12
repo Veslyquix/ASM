@@ -553,7 +553,7 @@ SET_DATA SRRBuffer, 0x2026d30	@ normally used by debug printing
 .endif 
 .if FE8 == true 
 
-
+SET_DATA gAchMenuSaveSt, 0x2022280 @ between gOpAnimSt and gFadeComponentStep 
 SET_DATA sBattleHitArray, 0x802aec4
 SET_DATA BattleHitArrayWidth, 0x802b90a
 
