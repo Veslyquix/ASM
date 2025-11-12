@@ -11,14 +11,14 @@ ALIGN 4
 DebugFlag_Link: 
 WORD 0xEC 
 
-// for testing 
 
+// for testing 
 PUSH 
 // ORG $1DFF720
 // POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1E00064
-POIN MapMenu_AchievementsCommand
+ORG $1E01960
+// POIN MapMenu_AchievementsCommand
 POP 
 
 
@@ -207,7 +207,7 @@ rewardEnt(Reward_NES, 5, "5% completion", "Unlock NES Characters", "FE1-FE3 Char
 rewardEnt(Reward_BonusLevels, 6, "6% completion", "Unlock Bonus Levels", "Bonus Levels has been added to Config.") 
 rewardEnt(Reward_Recruitment, 7, "7% completion", "Unlock Recruitment Order", "Recruitment order has been added to Config.") 
 
-rewardItem(Reward_GoddessIcon, 0, GoddessIcon, 8, "8% completion", "Goddess Icon") 
+rewardItem(Reward_GoddessIcon, 0, GoddessIcon, 8, "8% completion", "Goddess Icon") // 0th bonus ID item 
 rewardItem(Reward_JunaFruit, 1, JunaFruit, 9, "9% completion", "Heart Seal") // Heart seal
 rewardItem(Reward_Physic, 2, Physic, 10, "10% completion", "Physic") 
 rewardEnt(Reward_SNES, 10, "10% completion", "Unlock SNES Characters", "FE4-FE5 Characters have been unlocked.") 
@@ -696,11 +696,14 @@ txt("Critical security updates are required."); BYTE 0
 
 
 #ifndef callHackNew
-	#define callHackNew_r4(offset) 		"BYTE $01 $4C $A6 $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 	#define callHackNew(offset)         "BYTE $01 $4B $9E $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
-	#define callHackNew_r2(offset) 		"BYTE $01 $4A $96 $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
 #endif 
-
+#ifndef callHackNew_r4
+	#define callHackNew_r4(offset) 		"BYTE $01 $4C $A6 $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+#endif 
+#ifndef callHackNew_r2
+    #define callHackNew_r2(offset) 		"BYTE $01 $4A $96 $46 $00 $F8 $01 $E0; POIN (offset|0x1)"
+#endif 
 PUSH 
 
 

@@ -1437,7 +1437,8 @@ void HandleItemReward(struct NewGuideProc * proc, int id)
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
     // AddItemToConvoy(MakeNewItem(itemId));
 
-    AchievementsPopup_DrawText("Sent: ");
+    // AchievementsPopup_DrawText("Sent: ");
+    AchievementsPopup_DrawText("Claim in Extras: ");
     gAchMenuSt->popupText[0].x += 16;
     AchievementsPopup_DrawText(GetItemName(itemId));
 }
@@ -1449,7 +1450,8 @@ void HandleGoldReward(struct NewGuideProc * proc, int id)
     // SetPartyGoldAmount(gold + GetPartyGoldAmount());
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
 
-    AchievementsPopup_DrawText("Sent: ");
+    // AchievementsPopup_DrawText("Sent: ");
+    AchievementsPopup_DrawText("Claim in Extras: ");
     gAchMenuSt->popupText[0].x += 16;
     DrawNumAsString(gold);
     AchievementsPopup_DrawText(" Gold");
@@ -1595,7 +1597,8 @@ void AchievementsPopupSentTimer(struct NewGuideProc * proc)
     DisplayNotifBoxObj(x, y, 184, 1 * 16, true);
     if (proc->type == RewardTypeItem || proc->type == RewardTypeGold)
     {
-        PutSprite(0, x + 28, y, gObject_16x16, OAM2_CHR(0x140) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
+        // PutSprite(0, x + 28, y, gObject_16x16, OAM2_CHR(0x140) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
+        PutSprite(0, x + 72, y, gObject_16x16, OAM2_CHR(0x140) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));
     }
     if (gAchMenuSt->timer > 10)
     {
@@ -1730,7 +1733,7 @@ void Achievement_MainLoop(struct GuideProc * proc)
 
             // gAchMenuSt->categoryIdx = 0;
             // gAchMenuSt->cat_offset = 0;
-            // gAchMenuSt->detailsID = 0; // adjusted other things to handle these as non-zero
+            // gAchMenuSt->detailsID = 0; // adjusted other things to handle these as non-zero when redrawing
             // gAchMenuSt->details_offset = 0;
 
             Proc_StartBlocking(gProcScr_AchievementCategoryRedraw, proc_);
