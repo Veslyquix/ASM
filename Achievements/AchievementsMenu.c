@@ -62,7 +62,9 @@ extern char* const gTextIds_AchievementsCategoriesTopic[];
 };
 */ 
 
-
+int GetDisplayType(void) { 
+    return CheckFlag(0xb3); // filter 
+}; 
 
 // based on GuideEnt / gGuideTable 
 struct AchievementsEnt
@@ -192,7 +194,7 @@ void AchievementSpriteDraw_Loop(void)
 
     if (gGuideSt->state == GUIDE_STATE_0)
     {
-        // PutSprite(3, 176, 3, gSprite_AchievementsSelectButtonSort, OAM2_PAL(2));
+        PutSprite(3, 176, 11, gSprite_AchievementsSelectButtonSort, OAM2_PAL(2));
     }
 
     PutSprite(3, 176, 3, gSprite_AchievementsBButtonBack, OAM2_PAL(AchievementBannerPalette & 0xF));
@@ -533,44 +535,42 @@ void AchievementEntry_RedrawDown(struct GuideProc * proc)
 //! FE8U = 0x080CE414
 void achievement_80CE414(void)
 {
-    int r6;
-
-    register int r4 asm("r4");
-    int r5;
-    int r8;
+    int details_offset;
+    int line;
+    int i;
 
     int y = 5;
-    int idx = 0;
+    int ttlEntries = 0;
 
-    for (r8 = 0, gGuideSt->entriesInCat = 0; gAchievementsTable[r8].category != Category_Terminator_Link; r8++)
+    for (i = 0, gGuideSt->entriesInCat = 0; gAchievementsTable[i].category != Category_Terminator_Link; i++)
     {
 
-        // if (!CheckFlag(gAchievementsTable[r8].flag))
+        // if (!CheckFlag(gAchievementsTable[i].flag))
         // {
         // continue;
         // }
 
-        if (gAchievementsTable[r8].category == gGuideSt->cat_topicID[gGuideSt->categoryIdx])
+        if (gAchievementsTable[i].category == gGuideSt->cat_topicID[gGuideSt->categoryIdx])
         {
-            gGuideSt->detailsEntry[idx] = r8;
-            idx++;
+            gGuideSt->detailsEntry[ttlEntries] = i;
+            ttlEntries++;
         }
     }
 
-    r6 = gGuideSt->entriesInCat = idx;
+    gGuideSt->entriesInCat = ttlEntries;
 
-    r5 = r4 = gGuideSt->details_offset;
+    line = details_offset = gGuideSt->details_offset;
 
-    for (r8 = 0; r8 <= 5 && r6 != 0; y += 2, r5++, r6--, r4++, r8++)
+    for (i = 0; i <= 5 && ttlEntries != 0; y += 2, line++, ttlEntries--, details_offset++, i++)
     {
-        r5 = Modulo(r5, 6);
+        line = Modulo(line, 6);
 
-        ClearText(&gGuideSt->unk_b4[r5]);
+        ClearText(&gGuideSt->unk_b4[line]);
 
         PutDrawAchievementBodyText(
-            &gGuideSt->unk_b4[r5], gBG1TilemapBuffer + TILEMAP_INDEX(11, y),
-            (GetAchievementColour(gAchievementsTable[gGuideSt->detailsEntry[r4]].flag)), 0, BoxMaxTileWidth,
-            gAchievementsTable[gGuideSt->detailsEntry[r4]].itemName);
+            &gGuideSt->unk_b4[line], gBG1TilemapBuffer + TILEMAP_INDEX(11, y),
+            (GetAchievementColour(gAchievementsTable[gGuideSt->detailsEntry[details_offset]].flag)), 0, BoxMaxTileWidth,
+            gAchievementsTable[gGuideSt->detailsEntry[details_offset]].itemName);
     }
     PutAchievementBottomBarText();
 
@@ -1078,7 +1078,7 @@ void Achievement_Init(ProcPtr proc)
 
     gGuideSt->state = GUIDE_STATE_0;
 
-    gGuideSt->sortMode = CheckFlag(0xb3);
+    gGuideSt->sortMode = 0; // CheckFlag(0xb3);
 
     gGuideSt->categoryIdx = 0;
     gGuideSt->cat_offset = 0;
@@ -1598,9 +1598,9 @@ void Achievement_MainLoop(struct GuideProc * proc)
             PlaySoundEffect(SONG_SE_SYS_WINDOW_SELECT1);
 
             // gGuideSt->sortMode = (gGuideSt->sortMode + 1) & 1;
-            if (gGuideSt->sortMode != GUIDE_SORT_MODE_TOPIC)
+            if (!CheckFlag(0xB3))
             {
-                // SetFlag(0xb3);
+                SetFlag(0xb3);
             }
             else
             {
