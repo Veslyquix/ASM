@@ -16,14 +16,14 @@ extern int AlwaysShowAchievement;
 
 void SetAchievement(struct AchievementsStruct * data, int i)
 {
-    int bit = i % AchMod;
+    int bit = Modulo(i, AchMod);
     int offset = i / AchDiv;
     data->complete[offset] |= 1 << bit;
 }
 void ShownAchievement(struct AchievementsStruct * data, int i)
 {
     int slot = gPlaySt.gameSaveSlot;
-    int bit = i % AchMod;
+    int bit = Modulo(i, AchMod);
     int offset = i / AchDiv;
     offset += slot * Ach_Section_Size;
 
@@ -33,7 +33,7 @@ int IsAchievementComplete(int i)
 {
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&data[4];
-    int bit = i % AchMod;
+    int bit = Modulo(i, AchMod);
     int offset = i / AchDiv;
     return ent->complete[offset] & (1 << bit);
 }
@@ -42,7 +42,7 @@ int IsAchievementShown(int i)
     int slot = gPlaySt.gameSaveSlot;
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&data[4];
-    int bit = i % AchMod;
+    int bit = Modulo(i, AchMod);
     int offset = i / AchDiv;
     offset += slot * Ach_Section_Size;
     return ent->shown[offset] & (1 << bit);
@@ -55,14 +55,14 @@ int IsAchievementCompletePerc(int id, struct AchievementsStruct * ent, struct Ac
     {
         return false;
     }
-    int bit = id % AchMod;
+    int bit = Modulo(id, AchMod);
     int offset = id / AchDiv;
     return ent->complete[offset] & (1 << bit);
 }
 int IsAchievementShown2(int i, struct AchievementsStruct * ent)
 {
     int slot = gPlaySt.gameSaveSlot;
-    int bit = i % AchMod;
+    int bit = Modulo(i, AchMod);
     int offset = i / AchDiv;
     offset += slot * Ach_Section_Size;
     return ent->shown[offset] & (1 << bit);
@@ -72,7 +72,7 @@ int IsAchievementCompleteFilter(int id, struct AchievementsStruct * ent, struct 
 {
 
     data += id;
-    int bit = id % AchMod;
+    int bit = Modulo(id, AchMod);
     int offset = id / AchDiv;
     if (data->category == Category_Rewards_Link)
     {

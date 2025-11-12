@@ -113,6 +113,7 @@ struct RewardsStruct
 extern int __aeabi_idivmod(int a, int b);
 static int Modulo(int a, int b)
 {
+    if (!b) { return 0; } 
     return __aeabi_idivmod(a, b); // uses swi 6
 }
 

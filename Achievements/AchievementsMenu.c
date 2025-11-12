@@ -1570,7 +1570,7 @@ void DrawNumAsString(int num)
     // extract digits in reverse order
     while (tmp)
     {
-        digit[digits++] = tmp % 10;
+        digit[digits++] = Modulo(tmp, 10);
         tmp /= 10;
     }
 

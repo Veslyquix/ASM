@@ -79,7 +79,7 @@ void SetBonusClaimBit(int i, struct NewBonusClaimProc * proc)
         return;
     }
     int offset = i / 32;
-    int bit = i % 32;
+    int bit = Modulo(i, 32);
     proc->availableBonusIds[offset] |= 1 << bit;
 }
 
@@ -95,7 +95,7 @@ int GetBonusClaimOffset(int id)
     while (1)
     {
         int offset = i / 32;
-        int bit = i % 32;
+        int bit = Modulo(i, 32);
         u32 data = proc->availableBonusIds[offset];
 
         if (data & (1 << bit)) // this slot is available
@@ -111,7 +111,7 @@ int GetBonusClaimOffset(int id)
 
 void SetBonusDataItem(struct NewBonusClaimRamStruct * data, int i)
 {
-    int bit = i % 8;
+    int bit = Modulo(i, 8);
     int offset = i / 8;
     data[offset].viewable |= 1 << bit;
 }
@@ -119,7 +119,7 @@ int IsBonusClaimViewable(int id)
 {
     struct NewBonusClaimRamStruct * ent = (void *)gpBonusClaimData;
     ent += id / 8;
-    return ent->viewable & (1 << (id % 8));
+    return ent->viewable & (1 << (Modulo(id, 8)));
 }
 
 // void SaveBonusContentData(void * buf)
@@ -344,7 +344,7 @@ void DrawBonusClaimItemText(int idx)
     // struct BonusClaimEnt * ent;
     // struct NewBonusClaimRamStruct * ent2;
 
-    struct Text * th = gpBonusClaimText + ((idx % 6) << 1);
+    struct Text * th = gpBonusClaimText + ((Modulo(idx, 6)) << 1);
 
     unk1 = idx * 2;
     unk1 &= 0x1f;
