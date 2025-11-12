@@ -156,7 +156,6 @@ const struct ProcCmd ProcScr_E_Achievements_Map[];
 const struct ProcCmd ProcScr_E_Achievements_WM[];
 u8 MapMenu_AchievementsCommand(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
-    InitBonusClaimData();
     Proc_Start(ProcScr_E_Achievements_Map, PROC_TREE_3);
 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
@@ -1155,17 +1154,17 @@ void UpdateFilterText(void)
     switch (GetDisplayType())
     {
         case ShowAll:
-            Decompress(gGfx_ShowAll, gGenericBuffer + 0x200);
+            Decompress(gGfx_ShowAll, gGenericBuffer + 0x400);
             break;
         case ShowComplete:
-            Decompress(gGfx_ShowDone, gGenericBuffer + 0x200);
+            Decompress(gGfx_ShowDone, gGenericBuffer + 0x400);
             break;
         case ShowIncomplete:
-            Decompress(gGfx_ShowToDo, gGenericBuffer + 0x200);
+            Decompress(gGfx_ShowToDo, gGenericBuffer + 0x400);
             break;
     }
     // Copy2dChr(gGenericBuffer + 0x100, (void *)0x06011300, 4, 4);
-    Copy2dChr(gGenericBuffer + 0x200, (void *)0x060110C0, 6, 2);
+    Copy2dChr(gGenericBuffer + 0x400, (void *)0x060110C0, 6, 2);
 }
 
 //! FE8U = 0x080CECB0
@@ -1186,6 +1185,8 @@ void Achievement_Init(ProcPtr proc)
     gAchMenuSt->cat_offset = gAchMenuSaveSt.cat_offset;
     gAchMenuSt->detailsID = gAchMenuSaveSt.detailsID;
     gAchMenuSt->details_offset = gAchMenuSaveSt.details_offset;
+
+    InitAchievementMenuSt(); //
 
     achievement_80CEAE8(); // sort by category
     // achievement_80CEBA4(); // sort by chapter

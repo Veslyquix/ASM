@@ -18,7 +18,7 @@ CFLAGS := $(ARCH) -Wall -mtune=arm7tdmi -O2 -mlong-calls
 
 # C to ASM rule
 %.s: %.c *.c
-	$(CC) $(CFLAGS) -S $< -I C:/devkitPro/FE-Clib_2024/Include -o $@ -fverbose-asm -mlong-calls
+	$(CC) $(CFLAGS) -S $< -I C:/devkitPro/FE-Clib_2025/Include -o $@ -fverbose-asm -mlong-calls
 
 
 # OBJ to EVENT rule
