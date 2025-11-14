@@ -6,7 +6,24 @@
 #define AchMod 8
 #define AchDiv 8
 extern int DebugFlag_Link;
-int CannotUnlockAchievements(void)
+extern int AchievementsDisabledFlag_Link;
+void SetAchievementsTo(int id)
+{
+    if (id)
+    {
+        ClearFlag(AchievementsDisabledFlag_Link);
+    }
+    else
+    {
+        SetFlag(AchievementsDisabledFlag_Link);
+    }
+}
+int AreAchievementsEnabled()
+{
+
+    return !CheckFlag(AchievementsDisabledFlag_Link);
+}
+int CannotUnlockAchievements(void) // debugger on
 {
     return false;
     // return !CheckFlag(DebugFlag_Link);
@@ -242,6 +259,10 @@ void UnlockAchievementNoMsg(int id)
     {
         return;
     }
+    if (CannotUnlockAchievements())
+    {
+        return;
+    }
     int saveData = false;
     CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
     LoadBonusContentData(gpBonusClaimData);
@@ -303,76 +324,136 @@ void UnlockAchievementByItemUse(int item)
 extern int Reward_Classes_Link;
 int IsClassesOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Classes_Link);
 }
 extern int Reward_Growths_Link;
 int IsGrowthsOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Growths_Link);
 }
 extern int Reward_StatCaps_Link;
 int IsStatCapsOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_StatCaps_Link);
 }
 extern int Reward_CasualMode_Link;
 int IsCasualModeOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_CasualMode_Link);
 }
 extern int Reward_FromGame_Link;
 int IsFromGameOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_FromGame_Link);
 }
 
 extern int Reward_BonusLevels_Link;
 int IsBonusLevelsOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_BonusLevels_Link);
 }
 extern int Reward_Recruitment_Link;
 int IsRecruitmentOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Recruitment_Link);
 }
 extern int Reward_FilterClasses_Link;
 int IsFilterClassesOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_FilterClasses_Link);
 }
 extern int Reward_FilterChars_Link;
 int IsFilterCharsOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_FilterChars_Link);
 }
 extern int Reward_Skills_Link;
 int IsSkillsOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Skills_Link);
 }
 extern int Reward_TimedHits_Link;
 int IsTimedHitsOptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_TimedHits_Link);
 }
 extern int Reward_Clutter1_Link;
 int IsClutter1OptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Clutter1_Link);
 }
 extern int Reward_Clutter2_Link;
 int IsClutter2OptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Clutter2_Link);
 }
 extern int Reward_Clutter3_Link;
 int IsClutter3OptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Clutter3_Link);
 }
 extern int Reward_Clutter4_Link;
 int IsClutter4OptionAvailable(void)
 {
+    if (!AreAchievementsEnabled())
+    {
+        return 1;
+    }
     return IsAchievementComplete(Reward_Clutter4_Link);
 }

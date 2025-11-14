@@ -121,36 +121,14 @@ extern u16 Pal_08B17B44[]; // pal
 // void LockMenuScrollBar(void);
 // void EndMenuScrollBar(void);
 
-//! FE8U = 0x080CDF4C
-bool AreAchievementsLocked(void)
-{
-    return false;
-    // struct GuideEnt * it = gGuideTable;
-
-    // while (1)
-    // {
-    // if (it->category == 12)
-    // {
-    // return TRUE;
-    // }
-
-    // if (CheckFlag(it->displayFlag))
-    // {
-    // return FALSE;
-    // }
-
-    // it++;
-    // }
-}
-
 u8 MapMenu_IsAchievementsCommandAvailable(const struct MenuItemDef * def, int number)
 {
-    if (AreAchievementsLocked())
+    if (AreAchievementsEnabled())
     {
-        return MENU_NOTSHOWN;
+        return MENU_ENABLED;
     }
 
-    return MENU_ENABLED;
+    return MENU_NOTSHOWN;
 }
 const struct ProcCmd ProcScr_E_Achievements_Map[];
 const struct ProcCmd ProcScr_E_Achievements_WM[];

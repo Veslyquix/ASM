@@ -20,7 +20,7 @@ extern struct AchMenuSaveSt gAchMenuSaveSt; // = 0x2022280 after gOpAnimSt;
 // struct AchMenuSaveSt * const gAchMenuSaveSt = (void *)gGenericBuffer;
 // struct AchMenuSt * const gAchMenuSt = (void *)gGenericBuffer;
 void InitAchievementMenuSt(void); 
-
+int AreAchievementsEnabled(); 
 
 #define MaxEntriesPerCategory 60 
 struct AchMenuSt

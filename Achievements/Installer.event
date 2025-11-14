@@ -10,6 +10,8 @@
 ALIGN 4 
 DebugFlag_Link: 
 WORD 0xEC 
+AchievementsDisabledFlag_Link:
+WORD 0x129 
 
 
 // for testing 
