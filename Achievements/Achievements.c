@@ -106,7 +106,10 @@ int CountTotalAchievements()
         data++;
         i++;
     }
-
+    if (i < 1)
+    {
+        i = 1;
+    }
     return i;
 }
 

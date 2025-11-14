@@ -460,9 +460,9 @@ void achievement_DrawCategories(void)
     {
         if (line < a)
         {
-            // achievement_DrawCategory(line + offset, line, (line * 2) + 5); // unsure if it matters between these two
+            achievement_DrawCategory(line + offset, line, (line * 2) + 5); // unsure if it matters between these two
             // options of Modulo 6 with offset or not
-            achievement_DrawCategory(line + offset, Modulo(line + offset, 6), (line * 2) + 5);
+            // achievement_DrawCategory(line + offset, Modulo(line + offset, 6), (line * 2) + 5);
         }
     }
 
@@ -544,7 +544,6 @@ void AchievementEntry_RedrawDown(struct GuideProc * proc)
 //! FE8U = 0x080CE414
 void achievement_DrawMoreText(void)
 {
-
     struct NewBonusClaimRamStruct * tmp = (void *)gpBonusClaimData;
     struct AchievementsStruct * ent = (void *)&tmp[4];
     struct AchievementsRomStruct * data = gAchievementsTable;
@@ -584,9 +583,10 @@ void achievement_DrawMoreText(void)
     }
 
     gAchMenuSt->entriesInCat = ttlDisplayedEntries;
+    int counter = 0;
     while (gAchMenuSt->detailsID >= ttlDisplayedEntries)
     {
-        if (ttlDisplayedEntries <= 0)
+        if (ttlDisplayedEntries <= 0 || counter++ > 100)
         {
             gAchMenuSt->detailsID = 0;
             gAchMenuSt->details_offset = 0;
@@ -1171,6 +1171,8 @@ void UpdateFilterText(void)
 void Achievement_Init(ProcPtr proc)
 {
     int i = 0;
+    CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
+    LoadBonusContentData(gpBonusClaimData);
 
     SetupBackgrounds(NULL);
 
@@ -1237,9 +1239,7 @@ void Achievement_Init(ProcPtr proc)
         InitText(&gAchMenuSt->unk_7c[i], TitleTileWidth);
         InitText(&gAchMenuSt->unk_b4[i], BoxMaxTileWidth);
     }
-    // PutAchievementBottomBarText();
     PutAchievementPercentageText();
-
     achievement_DrawCategories();
     achievement_DrawMoreText();
 
