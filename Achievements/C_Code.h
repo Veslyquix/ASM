@@ -67,7 +67,7 @@ struct BonusClaimEnt
 };
 
 extern const struct BonusClaimEnt bonusData[];
-
+extern u32* DebuggerProcCmd;
 struct NewBonusClaimRamStruct
 {
     u8 viewable;
@@ -141,6 +141,11 @@ struct NotificationWindowProc
     s16 queue[QueueSize];
     s8 type[QueueSize];
 };
+
+
+int CheckInBattle(void);
+void NotificationSetFastPrint(struct NotificationWindowProc * proc); 
+
 
 void UnlockBonusItem(int id);
 void UnlockAchievement(int id); 

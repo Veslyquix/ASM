@@ -14,12 +14,17 @@ AchievementsDisabledFlag_Link:
 WORD 0x129 
 
 
+#ifndef DebuggerFlag
+DebuggerProcCmd: 
+WORD 0 0 0 
+#endif 
+
 // for testing 
 PUSH 
 // ORG $1DFF720
 // POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1E01960
+ORG $1E01E40
 // POIN MapMenu_AchievementsCommand
 POP 
 
@@ -27,7 +32,7 @@ POP
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
-WORD 60 // Disappear 1 seconds after it finishes printing 
+WORD 1 // Disappear 1 seconds after it finishes printing 
 DisableBGMNotificationsFlag:
 WORD 0x12A // Choose a flag if you want to disable new BGM notifications ingame 
 MAX_LINE_WIDTH:

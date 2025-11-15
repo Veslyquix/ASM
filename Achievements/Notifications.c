@@ -26,49 +26,51 @@ int IsNotificationActive(struct NotificationWindowProc * proc)
 {
     return proc->active;
 }
+
+int CheckNotificationConflict(void)
+{ // interrupted or should just not display
+    if (*DebuggerProcCmd && Proc_Find((void *)&DebuggerProcCmd))
+    {
+        return true;
+    }
+    if (Proc_Find(sProc_Menu))
+    {
+        return true;
+    }
+    return false;
+}
+
 struct ProcCmd const gProcScr_NotificationWindow[];
 void WhileNotificationActive(struct PlayerInterfaceProc * parent)
 {
-    struct Menu * menu = Proc_Find(sProc_Menu);
-    if (menu)
+    struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
+    if (CheckNotificationConflict() ||
+        ((playerPhase) && (playerPhase->proc_lockCnt))) // player phase has a blocking proc (such as the debugger)
     {
-        Proc_End(parent);
+        Proc_End(parent); // do not start player phase side windows
+        return;
     }
 
     struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!IsNotificationActive(proc))
     {
-        Proc_Break(parent);
+        // InitPlayerPhaseInterface needs to happen on the same frame that we
+        // check for these procs / playphase blocking proc
+        InitPlayerPhaseInterface();
+        Proc_Break(parent); // start player phase side windows
     }
 }
 
-// notifications eg. new BGM, ingame achievements, NG+ unlocks, or spam
-
-// queue a notification
-// display at start of enemy phase & when player interfaces like terrain/goal show up
-// after x seconds, disappear
-// if B is pressed twice, disappear
-// if interrupted, enqueue again
-
-// #define MAX_LINE_WIDTH 151
-extern const int MAX_LINE_WIDTH;
-#define CHAR_NEWLINE 1
-#define CHAR_SPACE 0x20
-#define SpriteTextBG
-// draw text farther down in tile1 page
-#define DefaultTextChr 0x80
-#define NotificationChr 0x180
+struct ProcCmd const New_gProcScr_SideWindowMaker[] = {
+    PROC_END_IF_DUPLICATE, // fixes a nasty bug where text was being drawn to tile space twice
+    PROC_WHILE(DoesBMXFADEExist), PROC_CALL(RestartNotificationProc), PROC_REPEAT(WhileNotificationActive), PROC_END,
+};
 
 #define StartLabel 0
 #define LoopLabel 1
 #define ClearGfxLabel 97
 #define EnqueueLabel 98
 #define EndLabel 99
-
-void NotificationSetFastPrint(struct NotificationWindowProc * proc)
-{
-    proc->fastPrint = true;
-}
 
 struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_NAME("NotificationWindow"),
@@ -104,14 +106,103 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_END,
 };
 
-struct ProcCmd const New_gProcScr_SideWindowMaker[] = {
-    PROC_END_IF_DUPLICATE, // fixes a nasty bug where text was being drawn to tile space twice
-    PROC_WHILE(DoesBMXFADEExist),
-    PROC_CALL(RestartNotificationProc),
-    PROC_REPEAT(WhileNotificationActive),
-    PROC_CALL(InitPlayerPhaseInterface),
-    PROC_END,
-};
+int UpdateIdleDelayFrames(struct NotificationWindowProc * proc)
+{
+    proc->delayFrames = 2;
+
+    return true;
+}
+
+// idle for a couple extra frames so menu closing to MMB opening doesn't trigger
+int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
+{
+    int result = false;
+    if (proc->delayFrames > 0)
+    {
+        result = true;
+    }
+    proc->delayFrames--;
+    if (proc->delayFrames < 0)
+    {
+        proc->delayFrames = 0;
+    }
+
+    if (CheckInBattle())
+    {
+        return result;
+    }
+
+    // if (GetGameLock())
+    // {
+    // return UpdateIdleDelayFrames(proc);
+    // }
+    // playerCursorDisplay
+    if (!proc->spriteText)
+    {
+        // sprite text appears over the minimug box, so not an issue
+        if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x])
+        // if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x] ||
+        // gBmMapUnit[gBmSt.cursorPrevious.y][gBmSt.cursorPrevious.x])
+
+        { // then minimug will show up
+            struct PlayerInterfaceProc * mmb = Proc_Find(gProcScr_UnitDisplay_MinimugBox);
+
+            if (mmb)
+            {
+                if (mmb->windowQuadrant == 0) // top left
+                {
+                    return UpdateIdleDelayFrames(proc);
+                }
+
+                // if (mmb->isRetracting || mmb->showHideClock)
+                // {
+                // return UpdateIdleDelayFrames(proc);
+                // }
+            }
+        }
+    }
+
+    if (CheckNotificationConflict())
+    {
+        return UpdateIdleDelayFrames(proc);
+    }
+    struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
+    // if (playerPhase)
+    // {
+    // if (playerPhase->proc_lockCnt) // player phase has a blocking proc (such as the debugger)
+    // {
+    // return UpdateIdleDelayFrames(proc);
+    // }
+    // }
+    if (!playerPhase)
+    {
+        return UpdateIdleDelayFrames(proc);
+    }
+
+    return result;
+}
+
+void NotificationSetFastPrint(struct NotificationWindowProc * proc)
+{
+    proc->fastPrint = true;
+}
+
+// notifications eg. new BGM, ingame achievements, NG+ unlocks, or spam
+
+// queue a notification
+// display at start of enemy phase & when player interfaces like terrain/goal show up
+// after x seconds, disappear
+// if B is pressed twice, disappear
+// if interrupted, enqueue again
+
+// #define MAX_LINE_WIDTH 151
+extern const int MAX_LINE_WIDTH;
+#define CHAR_NEWLINE 1
+#define CHAR_SPACE 0x20
+#define SpriteTextBG
+// draw text farther down in tile1 page
+#define DefaultTextChr 0x80
+#define NotificationChr 0x180
 
 int GetNotificationId(struct NotificationWindowProc * proc)
 {
@@ -150,7 +241,7 @@ int GetTakenQueueSlot(struct NotificationWindowProc * proc)
 void NotificationInitVariables(struct NotificationWindowProc * proc)
 {
     proc->fastPrint = false;
-    StartGreenText(proc);
+    // StartGreenText(proc);
     for (int i = 0; i < QueueSize; i++)
     {
         proc->queue[i] = (-1);
@@ -822,81 +913,6 @@ void NotificationWindowDraw(struct NotificationWindowProc * proc)
 
     ClearUiFrame(BG_GetMapBuffer(0), x, y, w, h);
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
-}
-
-int UpdateIdleDelayFrames(struct NotificationWindowProc * proc)
-{
-    proc->delayFrames = 2;
-
-    return true;
-}
-
-// idle for a couple extra frames so menu closing to MMB opening doesn't trigger
-int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
-{
-    int result = false;
-    if (proc->delayFrames > 0)
-    {
-        result = true;
-    }
-    proc->delayFrames--;
-    if (proc->delayFrames < 0)
-    {
-        proc->delayFrames = 0;
-    }
-
-    if (CheckInBattle())
-    {
-        return result;
-    }
-
-    // if (GetGameLock())
-    // {
-    // return UpdateIdleDelayFrames(proc);
-    // }
-    // playerCursorDisplay
-    if (!proc->spriteText)
-    {
-        // sprite text appears over the minimug box, so not an issue
-        if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x])
-        // if (gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x] ||
-        // gBmMapUnit[gBmSt.cursorPrevious.y][gBmSt.cursorPrevious.x])
-
-        { // then minimug will show up
-            struct PlayerInterfaceProc * mmb = Proc_Find(gProcScr_UnitDisplay_MinimugBox);
-
-            if (mmb)
-            {
-                if (mmb->windowQuadrant == 0) // top left
-                {
-                    return UpdateIdleDelayFrames(proc);
-                }
-
-                // if (mmb->isRetracting || mmb->showHideClock)
-                // {
-                // return UpdateIdleDelayFrames(proc);
-                // }
-            }
-        }
-    }
-    if (Proc_Find(sProc_Menu))
-    {
-        return UpdateIdleDelayFrames(proc);
-    }
-    struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
-    if (playerPhase)
-    {
-        if (playerPhase->proc_lockCnt) // player phase has a blocking proc (such as the debugger)
-        {
-            // return UpdateIdleDelayFrames(proc);
-        }
-    }
-    else
-    {
-        return UpdateIdleDelayFrames(proc);
-    }
-
-    return result;
 }
 
 void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
