@@ -1150,6 +1150,9 @@ void Achievement_Init(ProcPtr proc)
 {
     int i = 0;
     CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
+    // CpuFill16(0, gAchMenuSt, sizeof(gAchMenuSt));
+
+    CpuFill16(0, gAchMenuSt, 0x200);
     LoadBonusContentData(gpBonusClaimData);
 
     SetupBackgrounds(NULL);
@@ -1166,7 +1169,7 @@ void Achievement_Init(ProcPtr proc)
     gAchMenuSt->detailsID = gAchMenuSaveSt.detailsID;
     gAchMenuSt->details_offset = gAchMenuSaveSt.details_offset;
 
-    InitAchievementMenuSt(); //
+    // InitAchievementMenuSt(); //
 
     achievement_80CEAE8(); // sort by category
     // achievement_80CEBA4(); // sort by chapter

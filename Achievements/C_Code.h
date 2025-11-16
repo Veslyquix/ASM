@@ -145,7 +145,9 @@ struct NotificationWindowProc
 
 int CheckInBattle(void);
 void NotificationSetFastPrint(struct NotificationWindowProc * proc); 
-
+extern const int DisableBGMNotificationsFlag;
+extern int DebugFlag_Link;
+extern int AchievementsDisabledFlag_Link;
 
 void UnlockBonusItem(int id);
 void UnlockAchievement(int id); 

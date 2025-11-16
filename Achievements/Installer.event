@@ -24,7 +24,7 @@ PUSH
 // ORG $1DFF720
 // POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1E01E40
+// ORG $1E01E40
 // POIN MapMenu_AchievementsCommand
 POP 
 
@@ -32,7 +32,7 @@ POP
 
 ALIGN 4 
 NotificationWindow_DisplayFrames: 
-WORD 1 // Disappear 1 seconds after it finishes printing 
+WORD 60 // Disappear 1 seconds after it finishes printing 
 DisableBGMNotificationsFlag:
 WORD 0x12A // Choose a flag if you want to disable new BGM notifications ingame 
 MAX_LINE_WIDTH:

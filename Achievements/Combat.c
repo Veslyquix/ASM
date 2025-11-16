@@ -306,13 +306,13 @@ int CheckLowPercHitFunc(
 int RetaliateKOFunc(
     struct BattleHit * round, struct BattleHit * roundNext, struct BattleUnit * bunitA, struct BattleUnit * bunitB)
 {
-    if (IsPlayer(bunitB)) // just in case we're the battle actor
+    if (IsPlayer(&gBattleActor)) // just in case we're the battle actor
     {
         return false;
     }
     if (roundNext->info & BATTLE_HIT_INFO_END)
     {
-        if (bunitB->hpInitial >= bunitB->unit.maxHP && IsPlayer(&gBattleActor) && bunitB->unit.curHP == 0)
+        if (bunitB->hpInitial >= bunitB->unit.maxHP && IsPlayer(&gBattleTarget) && bunitB->unit.curHP == 0)
         {
             return true;
         }

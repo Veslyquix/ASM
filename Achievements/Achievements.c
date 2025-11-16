@@ -5,8 +5,7 @@
 // on copy save, overwrite shown[0], shown[1], or shown[2] - not done
 #define AchMod 8
 #define AchDiv 8
-extern int DebugFlag_Link;
-extern int AchievementsDisabledFlag_Link;
+
 void SetAchievementsTo(int id)
 {
     if (id)
@@ -18,10 +17,27 @@ void SetAchievementsTo(int id)
         SetFlag(AchievementsDisabledFlag_Link);
     }
 }
+void SetBgmNotifTo(int id)
+{
+    if (id)
+    {
+        ClearFlag(DisableBGMNotificationsFlag);
+    }
+    else
+    {
+        SetFlag(DisableBGMNotificationsFlag);
+    }
+}
+
 int AreAchievementsEnabled()
 {
 
     return !CheckFlag(AchievementsDisabledFlag_Link);
+}
+int AreBgmNotifsEnabled()
+{
+
+    return !CheckFlag(DisableBGMNotificationsFlag);
 }
 int CannotUnlockAchievements(void) // debugger on
 {

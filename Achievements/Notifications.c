@@ -425,7 +425,7 @@ int CheckInBattle(void)
     } // 0 after suspend until battle done
     return true;
 }
-extern const int DisableBGMNotificationsFlag;
+
 int ShowBgm(struct NotificationWindowProc * proc)
 {
     int songID = GetCurrentBgmSong();
