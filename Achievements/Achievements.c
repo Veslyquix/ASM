@@ -2,7 +2,7 @@
 
 // to do:
 // on new game, wipe shown[0], shown[1], or shown[2] - DONE
-// on copy save, overwrite shown[0], shown[1], or shown[2] - not done
+// on copy save, overwrite shown[0], shown[1], or shown[2] - DONE
 #define AchMod 8
 #define AchDiv 8
 
@@ -235,9 +235,28 @@ void ClearAchievementsForSlot(int slot)
     LoadBonusContentData(gpBonusClaimData);
     struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
     struct AchievementsStruct * achievements = (void *)&data[4];
-    for (int i = 0; i < (Ach_Section_Size * 3); ++i)
+    slot = Ach_Section_Size * slot;
+    int end = slot + Ach_Section_Size;
+    for (int i = slot; i < end; ++i)
     {
         achievements->shown[i] = 0;
+    }
+    SaveBonusContentData(data);
+}
+
+void CopyAchievementsForSlots(int slotSrc, int slotDst)
+{
+    CpuFill16(0, gpBonusClaimData, Ach_SRAM_Size);
+    LoadBonusContentData(gpBonusClaimData);
+    struct NewBonusClaimRamStruct * data = (void *)gpBonusClaimData;
+    struct AchievementsStruct * achievements = (void *)&data[4];
+    slotDst = Ach_Section_Size * slotDst;
+    int end = slotDst + Ach_Section_Size;
+    slotSrc = Ach_Section_Size * slotSrc;
+    for (; slotDst < end; ++slotDst)
+    {
+        achievements->shown[slotDst] = achievements->shown[slotSrc];
+        slotSrc++;
     }
     SaveBonusContentData(data);
 }

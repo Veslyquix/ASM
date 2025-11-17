@@ -744,6 +744,11 @@ callHackNew(Hook_ExecUnitPromotion)
 ORG $a4eb0
 callHackNew(Hook_InitSave) 
 
+ORG $a9304 
+callHackNew(Hook_CopyGameSave) 
+ORG $a9428
+callHackNew(Hook_WriteGameSave) 
+
 ORG $83288 
 callHackNew(Hook_CallEndEvent) 
 

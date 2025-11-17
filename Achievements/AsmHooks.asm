@@ -139,6 +139,42 @@ pop {r3}
 bx r3 
 .ltorg 
 
+.global Hook_CopyGameSave 
+.type Hook_CopyGameSave, %function 
+Hook_CopyGameSave:
+push {r5-r6, lr} 
+mov r5, r0 @ source slot ID 
+mov r6, r1 @ target slot id 
+bl CopyAchievementsForSlots 
+mov r0, r5 
+mov r1, r6 
+blh 0x80a4e08 @ copygamesave 
+mov r0, r4 
+mov r1, #6 
+blh 0x8002F24 @ Proc_Goto 
+pop {r5-r6} 
+pop {r3} 
+bx r3 
+.ltorg 
+
+.global Hook_WriteGameSave 
+.type Hook_WriteGameSave, %function
+Hook_WriteGameSave: 
+push {r5, lr} 
+mov r0, #0x2c 
+ldrb r5, [r4, r0] 
+blh ReadLastGameSaveId
+mov r1, r5 
+blh CopyAchievementsForSlots 
+mov r0, r5 
+blh 0x80a5010 @ WriteGameSave 
+
+mov r0, r4 
+pop {r5} 
+pop {r3} 
+bx r3 
+.ltorg 
+
 
 .global Hook_DoItemUse 
 .type Hook_DoItemUse, %function 

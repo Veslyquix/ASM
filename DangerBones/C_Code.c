@@ -328,6 +328,12 @@ void DangerBonesWaitForBattle(DangerBonesProc * proc)
     }
 }
 
+void CallRefreshUnitSprites(void)
+{
+    // asm("mov r11, r11");
+    // RefreshUnitSprites();
+}
+
 const struct ProcCmd DangerBonesProcCmd[] = {
     PROC_YIELD,
     PROC_NAME("DangerBones"),
@@ -335,7 +341,8 @@ const struct ProcCmd DangerBonesProcCmd[] = {
     PROC_CALL(SetDangerBonesPalette),
     PROC_REPEAT(GenerateDangerBones),
     PROC_REPEAT(DangerBonesWaitForBattle),
-    PROC_CALL(RefreshUnitSprites),
+    // PROC_CALL(CallRefreshUnitSprites), // this was making sms appear under mms in fe8 - Nov 2025
+    // perhaps this was necessary for fe6/fe7?
     PROC_END,
 };
 
