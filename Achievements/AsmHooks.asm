@@ -192,23 +192,36 @@ pop {r3}
 bx r3 
 .ltorg 
 
-.global Hook_MapAnim_DisplayDeathQuote 
-.type Hook_MapAnim_DisplayDeathQuote, %function 
-Hook_MapAnim_DisplayDeathQuote: 
+.global Hook_MapAnim_ShowPoisonEffectIfAny 
+.type Hook_MapAnim_ShowPoisonEffectIfAny, %function 
+Hook_MapAnim_ShowPoisonEffectIfAny: 
 push {r5, lr} 
-add r0, r2 
-lsl r0, #2 
-add r0, r3 
-ldr r0, [r0] @ gManimSt.actor
-ldr r5, [r0] @ unit 
+ldr r2, =0x807a93c 
+ldr r5, [r2] @ gManimSt 
+ldr r0, [r5, #0x50] @ pCurrentRound 
+bl GetRoundIdFromBattleRound
+mov r1, r0 
+mov r0, #0x58 @ current subject id 
+add r0, r5 
+ldrb r0, [r0] 
+ldr r0, [r5, r0] @ gManimSt.actor[gManimSt.subjectActorId]
 
-ldrb r4, [r5, #4] @ vanilla puts unit ID in r4 
-mov r0, r4 
+
 bl UnlockAchievementByCombat
+
+
+mov r0, r5 
+add r0, #0x5A 
+ldrh r1, [r0] 
+mov r0, #0x40 
+and r0, r1 
 pop {r5} 
-pop {r0} 
-bx r0 
+pop {r3} 
+bx r3 
 .ltorg 
+
+
+
 
 
 .global Hook_EfxHpBar_MoveCameraOnEnd 
@@ -227,7 +240,7 @@ ldr r1, [r5, #0x60]
 ldrh r1, [r1, #0xE] @ next round ID 
 mov r2, #1 
 sub r1, r2 @ current round ID 
-bl UnlockAchievementByCombat
+bl UnlockAchievementByCombatPid
 
 
 ldr r0, [r5, #0x64] 

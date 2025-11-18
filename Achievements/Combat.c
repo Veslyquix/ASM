@@ -18,9 +18,21 @@ extern struct BattleHit * GetRoundData(int roundID)
     return (struct BattleHit *)round;
 }
 
-void UnlockAchievementByCombat(int pid, int roundID)
+int GetRoundIdFromBattleRound(struct BattleHit * battleRound)
 {
-    struct Unit * unit = GetUnitFromCharId(pid);
+    for (int i = 1; i < 32; ++i)
+    {
+        if (GetRoundData(i) == battleRound)
+        {
+            return i - 1;
+        }
+    }
+    return 0;
+}
+
+void UnlockAchievementByCombat(struct Unit * unit, int roundID)
+{
+
     struct BattleUnit * bunitA = &gBattleActor;
     struct BattleUnit * bunitB = &gBattleTarget;
 
@@ -51,6 +63,13 @@ void UnlockAchievementByCombat(int pid, int roundID)
         }
     }
 }
+
+void UnlockAchievementByCombatPid(int pid, int roundID)
+{
+    struct Unit * unit = GetUnitFromCharId(pid);
+    UnlockAchievementByCombat(unit, roundID);
+}
+
 int IsPlayer(struct BattleUnit * bunitA)
 {
     return UNIT_FACTION(&bunitA->unit) == FACTION_BLUE;

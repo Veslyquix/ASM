@@ -37,6 +37,10 @@ int CheckNotificationConflict(void)
     {
         return true;
     }
+    if (EventEngineExists()) // doesn't include battle event engine
+    {
+        return true;
+    }
     return false;
 }
 
@@ -127,7 +131,7 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
         proc->delayFrames = 0;
     }
 
-    if (CheckInBattle())
+    if (CheckInBattleAnim())
     {
         return result;
     }
@@ -408,7 +412,16 @@ const char * GetPlayingBGMName(struct NotificationWindowProc * proc)
     return buf;
 }
 
-int CheckInBattle(void)
+int CheckInMapBattle(void)
+{
+    if (Proc_Find(ProcScr_MapAnimBattle))
+    {
+        return true;
+    }
+    return false;
+}
+
+int CheckInBattleAnim(void)
 {
     struct ProcEkrBattle * battleProc = gpProcEkrBattle;
     if (!battleProc)
@@ -434,7 +447,7 @@ int ShowBgm(struct NotificationWindowProc * proc)
         return false;
     }
     proc->bgm = songID;
-    if (CheckInBattle())
+    if (CheckInBattleAnim())
     {
         return false;
     }
@@ -510,23 +523,54 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 
 extern struct Font * gActiveFont;
 
+int CheckInSaveScreen(void)
+{
+    // if (GetGameControl()->nextAction == LGAMECTRL_POST_NORMAL_CHAPTER)
+    if (HasNextChapter())
+    {
+        return true;
+    }
+    // if (Proc_Find((void *)Make6C_SaveMenuPostChapter)) // gProcScr_SaveMenuPostChapter
+    // {
+    // return true;
+    // }
+    return false;
+}
+
+// if CheckInSaveScreen()
+// wait until Proc_Find((void *)Make6C_SaveMenuPostChapter))
+// to decompress / apply palette
+
 int GetSpriteTextCHR(struct NotificationWindowProc * proc)
 {
-
-    if (CheckInBattle())
+    if (CheckInSaveScreen())
+    {
+        return 0x200;
+    }
+    if (CheckInBattleAnim())
     {
         return 0xC0;
         // return 0x140;
     }
-    return 0x180;
+
+    return NotificationChr;
 }
 #define NotificationObjPalID 0x15
 int GetNotifObjPalID(void)
 {
-    if (CheckInBattle())
+    if (CheckInSaveScreen())
+    {
+        return 0x19;
+    }
+    if (CheckInBattleAnim())
     {
         return 0x12;
     }
+    if (CheckInMapBattle())
+    {
+        return 0x16;
+    }
+
     return 0x15;
 }
 
@@ -661,7 +705,8 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     proc->strOriginal = (void *)str;
     proc->unitClock = 0;
     struct Font * font = gActiveFont;
-    InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (NotificationChr << 5)), NotificationChr, GetNotifObjPalID());
+    int chr = GetSpriteTextCHR(proc);
+    InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + (chr << 5)), chr, GetNotifObjPalID());
 
     if (proc->spriteText)
     {
@@ -840,6 +885,7 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
             forceNewLine = true;
             break;
         }
+
         iter = (void *)Text_DrawCharacterAscii(th, (void *)iter);
         break;
     }
@@ -871,7 +917,7 @@ int GetNotificationSpriteWindowWidth(struct NotificationWindowProc * proc)
     {
         width = MAX_LINE_WIDTH;
     }
-    return width + 16;
+    return width + 24;
 }
 
 int GetNotificationWindowHeight(struct NotificationWindowProc * proc)
@@ -918,7 +964,7 @@ void NotificationWindowDraw(struct NotificationWindowProc * proc)
 void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
 {
 
-    if (CheckInBattle())
+    if (CheckInBattleAnim())
     {
         Proc_Break(proc);
         return;

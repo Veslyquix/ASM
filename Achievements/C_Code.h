@@ -143,7 +143,7 @@ struct NotificationWindowProc
 };
 
 
-int CheckInBattle(void);
+int CheckInBattleAnim(void);
 void NotificationSetFastPrint(struct NotificationWindowProc * proc); 
 extern const int DisableBGMNotificationsFlag;
 extern int DebugFlag_Link;
