@@ -21,11 +21,11 @@ WORD 0 0 0
 
 // for testing 
 PUSH 
-// ORG $1DFF720
-// POIN MapMenu_IsAchievementsCommandAvailable
+ORG $1E02514
+POIN MapMenu_IsAchievementsCommandAvailable
 
-// ORG $1E01E40
-// POIN MapMenu_AchievementsCommand
+ORG $1E0251c
+POIN MapMenu_AchievementsCommand
 POP 
 
 

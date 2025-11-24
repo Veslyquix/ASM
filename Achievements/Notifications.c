@@ -26,9 +26,119 @@ int IsNotificationActive(struct NotificationWindowProc * proc)
 {
     return proc->active;
 }
+int CheckInSaveScreen(void)
+{
+    // if (GetGameControl()->nextAction == LGAMECTRL_POST_NORMAL_CHAPTER)
+    if (HasNextChapter())
+    {
+        return true;
+    }
+    // if (Proc_Find((void *)Make6C_SaveMenuPostChapter)) // gProcScr_SaveMenuPostChapter
+    // {
+    // return true;
+    // }
+    return false;
+}
 
-int CheckNotificationConflict(void)
+int IdleForNow(struct NotificationWindowProc * proc, int frames)
+{
+    proc->delayFrames = frames;
+
+    return true;
+}
+
+int IsScreenDark(struct NotificationWindowProc * proc)
+{
+    int result = false;
+    if (proc->delayFrames > 0)
+    {
+        proc->delayFrames--;
+        result = true;
+    }
+
+    if (sPalFadeSt[0].clock_end && sPalFadeSt[0].clock_end != 0x100)
+    {
+        // brk;
+        return IdleForNow(proc, 100);
+    }
+    if (FadeExists())
+    {
+        return IdleForNow(proc, 100);
+    }
+
+    if (gLCDControlBuffer.blendY >= 5) // we're at least 5/16ths faded - FadeToCommon_OnLoop
+    {                                  // [202b6d8..202b6dd]!!
+        // brk;
+        return IdleForNow(proc, 100);
+    }
+
+    // u32 * data = (void *)gPaletteBuffer;
+    u32 * data = (void *)PLTT;
+    int faded = true;
+    for (int i = 0; i < 15; ++i)
+    {
+        if (data[i] && data[i] != 0xFFFFFFFF)
+        {
+            faded = false;
+            break;
+        }
+    }
+    if (faded)
+    {
+        return IdleForNow(proc, 100);
+    }
+
+    return result;
+}
+extern struct ProcCmd const gProcScr_SaveMenuPostChapter[];
+// on player phase, during battles, and during conversations
+int CanNotifsDisplayCurrently(struct NotificationWindowProc * proc, struct Proc * playerPhase)
+{
+    if (proc->delayFrames)
+    {
+        proc->delayFrames--;
+        return false;
+    }
+    int result = false;
+    if (playerPhase && !playerPhase->proc_lockCnt)
+    {
+        result = true; // player phase, no blocking
+    }
+    if (Proc_Find(sProcScr_CombatAction))
+    {
+        result = true;
+    }
+    // if (Proc_Find(gProcScr_Talk))
+    // {
+    // result = true;
+    // }
+    if (Proc_Find(gProcScr_SaveMenuPostChapter))
+    {
+        if (!proc->initDelay)
+        {
+            proc->initDelay = true;
+            brk;
+            proc->delayFrames = 100;
+            return false;
+        }
+        result = true;
+    }
+
+    if (Proc_Find(sProc_Menu))
+    {
+        return false; // no menus
+    }
+    if (FadeExists() || DoesBMXFADEExist())
+    {
+        return false; // fading
+    }
+
+    return result;
+}
+
+int CheckNotificationConflict(struct NotificationWindowProc * proc, struct Proc * playerPhase)
 { // interrupted or should just not display
+    return !CanNotifsDisplayCurrently(proc, playerPhase);
     if (*DebuggerProcCmd && Proc_Find((void *)&DebuggerProcCmd))
     {
         return true;
@@ -37,10 +147,23 @@ int CheckNotificationConflict(void)
     {
         return true;
     }
-    if (EventEngineExists()) // doesn't include battle event engine
+    if (HasNextChapter()) // save screen
     {
+        if (playerPhase && !playerPhase->proc_lockCnt)
+        {
+            SetNextChapterId(0);
+        }
         return true;
     }
+    // if (IsScreenDark(proc))
+    // {
+    // return true;
+    // }
+
+    // if (EventEngineExists()) // doesn't include battle event engine
+    // {
+    // return IdleForNow(proc, 100);
+    // }
     return false;
 }
 
@@ -48,14 +171,14 @@ struct ProcCmd const gProcScr_NotificationWindow[];
 void WhileNotificationActive(struct PlayerInterfaceProc * parent)
 {
     struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
-    if (CheckNotificationConflict() ||
-        ((playerPhase) && (playerPhase->proc_lockCnt))) // player phase has a blocking proc (such as the debugger)
+    struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
+    if (CheckNotificationConflict(proc, playerPhase))
+    // ((playerPhase) && (playerPhase->proc_lockCnt))) // player phase has a blocking proc (such as the debugger)
     {
         Proc_End(parent); // do not start player phase side windows
         return;
     }
 
-    struct NotificationWindowProc * proc = Proc_Find(gProcScr_NotificationWindow);
     if (!IsNotificationActive(proc))
     {
         // InitPlayerPhaseInterface needs to happen on the same frame that we
@@ -78,7 +201,7 @@ struct ProcCmd const New_gProcScr_SideWindowMaker[] = {
 
 struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_NAME("NotificationWindow"),
-    PROC_15, // ?
+    // PROC_15, // ?
     PROC_YIELD,
     PROC_LABEL(StartLabel),
     PROC_SLEEP(2),
@@ -110,13 +233,6 @@ struct ProcCmd const gProcScr_NotificationWindow[] = {
     PROC_END,
 };
 
-int UpdateIdleDelayFrames(struct NotificationWindowProc * proc)
-{
-    proc->delayFrames = 2;
-
-    return true;
-}
-
 // idle for a couple extra frames so menu closing to MMB opening doesn't trigger
 int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
 {
@@ -130,7 +246,11 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
     {
         proc->delayFrames = 0;
     }
-
+    struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
+    if (CheckNotificationConflict(proc, playerPhase))
+    {
+        return IdleForNow(proc, 2);
+    }
     if (CheckInBattleAnim())
     {
         return result;
@@ -138,7 +258,7 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
 
     // if (GetGameLock())
     // {
-    // return UpdateIdleDelayFrames(proc);
+    // return IdleForNow(proc, 2);
     // }
     // playerCursorDisplay
     if (!proc->spriteText)
@@ -155,33 +275,25 @@ int CheckNotificationInterrupted(struct NotificationWindowProc * proc)
             {
                 if (mmb->windowQuadrant == 0) // top left
                 {
-                    return UpdateIdleDelayFrames(proc);
+                    return IdleForNow(proc, 2);
                 }
 
                 // if (mmb->isRetracting || mmb->showHideClock)
                 // {
-                // return UpdateIdleDelayFrames(proc);
+                // return IdleForNow(proc, 2);
                 // }
             }
         }
     }
 
-    if (CheckNotificationConflict())
-    {
-        return UpdateIdleDelayFrames(proc);
-    }
-    struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
+    // struct Proc * playerPhase = Proc_Find(gProcScr_PlayerPhase);
     // if (playerPhase)
     // {
     // if (playerPhase->proc_lockCnt) // player phase has a blocking proc (such as the debugger)
     // {
-    // return UpdateIdleDelayFrames(proc);
+    // return IdleForNow(proc, 2);
     // }
     // }
-    if (!playerPhase)
-    {
-        return UpdateIdleDelayFrames(proc);
-    }
 
     return result;
 }
@@ -244,6 +356,7 @@ int GetTakenQueueSlot(struct NotificationWindowProc * proc)
 
 void NotificationInitVariables(struct NotificationWindowProc * proc)
 {
+    proc->initDelay = false;
     proc->fastPrint = false;
     // StartGreenText(proc);
     for (int i = 0; i < QueueSize; i++)
@@ -523,20 +636,6 @@ const char * GetNextNotificationStr(struct NotificationWindowProc * proc)
 
 extern struct Font * gActiveFont;
 
-int CheckInSaveScreen(void)
-{
-    // if (GetGameControl()->nextAction == LGAMECTRL_POST_NORMAL_CHAPTER)
-    if (HasNextChapter())
-    {
-        return true;
-    }
-    // if (Proc_Find((void *)Make6C_SaveMenuPostChapter)) // gProcScr_SaveMenuPostChapter
-    // {
-    // return true;
-    // }
-    return false;
-}
-
 // if CheckInSaveScreen()
 // wait until Proc_Find((void *)Make6C_SaveMenuPostChapter))
 // to decompress / apply palette
@@ -615,6 +714,14 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
     {
         SetTextFont(font);
         return;
+    }
+
+    if (!proc->showingBgm)
+    {
+        if (proc->str == proc->strOriginal)
+        {
+            // brk;
+        }
     }
 
     struct Text * th = GetTextHandleForLine(proc->line);
@@ -713,7 +820,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
 
         // ResetText();
         // ResetTextFont();
-
+        // brk;
         void * vram = GetSpriteTextVRAM(proc);
         NotificationInitSpriteText(vram);
     }

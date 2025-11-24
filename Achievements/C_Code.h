@@ -136,6 +136,7 @@ struct NotificationWindowProc
     u8 active;
 
     u8 fastPrint;
+    u8 initDelay; 
 
     u8 colour[4]; // up to 0x41
     s16 queue[QueueSize];
@@ -167,7 +168,8 @@ void StartNotificationProc(int id, int type);
 int CountStrLines(const char * str);
 int GetNotificationStringTextLenASCII_Wrapped(const char * str);
 int IsAchievementComplete(int); 
-
+void UnlockAll(void);
+void LockAll(void);
 struct AchievementsStruct
 {
     u8 complete[Ach_Section_Size];
