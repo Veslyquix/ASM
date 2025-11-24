@@ -123,7 +123,7 @@ struct NotificationWindowProc
     PROC_HEADER;
     u8 finishedPrinting;
     u8 showingBgm;
-    s8 delayFrames;
+    u8 delayFrames;
     char * str;
     char * strOriginal;
     s16 id;
