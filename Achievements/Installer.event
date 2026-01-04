@@ -20,13 +20,13 @@ WORD 0 0 0
 #endif 
 
 // for testing 
-PUSH 
-ORG $1E02514
-POIN MapMenu_IsAchievementsCommandAvailable
+// PUSH 
+// ORG $1E0C8C0 
+// POIN MapMenu_IsAchievementsCommandAvailable
 
-ORG $1E0251c
-POIN MapMenu_AchievementsCommand
-POP 
+// ORG $1E0C8C8 
+// POIN MapMenu_AchievementsCommand
+// POP 
 
 
 

@@ -188,6 +188,7 @@ SET_FUNC ResetUnitSpriteHover, 0x8022629
 SET_FUNC sub_802C334, 0x8025781
 SET_DATA gProcScr_TerrainDisplay, 0x8678174
 SET_DATA gProcScr_PlayerPhase, 0x85C56A8
+SET_DATA sProcScr_PlayerPhase, 0x8015a40
 SET_DATA gKeyStatusPtr, 0x858E578
 SET_DATA gUnknown_08A02274, 0x83080D0
 

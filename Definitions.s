@@ -35,6 +35,8 @@ sub r2, #1
 mov r0, r2 
 bx lr 
 
+
+
 SET_DATA gSound, 0x202AA65 
 SET_FUNC GetPidStats, 0x8084F4D
 SET_FUNC ReadGlobalSaveInfo, 0x80842E9
@@ -292,8 +294,29 @@ SET_DATA gBanimUniquePal, 0x203CD04 @ should be gEkrInitialHitSide + 0x10 approx
 
 SET_FUNC MainUpdateEkrBattle, 0x8042705
 
+SET_FUNC Text_GetCursor, 0x80059c9
+@SET_FUNC Text_DrawCharacterAscii, 0x8006515
+SET_FUNC Text_DrawCharacterAscii, 0x8005F41 @ non ascii version
+SET_FUNC InitSpriteTextFont, 0x80065C9
+SET_FUNC InitSpriteText, 0x800665D
+SET_FUNC DisplayHelpBoxObj, 0x8070F65 @ from 7054C - the option to display "help" might not be included in DisplayHelpBoxObj itself  
+SET_DATA gGfx_HelpTextBox, 0x8308A78 @ from 70E70 
+SET_DATA gPal_HelpTextBox, 0x8100a48 
+
+
 .endif     
 .if FE7 == true 
+ 
+SET_FUNC Text_GetCursor, 0x8005571 
+SET_FUNC Text_DrawCharacterAscii, 0x8005B9D
+SET_FUNC InitSpriteTextFont, 0x8005C39
+SET_FUNC InitSpriteText, 0x8005c75
+SET_FUNC DisplayHelpBoxObj, 0x808263D @ from 8176C
+SET_DATA gGfx_HelpTextBox, 0x83FD764 @ from 82528 
+SET_DATA gGfx_HelpTextBox5, 0x8403A6C @ "Help" 
+SET_DATA gPal_HelpTextBox, 0x81946b4  
+SET_DATA gActiveFont, 0x2028D70
+
 SET_FUNC MainUpdateEkrBattle, 0x804b329 
 SET_FUNC ApplyBanimUniquePalette, 0x8053FB1
 SET_DATA gBanimUniquePaletteDisabled, 0x203E0E8

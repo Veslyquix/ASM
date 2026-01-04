@@ -26,6 +26,10 @@ extern struct ProcCmd const gProcScr_SaveMenuPostChapter[];
 extern struct ProcCmd const gProcScr_Talk[];
 int IsNotificationActive(struct NotificationWindowProc * proc)
 {
+    if (!proc)
+    {
+        return false;
+    }
     return proc->active;
 }
 int CheckInSaveScreen(void)
@@ -80,7 +84,7 @@ int CanNotifsDisplayCurrently(struct NotificationWindowProc * proc, struct Proc 
 
     if (Proc_Find(gProcScr_SaveMenuPostChapter))
     {
-        if (!proc->initDelay)
+        if (proc && !proc->initDelay)
         {
             proc->initDelay = true;
             proc->delayFrames = 6;

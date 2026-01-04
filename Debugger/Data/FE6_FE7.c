@@ -2144,7 +2144,7 @@ void MakeMoveunitForAnyActiveUnit(void)
     }
     MU_SetDefaultFacing_Auto();
 }
-
+extern const struct ProcCmd * sProcScr_PlayerPhase; // 15a40
 void RestartDebuggerMenu(DebuggerProc * proc)
 {
     struct Unit * unit = proc->unit; // GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
@@ -2155,7 +2155,11 @@ void RestartDebuggerMenu(DebuggerProc * proc)
     }
     EndAllMenus();
     ResetText();
+#ifdef FE6
+    ProcPtr playerPhaseProc = Proc_Find(sProcScr_PlayerPhase);
+#else
     ProcPtr playerPhaseProc = Proc_Find(gProcScr_PlayerPhase);
+#endif
     Proc_Goto(playerPhaseProc, 9); // wait for menu?
     UnitBeginActionInit(unit);
     proc->actionID = 0;
@@ -2639,6 +2643,22 @@ int ArenaAction(DebuggerProc * proc)
     Proc_Goto(proc, PostActionLabel);
     return 0;
 }
+#ifdef FE6
+s8 CanBattleUnitGainLevels2(struct BattleUnit * bu)
+{
+    // if (gBmSt.gameStateBits & 0x40)
+    //  return TRUE;
+
+    if (bu->unit.exp == UNIT_EXP_DISABLED)
+        return FALSE;
+
+    if (UNIT_FACTION(&bu->unit) != FACTION_BLUE)
+        return FALSE;
+
+    return TRUE;
+}
+#endif
+
 extern const struct ProcCmd sProcScr_BattleAnimSimpleLock[];
 int LevelupAction(DebuggerProc * proc)
 {
@@ -2646,7 +2666,11 @@ int LevelupAction(DebuggerProc * proc)
     gActiveUnit->exp = 99;
     InitBattleUnit(&gBattleActor, gActiveUnit);
 
+#ifdef FE6
+    if (CanBattleUnitGainLevels2(&gBattleActor))
+#else
     if (CanBattleUnitGainLevels(&gBattleActor))
+#endif
     { // see BattleApplyMiscAction
         if (!(gPlaySt.chapterStateBits & PLAY_FLAG_EXTRA_MAP))
         {
