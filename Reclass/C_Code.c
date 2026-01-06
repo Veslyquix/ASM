@@ -508,8 +508,13 @@ void SilentReclassUnit_ASMC()
     {
         return;
     }
-
-    ApplyUnitReclass(unit, gEventSlots[3]);
+    u8 classID = gEventSlots[3]; 
+    if (!classID) { 
+    classID = GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
+    } 
+    if (classID) { 
+    ApplyUnitReclass(unit, classID);
+    } 
 }
 
 int CanClassEquipWeapon(int weapon, int reclassID)
