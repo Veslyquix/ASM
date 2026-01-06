@@ -501,6 +501,17 @@ void ApplyUnitReclass(struct Unit * unit, u8 classId)
         unit->curHP = GetUnitMaxHp(unit);
 }
 
+void SilentReclassUnit_ASMC()
+{
+    struct Unit * unit = GetUnitStructFromEventParameter(gEventSlots[1]);
+    if (!(UNIT_IS_VALID(unit)))
+    {
+        return;
+    }
+
+    ApplyUnitReclass(unit, gEventSlots[3]);
+}
+
 int CanClassEquipWeapon(int weapon, int reclassID)
 {
     weapon &= 0xFF; // id only
