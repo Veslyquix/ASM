@@ -322,16 +322,44 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
 
 void DangerBonesWaitForBattle(DangerBonesProc * proc)
 {
-    if (proc->selected && (gActionData.unitActionType == UNIT_ACTION_COMBAT))
+    // if (proc->selected && (gActionData.unitActionType == UNIT_ACTION_COMBAT))
+    // if (proc->selected && (gActionData.unitActionType))
+    if (gActionData.unitActionType)
     {
         Proc_Break(proc);
     }
 }
 
-void CallRefreshUnitSprites(void)
+void CallRefreshUnitSprites(DangerBonesProc * proc)
 {
-    // asm("mov r11, r11");
-    // RefreshUnitSprites();
+#ifndef FE8
+    return;
+#endif
+    // refresh unit sprites once an action has been chosen,
+    // and hide the target's SMS if proc->selected is true
+
+    // AoE needs RefreshUnitSprites here to show the correct palette.
+    // Combat needs no RefreshUnitSprites, otherwise it shows SMS under their MMS
+    // or for US_HIDDEN to be set beforehand
+    struct Unit * unit = GetUnit(gActionData.targetIndex);
+    int hidTarget = false;
+    int actionID = gActionData.unitActionType;
+    if (actionID && actionID != UNIT_ACTION_WAIT)
+    {
+        if (UNIT_IS_VALID(unit) && proc->selected)
+        {
+            if (!(unit->state & US_HIDDEN))
+            {
+                unit->state |= US_HIDDEN;
+                hidTarget = true;
+            }
+        }
+    }
+    RefreshUnitSprites();
+    if (hidTarget)
+    {
+        unit->state &= ~US_HIDDEN;
+    }
 }
 
 const struct ProcCmd DangerBonesProcCmd[] = {
@@ -341,8 +369,7 @@ const struct ProcCmd DangerBonesProcCmd[] = {
     PROC_CALL(SetDangerBonesPalette),
     PROC_REPEAT(GenerateDangerBones),
     PROC_REPEAT(DangerBonesWaitForBattle),
-    // PROC_CALL(CallRefreshUnitSprites), // this was making sms appear under mms in fe8 - Nov 2025
-    // perhaps this was necessary for fe6/fe7?
+    PROC_CALL(CallRefreshUnitSprites),
     PROC_END,
 };
 
