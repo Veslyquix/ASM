@@ -320,7 +320,7 @@ void GenerateDangerBones(DangerBonesProc * proc) // do 1 valid unit per frame to
 #endif
 }
 
-void DangerBonesWaitForBattle(DangerBonesProc * proc)
+void DangerBonesWaitForAction(DangerBonesProc * proc)
 {
     // if (proc->selected && (gActionData.unitActionType == UNIT_ACTION_COMBAT))
     // if (proc->selected && (gActionData.unitActionType))
@@ -328,6 +328,11 @@ void DangerBonesWaitForBattle(DangerBonesProc * proc)
     {
         Proc_Break(proc);
     }
+}
+void DangerBonesWaitForBattle(DangerBonesProc * proc)
+{
+    if (proc->selected && (gActionData.unitActionType == UNIT_ACTION_COMBAT))
+        Proc_Break(proc);
 }
 
 void CallRefreshUnitSprites(DangerBonesProc * proc)
@@ -368,8 +373,9 @@ const struct ProcCmd DangerBonesProcCmd[] = {
     PROC_LABEL(0),
     PROC_CALL(SetDangerBonesPalette),
     PROC_REPEAT(GenerateDangerBones),
-    PROC_REPEAT(DangerBonesWaitForBattle),
+    PROC_REPEAT(DangerBonesWaitForAction),
     PROC_CALL(CallRefreshUnitSprites),
+    PROC_REPEAT(DangerBonesWaitForBattle),
     PROC_END,
 };
 
