@@ -12,9 +12,34 @@ POP
 
 #include "Asm_Hooks.lyn.event" 
 
+// When walking through this terrain, call the range event here 
+ALIGN 4 
+TerrainThatCallsRangeEvent:
+BYTE 0x3E // Deck
+BYTE 0x1 // plain 
+BYTE 0x2A // Flat
+BYTE 0 // Terminator 
+
+// When walking through this terrain, abruptly stop here 
+ALIGN 4 
+TerrainThatInterruptsMovement:
+BYTE 0xC // Forest
+BYTE 0xC
+BYTE 0 // Terminator 
+
+// When walking through these traps, call the range event here 
+ALIGN 4 
+TrapsThatCallRangeEvent:
+BYTE 0x1 // Ballista
+BYTE 0x6 // Dragon Vein
+BYTE 0 // Terminator 
 
 
-
+// When walking through these traps, abruptly stop here 
+ALIGN 4 
+TrapsThatInterruptMovement:
+BYTE 0x8 // instant fire trap 
+BYTE 0 // Terminator 
 
 
 
