@@ -15,6 +15,7 @@
 @ division & other libgcc functions
 SET_FUNC __aeabi_idiv,    __divsi3
 SET_FUNC __aeabi_idivmod, __modsi3
+@SET_FUNC WalkCalcLoop_Hook, 0x801a89d
 
 SET_DATA classTablePoin, 0x8017AB8 
 
