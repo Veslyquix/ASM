@@ -10,35 +10,44 @@ ORG $1a89c
 jumpToHack_r1(WalkCalcLoop_Hook)
 POP 
 
+ALIGN 4 
+PreventGoingBack: // if true, terrain/traps that call range events will 
+// also force you to staying at the tile you selected 
+// menu will appear if you have Less Annoying Fog installed 
+WORD 1 // true 
+
+
 #include "Asm_Hooks.lyn.event" 
 
 // When walking through this terrain, call the range event here 
 ALIGN 4 
 TerrainThatCallsRangeEvent:
-BYTE 0x3E // Deck
-BYTE 0x1 // plain 
+// BYTE 0x13 // Bridge
+// BYTE 0x34 // Bridge (from snag) 
+// BYTE 0x3E // Deck
 BYTE 0x2A // Flat
 BYTE 0 // Terminator 
 
 // When walking through this terrain, abruptly stop here 
 ALIGN 4 
 TerrainThatInterruptsMovement:
-BYTE 0xC // Forest
-BYTE 0xC
+// BYTE 0xC // Forest
+// BYTE 0x8 // Arena 
 BYTE 0 // Terminator 
 
 // When walking through these traps, call the range event here 
 ALIGN 4 
 TrapsThatCallRangeEvent:
-BYTE 0x1 // Ballista
-BYTE 0x6 // Dragon Vein
+// BYTE 0x1 // Ballista
+// BYTE 0x6 // Dragon Vein
 BYTE 0 // Terminator 
 
 
 // When walking through these traps, abruptly stop here 
 ALIGN 4 
 TrapsThatInterruptMovement:
-BYTE 0x8 // instant fire trap 
+// BYTE 0x1 // ballista
+// BYTE 0x8 // instant fire trap 
 BYTE 0 // Terminator 
 
 

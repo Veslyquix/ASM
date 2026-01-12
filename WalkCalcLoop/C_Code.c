@@ -6,6 +6,7 @@ extern u8 TerrainThatInterruptsMovement[];
 extern u8 TrapsThatInterruptMovement[];
 
 void RunRangeEventAt(struct Unit * unit, int x, int y);
+
 int WalkCalcLoop(struct Unit * unit, int x, int y)
 {
 
@@ -51,24 +52,38 @@ int WalkCalcLoop(struct Unit * unit, int x, int y)
     return false;
 }
 
+extern int PreventGoingBack;
 void RunRangeEventAt(struct Unit * unit, int x, int y)
 {
-    int xCur = unit->xPos;
+    int xCur = unit->xPos; // save coords
     int yCur = unit->yPos;
     int actX = gActionData.xMove;
     int actY = gActionData.yMove;
-    gActionData.xMove = x;
+
+    gActionData.xMove = x; // update coords
     gActionData.yMove = y;
     unit->xPos = x;
     unit->yPos = y;
-    // if (StartAfterUnitMovedEvent())
+
     if (CheckForWaitEvents())
     {
         // brk;
         RunWaitEvents();
+
+        if (PreventGoingBack)
+        {
+
+            gActionData.unitActionType = UNIT_ACTION_TRAPPED;
+            // gActionData.xMove = x;
+            // gActionData.yMove = y;
+            // unit->xPos = x; // set coords
+            // unit->yPos = y;
+
+            return;
+        }
     }
 
-    unit->xPos = xCur;
+    unit->xPos = xCur; // restore coords
     unit->yPos = yCur;
     gActionData.xMove = actX;
     gActionData.yMove = actY;
