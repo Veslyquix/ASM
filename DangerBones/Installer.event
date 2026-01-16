@@ -13,10 +13,18 @@ ShakeSpeed_Link:
 WORD ShakeSpeed 
 DB_Pal_ID:
 #ifdef _FE8_ 
-WORD 0x9 // 0xB is light rune/link arena, but AoE also uses this 
-// 0xA is flames weather, but AoE uses this 
-// 0x9 is ???? 
-// 0x8 is MMB numbers & Myrrh attacking map sprite 
+WORD 0x9 
+
+/*
+MMB numbers & Myrrh's transformation map sprite: 8
+Transformed Myrrh when attacked: 9 
+Flames weather / AoE damage numbers: 10 
+LightRune / LinkArena / AoE anims: 11
+BlueSMS: 12
+RedSMS: 13
+GreenSMS: 14 
+GreySMS: 15
+*/ 
 #else 
 WORD 0xB 
 #endif 
