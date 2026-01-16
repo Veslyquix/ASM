@@ -11,6 +11,16 @@ Pal_4th: // Enemies will change palette if they could attack the tile you're mov
 WORD 1 // 1 for True, 0 for False 
 ShakeSpeed_Link:
 WORD ShakeSpeed 
+DB_Pal_ID:
+#ifdef _FE8_ 
+WORD 0x9 // 0xB is light rune/link arena, but AoE also uses this 
+// 0xA is flames weather, but AoE uses this 
+// 0x9 is ???? 
+// 0x8 is MMB numbers & Myrrh attacking map sprite 
+#else 
+WORD 0xB 
+#endif 
+
 DangerBonesDisabledFlag:
 #ifdef _FE8_ 
 WORD DisableDangerBonesFlag
@@ -89,7 +99,7 @@ SHORT $46C0
 
 #ifdef OVERWRITE_LIGHTRUNE_PAL
 ORG $194634
-BYTE $90 $1D $0D $00 $18 $25 $DC $2D $0E $00 $F6 $00 $5F $36 $0C $00 $15 $00 $1C $00 $1F $00 $C7 $01 $5F $01 $50 $00 $1F $46 $08 $00
+// BYTE $90 $1D $0D $00 $18 $25 $DC $2D $0E $00 $F6 $00 $5F $36 $0C $00 $15 $00 $1C $00 $1F $00 $C7 $01 $5F $01 $50 $00 $1F $46 $08 $00
 ORG $379A1C
 #incbin "Data/Fourth_Allegiance_Light_Rune_Topazlight-stand.dmp"
 #endif

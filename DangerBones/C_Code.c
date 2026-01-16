@@ -34,7 +34,7 @@ int ShouldDangerBonesNotRun(void)
     }
     return false;
 }
-
+extern int DB_Pal_ID;
 #ifdef FE6
 // fe6 has no bitflags for shaking / 4th palette, so make a buffer
 int IsDangerBonesSetForUnit(const struct Unit * unit)
@@ -69,18 +69,49 @@ int GetUnitDisplayedSpritePalette_FE6(const struct Unit * unit)
         return 0xF;
 
     if (IsDangerBonesSetForUnit(unit))
-        return 0xB;
+        return DB_Pal_ID;
 
     return GetUnitSpritePalette(unit); // 22064
 }
-
 #endif
+
+#ifdef FE8
+int GetUnitDisplayedSpritePalette(const struct Unit * unit)
+{
+    if (unit->state & US_BIT27)
+        return DB_Pal_ID;
+
+    if (unit->state & US_UNSELECTABLE)
+        return 0xF;
+
+    return GetUnitSpritePalette(unit);
+}
+#endif
+
+/*
+enum
+{
+    OBJPAL_MANIM_SPECIALMU = 8, // .. 9
+
+    OBJPAL_7 = 7,
+    OBJPAL_10 = 10, // flames weather
+
+    OBJPAL_UNITSPRITE_PURPLE = 11, // light rune / link arena
+
+    OBJPAL_MAPSPRITES = 12,
+    OBJPAL_UNITSPRITE_BLUE = OBJPAL_MAPSPRITES + 0,
+    OBJPAL_UNITSPRITE_RED = OBJPAL_MAPSPRITES + 1,
+    OBJPAL_UNITSPRITE_GREEN = OBJPAL_MAPSPRITES + 2,
+    OBJPAL_UNITSPRITE_GRAY = OBJPAL_MAPSPRITES + 3,
+};
+*/
+
 extern const u16 gPal_DangerBones[];
 void SetDangerBonesPalette(void)
 {
     if (Pal_4th)
     {
-        CopyToPaletteBuffer(gPal_DangerBones, 0x1B * 0x20, 0x20);
+        CopyToPaletteBuffer(gPal_DangerBones, (0x10 + DB_Pal_ID) * 0x20, 0x20);
     }
 }
 
@@ -360,7 +391,12 @@ void CallRefreshUnitSprites(DangerBonesProc * proc)
             }
         }
     }
-    RefreshUnitSprites();
+    if (actionID == UNIT_ACTION_WAIT)
+    {
+        // RefreshUnitSprites();
+        // HideUnitSprite(gActiveUnit);
+    }
+
     if (hidTarget)
     {
         unit->state &= ~US_HIDDEN;
@@ -373,8 +409,8 @@ const struct ProcCmd DangerBonesProcCmd[] = {
     PROC_LABEL(0),
     PROC_CALL(SetDangerBonesPalette),
     PROC_REPEAT(GenerateDangerBones),
-    PROC_REPEAT(DangerBonesWaitForAction),
-    PROC_CALL(CallRefreshUnitSprites),
+    // PROC_REPEAT(DangerBonesWaitForAction),
+    // PROC_CALL(CallRefreshUnitSprites),
     PROC_REPEAT(DangerBonesWaitForBattle),
     PROC_END,
 };
