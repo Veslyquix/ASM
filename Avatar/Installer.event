@@ -33,4 +33,40 @@ MagClassTable:
 #endif 
 WORD 0 
 
+#ifndef TextTable 
+	// #define TextTable 0x15D48C 
+	#define TextTable 0xFE4000
+#endif 
+#ifndef setText 
+#define setText(textID, offset) "PUSH; ORG (TextTable+(4*textID)); POIN (offset|0x80000000); POP"
+#endif 
+
+// Debug text entries 
+setText(0x2B, PronounMenuText) // "Viwer Map" 
+setText(0x2C, ExitMenuText) // "Viwer Face" 
+setText(0x2D, PronounMenuText) // "Viwer BG" 
+setText(0x31, TheyMenuText) // "BASE Capture"
+setText(0x32, HimMenuText) // "BASE Devil A"
+setText(0x33, HerMenuText) // "BASE Devil B"
+setText(0x34, PronounMenuText) // "BASE Devil C"
+
+ALIGN 4 
+PronounMenuText: 
+String("Pronoun") ; BYTE 0 
+
+ALIGN 4 
+ExitMenuText: 
+String("Exit") ; BYTE 0 
+
+ALIGN 4 
+TheyMenuText: 
+String(" they/them") ; BYTE 0 
+
+ALIGN 4 
+HimMenuText: 
+String(" he/him") ; BYTE 0 
+
+HerMenuText: 
+String(" she/her") ; BYTE 0 
+
 

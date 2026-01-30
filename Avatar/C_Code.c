@@ -184,12 +184,81 @@ int ReclassSubConfirm_OnEnd(struct MenuProc * proc)
 
     return 0;
 }
-u8 AvatarConfirm_OnYesPress(struct MenuProc * menu)
+
+struct AvatarProc
 {
+    PROC_HEADER;
+    u8 pronoun;
+};
+
+#define AvRestart 0
+#define AvEnd 99
+#define AvName 1
+#define AvPronoun 2
+#define AvClass 3
+#define AvConfirm 90
+void StartBlockingReclassHandler(struct AvatarProc * proc);
+void AvNameResumeGfx(struct AvatarProc * proc);
+const struct MenuDef gAvatarMenuDef;
+const struct MenuDef gAvatarConfirmMenuDef;
+void AvatarHandlerInit(struct ProcPromoHandler * proc)
+{
+    proc->stat = PROMO_HANDLER_STAT_INIT;
+    StartMenu(&gAvatarMenuDef, (ProcPtr)proc);
+}
+void AvStartConfirmMenu(struct ProcPromoHandler * proc)
+{
+    proc->stat = PROMO_HANDLER_STAT_INIT;
+    StartMenu(&gAvatarConfirmMenuDef, (ProcPtr)proc);
+}
+void AvNameEnableDisp(struct AvatarProc * proc)
+{
+    SetDispEnable(TRUE, TRUE, TRUE, TRUE, TRUE);
+}
+const struct ProcCmd ProcScr_AvatarHandler[] = {
+    PROC_SLEEP(3),
+    PROC_NAME("Avatar Handler"),
+    PROC_LABEL(AvRestart),
+    PROC_CALL(AvatarHandlerInit),
+    PROC_SLEEP(3),
+
+    PROC_LABEL(AvName),
+    PROC_SLEEP(3),
+    // PROC_CALL_ARG(NewFadeOut, 0x10),
+    // PROC_WHILE(FadeOutExists),
+
+    // PROC_CALL_ARG(NewFadeIn, 0x10),
+    // PROC_WHILE(FadeInExists),
+    PROC_CALL(AvNameResumeGfx),
+    PROC_SLEEP(3),
+    PROC_CALL(AvNameEnableDisp),
+    PROC_GOTO(AvRestart),
+
+    PROC_LABEL(AvPronoun),
+    PROC_SLEEP(3),
+    PROC_GOTO(AvRestart),
+
+    PROC_LABEL(AvClass),
+    PROC_CALL(StartBlockingReclassHandler),
+    PROC_SLEEP(3),
+    PROC_GOTO(AvRestart),
+
+    PROC_LABEL(AvConfirm),
+    PROC_CALL(AvStartConfirmMenu),
+    PROC_SLEEP(3),
+
+    PROC_LABEL(AvEnd),
+    PROC_END,
+};
+
+u8 AvatarConfirm_OnYesPress(struct Proc * menu)
+{
+    Proc_Goto(menu->proc_parent, AvEnd);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
-u8 AvatarConfirm_OnBPress(struct MenuProc * menu)
+u8 AvatarConfirm_OnBPress(struct Proc * menu)
 {
+    Proc_Goto(menu->proc_parent, AvRestart);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
 
@@ -198,21 +267,99 @@ const struct MenuItemDef YesNoSelectionMenuItems[] = {
     { "いいえ", 0x844, 0, 0, 0x33, MenuAlwaysEnabled, 0, (void *)AvatarConfirm_OnBPress, 0, 0, 0 }, // No
     MenuItemsEnd
 };
-const struct MenuDef gAvatarMenuDef = { { 1, 1, 14, 0 },
-                                        0,
-                                        // gAvatarMenuItems,
-                                        YesNoSelectionMenuItems,
-                                        0,
-                                        0,
-                                        0,
-                                        (void *)AvatarConfirm_OnBPress,
-                                        0,
-                                        0 };
-void AvatarHandlerInit(struct ProcPromoHandler * proc)
+const struct MenuDef gAvatarConfirmMenuDef = {
+    { 1, 1, 14, 0 }, 0, YesNoSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+};
+
+#define PronounThey 0
+#define PronounHim 1
+#define PronounHer 2
+u8 AvatarPronoun_OnThey(struct Proc * menu)
 {
-    proc->stat = PROMO_HANDLER_STAT_INIT;
-    StartMenu(&gAvatarMenuDef, (ProcPtr)proc);
+    struct AvatarProc * proc = menu->proc_parent;
+    proc->pronoun = PronounThey;
+    Proc_Goto(menu->proc_parent, AvRestart);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+u8 AvatarPronoun_OnHim(struct Proc * menu)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    proc->pronoun = PronounHim;
+    Proc_Goto(menu->proc_parent, AvRestart);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+u8 AvatarPronoun_OnHer(struct Proc * menu)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    proc->pronoun = PronounHer;
+    Proc_Goto(menu->proc_parent, AvRestart);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+
+const struct MenuItemDef PronounSelectionMenuItems[] = {
+    { "はい", 0x31, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnThey, 0, 0, 0 }, // They/Them
+    { "はい", 0x32, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnHim, 0, 0, 0 },  // he/him
+    { "はい", 0x33, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnHer, 0, 0, 0 },  // she/her
+    MenuItemsEnd
+};
+const struct MenuDef gAvatarPronounMenuDef = {
+    { 1, 1, 14, 0 }, 0, PronounSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+};
+
+u8 AvatarNameSelect(struct Proc * menu)
+{
+    // https://github.com/FireEmblemUniverse/fireemblem8u/blob/9a135d8ee8e7196523ab8190fa1471e67b143a00/src/eventscr.c#L866
+    // StartTacticianNameSelect is usually preceded by REMOVEPORTRAITS, linked above (as part of TextStart)
+    Proc_Goto(menu->proc_parent, AvName);
+    StartTacticianNameSelect(menu->proc_parent);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+};
+
+void AvNameResumeGfx(struct AvatarProc * proc)
+{
+    BMapDispResume();
+    RefreshBMapGraphics();
+    RefreshEntityBmMaps();
+    RenderBmMap();
+    RefreshUnitSprites();
+    EndAllMus();
+
+    struct ConvoBackgroundFadeProc * otherProc;
+    otherProc = Proc_StartBlocking(gUnknown_08591EB0, proc);
+    otherProc->fadeType = 2;
+    otherProc->unkType = 0;
+    otherProc->bgIndex = 0;
+    otherProc->fadeSpeed = 16;
+    otherProc->fadeTimer = 0;
+    otherProc->pEventEngine = (void *)proc;
+    StartMu(gActiveUnit);
 }
+
+u8 AvatarBPress(struct MenuProc * menu)
+{
+    Proc_Goto(menu->proc_parent, AvConfirm);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+u8 AvatarPronounSelect(struct MenuProc * menu)
+{
+    Proc_Goto(menu->proc_parent, AvPronoun);
+    StartMenu(&gAvatarPronounMenuDef, (ProcPtr)menu->proc_parent);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+u8 AvatarClassSelect(struct MenuProc * menu)
+{
+    Proc_Goto(menu->proc_parent, AvClass);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+const struct MenuItemDef gAvatarMenuItems[] = {
+    { "はい", 0x4E5, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarNameSelect, 0, 0, 0 },   // Name
+    { "はい", 0x2B, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronounSelect, 0, 0, 0 }, // Pronouns
+    { "はい", 0x4E6, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarClassSelect, 0, 0, 0 },  // Class
+    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarBPress, 0, 0, 0 },        // Exit
+    MenuItemsEnd
+};
+const struct MenuDef gAvatarMenuDef = { { 1, 1, 14, 0 }, 0, gAvatarMenuItems, 0, 0, 0, (void *)AvatarBPress, 0, 0 };
+
 bool StartAndWaitReclassSelect(struct ProcPromoMain * proc);
 void ReclassHandlerIdle(struct ProcPromoHandler * proc);
 const struct ProcCmd ProcScr_ReclassHandler[] = {
@@ -234,14 +381,6 @@ void StartBlockingReclassHandler(struct AvatarProc * proc)
     new_proc->item_slot = gActionData.itemSlotIndex;
 }
 
-const struct ProcCmd ProcScr_AvatarHandler[] = {
-    PROC_SLEEP(3), PROC_NAME("Avatar Handler"),
-    PROC_LABEL(0), PROC_CALL(AvatarHandlerInit),
-    PROC_SLEEP(3), PROC_CALL(StartBlockingReclassHandler),
-    PROC_SLEEP(3), PROC_GOTO(0),
-
-    PROC_LABEL(7), PROC_END,
-};
 extern void sub_805AE14(void *);
 void ClassChgOnCancel(struct ProcPromoSel * proc)
 {
