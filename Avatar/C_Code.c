@@ -198,22 +198,28 @@ struct AvatarProc
 #define AvClass 3
 #define AvConfirm 90
 void StartBlockingReclassHandler(struct AvatarProc * proc);
-void AvNameResumeGfx(struct AvatarProc * proc);
+void AvNameEnableDisp(struct AvatarProc * proc);
+void AvatarNameInput(struct AvatarProc * proc);
 const struct MenuDef gAvatarMenuDef;
 const struct MenuDef gAvatarConfirmMenuDef;
-void AvatarHandlerInit(struct ProcPromoHandler * proc)
+void AvatarHandlerInit(struct AvatarProc * proc)
 {
-    proc->stat = PROMO_HANDLER_STAT_INIT;
+    LoadUiFrameGraphics();
+    BMapDispSuspend();
+    EndAllMus();
+    StartMu(gActiveUnit);
     StartMenu(&gAvatarMenuDef, (ProcPtr)proc);
 }
 void AvStartConfirmMenu(struct ProcPromoHandler * proc)
 {
-    proc->stat = PROMO_HANDLER_STAT_INIT;
     StartMenu(&gAvatarConfirmMenuDef, (ProcPtr)proc);
 }
-void AvNameEnableDisp(struct AvatarProc * proc)
+void ForceBMapDispResume(void)
 {
-    SetDispEnable(TRUE, TRUE, TRUE, TRUE, TRUE);
+    while (gBmSt.gameGfxSemaphore)
+    {
+        BMapDispResume();
+    }
 }
 const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
@@ -223,15 +229,16 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
 
     PROC_LABEL(AvName),
+    PROC_CALL(StartFastFadeToBlack),
+    PROC_REPEAT(WaitForFade),
+    PROC_CALL(AvatarNameInput),
     PROC_SLEEP(3),
-    // PROC_CALL_ARG(NewFadeOut, 0x10),
-    // PROC_WHILE(FadeOutExists),
-
-    // PROC_CALL_ARG(NewFadeIn, 0x10),
-    // PROC_WHILE(FadeInExists),
-    PROC_CALL(AvNameResumeGfx),
+    PROC_CALL(StartFastFadeToBlack),
+    PROC_REPEAT(WaitForFade),
     PROC_SLEEP(3),
     PROC_CALL(AvNameEnableDisp),
+    PROC_CALL(StartFastFadeFromBlack),
+    PROC_REPEAT(WaitForFade),
     PROC_GOTO(AvRestart),
 
     PROC_LABEL(AvPronoun),
@@ -248,6 +255,7 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
 
     PROC_LABEL(AvEnd),
+    PROC_CALL(ForceBMapDispResume),
     PROC_END,
 };
 
@@ -306,33 +314,31 @@ const struct MenuDef gAvatarPronounMenuDef = {
     { 1, 1, 14, 0 }, 0, PronounSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
 };
 
-u8 AvatarNameSelect(struct Proc * menu)
+void AvatarNameInput(struct AvatarProc * proc)
 {
+    EndAllMus();
     // https://github.com/FireEmblemUniverse/fireemblem8u/blob/9a135d8ee8e7196523ab8190fa1471e67b143a00/src/eventscr.c#L866
     // StartTacticianNameSelect is usually preceded by REMOVEPORTRAITS, linked above (as part of TextStart)
+    StartTacticianNameSelect(proc);
+}
+
+u8 AvatarNameSelect(struct Proc * menu)
+{
+
     Proc_Goto(menu->proc_parent, AvName);
-    StartTacticianNameSelect(menu->proc_parent);
+
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
 
-void AvNameResumeGfx(struct AvatarProc * proc)
+void AvNameEnableDisp(struct AvatarProc * proc)
 {
-    BMapDispResume();
     RefreshBMapGraphics();
     RefreshEntityBmMaps();
     RenderBmMap();
     RefreshUnitSprites();
-    EndAllMus();
 
-    struct ConvoBackgroundFadeProc * otherProc;
-    otherProc = Proc_StartBlocking(gUnknown_08591EB0, proc);
-    otherProc->fadeType = 2;
-    otherProc->unkType = 0;
-    otherProc->bgIndex = 0;
-    otherProc->fadeSpeed = 16;
-    otherProc->fadeTimer = 0;
-    otherProc->pEventEngine = (void *)proc;
-    StartMu(gActiveUnit);
+    // BMapDispResume(); // so units aren't hidden
+    SetDispEnable(TRUE, TRUE, TRUE, TRUE, TRUE);
 }
 
 u8 AvatarBPress(struct MenuProc * menu)
@@ -372,6 +378,7 @@ const struct ProcCmd ProcScr_ReclassHandler[] = {
 
 void StartBlockingReclassHandler(struct AvatarProc * proc)
 {
+    EndAllMus();
     struct ProcPromoHandler * new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
     new_proc->bmtype = PROMO_HANDLER_TYPE_PREP;
     new_proc->u32 = 0;
@@ -1660,35 +1667,10 @@ void MakeReclassScreen(struct ProcPromoHandler * proc, u8 pid, u8 terrain)
     child->terrain = terrain;
 }
 
-void StartPrepScreenReclass(struct ProcPrepItemUse * proc);
 s8 CanUnitReclass(struct Unit * unit)
 {
     return GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
 }
-/*
-const struct ProcCmd ProcScr_PrepItemUseJunaFruit[] = {
-    //PROC_SET_END_CB(PrepItemUseJuna_OnEnd),
-    //PROC_CALL(PrepItemUseJuna_OnInit),
-    //PROC_REPEAT(PrepItemUseJuna_IDLE),
-    //PROC_CALL(EndManimLevelUpStatGainLabels),
-    //PROC_SLEEP(0x1),
-    PROC_CALL_ARG(NewFadeOut, 0x10),
-    PROC_WHILE(FadeOutExists),
-    PROC_CALL(StartMidFadeToBlack),
-    PROC_REPEAT(WaitForFade),
-    PROC_CALL(StartPrepScreenReclass),
-    PROC_SLEEP(0x8),
-    PROC_CALL(PrepItemUse_ResetBgmAfterPromo),
-    PROC_SLEEP(0x1E),
-    PROC_CALL(PrepItemUse_PostPromotion),
-
-    PROC_CALL(PrepItemUse_InitDisplay),
-    PROC_CALL_ARG(NewFadeIn, 0x10),
-    PROC_WHILE(FadeInExists),
-    PROC_WHILE(MusicProc4Exists),
-    PROC_END,
-};
-*/
 
 void CallPrepItemUse_InitDisplay(struct ProcPrepItemUse * proc)
 {
@@ -1740,76 +1722,19 @@ int StartBmReclass(ProcPtr proc)
     gBattleActor.weapon = gBattleTarget.weapon = weapon;
 
     gBattleTarget.statusOut = -1;
-    struct ProcPromoHandler * new_proc;
+    // struct ProcPromoHandler * new_proc;
     struct MenuProc * menu = Proc_Find(sProc_Menu);
     // asm("mov r11, r11");
     if (menu)
     { // if a menu is active, don't block it. Instead, end it
         // EndAllMenus();
-        new_proc = Proc_Start(ProcScr_AvatarHandler, (void *)3);
+        Proc_Start(ProcScr_AvatarHandler, (void *)3);
         //        new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
     }
     else
     {
-        new_proc = Proc_StartBlocking(ProcScr_AvatarHandler, proc);
+        Proc_StartBlocking(ProcScr_AvatarHandler, proc);
     }
-    new_proc->bmtype = PROMO_HANDLER_TYPE_PREP;
-    new_proc->u32 = 0;
-    unit = GetUnit(gActionData.subjectIndex);
-    new_proc->pid = unit->pCharacterData->number;
-    new_proc->unit = GetUnit(gActionData.subjectIndex);
-    new_proc->item_slot = gActionData.itemSlotIndex;
-    BMapDispSuspend();
-    EndAllMus();
+
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
-
-void StartPrepScreenReclass(struct ProcPrepItemUse * proc)
-{
-    struct ProcPrepItemUse * aParent = proc->proc_parent;
-    proc->unit = aParent->unit;
-    proc->slot = aParent->slot;
-    proc->unk34 = aParent->unk34;
-    proc->slot_rtext = aParent->slot_rtext;
-    proc->pos_subbox = aParent->pos_subbox;
-    // proc->game_lock = aParent->game_lock;
-
-    gActiveUnit = proc->unit;
-    // struct BattleUnit *actor, *target;
-    struct ProcPromoHandler * new_proc;
-    struct ProcPrepItemUse * parent;
-
-    // u32 weapon;
-    // u32 slot = proc->slot;
-    // if (slot != -1) {
-    //     struct BattleUnit *actor, *target;
-    //     actor = &gBattleActor;
-    //     target = &gBattleTarget;
-    //     target->weaponBefore = proc->unit->items[slot];
-    //     actor->weaponBefore = proc->unit->items[slot];
-    // }
-    // ApplyPalette(Pal_SpinningArrow, 0x3);
-    gBattleActor.weaponBefore = gBattleTarget.weaponBefore = proc->unit->items[gActionData.itemSlotIndex];
-
-    int weapon = GetUnitEquippedWeapon(proc->unit);
-    if (!CanClassEquipWeapon(weapon, proc->unit->pClassData->number))
-    {
-        weapon = 0;
-    }
-    gBattleActor.weapon = gBattleTarget.weapon = weapon;
-
-    gBattleTarget.statusOut = -1;
-
-    new_proc = Proc_StartBlocking(ProcScr_AvatarHandler, proc);
-    new_proc->bmtype = PROMO_HANDLER_TYPE_BM;
-    new_proc->u32 = 0;
-
-    parent = new_proc->proc_parent;
-    new_proc->pid = parent->unit->pCharacterData->number;
-    new_proc->unit = parent->unit;
-    new_proc->item_slot = parent->slot;
-}
-
-// void StartBmPromotion(ProcPtr proc) { // test hook
-// StartBmReclass(proc);
-// }
