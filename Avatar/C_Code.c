@@ -14,19 +14,15 @@ struct magClassTable
 extern struct magClassTable MagClassTable[];
 ProcPtr ReclassMenuSelect(ProcPtr parent);
 ProcPtr StartReclassSelect(ProcPtr parent);
-extern u8 const ReclassTable[][6];
-extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
-extern u8 const UnitOverrideReclassTable_Promoted[][7];
+// extern u8 const ReclassTable[][6];
+// extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
+// extern u8 const UnitOverrideReclassTable_Promoted[][7];
 // extern u8* pPromoJidLut;
 
 int GetReclassTableID(const u8 * table, int size, int classID)
 {
     for (int i = 0; i < size; ++i)
     {
-        // if (i > ID)
-        // {
-        // break;
-        // }
         if (table[i] == classID)
         {
             return i;
@@ -34,68 +30,77 @@ int GetReclassTableID(const u8 * table, int size, int classID)
     }
     return (-1);
 }
-
 int GetReclassOption(int unitID, int classID, int ID)
 {
-    int result = 0;
-    int ID_orig = ID;
-    int reclassTableID = (-1);
-    if (GetClassData(classID)->attributes & CA_PROMOTED)
+    if (!ID)
     {
-        reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Promoted[unitID], 7, classID);
-        if (UnitOverrideReclassTable_Promoted[unitID][0])
-        {
-            if ((!UnitOverrideReclassTable_Promoted[unitID][5]) ||
-                ((!UnitOverrideReclassTable_Promoted[unitID][6]) && (reclassTableID >= 0)))
-            {
-                ID--;
-                if (!ID_orig)
-                {
-                    return classID;
-                }
-            }
-            if ((ID >= reclassTableID) && (reclassTableID >= 0))
-            {
-                ID++;
-            }
-            return UnitOverrideReclassTable_Promoted[unitID][ID];
-        }
+        return 5;
     }
-    else
-    {
-        ID = ID_orig;
-        reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Unpromoted[unitID], 7, classID);
-
-        if (UnitOverrideReclassTable_Unpromoted[unitID][0])
-        {
-            if ((!UnitOverrideReclassTable_Unpromoted[unitID][5]) ||
-                ((!UnitOverrideReclassTable_Unpromoted[unitID][6]) && (reclassTableID >= 0)))
-            {
-                ID--;
-                if (!ID_orig)
-                {
-                    return classID;
-                }
-            }
-            if ((ID >= reclassTableID) && (reclassTableID >= 0))
-            {
-                ID++;
-            }
-            return UnitOverrideReclassTable_Unpromoted[unitID][ID];
-        }
-    }
-    ID = ID_orig;
-    if (ReclassTable[classID][0] && (!ReclassTable[classID][5]))
-    {
-        ID--;
-        if (!ID_orig)
-        {
-            return classID;
-        }
-    }
-    result = ReclassTable[classID][ID];
-    return result;
+    return 0;
 }
+/*
+// int GetReclassOption(int unitID, int classID, int ID)
+// {
+int result = 0;
+int ID_orig = ID;
+int reclassTableID = (-1);
+if (GetClassData(classID)->attributes & CA_PROMOTED)
+{
+    reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Promoted[unitID], 7, classID);
+    if (UnitOverrideReclassTable_Promoted[unitID][0])
+    {
+        if ((!UnitOverrideReclassTable_Promoted[unitID][5]) ||
+            ((!UnitOverrideReclassTable_Promoted[unitID][6]) && (reclassTableID >= 0)))
+        {
+            ID--;
+            if (!ID_orig)
+            {
+                return classID;
+            }
+        }
+        if ((ID >= reclassTableID) && (reclassTableID >= 0))
+        {
+            ID++;
+        }
+        return UnitOverrideReclassTable_Promoted[unitID][ID];
+    }
+}
+else
+{
+    ID = ID_orig;
+    reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Unpromoted[unitID], 7, classID);
+
+    if (UnitOverrideReclassTable_Unpromoted[unitID][0])
+    {
+        if ((!UnitOverrideReclassTable_Unpromoted[unitID][5]) ||
+            ((!UnitOverrideReclassTable_Unpromoted[unitID][6]) && (reclassTableID >= 0)))
+        {
+            ID--;
+            if (!ID_orig)
+            {
+                return classID;
+            }
+        }
+        if ((ID >= reclassTableID) && (reclassTableID >= 0))
+        {
+            ID++;
+        }
+        return UnitOverrideReclassTable_Unpromoted[unitID][ID];
+    }
+}
+ID = ID_orig;
+if (ReclassTable[classID][0] && (!ReclassTable[classID][5]))
+{
+    ID--;
+    if (!ID_orig)
+    {
+        return classID;
+    }
+}
+result = ReclassTable[classID][ID];
+return result;
+}
+*/
 int IsStrMagInstalled(void)
 {
     return MagClassTable[0].cap;
@@ -179,17 +184,92 @@ int ReclassSubConfirm_OnEnd(struct MenuProc * proc)
 
     return 0;
 }
+u8 AvatarConfirm_OnYesPress(struct MenuProc * menu)
+{
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+};
+u8 AvatarConfirm_OnBPress(struct MenuProc * menu)
+{
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
 
+const struct MenuItemDef YesNoSelectionMenuItems[] = {
+    { "はい", 0x843, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarConfirm_OnYesPress, 0, 0, 0 }, // Yes >
+    { "いいえ", 0x844, 0, 0, 0x33, MenuAlwaysEnabled, 0, (void *)AvatarConfirm_OnBPress, 0, 0, 0 }, // No
+    MenuItemsEnd
+};
+const struct MenuDef gAvatarMenuDef = { { 1, 1, 14, 0 },
+                                        0,
+                                        // gAvatarMenuItems,
+                                        YesNoSelectionMenuItems,
+                                        0,
+                                        0,
+                                        0,
+                                        (void *)AvatarConfirm_OnBPress,
+                                        0,
+                                        0 };
+void AvatarHandlerInit(struct ProcPromoHandler * proc)
+{
+    proc->stat = PROMO_HANDLER_STAT_INIT;
+    StartMenu(&gAvatarMenuDef, (ProcPtr)proc);
+}
 bool StartAndWaitReclassSelect(struct ProcPromoMain * proc);
 void ReclassHandlerIdle(struct ProcPromoHandler * proc);
 const struct ProcCmd ProcScr_ReclassHandler[] = {
     PROC_SLEEP(3), PROC_NAME("Reclass Handler"),
     PROC_LABEL(0), PROC_CALL(PromoHandler_SetInitStat),
-
     PROC_LABEL(1), PROC_REPEAT(ReclassHandlerIdle),
 
     PROC_LABEL(7), PROC_END,
 };
+
+void StartBlockingReclassHandler(struct AvatarProc * proc)
+{
+    struct ProcPromoHandler * new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+    new_proc->bmtype = PROMO_HANDLER_TYPE_PREP;
+    new_proc->u32 = 0;
+    struct Unit * unit = GetUnit(gActionData.subjectIndex);
+    new_proc->pid = unit->pCharacterData->number;
+    new_proc->unit = GetUnit(gActionData.subjectIndex);
+    new_proc->item_slot = gActionData.itemSlotIndex;
+}
+
+const struct ProcCmd ProcScr_AvatarHandler[] = {
+    PROC_SLEEP(3), PROC_NAME("Avatar Handler"),
+    PROC_LABEL(0), PROC_CALL(AvatarHandlerInit),
+    PROC_SLEEP(3), PROC_CALL(StartBlockingReclassHandler),
+    PROC_SLEEP(3), PROC_GOTO(0),
+
+    PROC_LABEL(7), PROC_END,
+};
+extern void sub_805AE14(void *);
+void ClassChgOnCancel(struct ProcPromoSel * proc)
+{
+    struct ProcPromoMain * parent;
+    struct ProcPromoHandler * gparent;
+    struct ProcPrepItemUse * ggparent;
+    parent = proc->proc_parent;
+    gparent = parent->proc_parent;
+    ggparent = gparent->proc_parent;
+    if (gparent->bmtype == PROMO_HANDLER_TYPE_PREP)
+    {
+        Proc_End(proc);
+        Proc_End(parent);
+        Proc_End(gparent);
+        sub_805AA28(&gUnknown_030053A0);
+        sub_805AE14(&gUnknown_0201FADC);
+        EndEfxAnimeDrvProc();
+        gActionData.unitActionType = 0;
+        Proc_Goto(ggparent, PROC_LABEL_PREPITEMUSE_CONFIRM);
+        BMapDispResume();
+        RefreshBMapGraphics();
+        RefreshEntityBmMaps();
+        RenderBmMap();
+        RefreshUnitSprites();
+        EndAllMus();
+        // StartMu(gActiveUnit);
+    }
+}
 
 void SetLevelFunc(ProcPtr proc)
 {
@@ -251,7 +331,6 @@ void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm * proc)
     BeginBattleAnimations();
 }
 
-extern void SetBlendConfig(int, int, int, int);
 extern void sub_80CDE98(struct ProcClassChgPostConfirm * proc);
 //{
 //    struct ProcPromoMain *parent = proc->proc_parent;
@@ -508,13 +587,15 @@ void SilentReclassUnit_ASMC()
     {
         return;
     }
-    u8 classID = gEventSlots[3]; 
-    if (!classID) { 
-    classID = GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
-    } 
-    if (classID) { 
-    ApplyUnitReclass(unit, classID);
-    } 
+    u8 classID = gEventSlots[3];
+    if (!classID)
+    {
+        classID = GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
+    }
+    if (classID)
+    {
+        ApplyUnitReclass(unit, classID);
+    }
 }
 
 int CanClassEquipWeapon(int weapon, int reclassID)
@@ -968,7 +1049,7 @@ const struct MenuRect ReclassMenuRect = { .x = 1,
 
 extern void Make6C_PromotionMenuSelect(struct ProcReclassSel * proc);
 extern void sub_80CCF60(struct ProcReclassSel * proc);
-extern void sub_805AE14(void *);
+
 // extern void LoadBattleSpritesForBranchScreen(struct ProcReclassSel *proc);
 extern void sub_80CD294(struct ProcReclassSel * proc);
 extern void sub_80CD1D4(struct ProcReclassSel * proc);
@@ -1312,7 +1393,7 @@ const struct ProcCmd ProcScr_ReclassSelect[] = {
     PROC_SET_END_CB(NewCcramifyEnd),
     PROC_CALL(StartMidFadeToBlack),
     PROC_REPEAT(WaitForFade),
-    PROC_CALL(PrepClassChgOnCancel),
+    PROC_CALL(ClassChgOnCancel),
 
     PROC_LABEL(PROC_CLASSCHG_SEL_END2),
     PROC_LABEL(PROC_CLASSCHG_SEL_END1),
@@ -1526,12 +1607,12 @@ int StartBmReclass(ProcPtr proc)
     if (menu)
     { // if a menu is active, don't block it. Instead, end it
         // EndAllMenus();
-        new_proc = Proc_Start(ProcScr_ReclassHandler, (void *)3);
+        new_proc = Proc_Start(ProcScr_AvatarHandler, (void *)3);
         //        new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
     }
     else
     {
-        new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+        new_proc = Proc_StartBlocking(ProcScr_AvatarHandler, proc);
     }
     new_proc->bmtype = PROMO_HANDLER_TYPE_PREP;
     new_proc->u32 = 0;
@@ -1540,7 +1621,7 @@ int StartBmReclass(ProcPtr proc)
     new_proc->unit = GetUnit(gActionData.subjectIndex);
     new_proc->item_slot = gActionData.itemSlotIndex;
     BMapDispSuspend();
-    MU_EndAll();
+    EndAllMus();
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
 
@@ -1580,7 +1661,7 @@ void StartPrepScreenReclass(struct ProcPrepItemUse * proc)
 
     gBattleTarget.statusOut = -1;
 
-    new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
+    new_proc = Proc_StartBlocking(ProcScr_AvatarHandler, proc);
     new_proc->bmtype = PROMO_HANDLER_TYPE_BM;
     new_proc->u32 = 0;
 

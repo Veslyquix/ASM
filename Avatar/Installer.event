@@ -1,8 +1,36 @@
-
-// Thanks to Mokha for the updated fe-clib! 
+#include "EAstdlib.event" 
 
 ORG $1F00000
 
 
 #include "C_Code.lyn.event" 
+
+PUSH 
+ORG $9E85D6 
+BYTE 0 // Prologue event flag 
+ORG $9EF0D8 
+ALIGN 4
+ExampleEvent:
+ASMC StartBmReclass
+NoFade 
+ENDA 
+POP 
+
+
+ALIGN 4 
+BottomMenuBGEnabled:
+WORD 1
+ClassDescEnabled:
+WORD 1
+ClassNameTopEnabled:
+WORD 1 
+PlatformYPos:
+WORD 0x58 // 0x58 vanilla 0x78 max 
+
+ALIGN 4 
+#ifndef MagClassTable
+MagClassTable:
+#endif 
+WORD 0 
+
 
