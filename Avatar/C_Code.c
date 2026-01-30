@@ -18,7 +18,7 @@ ProcPtr StartReclassSelect(ProcPtr parent);
 // extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
 // extern u8 const UnitOverrideReclassTable_Promoted[][7];
 // extern u8* pPromoJidLut;
-
+extern const u8 AvatarClasses[];
 int GetReclassTableID(const u8 * table, int size, int classID)
 {
     for (int i = 0; i < size; ++i)
@@ -32,11 +32,7 @@ int GetReclassTableID(const u8 * table, int size, int classID)
 }
 int GetReclassOption(int unitID, int classID, int ID)
 {
-    if (!ID)
-    {
-        return 5;
-    }
-    return 0;
+    return AvatarClasses[ID];
 }
 /*
 // int GetReclassOption(int unitID, int classID, int ID)
@@ -188,27 +184,56 @@ int ReclassSubConfirm_OnEnd(struct MenuProc * proc)
 struct AvatarProc
 {
     PROC_HEADER;
+    u8 menuID;
     u8 pronoun;
+    s8 portraitID; // AvatarPortraits[id % count];
+    u8 boon;
+    u8 bane;
 };
 
 #define AvRestart 0
 #define AvEnd 99
 #define AvName 1
 #define AvPronoun 2
-#define AvClass 3
+#define AvPortrait 3
+#define AvBoon 4
+#define AvBane 5
+#define AvClass 6
 #define AvConfirm 90
+
+#define PronounThey 0
+#define PronounHim 1
+#define PronounHer 2
 void StartBlockingReclassHandler(struct AvatarProc * proc);
 void AvNameEnableDisp(struct AvatarProc * proc);
 void AvatarNameInput(struct AvatarProc * proc);
+int AvPortraitSelection(struct AvatarProc * proc);
+void AvPortraitIdle(struct AvatarProc * proc);
 const struct MenuDef gAvatarMenuDef;
 const struct MenuDef gAvatarConfirmMenuDef;
-void AvatarHandlerInit(struct AvatarProc * proc)
+const struct MenuDef gBoonMenuDef;
+const struct MenuDef gBaneMenuDef;
+
+void AvatarHandlerRestart(struct AvatarProc * proc)
 {
     LoadUiFrameGraphics();
     BMapDispSuspend();
     EndAllMus();
     StartMu(gActiveUnit);
-    StartMenu(&gAvatarMenuDef, (ProcPtr)proc);
+    ResetTextFont();
+    ResetText();
+    SetTextFontGlyphs(0);
+    struct MenuProc * menu = StartMenu(&gAvatarMenuDef, (ProcPtr)proc);
+    menu->itemCurrent = proc->menuID;
+}
+
+void AvatarHandlerInit(struct AvatarProc * proc)
+{
+    proc->pronoun = PronounThey;
+    proc->bane = 0;
+    proc->boon = 0;
+    proc->menuID = 0;
+    proc->portraitID = 0;
 }
 void AvStartConfirmMenu(struct ProcPromoHandler * proc)
 {
@@ -224,8 +249,9 @@ void ForceBMapDispResume(void)
 const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
     PROC_NAME("Avatar Handler"),
-    PROC_LABEL(AvRestart),
     PROC_CALL(AvatarHandlerInit),
+    PROC_LABEL(AvRestart),
+    PROC_CALL(AvatarHandlerRestart),
     PROC_SLEEP(3),
 
     PROC_LABEL(AvName),
@@ -242,6 +268,20 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_GOTO(AvRestart),
 
     PROC_LABEL(AvPronoun),
+    PROC_SLEEP(3),
+    PROC_GOTO(AvRestart),
+
+    PROC_LABEL(AvPortrait),
+    PROC_CALL_2(AvPortraitSelection),
+    PROC_REPEAT(AvPortraitIdle),
+    // PROC_SLEEP(3),
+    PROC_GOTO(AvRestart),
+
+    PROC_LABEL(AvBoon),
+    PROC_SLEEP(3),
+    PROC_GOTO(AvRestart),
+
+    PROC_LABEL(AvBane),
     PROC_SLEEP(3),
     PROC_GOTO(AvRestart),
 
@@ -276,12 +316,9 @@ const struct MenuItemDef YesNoSelectionMenuItems[] = {
     MenuItemsEnd
 };
 const struct MenuDef gAvatarConfirmMenuDef = {
-    { 1, 1, 14, 0 }, 0, YesNoSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+    { 24, 14, 5, 0 }, 0, YesNoSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
 };
 
-#define PronounThey 0
-#define PronounHim 1
-#define PronounHer 2
 u8 AvatarPronoun_OnThey(struct Proc * menu)
 {
     struct AvatarProc * proc = menu->proc_parent;
@@ -311,7 +348,7 @@ const struct MenuItemDef PronounSelectionMenuItems[] = {
     MenuItemsEnd
 };
 const struct MenuDef gAvatarPronounMenuDef = {
-    { 1, 1, 14, 0 }, 0, PronounSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+    { 1, 1, 8, 0 }, 0, PronounSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
 };
 
 void AvatarNameInput(struct AvatarProc * proc)
@@ -321,14 +358,6 @@ void AvatarNameInput(struct AvatarProc * proc)
     // StartTacticianNameSelect is usually preceded by REMOVEPORTRAITS, linked above (as part of TextStart)
     StartTacticianNameSelect(proc);
 }
-
-u8 AvatarNameSelect(struct Proc * menu)
-{
-
-    Proc_Goto(menu->proc_parent, AvName);
-
-    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
-};
 
 void AvNameEnableDisp(struct AvatarProc * proc)
 {
@@ -341,30 +370,272 @@ void AvNameEnableDisp(struct AvatarProc * proc)
     SetDispEnable(TRUE, TRUE, TRUE, TRUE, TRUE);
 }
 
+// Because users repoint these tables, use pointers to them instead of the vanilla address of tables
+extern struct FaceData const * const sPortrait_data;
+static struct FaceData const * GetMugData(int id)
+{
+    return sPortrait_data + id;
+}
+int IsImgValid(const void * data, const u8 * imgData)
+{
+    if (!data || !imgData)
+    {
+        return false;
+    }
+    if ((u32)data < 0x8000000 || (u32)data > 0x9FFFFFF || (u32)imgData < 0x8000000 || (u32)imgData > 0x9FFFFFF)
+    {
+        return false;
+    }
+    return true;
+}
+
+int CanDisplayPortrait(int id)
+{
+    const struct FaceData * data = GetMugData(id);
+    return IsImgValid(data, data->img);
+    // hack portraits might be uncompressed, so don't worry about checking for lz77 compression
+    // const struct FaceData * data = GetMugData(id);
+    // return IsImgValidLZ77(data, (const u8 *)data->img);
+}
+
+extern struct TalkState sTalkStateCore;
+struct TalkState * const pTalkState = &sTalkStateCore;
+extern u16 AvatarPortraits[];
+void DebuggerStartFace(int id)
+{
+    EndFaceById(0);
+    if (id < 0)
+    {
+        id = 0;
+    }
+    if (CanDisplayPortrait(id))
+    {
+        pTalkState->faces[pTalkState->activeFaceSlot] =
+            StartFace(0, id, 48, 16, FACE_DISP_KIND(FACE_96x80) | FACE_DISP_FLIPPED); // blink
+        // SetFaceBlinkControlById(0, 0);
+        StartFaceFadeIn(pTalkState->faces[pTalkState->activeFaceSlot]);
+
+        // SetTalkFaceLayer(pTalkState->activeFaceSlot, CheckTalkFlag(TALK_FLAG_4));
+        SetTalkFaceLayer(pTalkState->activeFaceSlot, 1);
+        // StartFace(0, id, 48, 16, 0);
+    }
+} // 859133c T sTalkState
+
+int CountAvatarPortraits(void)
+{
+    u16 * data = AvatarPortraits;
+    int c = 0;
+    while (*data)
+    {
+        c++;
+        data++;
+    }
+    return c;
+}
+int AvPortraitSelection(struct AvatarProc * proc)
+{
+    DebuggerStartFace(AvatarPortraits[proc->portraitID % CountAvatarPortraits()]); // MODULO HERE, @Jester
+    return 0;
+    // yield
+}
+
+void AvPortraitIdle(struct AvatarProc * proc)
+{
+
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    if (keys & B_BUTTON)
+    {
+        Proc_Break(proc);
+        EndFaceById(0);
+    }
+    if (keys & DPAD_LEFT)
+    {
+        proc->portraitID--;
+        AvPortraitSelection(proc);
+    }
+    if (keys & DPAD_RIGHT)
+    {
+        proc->portraitID++;
+        AvPortraitSelection(proc);
+    }
+
+    // randomly talk or blink
+    int time = GetGameClock();
+    switch ((time & 0x1FF) >> 7)
+    {
+        case 0:
+        case 2:
+        {
+            SetTalkFaceMouthMove(0);
+            break;
+        }
+        case 1:
+        {
+            SetTalkFaceNoMouthMove(0);
+            SetTalkFaceDisp(0, 1); // smile
+            break;
+        }
+        case 3:
+        {
+            SetTalkFaceNoMouthMove(0);
+            SetTalkFaceDisp(0, 0); // neutral
+            break;
+        }
+    }
+}
+
 u8 AvatarBPress(struct MenuProc * menu)
 {
     Proc_Goto(menu->proc_parent, AvConfirm);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
+void UpdateMenuID(struct MenuProc * menu)
+{
+    brk;
+    struct AvatarProc * proc = menu->proc_parent;
+    proc->menuID = menu->itemCurrent;
+}
+u8 AvatarReturnToMenu(struct MenuProc * menu)
+{
+    // UpdateMenuID(menu); // submenu will be on a different ID
+    Proc_Goto(menu->proc_parent, AvRestart);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+
+u8 AvatarNameSelect(struct MenuProc * menu)
+{
+    UpdateMenuID(menu);
+    Proc_Goto(menu->proc_parent, AvName);
+
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+};
+
 u8 AvatarPronounSelect(struct MenuProc * menu)
 {
+    UpdateMenuID(menu);
     Proc_Goto(menu->proc_parent, AvPronoun);
     StartMenu(&gAvatarPronounMenuDef, (ProcPtr)menu->proc_parent);
-    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
+u8 AvatarPortraitSelect(struct MenuProc * menu)
+{
+    UpdateMenuID(menu);
+    Proc_Goto(menu->proc_parent, AvPortrait);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+};
+
+u8 AvatarBoonSelect(struct MenuProc * menu)
+{
+    UpdateMenuID(menu);
+    Proc_Goto(menu->proc_parent, AvBoon);
+    StartMenu(&gBoonMenuDef, (ProcPtr)menu->proc_parent);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+};
+
+u8 AvatarBaneSelect(struct MenuProc * menu)
+{
+    UpdateMenuID(menu);
+    Proc_Goto(menu->proc_parent, AvBane);
+    StartMenu(&gBaneMenuDef, (ProcPtr)menu->proc_parent);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+};
+
 u8 AvatarClassSelect(struct MenuProc * menu)
 {
+    UpdateMenuID(menu);
     Proc_Goto(menu->proc_parent, AvClass);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+};
+
+int BoonCommandDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    if (menuItem->itemNumber == proc->boon)
+    {
+        Text_SetColor(&menuItem->text, TEXT_COLOR_SYSTEM_GREEN);
+    }
+
+    if (menuItem->availability == MENU_DISABLED)
+    {
+        Text_SetColor(&menuItem->text, 1);
+    }
+
+    Text_DrawString(&menuItem->text, GetStringFromIndex(menuItem->def->nameMsgId));
+
+    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+
+    return 0;
+}
+int BaneCommandDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    if (menuItem->itemNumber == proc->bane)
+    {
+        Text_SetColor(&menuItem->text, TEXT_COLOR_SYSTEM_GOLD);
+    }
+
+    if (menuItem->availability == MENU_DISABLED)
+    {
+        Text_SetColor(&menuItem->text, 1);
+    }
+
+    Text_DrawString(&menuItem->text, GetStringFromIndex(menuItem->def->nameMsgId));
+
+    PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+
+    return 0;
+}
+
+u8 BoonSelect(struct MenuProc * menu)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    proc->boon = menu->itemCurrent;
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
-const struct MenuItemDef gAvatarMenuItems[] = {
-    { "はい", 0x4E5, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarNameSelect, 0, 0, 0 },   // Name
-    { "はい", 0x2B, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronounSelect, 0, 0, 0 }, // Pronouns
-    { "はい", 0x4E6, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarClassSelect, 0, 0, 0 },  // Class
-    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarBPress, 0, 0, 0 },        // Exit
+const struct MenuItemDef gAvatarBoonItems[] = {
+    { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Hp
+    { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Str
+    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Mag
+    { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Skl
+    { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Spd
+    { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Luck
+    { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Def
+    { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Res
     MenuItemsEnd
 };
-const struct MenuDef gAvatarMenuDef = { { 1, 1, 14, 0 }, 0, gAvatarMenuItems, 0, 0, 0, (void *)AvatarBPress, 0, 0 };
+
+const struct MenuDef gBoonMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarBoonItems, 0, 0, 0, (void *)AvatarReturnToMenu, 0, 0 };
+u8 BaneSelect(struct MenuProc * menu)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    proc->bane = menu->itemCurrent;
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+const struct MenuItemDef gAvatarBaneItems[] = {
+    { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Hp
+    { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Str
+    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Mag
+    { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Skl
+    { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Spd
+    { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Luck
+    { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Def
+    { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Res
+    MenuItemsEnd
+};
+
+const struct MenuDef gBaneMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarBaneItems, 0, 0, 0, (void *)AvatarReturnToMenu, 0, 0 };
+
+const struct MenuItemDef gAvatarMenuItems[] = {
+    { "はい", 0x4E5, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarNameSelect, 0, 0, 0 },    // Name
+    { "はい", 0x2B, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronounSelect, 0, 0, 0 },  // Pronouns
+    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortraitSelect, 0, 0, 0 }, // Portrait
+    { "はい", 0x2D, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarBoonSelect, 0, 0, 0 },     // Boon
+    { "はい", 0x34, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarBaneSelect, 0, 0, 0 },     // Bane
+    { "はい", 0x4E6, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarClassSelect, 0, 0, 0 },   // Class
+    { "はい", 0x848, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarBPress, 0, 0, 0 },        // Exit
+    MenuItemsEnd
+};
+const struct MenuDef gAvatarMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarMenuItems, 0, 0, 0, (void *)AvatarBPress, 0, 0 };
 
 bool StartAndWaitReclassSelect(struct ProcPromoMain * proc);
 void ReclassHandlerIdle(struct ProcPromoHandler * proc);
@@ -397,7 +668,7 @@ void ClassChgOnCancel(struct ProcPromoSel * proc)
     parent = proc->proc_parent;
     gparent = parent->proc_parent;
     ggparent = gparent->proc_parent;
-    if (gparent->bmtype == PROMO_HANDLER_TYPE_PREP)
+    if (gparent->bmtype == PROMO_HANDLER_TYPE_PREP) // this is actually battle map
     {
         Proc_End(proc);
         Proc_End(parent);
@@ -416,6 +687,8 @@ void ClassChgOnCancel(struct ProcPromoSel * proc)
         // StartMu(gActiveUnit);
     }
 }
+
+// stuff below here is pretty much all copied from my Reclass hack
 
 void SetLevelFunc(ProcPtr proc)
 {
@@ -630,6 +903,66 @@ int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldClass, c
         result = 0;
     }
     return result;
+}
+
+int GetNewStat(int id, struct Unit * unit, const struct ClassData * oldClass, const struct ClassData * newClass)
+{
+    int stat = GetStatDiff(id, unit, oldClass, newClass);
+    int tmp = 0;
+    switch (id)
+    {
+        case 0:
+        {
+            tmp = unit->maxHP;
+            break;
+        }
+        case 1:
+        {
+            tmp = unit->pow;
+            break;
+        }
+        case 2:
+        {
+            tmp = unit->skl;
+            break;
+        }
+        case 3:
+        {
+            tmp = unit->spd;
+            break;
+        }
+        case 4:
+        {
+            tmp = unit->def;
+            break;
+        }
+        case 5:
+        {
+            tmp = unit->res;
+            break;
+        }
+        case 6:
+        {
+            tmp = oldClass->baseCon;
+            break;
+        }
+        case 7:
+        {
+            tmp = oldClass->baseMov;
+            break;
+        }
+        case 8:
+        {
+            if (!IsStrMagInstalled())
+            {
+                break;
+            }
+            tmp = unit->_u3A;
+            break;
+        }
+        default:
+    }
+    return tmp + stat;
 }
 
 void ApplyUnitReclass(struct Unit * unit, u8 classId)
@@ -1002,14 +1335,15 @@ int ClassHasMagicRank(const struct ClassData * data)
 
 extern struct Font gDefaultFont;
 static const char stats[][16] = {
-    "HP", "Str", "Skl", "Spd", "Def", "Res", "Con", "Mov", "Mag",
+    "HP", "Str", "Skl", "Spd", "Def", "Res", "Con", "Mov", "Mgc",
 };
 
 void DrawStatDiff(int x, int y, int id, struct Unit * unit, const struct ClassData * classData)
 {
     struct Text * th = gStatScreen.text;
     const struct ClassData * oldClass = unit->pClassData;
-    int num = GetStatDiff(id, unit, oldClass, classData);
+    // int num = GetStatDiff(id, unit, oldClass, classData);
+    int num = GetNewStat(id, unit, oldClass, classData);
     // PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 2, stats[id]);
     if (ClassHasMagicRank(classData) && (id == 1) && (!IsStrMagInstalled()))
     {
@@ -1018,26 +1352,18 @@ void DrawStatDiff(int x, int y, int id, struct Unit * unit, const struct ClassDa
     if (num >= 0)
     {
         PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 3, stats[id]); // "+"
-        Text_InsertDrawString(&th[id], 18, th[id].colorId, "+");                            // th[id].x + 8
+        Text_InsertDrawString(&th[id], 18, th[id].colorId, " ");                            // th[id].x + 8
     }
-    else
-    {
-        PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 3, stats[id]); // "-"
-        Text_InsertDrawString(&th[id], 19, th[id].colorId, "-");
-        th[id].x++;
-    }
+    // else
+    // {
+    // PutDrawText(&th[id], TILEMAP_LOCATED(gBG0TilemapBuffer, x, y), 0, 0, 3, stats[id]); // "-"
+    // Text_InsertDrawString(&th[id], 19, th[id].colorId, " ");
+    // th[id].x++;
+    // }
     th[id].x++;
 
-    if (ABS(num) > 9)
-    {
-        Text_InsertDrawNumberOrBlank(&th[id], th[id].x + 8, th[id].colorId, ABS(num));
-        // PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+4, y), 0, ABS(num));
-    }
-    else
-    {
-        Text_InsertDrawNumberOrBlank(&th[id], th[id].x, th[id].colorId, ABS(num));
-        // PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+3, y), 0, ABS(num));
-    }
+    Text_InsertDrawNumberOrBlank(&th[id], th[id].x, th[id].colorId, ABS(num));
+    // PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+3, y), 0, ABS(num));
 }
 
 struct SpecialCharSt

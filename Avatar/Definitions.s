@@ -18,4 +18,5 @@ SET_FUNC __aeabi_idivmod, __modsi3
 SET_DATA sUnknown_08A30800, 0x80CCC1c @ or 0x80B3A48
 SET_DATA sUnknown_08A30978, 0x80CCC28 @ or 0x80B3A50
 SET_DATA classTablePoin, 0x8017AB8 
+SET_DATA sPortrait_data, 0x8005524
 
