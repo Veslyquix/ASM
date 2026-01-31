@@ -186,7 +186,11 @@ struct AvatarProc
     PROC_HEADER;
     u8 menuID;
     u8 pronoun;
-    s8 portraitID; // AvatarPortraits[id % count];
+    s8 portraitCursorID;
+    s8 portraitID; // AvatarPortraits[portraitID % count];
+    s8 hairID;     // (hairID % 12) + (portraitID % count)
+    s8 skinID;
+    s8 hairColID;
     u8 boon;
     u8 bane;
 };
@@ -208,7 +212,7 @@ void StartBlockingReclassHandler(struct AvatarProc * proc);
 void AvNameEnableDisp(struct AvatarProc * proc);
 void AvatarNameInput(struct AvatarProc * proc);
 int AvPortraitSelection(struct AvatarProc * proc);
-void AvPortraitIdle(struct AvatarProc * proc);
+u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item);
 const struct MenuDef gAvatarMenuDef;
 const struct MenuDef gAvatarConfirmMenuDef;
 const struct MenuDef gBoonMenuDef;
@@ -234,6 +238,10 @@ void AvatarHandlerInit(struct AvatarProc * proc)
     proc->boon = 0;
     proc->menuID = 0;
     proc->portraitID = 0;
+    proc->portraitCursorID = 0;
+    proc->hairID = 0;
+    proc->skinID = 0;
+    proc->hairColID = 0;
 }
 void AvStartConfirmMenu(struct ProcPromoHandler * proc)
 {
@@ -272,9 +280,9 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_GOTO(AvRestart),
 
     PROC_LABEL(AvPortrait),
-    PROC_CALL_2(AvPortraitSelection),
-    PROC_REPEAT(AvPortraitIdle),
-    // PROC_SLEEP(3),
+    // PROC_CALL_2(AvPortraitSelection),
+    // PROC_REPEAT(AvPortraitIdle),
+    PROC_SLEEP(3),
     PROC_GOTO(AvRestart),
 
     PROC_LABEL(AvBoon),
@@ -341,6 +349,11 @@ u8 AvatarPronoun_OnHer(struct Proc * menu)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
 
+u8 AvatarPortrait_OnSelection(struct Proc * menu)
+{
+    return 0;
+};
+
 const struct MenuItemDef PronounSelectionMenuItems[] = {
     { "はい", 0x31, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnThey, 0, 0, 0 }, // They/Them
     { "はい", 0x32, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnHim, 0, 0, 0 },  // he/him
@@ -349,6 +362,21 @@ const struct MenuItemDef PronounSelectionMenuItems[] = {
 };
 const struct MenuDef gAvatarPronounMenuDef = {
     { 1, 1, 8, 0 }, 0, PronounSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+};
+
+const struct MenuItemDef PortraitSelectionMenuItems[] = {
+    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
+      0 }, // Portrait
+    { "はい", 0x2E, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
+      0 }, // Hair Style
+    { "はい", 0x2F, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
+      0 }, // Hair Colour
+    { "はい", 0x30, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
+      0 }, // Skin Tone
+    MenuItemsEnd
+};
+const struct MenuDef gAvatarPortraitMenuDef = {
+    { 14, 1, 8, 0 }, 0, PortraitSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
 };
 
 void AvatarNameInput(struct AvatarProc * proc)
@@ -434,29 +462,122 @@ int CountAvatarPortraits(void)
 }
 int AvPortraitSelection(struct AvatarProc * proc)
 {
-    DebuggerStartFace(AvatarPortraits[proc->portraitID % CountAvatarPortraits()]); // MODULO HERE, @Jester
+    // 12 hairstyles after 4 Corrin portraits
+    int portraitID = AvatarPortraits[proc->portraitID % CountAvatarPortraits()] + proc->hairID % 12;
+    // MODULO HERE, @Jester
+
+    DebuggerStartFace(portraitID);
+
     return 0;
     // yield
 }
-
-void AvPortraitIdle(struct AvatarProc * proc)
+void AvPortraitAdjustPal(struct AvatarProc * proc)
 {
+    // 12 hairstyles after 4 Corrin portraits
+    int portraitID = AvatarPortraits[proc->portraitID % CountAvatarPortraits()] + proc->hairID % 12;
+    // MODULO HERE, @Jester
 
-    u16 keys = gKeyStatusPtr->repeatedKeys;
-    if (keys & B_BUTTON)
+    const struct FaceData * data = GetMugData(portraitID);
+
+    u16 pal[16];
+    const u16 * palOriginal = data->pal;
+    for (int i = 0; i < 16; ++i)
     {
-        Proc_Break(proc);
-        EndFaceById(0);
+        pal[i] = palOriginal[i];
     }
+    pal[2] += proc->skinID * 5;
+    pal[4] += proc->skinID * 5;
+    pal[7] += proc->skinID * 5;
+    pal[10] += proc->skinID * 5;
+    pal[3] += proc->hairColID * 5;
+    pal[6] += proc->hairColID * 5;
+    pal[9] += proc->hairColID * 5;
+    pal[13] += proc->hairColID * 5;
+    // pal[12] += proc->hairColID * 5; // eye colour
+    // pal[15] += proc->hairColID * 5; // outline
+
+    ApplyPalette(pal, 0x16);
+}
+
+#define NumOfPortraitMenuOptions 4
+enum
+{
+    Portrait_Style,
+    Portrait_Hairstyle,
+    Portrait_Haircolour,
+    Portrait_Skintone,
+};
+u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    // portrait style, hair style, hair colour, skin tone
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+
+    proc->portraitCursorID = menu->itemCurrent;
+
     if (keys & DPAD_LEFT)
     {
-        proc->portraitID--;
+        switch (proc->portraitCursorID % NumOfPortraitMenuOptions)
+        {
+
+            case Portrait_Style:
+            {
+                proc->portraitID--;
+                AvPortraitSelection(proc);
+                break;
+            }
+            case Portrait_Hairstyle:
+            {
+                proc->hairID--;
+                AvPortraitSelection(proc);
+                break;
+            }
+            case Portrait_Haircolour:
+            {
+                proc->hairColID--;
+                AvPortraitAdjustPal(proc);
+                break;
+            }
+            case Portrait_Skintone:
+            {
+                proc->skinID--;
+                AvPortraitAdjustPal(proc);
+                break;
+            }
+        }
         AvPortraitSelection(proc);
     }
+
     if (keys & DPAD_RIGHT)
     {
-        proc->portraitID++;
-        AvPortraitSelection(proc);
+        switch (proc->portraitCursorID % NumOfPortraitMenuOptions)
+        {
+
+            case Portrait_Style:
+            {
+                proc->portraitID++;
+                AvPortraitSelection(proc);
+                break;
+            }
+            case Portrait_Hairstyle:
+            {
+                proc->hairID++;
+                AvPortraitSelection(proc);
+                break;
+            }
+            case Portrait_Haircolour:
+            {
+                proc->hairColID++;
+                AvPortraitAdjustPal(proc);
+                break;
+            }
+            case Portrait_Skintone:
+            {
+                proc->skinID++;
+                AvPortraitAdjustPal(proc);
+                break;
+            }
+        }
     }
 
     // randomly talk or blink
@@ -482,6 +603,7 @@ void AvPortraitIdle(struct AvatarProc * proc)
             break;
         }
     }
+    return 0;
 }
 
 u8 AvatarBPress(struct MenuProc * menu)
@@ -491,7 +613,6 @@ u8 AvatarBPress(struct MenuProc * menu)
 };
 void UpdateMenuID(struct MenuProc * menu)
 {
-    brk;
     struct AvatarProc * proc = menu->proc_parent;
     proc->menuID = menu->itemCurrent;
 }
@@ -520,6 +641,8 @@ u8 AvatarPronounSelect(struct MenuProc * menu)
 u8 AvatarPortraitSelect(struct MenuProc * menu)
 {
     UpdateMenuID(menu);
+    StartMenu(&gAvatarPortraitMenuDef, (ProcPtr)menu->proc_parent);
+    AvPortraitSelection(menu->proc_parent);
     Proc_Goto(menu->proc_parent, AvPortrait);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };

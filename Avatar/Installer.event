@@ -5,10 +5,15 @@ ORG $1F00000
 
 #include "C_Code.lyn.event" 
 
+#define FirstMugID 0x100 
+#define CorrinF101Mug (FirstMugID+100)
+#define CorrinF201Mug (FirstMugID+112)
+#define CorrinM101Mug (FirstMugID+125)
+#define CorrinM201Mug (FirstMugID+137)
 
 ALIGN 4 
 AvatarPortraits: 
-SHORT 2 4 5 6
+SHORT CorrinF101Mug CorrinF201Mug CorrinM101Mug CorrinM201Mug
 SHORT 0 
 
 ALIGN 4 
@@ -62,6 +67,17 @@ setText(0x31, TheyMenuText) // "BASE Capture"
 setText(0x32, HimMenuText) // "BASE Devil A"
 setText(0x33, HerMenuText) // "BASE Devil B"
 setText(0x34, BaneMenuText) // "BASE Devil C"
+setText(0x2E, PortraitHairstyleText) // "MODE Tutorial"
+setText(0x2F, PortraitHairColourText) // "MODE Normal"
+setText(0x30, PortraitSkinToneText) // "MODE Hard"
+
+PortraitHairstyleText: 
+String("Hairstyle") ; BYTE 0 
+PortraitHairColourText: 
+String("Hair Colour") ; BYTE 0 
+PortraitSkinToneText: 
+String("Skin Tone") ; BYTE 0 
+
 
 ALIGN 4 
 PronounMenuText: 
