@@ -479,18 +479,6 @@ int CountAvatarPortraits(void)
     return c;
 }
 
-int AvPortraitSelection(struct AvatarProc * proc)
-{
-    // 12 hairstyles after 4 Corrin portraits
-    int portraitID = AvatarPortraits[proc->portraitID % CountAvatarPortraits()] + proc->hairID % 12;
-    // MODULO HERE, @Jester
-
-    DebuggerStartFace(portraitID, proc);
-    // AvPortraitAdjustPal(proc);
-
-    return 0;
-    // yield
-}
 #define gbapal(r, g, b) (((b) << 10) | ((g) << 5) | (r))
 #define NumSkinTones 5
 const u16 skinTones[][3] = {
@@ -502,7 +490,8 @@ const u16 skinTones[][3] = {
 };
 
 #define NumHairCols 14
-#define NumHairstyles 12
+#define RobinNumHairstyles 4
+#define CorrinNumHairstyles 12
 const u16 hairColours[][3] = {
     { gbapal(30, 30, 30), gbapal(25, 23, 23), gbapal(19, 16, 16) }, // white
     { gbapal(29, 26, 23), gbapal(25, 22, 19), gbapal(17, 16, 14) }, // light brown
@@ -519,11 +508,47 @@ const u16 hairColours[][3] = {
     { gbapal(29, 15, 9), gbapal(24, 10, 5), gbapal(17, 7, 2) },     // orange
     { gbapal(26, 13, 13), gbapal(20, 7, 7), gbapal(13, 4, 5) },     // red
 };
+
+#define NumEyeCols 5
+// red, brown, gold, blue, green
+const u16 eyeCols[] = {
+    gbapal(24, 5, 5), gbapal(21, 13, 6), gbapal(28, 24, 0), gbapal(10, 16, 31), gbapal(5, 21, 7),
+};
+
+int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol)
+{
+    // 8 styles after 4 Robin portraits, or
+    // 12 hairstyles after 4 Corrin portraits
+    int numHairStyles = CorrinNumHairstyles;
+    u32 portraitID = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
+    // &0xFF was needed here, while changing proc->portraitID to a u8 did not work as expected
+
+    if (portraitID < 4)
+    {
+        staticEyeCol[0] = true;
+        numHairStyles = RobinNumHairstyles;
+    }
+    portraitID = AvatarPortraits[portraitID] + proc->hairID % numHairStyles;
+    // MODULO HERE, @Jester
+    return portraitID;
+}
+
+int AvPortraitSelection(struct AvatarProc * proc)
+{
+    u8 staticEyeCol[1] = { 0 };
+    int portraitID = GetAvatarPortraitID(proc, staticEyeCol);
+
+    DebuggerStartFace(portraitID, proc);
+    // AvPortraitAdjustPal(proc);
+
+    return 0;
+    // yield
+}
+
 void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
 {
-    // 12 hairstyles after 4 Corrin portraits
-    int portraitID = AvatarPortraits[proc->portraitID % CountAvatarPortraits()] + proc->hairID % NumHairstyles;
-    // MODULO HERE, @Jester
+    u8 staticEyeCol[1] = { 0 };
+    int portraitID = GetAvatarPortraitID(proc, staticEyeCol);
 
     const struct FaceData * data = GetMugData(portraitID);
     const u16 * palOriginal = data->pal;
@@ -541,11 +566,14 @@ void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
     buffer[3] = hairColours[hairCol][0];
     buffer[6] = hairColours[hairCol][1];
     buffer[9] = hairColours[hairCol][2];
-
-    int eyeCol = proc->eyeColID % NumHairCols;
-    buffer[12] = hairColours[eyeCol][1];
-
     // pal[13] += proc->hairColID * 5;
+
+    if (!*staticEyeCol)
+    {
+        // Robin's eye col can't be changed
+        int eyeCol = proc->eyeColID % NumEyeCols;
+        buffer[12] = eyeCols[eyeCol];
+    }
 
     // pal[12] += proc->hairColID * 5; // eye colour
     // pal[15] += proc->hairColID * 5; // outline

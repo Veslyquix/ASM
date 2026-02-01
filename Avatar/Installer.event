@@ -6,14 +6,18 @@ ORG $1F00000
 #include "C_Code.lyn.event" 
 
 #define FirstMugID 0x100 
-#define CorrinF101Mug (FirstMugID+100)
-#define CorrinF201Mug (FirstMugID+112)
-#define CorrinM101Mug (FirstMugID+125)
-#define CorrinM201Mug (FirstMugID+137)
+#define RobinF101Mug (FirstMugID+36)
+#define RobinF201Mug (FirstMugID+40)
+#define RobinM101Mug (FirstMugID+45)
+#define RobinM201Mug (FirstMugID+49)
+#define CorrinF101Mug (FirstMugID+116)
+#define CorrinF201Mug (FirstMugID+128)
+#define CorrinM101Mug (FirstMugID+141)
+#define CorrinM201Mug (FirstMugID+153)
 
 ALIGN 4 
 AvatarPortraits: 
-SHORT CorrinF101Mug CorrinF201Mug CorrinM101Mug CorrinM201Mug
+SHORT RobinF101Mug RobinF201Mug RobinM101Mug RobinM201Mug CorrinF101Mug CorrinF201Mug CorrinM101Mug CorrinM201Mug
 SHORT 0 
 
 ALIGN 4 
