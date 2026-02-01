@@ -70,6 +70,7 @@ setText(0x34, BaneMenuText) // "BASE Devil C"
 setText(0x2E, PortraitHairstyleText) // "MODE Tutorial"
 setText(0x2F, PortraitHairColourText) // "MODE Normal"
 setText(0x30, PortraitSkinToneText) // "MODE Hard"
+setText(0x29, EyeColourText) // "Initialize File"
 
 PortraitHairstyleText: 
 String("Hairstyle") ; BYTE 0 
@@ -77,6 +78,8 @@ PortraitHairColourText:
 String("Hair Colour") ; BYTE 0 
 PortraitSkinToneText: 
 String("Skin Tone") ; BYTE 0 
+EyeColourText: 
+String("Eye Colour") ; BYTE 0 
 
 
 ALIGN 4 

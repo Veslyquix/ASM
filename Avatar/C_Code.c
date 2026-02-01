@@ -191,6 +191,7 @@ struct AvatarProc
     s8 hairID;     // (hairID % 12) + (portraitID % count)
     s8 skinID;
     s8 hairColID;
+    s8 eyeColID;
     u8 boon;
     u8 bane;
 };
@@ -242,6 +243,7 @@ void AvatarHandlerInit(struct AvatarProc * proc)
     proc->hairID = 0;
     proc->skinID = 0;
     proc->hairColID = 0;
+    proc->eyeColID = 0;
 }
 void AvStartConfirmMenu(struct ProcPromoHandler * proc)
 {
@@ -371,6 +373,8 @@ const struct MenuItemDef PortraitSelectionMenuItems[] = {
       0 }, // Hair Style
     { "はい", 0x2F, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
       0 }, // Hair Colour
+    { "はい", 0x29, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
+      0 }, // Eye Colour
     { "はい", 0x30, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
       0 }, // Skin Tone
     MenuItemsEnd
@@ -425,11 +429,24 @@ int CanDisplayPortrait(int id)
     // const struct FaceData * data = GetMugData(id);
     // return IsImgValidLZ77(data, (const u8 *)data->img);
 }
-
+void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer);
 extern struct TalkState sTalkStateCore;
 struct TalkState * const pTalkState = &sTalkStateCore;
 extern u16 AvatarPortraits[];
-void DebuggerStartFace(int id)
+extern struct FaceVramEntry sFaceConfig[4];
+void StartFaceFadeInCustom(struct FaceProc * proc, struct AvatarProc * avatarProc)
+{
+    // const struct FaceData * info = GetPortraitData(proc->faceId);
+
+    SetBlackPal(sFaceConfig[proc->faceSlot].paletteId + 0x10);
+    PortraitAdjustPal(avatarProc, (void *)gEkrKakudaiSomeBufLeft);
+    // StartPalFade(info->pal, sFaceConfig[proc->faceSlot].paletteId + 0x10, 12, proc);
+    StartPalFade((void *)gEkrKakudaiSomeBufLeft, sFaceConfig[proc->faceSlot].paletteId + 0x10, 12, proc);
+
+    return;
+}
+
+void DebuggerStartFace(int id, struct AvatarProc * proc)
 {
     EndFaceById(0);
     if (id < 0)
@@ -439,9 +456,10 @@ void DebuggerStartFace(int id)
     if (CanDisplayPortrait(id))
     {
         pTalkState->faces[pTalkState->activeFaceSlot] =
-            StartFace(0, id, 48, 16, FACE_DISP_KIND(FACE_96x80) | FACE_DISP_FLIPPED); // blink
+            StartFace(0, id, 48, 80, FACE_DISP_KIND(FACE_96x80) | FACE_DISP_FLIPPED); // blink
         // SetFaceBlinkControlById(0, 0);
-        StartFaceFadeIn(pTalkState->faces[pTalkState->activeFaceSlot]);
+        StartFaceFadeInCustom(pTalkState->faces[pTalkState->activeFaceSlot], proc);
+        // StartFaceFadeIn(pTalkState->faces[pTalkState->activeFaceSlot]);
 
         // SetTalkFaceLayer(pTalkState->activeFaceSlot, CheckTalkFlag(TALK_FLAG_4));
         SetTalkFaceLayer(pTalkState->activeFaceSlot, 1);
@@ -460,51 +478,93 @@ int CountAvatarPortraits(void)
     }
     return c;
 }
+
 int AvPortraitSelection(struct AvatarProc * proc)
 {
     // 12 hairstyles after 4 Corrin portraits
     int portraitID = AvatarPortraits[proc->portraitID % CountAvatarPortraits()] + proc->hairID % 12;
     // MODULO HERE, @Jester
 
-    DebuggerStartFace(portraitID);
+    DebuggerStartFace(portraitID, proc);
+    // AvPortraitAdjustPal(proc);
 
     return 0;
     // yield
 }
-void AvPortraitAdjustPal(struct AvatarProc * proc)
+#define gbapal(r, g, b) (((b) << 10) | ((g) << 5) | (r))
+#define NumSkinTones 5
+const u16 skinTones[][3] = {
+    { gbapal(31, 30, 29), gbapal(30, 25, 19), gbapal(29, 20, 15) },
+    { gbapal(31, 31, 25), gbapal(31, 25, 16), gbapal(29, 19, 12) },
+    { gbapal(31, 28, 24), gbapal(29, 23, 19), gbapal(26, 17, 14) },
+    { gbapal(30, 24, 18), gbapal(28, 19, 13), gbapal(22, 13, 10) },
+    { gbapal(28, 24, 20), gbapal(24, 19, 14), gbapal(19, 14, 10) },
+};
+
+#define NumHairCols 14
+#define NumHairstyles 12
+const u16 hairColours[][3] = {
+    { gbapal(30, 30, 30), gbapal(25, 23, 23), gbapal(19, 16, 16) }, // white
+    { gbapal(29, 26, 23), gbapal(25, 22, 19), gbapal(17, 16, 14) }, // light brown
+    { gbapal(25, 23, 23), gbapal(19, 16, 16), gbapal(15, 12, 11) }, // brown
+    { gbapal(21, 13, 8), gbapal(14, 9, 5), gbapal(9, 6, 4) },       // dark brown
+    { gbapal(16, 16, 18), gbapal(11, 11, 13), gbapal(9, 7, 10) },   // grey brown
+    { gbapal(16, 18, 20), gbapal(10, 11, 13), gbapal(7, 7, 10) },   // grey blue
+    { gbapal(19, 25, 29), gbapal(11, 18, 22), gbapal(8, 12, 15) },  // light blue
+    { gbapal(10, 16, 22), gbapal(7, 10, 17), gbapal(7, 8, 10) },    // blue
+    { gbapal(21, 28, 16), gbapal(17, 23, 12), gbapal(15, 15, 11) }, // light green
+    { gbapal(5, 15, 13), gbapal(2, 10, 8), gbapal(1, 7, 6) },       // dark green
+    { gbapal(28, 24, 14), gbapal(23, 18, 8), gbapal(19, 14, 9) },   // blonde
+    { gbapal(31, 23, 21), gbapal(31, 17, 15), gbapal(24, 12, 8) },  // pink
+    { gbapal(29, 15, 9), gbapal(24, 10, 5), gbapal(17, 7, 2) },     // orange
+    { gbapal(26, 13, 13), gbapal(20, 7, 7), gbapal(13, 4, 5) },     // red
+};
+void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
 {
     // 12 hairstyles after 4 Corrin portraits
-    int portraitID = AvatarPortraits[proc->portraitID % CountAvatarPortraits()] + proc->hairID % 12;
+    int portraitID = AvatarPortraits[proc->portraitID % CountAvatarPortraits()] + proc->hairID % NumHairstyles;
     // MODULO HERE, @Jester
 
     const struct FaceData * data = GetMugData(portraitID);
-
-    u16 pal[16];
     const u16 * palOriginal = data->pal;
     for (int i = 0; i < 16; ++i)
     {
-        pal[i] = palOriginal[i];
+        buffer[i] = palOriginal[i];
     }
-    pal[2] += proc->skinID * 5;
-    pal[4] += proc->skinID * 5;
-    pal[7] += proc->skinID * 5;
-    pal[10] += proc->skinID * 5;
-    pal[3] += proc->hairColID * 5;
-    pal[6] += proc->hairColID * 5;
-    pal[9] += proc->hairColID * 5;
-    pal[13] += proc->hairColID * 5;
+    int skinToneId = proc->skinID % NumSkinTones;
+    buffer[2] = skinTones[skinToneId][0]; // main
+    buffer[4] = skinTones[skinToneId][1]; // shadow
+    buffer[7] = skinTones[skinToneId][2]; // dark shadow
+    // pal[10] += proc->skinID * 5; // outline / darkest
+
+    int hairCol = proc->hairColID % NumHairCols;
+    buffer[3] = hairColours[hairCol][0];
+    buffer[6] = hairColours[hairCol][1];
+    buffer[9] = hairColours[hairCol][2];
+
+    int eyeCol = proc->eyeColID % NumHairCols;
+    buffer[12] = hairColours[eyeCol][1];
+
+    // pal[13] += proc->hairColID * 5;
+
     // pal[12] += proc->hairColID * 5; // eye colour
     // pal[15] += proc->hairColID * 5; // outline
+}
+void AvPortraitAdjustPal(struct AvatarProc * proc)
+{
+    // u16 pal[16];
+    PortraitAdjustPal(proc, (void *)gEkrKakudaiSomeBufLeft);
 
-    ApplyPalette(pal, 0x16);
+    ApplyPalette((void *)gEkrKakudaiSomeBufLeft, 0x16);
 }
 
-#define NumOfPortraitMenuOptions 4
+#define NumOfPortraitMenuOptions 5
 enum
 {
     Portrait_Style,
     Portrait_Hairstyle,
     Portrait_Haircolour,
+    Portrait_Eyecolour,
     Portrait_Skintone,
 };
 u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
@@ -538,6 +598,12 @@ u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
                 AvPortraitAdjustPal(proc);
                 break;
             }
+            case Portrait_Eyecolour:
+            {
+                proc->eyeColID--;
+                AvPortraitAdjustPal(proc);
+                break;
+            }
             case Portrait_Skintone:
             {
                 proc->skinID--;
@@ -545,7 +611,6 @@ u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
                 break;
             }
         }
-        AvPortraitSelection(proc);
     }
 
     if (keys & DPAD_RIGHT)
@@ -568,6 +633,12 @@ u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
             case Portrait_Haircolour:
             {
                 proc->hairColID++;
+                AvPortraitAdjustPal(proc);
+                break;
+            }
+            case Portrait_Eyecolour:
+            {
+                proc->eyeColID++;
                 AvPortraitAdjustPal(proc);
                 break;
             }
