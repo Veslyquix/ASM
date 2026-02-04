@@ -223,9 +223,17 @@ const struct MenuDef gBaneMenuDef;
 void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y);
 
 int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol);
+const char StatNamesText[][5] = { "HP", "Str", "Mag", "Skl", "Spd", "Lck", "Def", "Res" };
+
+extern struct Font * gActiveFont;
 void AvatarDrawMainMenu(struct AvatarProc * proc)
 {
     int fid = 2; // default
+    struct Font * font = gActiveFont;
+    // SetTextFont(&gHelpBox.font); // use our own chr_counter
+    SetTextFont(&gHelpBoxSt.font); // use our own chr_counter
+    // InitSystemTextFont();
+    InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + 0x3000), 0x180, 0);
 
     if (proc->portraitChosen)
     {
@@ -233,6 +241,46 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
         fid = GetAvatarPortraitID(proc, staticEyeCol);
     }
     AvatarStartFaceAt(fid, proc, 0, 0);
+
+    struct Text * th = gStatScreen.text;
+    int c = 0;
+    for (int i = 0; i < 20; ++i)
+    {
+        InitText(&th[i], 5);
+    }
+#define AssetYCoord 8
+#define AssetFlawXCoord 9 // 5
+    PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord, AssetYCoord), 0, 0, 5, "+");
+    c++;
+    if (proc->boon >= 0)
+    {
+        PutDrawText(
+            &th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord + 1, AssetYCoord), 0, 0, 5,
+            StatNamesText[proc->boon]);
+        c++;
+    }
+    else
+    {
+        PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord + 1, AssetYCoord), 0, 0, 5, "None");
+        c++;
+    }
+
+    PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord, AssetYCoord + 2), 0, 0, 5, " -");
+    c++;
+    if (proc->bane >= 0)
+    {
+        PutDrawText(
+            &th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord + 1, AssetYCoord + 2), 0, 0, 5,
+            StatNamesText[proc->bane]);
+        c++;
+    }
+    else
+    {
+        PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord + 1, AssetYCoord + 2), 0, 0, 5, "All");
+        c++;
+    }
+
+    SetTextFont(font);
 }
 
 void AvatarHandlerRestart(struct AvatarProc * proc)

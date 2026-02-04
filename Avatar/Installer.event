@@ -96,10 +96,10 @@ String("Portrait") ; BYTE 0
 
 ALIGN 4 
 BoonMenuText: 
-String("Boon") ; BYTE 0 
+String("Asset") ; BYTE 0 
 ALIGN 4 
 BaneMenuText: 
-String("Bane") ; BYTE 0 
+String("Flaw") ; BYTE 0 
 
 ALIGN 4 
 TheyMenuText: 
