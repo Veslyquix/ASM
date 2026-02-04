@@ -185,15 +185,16 @@ struct AvatarProc
 {
     PROC_HEADER;
     u8 menuID;
-    u8 pronoun;
+    s8 pronoun;
     s8 portraitCursorID;
+    s8 portraitChosen;
     s8 portraitID; // AvatarPortraits[portraitID % count];
     s8 hairID;     // (hairID % 12) + (portraitID % count)
     s8 skinID;
     s8 hairColID;
     s8 eyeColID;
-    u8 boon;
-    u8 bane;
+    s8 boon;
+    s8 bane;
 };
 
 #define AvRestart 0
@@ -219,6 +220,21 @@ const struct MenuDef gAvatarConfirmMenuDef;
 const struct MenuDef gBoonMenuDef;
 const struct MenuDef gBaneMenuDef;
 
+void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y);
+
+int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol);
+void AvatarDrawMainMenu(struct AvatarProc * proc)
+{
+    int fid = 2; // default
+
+    if (proc->portraitChosen)
+    {
+        u8 staticEyeCol[1] = { 0 };
+        fid = GetAvatarPortraitID(proc, staticEyeCol);
+    }
+    AvatarStartFaceAt(fid, proc, 0, 0);
+}
+
 void AvatarHandlerRestart(struct AvatarProc * proc)
 {
     LoadUiFrameGraphics();
@@ -230,13 +246,17 @@ void AvatarHandlerRestart(struct AvatarProc * proc)
     SetTextFontGlyphs(0);
     struct MenuProc * menu = StartMenu(&gAvatarMenuDef, (ProcPtr)proc);
     menu->itemCurrent = proc->menuID;
+    AvatarDrawMainMenu(proc);
 }
+
+#define Unchosen (-1)
 
 void AvatarHandlerInit(struct AvatarProc * proc)
 {
-    proc->pronoun = PronounThey;
-    proc->bane = 0;
-    proc->boon = 0;
+    proc->pronoun = Unchosen;
+    proc->bane = Unchosen;
+    proc->boon = Unchosen;
+    proc->portraitChosen = false;
     proc->menuID = 0;
     proc->portraitID = 0;
     proc->portraitCursorID = 0;
@@ -353,6 +373,8 @@ u8 AvatarPronoun_OnHer(struct Proc * menu)
 
 u8 AvatarPortrait_OnSelection(struct Proc * menu)
 {
+    struct AvatarProc * proc = menu->proc_parent;
+    proc->portraitChosen = true;
     return 0;
 };
 
@@ -446,7 +468,7 @@ void StartFaceFadeInCustom(struct FaceProc * proc, struct AvatarProc * avatarPro
     return;
 }
 
-void DebuggerStartFace(int id, struct AvatarProc * proc)
+void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y)
 {
     EndFaceById(0);
     if (id < 0)
@@ -465,6 +487,14 @@ void DebuggerStartFace(int id, struct AvatarProc * proc)
         SetTalkFaceLayer(pTalkState->activeFaceSlot, 1);
         // StartFace(0, id, 48, 16, 0);
     }
+}
+
+void AvatarStartFace(int id, struct AvatarProc * proc)
+{
+    int x = 48;
+    int y = 80;
+    AvatarStartFaceAt(id, proc, x, y);
+
 } // 859133c T sTalkState
 
 int CountAvatarPortraits(void)
@@ -538,7 +568,7 @@ int AvPortraitSelection(struct AvatarProc * proc)
     u8 staticEyeCol[1] = { 0 };
     int portraitID = GetAvatarPortraitID(proc, staticEyeCol);
 
-    DebuggerStartFace(portraitID, proc);
+    AvatarStartFace(portraitID, proc);
     // AvPortraitAdjustPal(proc);
 
     return 0;
