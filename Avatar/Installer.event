@@ -28,12 +28,21 @@ BYTE 0 0 0 0 0 0 0 0
 
 
 PUSH 
+ORG 0x44800; BYTE 0x9 //max tact name length 
+ORG 0x482bA; BYTE 0x9 //max cursor position
+POP 
+
+
+PUSH 
 ORG $9E85D6 
 BYTE 0 // Prologue event flag 
 ORG $9EF0D8 
 ALIGN 4
 AvatarMenuEvent:
+SMOV 0x2 1; // background 
+CALL $9EE2E8; 
 ASMC StartBmAvatar
+CLEAN 
 NoFade 
 ENDA 
 POP 
@@ -112,4 +121,7 @@ String(" he/him") ; BYTE 0
 HerMenuText: 
 String(" she/her") ; BYTE 0 
 
+ALIGN 4 
+AvatarPortraitBoxTSA:
+#incbin "data/AvatarPortraitBoxTSA.dmp" 
 
