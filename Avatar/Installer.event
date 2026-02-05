@@ -26,6 +26,24 @@ BYTE Cavalier Knight Mercenary Archer Mage
 BYTE 0 0 0 0 0 0 0 0 
 
 
+AssetBonusPerStat:
+BYTE 5 // hp 
+BYTE 3 // str 
+BYTE 5 // skl 
+BYTE 3 // spd 
+BYTE 3 // def 
+BYTE 4 // res 
+BYTE 3 // mag 
+
+FlawLossPerStat:
+BYTE 8 // hp 
+BYTE 2 // str 
+BYTE 4 // skl 
+BYTE 2 // spd 
+BYTE 2 // def 
+BYTE 3 // res 
+BYTE 2 // mag 
+
 
 PUSH 
 ORG 0x44800; BYTE 0x9 //max tact name length 
@@ -38,15 +56,25 @@ ORG $9E85D6
 BYTE 0 // Prologue event flag 
 ORG $9EF0D8 
 ALIGN 4
-AvatarMenuEvent:
-SMOV 0x2 1; // background 
-CALL $9EE2E8; 
+AvatarMenuWithBackgroundEvent:
+SVAL 1 1 // Unit ID, which should be loaded already 
+FADI 8 
+SVAL 3 1 // Background 
 ASMC StartBmAvatar
-CLEAN 
+// CLEAN 
 NoFade 
 ENDA 
 POP 
 
+
+
+ALIGN 4 
+AvatarMenuNoBackgroundEvent: 
+SVAL 1 1 // Unit ID, which should be loaded already 
+SVAL 3 (-1) // no Background 
+ASMC StartBmAvatar
+NoFade 
+ENDA 
 
 ALIGN 4 
 BottomMenuBGEnabledAvatar:

@@ -4,6 +4,8 @@
 int Mod(int a, int b) PUREFUNC;
 
 #define NumberOfReclassOptions 6 // max 6
+extern const u8 AssetBonusPerStat[];
+extern const u8 FlawLossPerStat[];
 struct magClassTable
 {
     u8 base;
@@ -14,89 +16,14 @@ struct magClassTable
 extern struct magClassTable MagClassTable[];
 static ProcPtr ReclassMenuSelect(ProcPtr parent);
 static ProcPtr StartReclassSelect(ProcPtr parent);
-// extern u8 const ReclassTable[][6];
-// extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
-// extern u8 const UnitOverrideReclassTable_Promoted[][7];
-// extern u8* pPromoJidLut;
+
 extern const u8 AvatarClasses[];
-// static int GetReclassTableID(const u8 * table, int size, int classID)
-// {
-// for (int i = 0; i < size; ++i)
-// {
-// if (table[i] == classID)
-// {
-// return i;
-// }
-// }
-// return (-1);
-// }
+
 static int GetReclassOption(int unitID, int classID, int ID)
 {
     return AvatarClasses[ID];
 }
-/*
-// int GetReclassOption(int unitID, int classID, int ID)
-// {
-int result = 0;
-int ID_orig = ID;
-int reclassTableID = (-1);
-if (GetClassData(classID)->attributes & CA_PROMOTED)
-{
-    reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Promoted[unitID], 7, classID);
-    if (UnitOverrideReclassTable_Promoted[unitID][0])
-    {
-        if ((!UnitOverrideReclassTable_Promoted[unitID][5]) ||
-            ((!UnitOverrideReclassTable_Promoted[unitID][6]) && (reclassTableID >= 0)))
-        {
-            ID--;
-            if (!ID_orig)
-            {
-                return classID;
-            }
-        }
-        if ((ID >= reclassTableID) && (reclassTableID >= 0))
-        {
-            ID++;
-        }
-        return UnitOverrideReclassTable_Promoted[unitID][ID];
-    }
-}
-else
-{
-    ID = ID_orig;
-    reclassTableID = GetReclassTableID(UnitOverrideReclassTable_Unpromoted[unitID], 7, classID);
 
-    if (UnitOverrideReclassTable_Unpromoted[unitID][0])
-    {
-        if ((!UnitOverrideReclassTable_Unpromoted[unitID][5]) ||
-            ((!UnitOverrideReclassTable_Unpromoted[unitID][6]) && (reclassTableID >= 0)))
-        {
-            ID--;
-            if (!ID_orig)
-            {
-                return classID;
-            }
-        }
-        if ((ID >= reclassTableID) && (reclassTableID >= 0))
-        {
-            ID++;
-        }
-        return UnitOverrideReclassTable_Unpromoted[unitID][ID];
-    }
-}
-ID = ID_orig;
-if (ReclassTable[classID][0] && (!ReclassTable[classID][5]))
-{
-    ID--;
-    if (!ID_orig)
-    {
-        return classID;
-    }
-}
-result = ReclassTable[classID][ID];
-return result;
-}
-*/
 static int IsStrMagInstalled(void)
 {
     return MagClassTable[0].cap;
@@ -223,7 +150,10 @@ const struct MenuDef gBaneMenuDef;
 void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y, int flip);
 
 int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol);
-const char StatNamesText[][5] = { "HP", "Str", "Mag", "Skl", "Spd", "Lck", "Def", "Res" };
+const char StatNamesText[][5] = {
+    // "HP", "Str", "Skl", "Spd", "Def", "Res", "Lck", "Mag",
+    "HP", "Str", "Skl", "Spd", "Def", "Res", "Mag",
+};
 const char PronounsText[][15] = {
     "they/them",
     "he/him",
@@ -242,6 +172,11 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
     SetBlendBackdropA(0);
 
     SetBlendTargetB(0, 0, 1, 1, 1);
+
+    if ((int)gEventSlots[3] >= 0)
+    {
+        EventShowTextBgDirect(EVSUBCMD_REMOVEPORTRAITS, gEventSlots[3]);
+    }
 
     int fid = 0; // default
     struct Font * font = gActiveFont;
@@ -281,34 +216,14 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
 
     AvatarStartFaceAt(fid, proc, 184, 8, 0);
 
-    // DrawUiFrame(gBG2TilemapBuffer, 17, 0, 13, 12, 0, 2);
-    // DrawUiFrame(gBG2TilemapBuffer, 17, 12, 5, 5, 0, 0);
-
-    // LZ77UnCompWram((void *)AvatarPortraitBoxTSA, gEkrTsaBuffer);
-
-    // void EfxTmCpyExt(const u16 * src, s16 src_width, u16 * dst, s16 dst_width, u16 width, u16 hight, int pal, int
-    // chr)
-    // EfxTmCpyExt(gEkrTsaBuffer, (-1), gBG2TilemapBuffer, 13, 13, 16, 0, 0);
-    // BG_Fill(gBG2TilemapBuffer, 0);
-    // Decompress(Tsa_IntelligentSystems, gGenericBuffer);
-    // CallARM_FillTileRect(gBG1TilemapBuffer, gGenericBuffer, 0x1100);
-
-    // TileMap_CopyRect((void *)&AvatarPortraitBoxTSA, TILEMAP_LOCATED(gBG1TilemapBuffer, 17, 0), 13, 16);
-
-    // TileMap_CopyRect((void *)&AvatarPortraitBoxTSA, TILEMAP_LOCATED(gBG2TilemapBuffer, 0, 0), 13, 16);
-    // CallARM_FillTileRect(gBG2TilemapBuffer, (void *)AvatarPortraitBoxTSA, 13 * 16 * 2);
     EfxTmCpyBG((void *)&AvatarPortraitBoxTSA, TILEMAP_LOCATED(gBG2TilemapBuffer, 17, 0), 13, 16, -1, -1);
-
-    // EfxTmCpyExt((void *)AvatarPortraitBoxTSA, (-1), gBG2TilemapBuffer, 13, 13, 16, 0, 0);
-
-    // EfxTmCpyBG(gEkrTsaBuffer, gBG2TilemapBuffer, 17, 0, 0x6, 0x0);
 
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
 
     SetTextFont(font);
 }
-
-#define Spacing 3
+int GetAssetFlawAmount(int id);
+#define Spacing 2
 int AssetDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     struct AvatarProc * proc = menu->proc_parent;
@@ -320,9 +235,17 @@ int AssetDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     Text_DrawString(&menuItem->text, GetStringFromIndex(menuItem->def->nameMsgId));
     if (proc->boon >= 0)
     {
-        Text_InsertDrawString(&menuItem->text, Text_GetCursor(&menuItem->text) + Spacing, TEXT_COLOR_SYSTEM_GREEN, "+");
+        int amount = GetAssetFlawAmount(proc->boon);
+        if (amount >= 0)
+        {
+            Text_InsertDrawString(
+                &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing, TEXT_COLOR_SYSTEM_GREEN, "+");
+            Text_InsertDrawNumberOrBlank(
+                &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing, TEXT_COLOR_SYSTEM_GREEN,
+                GetAssetFlawAmount(proc->boon));
+        }
         Text_InsertDrawString(
-            &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing, TEXT_COLOR_SYSTEM_GREEN,
+            &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing + 16, TEXT_COLOR_SYSTEM_GREEN,
             StatNamesText[proc->boon]);
     }
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
@@ -342,18 +265,18 @@ int FlawDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     Text_DrawString(&menuItem->text, GetStringFromIndex(menuItem->def->nameMsgId));
     if (proc->bane >= 0)
     {
+        int amount = GetAssetFlawAmount(proc->bane);
+        if (amount < 0)
+        {
+            Text_InsertDrawString(
+                &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing + 3, TEXT_COLOR_SYSTEM_GOLD, " -");
+
+            Text_InsertDrawNumberOrBlank(
+                &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing, TEXT_COLOR_SYSTEM_GOLD, abs(amount));
+        }
         Text_InsertDrawString(
-            &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing + 3, TEXT_COLOR_SYSTEM_GOLD, " -");
-        Text_InsertDrawString(
-            &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing + 1, TEXT_COLOR_SYSTEM_GOLD,
+            &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing + 17, TEXT_COLOR_SYSTEM_GOLD,
             StatNamesText[proc->bane]);
-    }
-    else if (proc->boon >= 0)
-    {
-        Text_InsertDrawString(
-            &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing + 3, TEXT_COLOR_SYSTEM_GOLD, " -");
-        Text_InsertDrawString(
-            &menuItem->text, Text_GetCursor(&menuItem->text) + Spacing + 1, TEXT_COLOR_SYSTEM_GOLD, "Lck");
     }
 
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
@@ -364,9 +287,14 @@ int FlawDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
 void AvatarHandlerRestart(struct AvatarProc * proc)
 {
     LoadUiFrameGraphics();
+    LoadObjUIGfx();
+    ApplyUnitSpritePalettes();
     BMapDispSuspend();
     EndAllMus();
-    StartMu(gActiveUnit);
+    if ((int)gEventSlots[3] < 0)
+    {
+        StartMu(gActiveUnit);
+    }
     ResetTextFont();
     ResetText();
     SetTextFontGlyphs(0);
@@ -540,10 +468,14 @@ void AvatarNameInput(struct AvatarProc * proc)
 
 void AvNameEnableDisp(struct AvatarProc * proc)
 {
-    RefreshBMapGraphics();
-    RefreshEntityBmMaps();
-    RenderBmMap();
-    RefreshUnitSprites();
+    SetupBackgrounds(NULL);
+    if ((int)gEventSlots[3] < 0)
+    {
+        RefreshBMapGraphics();
+        RefreshEntityBmMaps();
+        RenderBmMap();
+        RefreshUnitSprites();
+    }
 
     // BMapDispResume(); // so units aren't hidden
     SetDispEnable(TRUE, TRUE, TRUE, TRUE, TRUE);
@@ -979,12 +911,14 @@ u8 BoonSelect(struct MenuProc * menu)
 const struct MenuItemDef gAvatarBoonItems[] = {
     { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Hp
     { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Str
-    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Mag
+
     { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Skl
     { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Spd
-    { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Luck
+
     { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Def
     { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Res
+    // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Luck
+    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Mag
     MenuItemsEnd
 };
 
@@ -998,12 +932,14 @@ u8 BaneSelect(struct MenuProc * menu)
 const struct MenuItemDef gAvatarBaneItems[] = {
     { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Hp
     { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Str
-    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Mag
+
     { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Skl
     { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Spd
-    { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Luck
+
     { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Def
     { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Res
+    // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Luck
+    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Mag
     MenuItemsEnd
 };
 
@@ -1029,13 +965,17 @@ int AvatarClassUsability(const struct MenuItemDef * def, int number)
     return MENU_DISABLED;
 }
 extern struct Font gDefaultFont;
-
-void ResetTextCursorForMenu(struct MenuProc * proc) // sub_80CDA4C
+void ResetTextCursorForMenu(struct MenuProc * menu) // sub_80CDA4C
 {
-    for (int i = 0; i < proc->itemCount; i++)
+    int i = 0;
+    for (; i < menu->itemCount; i++)
     {
-        ClearText(&proc->menuItems[i]->text);
-        Text_SetCursor(&proc->menuItems[i]->text, 0);
+        ClearText(&menu->menuItems[i]->text);
+        Text_SetCursor(&menu->menuItems[i]->text, 0);
+    }
+    if (CanSelectClass())
+    {
+        menu->menuItems[5]->availability = MENU_ENABLED; /// ahhhhhh
     }
 }
 
@@ -1047,26 +987,26 @@ void RedrawAvatarMainMenu(struct AvatarProc * proc, struct MenuProc * menu)
 }
 
 // sizeof(StatNamesText);
+#define NumOfStats 7
 u8 AssetOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     int id = proc->boon;
     // int numOfEntries = sizeof(StatNamesText) >> 2;
-    int numOfEntries = 8;
     u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & DPAD_LEFT)
     {
         proc->boon--;
         if (proc->boon < 0)
         {
-            proc->boon = numOfEntries - 1;
+            proc->boon = NumOfStats - 1;
         }
     }
 
     if (keys & DPAD_RIGHT)
     {
         proc->boon++;
-        if (proc->boon >= numOfEntries)
+        if (proc->boon >= NumOfStats)
         {
             proc->boon = 0;
         }
@@ -1082,21 +1022,20 @@ u8 FlawOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     u16 keys = gKeyStatusPtr->repeatedKeys;
-    int numOfEntries = 8;
     int id = proc->bane;
     if (keys & DPAD_LEFT)
     {
         proc->bane--;
         if (proc->bane < 0)
         {
-            proc->bane = numOfEntries - 1;
+            proc->bane = NumOfStats - 1;
         }
     }
 
     if (keys & DPAD_RIGHT)
     {
         proc->bane++;
-        if (proc->bane >= numOfEntries)
+        if (proc->bane >= NumOfStats)
         {
             proc->bane = 0;
         }
@@ -1121,7 +1060,8 @@ const struct MenuItemDef gAvatarMenuItems[] = {
     // { "はい", 0x848, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarBPress, 0, 0, 0 },            // Exit
     MenuItemsEnd
 };
-const struct MenuDef gAvatarMenuDef = { { 1, 1, 9, 0 }, 0, gAvatarMenuItems, 0, 0, 0, (void *)AvatarBPress, 0, 0 };
+// const struct MenuDef gAvatarMenuDef = { { 1, 1, 10, 0 }, 0, gAvatarMenuItems, 0, 0, 0, (void *)AvatarBPress, 0, 0 };
+const struct MenuDef gAvatarMenuDef = { { 1, 1, 10, 0 }, 0, gAvatarMenuItems, 0, 0, 0, 0, 0, 0 };
 
 static bool StartAndWaitReclassSelect(struct ProcPromoMain * proc);
 static void ReclassHandlerIdle(struct ProcPromoHandler * proc);
@@ -1273,6 +1213,25 @@ static void ExecReclassChgReal(struct ProcPromoMain * proc)
     }
 }
 
+int GetAssetFlawAmount(int id)
+{
+    struct AvatarProc * proc = Proc_Find(ProcScr_AvatarHandler);
+    int result = 0;
+    if (!proc)
+    {
+        return 0;
+    }
+    if (proc->boon == id)
+    {
+        result += AssetBonusPerStat[id];
+    }
+    if (proc->bane == id)
+    {
+        result -= FlawLossPerStat[id];
+    }
+    return result;
+}
+
 static int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldClass, const struct ClassData * newClass)
 {
     int result = 0;
@@ -1384,6 +1343,7 @@ static int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldC
         }
         default:
     }
+
     if ((tmp + result) < 0)
     {
         result = 0;
@@ -1394,6 +1354,7 @@ static int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldC
 static int GetNewStat(int id, struct Unit * unit, const struct ClassData * oldClass, const struct ClassData * newClass)
 {
     int stat = GetStatDiff(id, unit, oldClass, newClass);
+    stat += GetAssetFlawAmount(id);
     int tmp = 0;
     switch (id)
     {
@@ -1463,14 +1424,14 @@ static void ApplyUnitReclass(struct Unit * unit, u8 classId)
     int i;
 
     int tmp;
-    unit->maxHP += GetStatDiff(0, unit, oldClass, newClass);
-    unit->pow += GetStatDiff(1, unit, oldClass, newClass);
-    unit->skl += GetStatDiff(2, unit, oldClass, newClass);
-    unit->spd += GetStatDiff(3, unit, oldClass, newClass);
-    unit->def += GetStatDiff(4, unit, oldClass, newClass);
-    unit->res += GetStatDiff(5, unit, oldClass, newClass);
+    unit->maxHP += GetStatDiff(0, unit, oldClass, newClass) + GetAssetFlawAmount(0);
+    unit->pow += GetStatDiff(1, unit, oldClass, newClass) + GetAssetFlawAmount(1);
+    unit->skl += GetStatDiff(2, unit, oldClass, newClass) + GetAssetFlawAmount(2);
+    unit->spd += GetStatDiff(3, unit, oldClass, newClass) + GetAssetFlawAmount(3);
+    unit->def += GetStatDiff(4, unit, oldClass, newClass) + GetAssetFlawAmount(4);
+    unit->res += GetStatDiff(5, unit, oldClass, newClass) + GetAssetFlawAmount(5);
     tmp = unit->_u3A; // handle mag separately because _u3A is unsigned
-    tmp += GetStatDiff(8, unit, oldClass, newClass);
+    tmp += GetStatDiff(8, unit, oldClass, newClass) + GetAssetFlawAmount(6);
     if (tmp < 0)
     {
         tmp = 0;
@@ -1661,8 +1622,16 @@ static u8 ReclassSubConfirmMenuOnSelect(struct MenuProc * proc, struct MenuItemP
         EndMenu(proc);
         EndMenu(proc->proc_parent);
         found = Proc_Find(ProcScr_ReclassMain);
+        if (gEventSlots[3] >= 0)
+        {
+            RegisterFillTile(NULL, (void *)(VRAM + 0x400 * 32), 20000);
+            // RegisterBlankTile(0x400);
+            BG_Fill(gBG3TilemapBuffer, 0);
+            BG_EnableSyncByMask(BG3_SYNC_BIT);
+        }
 
         EndAllProcChildren(found);
+        // SetDispEnable(TRUE, TRUE, TRUE, FALSE, TRUE);
         ClassChgLoadEfxTerrain();
         Proc_Goto(found, PROMOMAIN_LABEL_POST_SEL);
     }
@@ -1829,7 +1798,7 @@ static void DrawStatDiff(int x, int y, int id, struct Unit * unit, const struct 
     // }
     th[id].x++;
 
-    Text_InsertDrawNumberOrBlank(&th[id], th[id].x, th[id].colorId, ABS(num));
+    Text_InsertDrawNumberOrBlank(&th[id], th[id].x + 3, th[id].colorId, ABS(num));
     // PutNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, x+3, y), 0, ABS(num));
 }
 
@@ -2465,7 +2434,16 @@ static void MakeReclassScreen(struct ProcPromoHandler * proc, u8 pid, u8 terrain
 extern struct ProcCmd sProc_Menu[];
 int StartBmAvatar(ProcPtr proc)
 {
-    struct Unit * unit = gActiveUnit;
+    // struct Unit * unit = gActiveUnit;
+    if (UNIT_IS_VALID(gActiveUnit))
+    {
+        gActiveUnit->state &= ~US_HIDDEN;
+    }
+    struct Unit * unit = GetUnitStructFromEventParameter(gEventSlots[1]);
+    if (!UNIT_IS_VALID(unit))
+    {
+        return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6B;
+    }
     gActiveUnit = unit;
     gActiveUnitId = unit->index;
 
@@ -2474,10 +2452,10 @@ int StartBmAvatar(ProcPtr proc)
 
     gActionData.subjectIndex = unit->index;
     // deplete the used item when reclassing if it's being used via IER or juna fruit etc
-    if (gActionData.unitActionType != 0x1A)
-    {
-        gActionData.itemSlotIndex = -1; // don't deplete the item if being called in a different way
-    }
+    // if (gActionData.unitActionType != 0x1A)
+    // {
+    gActionData.itemSlotIndex = -1; // don't deplete the item if being called in a different way
+    // }
     gActionData.unitActionType = 0;
     gActionData.moveCount = 0;
 
