@@ -220,11 +220,16 @@ const struct MenuDef gAvatarConfirmMenuDef;
 const struct MenuDef gBoonMenuDef;
 const struct MenuDef gBaneMenuDef;
 
-void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y);
+void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y, int flip);
 
 int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol);
 const char StatNamesText[][5] = { "HP", "Str", "Mag", "Skl", "Spd", "Lck", "Def", "Res" };
-
+const char PronounsText[][15] = {
+    "they/them",
+    "he/him",
+    "she/her",
+};
+#define Unchosen (-1)
 extern struct Font * gActiveFont;
 void AvatarDrawMainMenu(struct AvatarProc * proc)
 {
@@ -240,13 +245,13 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
         u8 staticEyeCol[1] = { 0 };
         fid = GetAvatarPortraitID(proc, staticEyeCol);
     }
-    AvatarStartFaceAt(fid, proc, 0, 0);
+    AvatarStartFaceAt(fid, proc, 180, 0, 0);
 
     struct Text * th = gStatScreen.text;
     int c = 0;
     for (int i = 0; i < 20; ++i)
     {
-        InitText(&th[i], 5);
+        InitText(&th[i], 7);
     }
 #define AssetYCoord 8
 #define AssetFlawXCoord 9 // 5
@@ -259,11 +264,11 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
             StatNamesText[proc->boon]);
         c++;
     }
-    else
-    {
-        PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord + 1, AssetYCoord), 0, 0, 5, "None");
-        c++;
-    }
+    // else
+    // {
+    // PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord + 1, AssetYCoord), 0, 0, 5, "None");
+    // c++;
+    // }
 
     PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord, AssetYCoord + 2), 0, 0, 5, " -");
     c++;
@@ -274,9 +279,16 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
             StatNamesText[proc->bane]);
         c++;
     }
-    else
+    else if (proc->boon >= 0)
     {
         PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, AssetFlawXCoord + 1, AssetYCoord + 2), 0, 0, 5, "All");
+        c++;
+    }
+    PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, 20, 10), 0, 0, 7, GetTacticianName());
+    c++;
+    if (proc->pronoun != Unchosen)
+    {
+        PutDrawText(&th[c], TILEMAP_LOCATED(gBG0TilemapBuffer, 20, 12), 0, 0, 7, PronounsText[proc->pronoun % 3]);
         c++;
     }
 
@@ -296,8 +308,6 @@ void AvatarHandlerRestart(struct AvatarProc * proc)
     menu->itemCurrent = proc->menuID;
     AvatarDrawMainMenu(proc);
 }
-
-#define Unchosen (-1)
 
 void AvatarHandlerInit(struct AvatarProc * proc)
 {
@@ -423,7 +433,7 @@ u8 AvatarPortrait_OnSelection(struct Proc * menu)
 {
     struct AvatarProc * proc = menu->proc_parent;
     proc->portraitChosen = true;
-    return 0;
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
 
 const struct MenuItemDef PronounSelectionMenuItems[] = {
@@ -516,7 +526,7 @@ void StartFaceFadeInCustom(struct FaceProc * proc, struct AvatarProc * avatarPro
     return;
 }
 
-void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y)
+void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y, int flip)
 {
     EndFaceById(0);
     if (id < 0)
@@ -526,7 +536,7 @@ void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y)
     if (CanDisplayPortrait(id))
     {
         pTalkState->faces[pTalkState->activeFaceSlot] =
-            StartFace(0, id, 48, 80, FACE_DISP_KIND(FACE_96x80) | FACE_DISP_FLIPPED); // blink
+            StartFace(0, id, x, y, FACE_DISP_KIND(FACE_96x80) | flip); // blink
         // SetFaceBlinkControlById(0, 0);
         StartFaceFadeInCustom(pTalkState->faces[pTalkState->activeFaceSlot], proc);
         // StartFaceFadeIn(pTalkState->faces[pTalkState->activeFaceSlot]);
@@ -541,7 +551,7 @@ void AvatarStartFace(int id, struct AvatarProc * proc)
 {
     int x = 48;
     int y = 80;
-    AvatarStartFaceAt(id, proc, x, y);
+    AvatarStartFaceAt(id, proc, x, y, FACE_DISP_FLIPPED);
 
 } // 859133c T sTalkState
 
