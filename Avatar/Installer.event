@@ -32,21 +32,21 @@ ORG $9E85D6
 BYTE 0 // Prologue event flag 
 ORG $9EF0D8 
 ALIGN 4
-ExampleEvent:
-ASMC StartBmReclass
+AvatarMenuEvent:
+ASMC StartBmAvatar
 NoFade 
 ENDA 
 POP 
 
 
 ALIGN 4 
-BottomMenuBGEnabled:
+BottomMenuBGEnabledAvatar:
 WORD 1
-ClassDescEnabled:
+ClassDescEnabledAvatar:
 WORD 1
-ClassNameTopEnabled:
+ClassNameTopEnabledAvatar:
 WORD 1 
-PlatformYPos:
+PlatformYPosAvatar:
 WORD 0x58 // 0x58 vanilla 0x78 max 
 
 ALIGN 4 

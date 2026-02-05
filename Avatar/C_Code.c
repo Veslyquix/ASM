@@ -12,25 +12,25 @@ struct magClassTable
     u8 promo;
 };
 extern struct magClassTable MagClassTable[];
-ProcPtr ReclassMenuSelect(ProcPtr parent);
-ProcPtr StartReclassSelect(ProcPtr parent);
+static ProcPtr ReclassMenuSelect(ProcPtr parent);
+static ProcPtr StartReclassSelect(ProcPtr parent);
 // extern u8 const ReclassTable[][6];
 // extern u8 const UnitOverrideReclassTable_Unpromoted[][7];
 // extern u8 const UnitOverrideReclassTable_Promoted[][7];
 // extern u8* pPromoJidLut;
 extern const u8 AvatarClasses[];
-int GetReclassTableID(const u8 * table, int size, int classID)
-{
-    for (int i = 0; i < size; ++i)
-    {
-        if (table[i] == classID)
-        {
-            return i;
-        }
-    }
-    return (-1);
-}
-int GetReclassOption(int unitID, int classID, int ID)
+// static int GetReclassTableID(const u8 * table, int size, int classID)
+// {
+// for (int i = 0; i < size; ++i)
+// {
+// if (table[i] == classID)
+// {
+// return i;
+// }
+// }
+// return (-1);
+// }
+static int GetReclassOption(int unitID, int classID, int ID)
 {
     return AvatarClasses[ID];
 }
@@ -97,7 +97,7 @@ result = ReclassTable[classID][ID];
 return result;
 }
 */
-int IsStrMagInstalled(void)
+static int IsStrMagInstalled(void)
 {
     return MagClassTable[0].cap;
 }
@@ -130,9 +130,9 @@ struct ProcReclassSel
     // s16 msg_desc[6]; // NumberOfReclassOptions
     /* ... more maybe */
 };
-void ReclassMenuExec(struct ProcClassChgMenuSel * proc);
+static void ReclassMenuExec(struct ProcClassChgMenuSel * proc);
 
-const struct ProcCmd ProcScr_ReclassMenuSel[] = {
+static const struct ProcCmd ProcScr_ReclassMenuSel[] = {
     PROC_SLEEP(6),
     PROC_NAME("Reclass Menu Select"),
     PROC_CALL(ReclassMenuExec),
@@ -149,13 +149,13 @@ const struct ProcCmd ProcScr_ReclassMenuSel[] = {
     PROC_END,
 };
 
-int ReclassSubConfirm_OnInit(struct MenuProc * proc)
+static int AvatarSubConfirm_OnInit(struct MenuProc * proc)
 {
     SyncMenuBgs(proc);
     return 0;
 }
-void ReclassDrawStatChanges(struct Unit * unit, const struct ClassData * classData);
-int ReclassSubConfirm_OnEnd(struct MenuProc * proc)
+static void ReclassDrawStatChanges(struct Unit * unit, const struct ClassData * classData);
+int AvatarSubConfirm_OnEnd(struct MenuProc * proc)
 {
     TileMap_FillRect(TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 4), 0xA, 6, 0);
     TileMap_FillRect(TILEMAP_LOCATED(gBG2TilemapBuffer, 8, 4), 0xA, 6, 0);
@@ -210,7 +210,7 @@ struct AvatarProc
 #define PronounThey 0
 #define PronounHim 1
 #define PronounHer 2
-void StartBlockingReclassHandler(struct AvatarProc * proc);
+static void StartBlockingReclassHandler(struct AvatarProc * proc);
 void AvNameEnableDisp(struct AvatarProc * proc);
 void AvatarNameInput(struct AvatarProc * proc);
 int AvPortraitSelection(struct AvatarProc * proc);
@@ -327,7 +327,7 @@ void AvStartConfirmMenu(struct ProcPromoHandler * proc)
 {
     StartMenu(&gAvatarConfirmMenuDef, (ProcPtr)proc);
 }
-void ForceBMapDispResume(void)
+static void ForceBMapDispResume(void)
 {
     while (gBmSt.gameGfxSemaphore)
     {
@@ -511,7 +511,7 @@ int CanDisplayPortrait(int id)
 }
 void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer);
 extern struct TalkState sTalkStateCore;
-struct TalkState * const pTalkState = &sTalkStateCore;
+static struct TalkState * const pTalkState = &sTalkStateCore;
 extern u16 AvatarPortraits[];
 extern struct FaceVramEntry sFaceConfig[4];
 void StartFaceFadeInCustom(struct FaceProc * proc, struct AvatarProc * avatarProc)
@@ -947,9 +947,9 @@ const struct MenuItemDef gAvatarMenuItems[] = {
 };
 const struct MenuDef gAvatarMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarMenuItems, 0, 0, 0, (void *)AvatarBPress, 0, 0 };
 
-bool StartAndWaitReclassSelect(struct ProcPromoMain * proc);
-void ReclassHandlerIdle(struct ProcPromoHandler * proc);
-const struct ProcCmd ProcScr_ReclassHandler[] = {
+static bool StartAndWaitReclassSelect(struct ProcPromoMain * proc);
+static void ReclassHandlerIdle(struct ProcPromoHandler * proc);
+static const struct ProcCmd ProcScr_ReclassHandler[] = {
     PROC_SLEEP(3), PROC_NAME("Reclass Handler"),
     PROC_LABEL(0), PROC_CALL(PromoHandler_SetInitStat),
     PROC_LABEL(1), PROC_REPEAT(ReclassHandlerIdle),
@@ -957,7 +957,7 @@ const struct ProcCmd ProcScr_ReclassHandler[] = {
     PROC_LABEL(7), PROC_END,
 };
 
-void StartBlockingReclassHandler(struct AvatarProc * proc)
+static void StartBlockingReclassHandler(struct AvatarProc * proc)
 {
     EndAllMus();
     struct ProcPromoHandler * new_proc = Proc_StartBlocking(ProcScr_ReclassHandler, proc);
@@ -970,7 +970,7 @@ void StartBlockingReclassHandler(struct AvatarProc * proc)
 }
 
 extern void sub_805AE14(void *);
-void ClassChgOnCancel(struct ProcPromoSel * proc)
+static void ClassChgOnCancel(struct ProcPromoSel * proc)
 {
     struct ProcPromoMain * parent;
     struct ProcPromoHandler * gparent;
@@ -1000,7 +1000,7 @@ void ClassChgOnCancel(struct ProcPromoSel * proc)
 
 // stuff below here is pretty much all copied from my Reclass hack
 
-void SetLevelFunc(ProcPtr proc)
+static void SetLevelFunc(ProcPtr proc)
 {
     if (!Proc_Find(ProcScr_ReclassHandler))
     {
@@ -1009,33 +1009,33 @@ void SetLevelFunc(ProcPtr proc)
     gEkrLvupPostLevel = gActiveUnit->level;
 }
 
-const struct ProcCmd ProcScr_SetLevel[] = {
+static const struct ProcCmd ProcScr_SetLevel[] = {
     PROC_SLEEP(0),
     PROC_NAME("Reclass Set Level"),
     PROC_REPEAT(SetLevelFunc),
     PROC_END,
 };
 
-extern void ReclassPostConfirmWaitBanimEnd(struct ProcClassChgPostConfirm * proc)
+static void ReclassPostConfirmWaitBanimEnd(struct ProcClassChgPostConfirm * proc)
 {
     gEkrLvupPostLevel = gActiveUnit->level;
     int game_lock = proc->game_lock;
     if (game_lock == GetGameLock())
         Proc_Break(proc);
 }
-void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm * proc);
-const struct ProcCmd ProcScr_ReclassChgReal[] = { PROC_NAME("Reclassing Active"),
-                                                  PROC_WHILE(MusicProc4Exists),
-                                                  PROC_CALL(ReclassChgExecPromotionReal),
-                                                  PROC_REPEAT(ReclassPostConfirmWaitBanimEnd),
-                                                  PROC_SLEEP(0x8),
-                                                  PROC_CALL(sub_80CDE98),
-                                                  PROC_SLEEP(0x5),
-                                                  PROC_WHILE(MusicProc4Exists),
-                                                  PROC_END };
+static void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm * proc);
+static const struct ProcCmd ProcScr_ReclassChgReal[] = { PROC_NAME("Reclassing Active"),
+                                                         PROC_WHILE(MusicProc4Exists),
+                                                         PROC_CALL(ReclassChgExecPromotionReal),
+                                                         PROC_REPEAT(ReclassPostConfirmWaitBanimEnd),
+                                                         PROC_SLEEP(0x8),
+                                                         PROC_CALL(sub_80CDE98),
+                                                         PROC_SLEEP(0x5),
+                                                         PROC_WHILE(MusicProc4Exists),
+                                                         PROC_END };
 
-void ExecUnitReclass(struct Unit * unit, u8 classId, int itemIdx, s8 unk);
-void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm * proc)
+static void ExecUnitReclass(struct Unit * unit, u8 classId, int itemIdx, s8 unk);
+static void ReclassChgExecPromotionReal(struct ProcClassChgPostConfirm * proc)
 {
     struct ProcPromoMain * parent = proc->proc_parent;
     struct ProcPromoHandler * gparent = parent->proc_parent;
@@ -1066,7 +1066,7 @@ extern void sub_80CDE98(struct ProcClassChgPostConfirm * proc);
 //    GetUnitFromCharId(parent->pid);
 //}
 
-void ExecReclassChgReal(struct ProcPromoMain * proc)
+static void ExecReclassChgReal(struct ProcPromoMain * proc)
 {
     int slot;
     struct ProcPromoHandler * parent = proc->proc_parent;
@@ -1097,7 +1097,7 @@ void ExecReclassChgReal(struct ProcPromoMain * proc)
     }
 }
 
-int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldClass, const struct ClassData * newClass)
+static int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldClass, const struct ClassData * newClass)
 {
     int result = 0;
 
@@ -1215,7 +1215,7 @@ int GetStatDiff(int id, struct Unit * unit, const struct ClassData * oldClass, c
     return result;
 }
 
-int GetNewStat(int id, struct Unit * unit, const struct ClassData * oldClass, const struct ClassData * newClass)
+static int GetNewStat(int id, struct Unit * unit, const struct ClassData * oldClass, const struct ClassData * newClass)
 {
     int stat = GetStatDiff(id, unit, oldClass, newClass);
     int tmp = 0;
@@ -1275,7 +1275,7 @@ int GetNewStat(int id, struct Unit * unit, const struct ClassData * oldClass, co
     return tmp + stat;
 }
 
-void ApplyUnitReclass(struct Unit * unit, u8 classId)
+static void ApplyUnitReclass(struct Unit * unit, u8 classId)
 {
     const struct ClassData * newClass = GetClassData(classId);
 
@@ -1369,32 +1369,14 @@ void ApplyUnitReclass(struct Unit * unit, u8 classId)
         unit->curHP = GetUnitMaxHp(unit);
 }
 
-void SilentReclassUnit_ASMC()
-{
-    struct Unit * unit = GetUnitStructFromEventParameter(gEventSlots[1]);
-    if (!(UNIT_IS_VALID(unit)))
-    {
-        return;
-    }
-    u8 classID = gEventSlots[3];
-    if (!classID)
-    {
-        classID = GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
-    }
-    if (classID)
-    {
-        ApplyUnitReclass(unit, classID);
-    }
-}
-
-int CanClassEquipWeapon(int weapon, int reclassID)
+static int CanClassEquipWeapon(int weapon, int reclassID)
 {
     weapon &= 0xFF; // id only
     int weaponType = GetItemData(weapon)->weaponType;
     return GetClassData(reclassID)->baseRanks[weaponType];
 }
 
-void ExecUnitReclass(struct Unit * unit, u8 classId, int itemIdx, s8 unk)
+static void ExecUnitReclass(struct Unit * unit, u8 classId, int itemIdx, s8 unk)
 {
 
     if (itemIdx != -1)
@@ -1443,7 +1425,7 @@ void ExecUnitReclass(struct Unit * unit, u8 classId, int itemIdx, s8 unk)
     return;
 }
 
-const struct ProcCmd ProcScr_ReclassMain[] = {
+static const struct ProcCmd ProcScr_ReclassMain[] = {
     PROC_NAME("Reclass Main"),
 
     PROC_LABEL(PROMOMAIN_LABEL_START),
@@ -1476,7 +1458,7 @@ const struct ProcCmd ProcScr_ReclassMain[] = {
     PROC_END,
 };
 
-bool StartAndWaitReclassSelect(struct ProcPromoMain * proc)
+static bool StartAndWaitReclassSelect(struct ProcPromoMain * proc)
 {
     struct ProcPromoMain * _proc = (struct ProcPromoMain *)proc;
     switch (_proc->stat)
@@ -1495,7 +1477,7 @@ bool StartAndWaitReclassSelect(struct ProcPromoMain * proc)
     }
 }
 
-u8 ReclassSubConfirmMenuOnSelect(struct MenuProc * proc, struct MenuItemProc * b)
+static u8 ReclassSubConfirmMenuOnSelect(struct MenuProc * proc, struct MenuItemProc * b)
 {
     if (b->itemNumber == 0)
     {
@@ -1511,12 +1493,12 @@ u8 ReclassSubConfirmMenuOnSelect(struct MenuProc * proc, struct MenuItemProc * b
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A;
 }
 
-u8 ReclassMenuSel_OnBPress(struct MenuProc * _proc, struct MenuItemProc * _proc2)
+static u8 ReclassMenuSel_OnBPress(struct MenuProc * _proc, struct MenuItemProc * _proc2)
 {
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B;
 }
 
-const struct MenuItemDef MenuItem_ReclassSubConfirm[] = {
+static const struct MenuItemDef MenuItem_ReclassSubConfirm[] = {
     { "　決定", 0x23, /* Change */
       0, TEXT_COLOR_SYSTEM_WHITE, 0, MenuAlwaysEnabled, NULL, ReclassSubConfirmMenuOnSelect, NULL, NULL },
     { "　やめる", 0x24, /* Cancel */
@@ -1524,17 +1506,17 @@ const struct MenuItemDef MenuItem_ReclassSubConfirm[] = {
     { 0 },
 };
 
-const struct MenuDef Menu_ReclassSubConfirm = { { 9, 4, 6, 0 },
-                                                1,
-                                                MenuItem_ReclassSubConfirm,
-                                                (void (*)(struct MenuProc *))ReclassSubConfirm_OnInit,
-                                                (void (*)(struct MenuProc *))ReclassSubConfirm_OnEnd,
-                                                NULL,
-                                                ReclassMenuSel_OnBPress,
-                                                NULL,
-                                                MenuStdHelpBox };
+static const struct MenuDef Menu_ReclassSubConfirm = { { 9, 4, 6, 0 },
+                                                       1,
+                                                       MenuItem_ReclassSubConfirm,
+                                                       (void (*)(struct MenuProc *))AvatarSubConfirm_OnInit,
+                                                       (void (*)(struct MenuProc *))AvatarSubConfirm_OnEnd,
+                                                       NULL,
+                                                       ReclassMenuSel_OnBPress,
+                                                       NULL,
+                                                       MenuStdHelpBox };
 
-u8 ReclassMenuItem_OnSelect(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
+static u8 ReclassMenuItem_OnSelect(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
 {
     struct ProcClassChgMenuSel * parent;
     struct ProcReclassSel * gparent;
@@ -1568,7 +1550,7 @@ u8 ReclassMenuItem_OnSelect(struct MenuProc * pmenu, struct MenuItemProc * pmite
     return 0;
 }
 
-u8 ReclassMenuSelOnPressB(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
+static u8 ReclassMenuSelOnPressB(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
 {
     struct ProcClassChgMenuSel * parent;
     struct ProcReclassSel * gparent;
@@ -1599,7 +1581,7 @@ u8 ReclassMenuSelOnPressB(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
     return 0;
 }
 
-void ReclassMenuOnDrawCore(struct MenuProc * pmenu, struct MenuItemProc * pmitem, char * str)
+static void ReclassMenuOnDrawCore(struct MenuProc * pmenu, struct MenuItemProc * pmitem, char * str)
 {
     // u8 unused_stack[32];
     u16 * mapbuf;
@@ -1618,7 +1600,7 @@ void ReclassMenuOnDrawCore(struct MenuProc * pmenu, struct MenuItemProc * pmitem
     PutText(&pmitem->text, &mapbuf[pmitem->yTile * 32 + pmitem->xTile]);
 }
 
-int ReclassMenuItem_OnTextDraw(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
+static int ReclassMenuItem_OnTextDraw(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
 {
     // u8 unused_stack[0x48];
     struct ProcClassChgMenuSel * parent;
@@ -1631,7 +1613,7 @@ int ReclassMenuItem_OnTextDraw(struct MenuProc * pmenu, struct MenuItemProc * pm
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
 
-int ClassHasMagicRank(const struct ClassData * data)
+static int ClassHasMagicRank(const struct ClassData * data)
 { // UnitHasMagicRank
     int combinedRanks = 0;
 
@@ -1648,7 +1630,7 @@ static const char stats[][16] = {
     "HP", "Str", "Skl", "Spd", "Def", "Res", "Con", "Mov", "Mgc",
 };
 
-void DrawStatDiff(int x, int y, int id, struct Unit * unit, const struct ClassData * classData)
+static void DrawStatDiff(int x, int y, int id, struct Unit * unit, const struct ClassData * classData)
 {
     struct Text * th = gStatScreen.text;
     const struct ClassData * oldClass = unit->pClassData;
@@ -1685,7 +1667,7 @@ struct SpecialCharSt
 extern u16 Pal_SpinningArrow[];
 extern struct Font * gActiveFont;
 extern struct SpecialCharSt sSpecialCharStList[64];
-void ReclassDrawStatChanges(struct Unit * unit, const struct ClassData * classData)
+static void ReclassDrawStatChanges(struct Unit * unit, const struct ClassData * classData)
 {
     struct Text * th = gStatScreen.text;
     InitTextFont(&gDefaultFont, (void *)(VRAM + 0x4400), 0x220, 0);
@@ -1750,8 +1732,8 @@ void ReclassDrawStatChanges(struct Unit * unit, const struct ClassData * classDa
 
     // PutDrawText(struct Text* text, u16* dest, int colorId, int x, int tileWidth, const char* string);
 }
-extern int ClassDescEnabled;
-int ReclassMenuItem_OnChange(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
+extern int ClassDescEnabledAvatar;
+static int ReclassMenuItem_OnChange(struct MenuProc * pmenu, struct MenuItemProc * pmitem)
 {
     struct ProcClassChgMenuSel * parent;
     struct ProcReclassSel * gparent;
@@ -1767,7 +1749,7 @@ int ReclassMenuItem_OnChange(struct MenuProc * pmenu, struct MenuItemProc * pmit
     ReclassDrawStatChanges(unit, classData);
     int msg_desc = classData->descTextId; // pmenu->itemCurrent
     // ChangeClassDescription(gparent->msg_desc[gparent->main_select]);
-    if (ClassDescEnabled)
+    if (ClassDescEnabledAvatar)
     {
         ChangeClassDescription(msg_desc);
     }
@@ -1775,7 +1757,7 @@ int ReclassMenuItem_OnChange(struct MenuProc * pmenu, struct MenuItemProc * pmit
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
 
-u8 ReclassMenuItem_Usability(const struct MenuItemDef * _def, int _number)
+static u8 ReclassMenuItem_Usability(const struct MenuItemDef * _def, int _number)
 {
     struct ProcClassChgMenuSel * proc = Proc_Find(ProcScr_ReclassMenuSel);
     struct ProcReclassSel * parent = proc->proc_parent;
@@ -1787,7 +1769,7 @@ u8 ReclassMenuItem_Usability(const struct MenuItemDef * _def, int _number)
     return MENU_NOTSHOWN;
 }
 
-const struct MenuItemDef gMenuItem_ReclassSel[] = {
+static const struct MenuItemDef gMenuItem_ReclassSel[] = {
     { "　第１兵種", 0, 0x6DC, /* Discard items. Important[NL]items cannot be discarded. */
       TEXT_COLOR_SYSTEM_WHITE, 0, MenuAlwaysEnabled, ReclassMenuItem_OnTextDraw, ReclassMenuItem_OnSelect, 0,
       ReclassMenuItem_OnChange, 0 },
@@ -1804,19 +1786,19 @@ const struct MenuItemDef gMenuItem_ReclassSel[] = {
     { 0 }
 };
 
-u32 ReclassMenuSelOnInit(struct MenuProc * proc)
+static u32 ReclassMenuSelOnInit(struct MenuProc * proc)
 {
     SyncMenuBgs(proc);
     return 0;
 }
 
-u32 ReclassMenuSelOnEnd(struct MenuProc * proc)
+static u32 ReclassMenuSelOnEnd(struct MenuProc * proc)
 {
     SyncMenuBgs(proc);
     return 0;
 }
 
-const struct MenuDef gMenuDef_ReclassSel = {
+static const struct MenuDef gMenuDef_ReclassSel = {
     .rect = { 16, 1, 8, 0 },
     .menuItems = gMenuItem_ReclassSel,
     .onInit = (void (*)(struct MenuProc *))ReclassMenuSelOnInit,
@@ -1824,10 +1806,10 @@ const struct MenuDef gMenuDef_ReclassSel = {
     .onBPress = ReclassMenuSelOnPressB,
 };
 
-const struct MenuRect ReclassMenuRect = { .x = 1,
-                                          .y = 0,
-                                          .w = 10, // InitText uses this for tile width
-                                          .h = 0 };
+static const struct MenuRect ReclassMenuRect = { .x = 1,
+                                                 .y = 0,
+                                                 .w = 10, // InitText uses this for tile width
+                                                 .h = 0 };
 
 extern void Make6C_PromotionMenuSelect(struct ProcReclassSel * proc);
 extern void sub_80CCF60(struct ProcReclassSel * proc);
@@ -1839,7 +1821,7 @@ extern void sub_80CD2CC(struct ProcReclassSel * proc);
 extern void NewCcramifyEnd(void);
 extern void PrepClassChgOnCancel(struct ProcReclassSel * proc);
 
-void ReclassMenuExec(struct ProcClassChgMenuSel * proc)
+static void ReclassMenuExec(struct ProcClassChgMenuSel * proc)
 {
     proc->unk4C = 0;
     ResetTextFont();
@@ -1852,10 +1834,10 @@ void ReclassMenuExec(struct ProcClassChgMenuSel * proc)
     proc->pmenu = StartMenuCore(&gMenuDef_ReclassSel, ReclassMenuRect, 2, 0, 0, 0, (struct Proc *)proc);
 }
 
-extern int ClassNameTopEnabled;
-void LoadClassNameInClassReelFont2(struct ProcReclassSel * proc)
+extern int ClassNameTopEnabledAvatar;
+static void LoadClassNameInClassReelFont2(struct ProcReclassSel * proc)
 {
-    if (!ClassNameTopEnabled)
+    if (!ClassNameTopEnabledAvatar)
     {
         return;
     }
@@ -1889,10 +1871,10 @@ void LoadClassNameInClassReelFont2(struct ProcReclassSel * proc)
 
 extern u8 * sUnknown_08A30800[];
 extern u16 * sUnknown_08A30978[];
-extern int BottomMenuBGEnabled; // behind class text description
-void ReclassChgLoadUI(void)
+extern int BottomMenuBGEnabledAvatar; // behind class text description
+static void ReclassChgLoadUI(void)
 {
-    if (!BottomMenuBGEnabled)
+    if (!BottomMenuBGEnabledAvatar)
     {
         return;
     }
@@ -1905,8 +1887,8 @@ void ReclassChgLoadUI(void)
         gBG2TilemapBuffer, *sUnknown_08A30978, TILEREF(0x180, 0) + 0x1000); // vanilla 0x1180, text rework 0x11c0 fsr
 }
 
-extern int PlatformYPos;
-void Make6C_ReclassMenuSelect(struct ProcReclassSel * proc)
+extern int PlatformYPosAvatar;
+static void Make6C_ReclassMenuSelect(struct ProcReclassSel * proc)
 {
     struct ProcPromoMain * parent = proc->proc_parent;
     struct ProcPromoHandler * grandparent;
@@ -1922,10 +1904,10 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel * proc)
     BG_Fill(gBG2TilemapBuffer, 0);
     LoadUiFrameGraphics();
     LoadObjUIGfx();
-    sub_80CD47C(0, -1, 0xfb * 2, PlatformYPos, 6);
+    sub_80CD47C(0, -1, 0xfb * 2, PlatformYPosAvatar, 6);
     ReclassChgLoadUI();
     // ClassChgLoadUI();
-    sub_80CD408(proc->u50, 0x8c * 2, PlatformYPos + 0x10);
+    sub_80CD408(proc->u50, 0x8c * 2, PlatformYPosAvatar + 0x10);
 
     proc->sprite[0] = 0;
     proc->sprite[1] = 0;
@@ -2000,7 +1982,7 @@ void Make6C_ReclassMenuSelect(struct ProcReclassSel * proc)
 }
 
 #define NONMATCHING
-void LoadBattleSpritesForBranchScreen2(struct ProcReclassSel * proc)
+static void LoadBattleSpritesForBranchScreen2(struct ProcReclassSel * proc)
 {
     u32 a;
     u8 b;
@@ -2066,10 +2048,10 @@ void LoadBattleSpritesForBranchScreen2(struct ProcReclassSel * proc)
                     break;
                 }
             }
-            sub_80CD47C((s16)ret, (s16)chara_pal, (s16)(p2->sprite[0] + 0x28), PlatformYPos, 6);
+            sub_80CD47C((s16)ret, (s16)chara_pal, (s16)(p2->sprite[0] + 0x28), PlatformYPosAvatar, 6);
             sub_805AE14(&gUnknown_0201FADC);
             sub_80CD408(proc->u50, p2->sprite[0], p2->msg_desc[1]); // I dunno
-            // sub_80CD408(proc->u50, 0x8c * 2, PlatformYPos+0x10);
+            // sub_80CD408(proc->u50, 0x8c * 2, PlatformYPosAvatar+0x10);
         }
         else
         {
@@ -2108,7 +2090,7 @@ D1AC:
     return;
 }
 
-void Reclasssub_80CCF60(struct ProcReclassSel * proc)
+static void Reclasssub_80CCF60(struct ProcReclassSel * proc)
 {
     u16 tmp;
 
@@ -2116,7 +2098,7 @@ void Reclasssub_80CCF60(struct ProcReclassSel * proc)
     ResetText();
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT | BG3_SYNC_BIT);
     InitTalk(0x100, 2, 0);
-    if (ClassDescEnabled)
+    if (ClassDescEnabledAvatar)
     {
 
         ChangeClassDescription(proc->msg_desc[proc->main_select]);
@@ -2145,7 +2127,7 @@ void Reclasssub_80CCF60(struct ProcReclassSel * proc)
     REG_BG3CNT = tmp + 1;
 }
 
-const struct ProcCmd ProcScr_ReclassSelect[] = {
+static const struct ProcCmd ProcScr_ReclassSelect[] = {
     PROC_CALL(StartMidFadeToBlack),
     PROC_REPEAT(WaitForFade),
 
@@ -2182,23 +2164,23 @@ const struct ProcCmd ProcScr_ReclassSelect[] = {
     PROC_END,
 };
 
-ProcPtr StartReclassSelect(ProcPtr parent)
+static ProcPtr StartReclassSelect(ProcPtr parent)
 {
     return Proc_StartBlocking(ProcScr_ReclassSelect, parent);
 }
 
-ProcPtr ReclassMenuSelect(ProcPtr parent)
+static ProcPtr ReclassMenuSelect(ProcPtr parent)
 {
     return Proc_Start(ProcScr_ReclassMenuSel, parent);
 }
 
-struct ProcPromoMain * Make6C_ReclassMain(ProcPtr proc)
+static struct ProcPromoMain * Make6C_ReclassMain(ProcPtr proc)
 {
     return Proc_StartBlocking(ProcScr_ReclassMain, proc);
 }
 
-void MakeReclassScreen(struct ProcPromoHandler * proc, u8 pid, u8 terrain);
-u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler * proc)
+static void MakeReclassScreen(struct ProcPromoHandler * proc, u8 pid, u8 terrain);
+static u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler * proc)
 {
     Proc_Start(ProcScr_SetLevel, (void *)3);
     struct Unit * unit;
@@ -2272,7 +2254,7 @@ u32 ReclassHandler_SetupAndStartUI(struct ProcPromoHandler * proc)
         return PROMO_HANDLER_STAT_END;
 }
 
-void ReclassHandlerIdle(struct ProcPromoHandler * proc)
+static void ReclassHandlerIdle(struct ProcPromoHandler * proc)
 {
     switch (proc->stat)
     {
@@ -2290,7 +2272,7 @@ void ReclassHandlerIdle(struct ProcPromoHandler * proc)
     }
 }
 
-void MakeReclassScreen(struct ProcPromoHandler * proc, u8 pid, u8 terrain)
+static void MakeReclassScreen(struct ProcPromoHandler * proc, u8 pid, u8 terrain)
 {
     struct ProcPromoMain * child;
 
@@ -2303,24 +2285,9 @@ void MakeReclassScreen(struct ProcPromoHandler * proc, u8 pid, u8 terrain)
     child->terrain = terrain;
 }
 
-s8 CanUnitReclass(struct Unit * unit)
-{
-    return GetReclassOption(unit->pCharacterData->number, unit->pClassData->number, 0);
-}
-
-void CallPrepItemUse_InitDisplay(struct ProcPrepItemUse * proc)
-{
-    PrepItemUse_InitDisplay(proc->proc_parent);
-}
-void CallPrepItemUse_PostPromotion(struct ProcPrepItemUse * proc)
-{
-    PrepItemUse_PostPromotion(proc->proc_parent);
-    PrepItemUse_PostPromotion(proc);
-}
-
 // asmc or whatever
 extern struct ProcCmd sProc_Menu[];
-int StartBmReclass(ProcPtr proc)
+int StartBmAvatar(ProcPtr proc)
 {
     struct Unit * unit = gActiveUnit;
     gActiveUnit = unit;
