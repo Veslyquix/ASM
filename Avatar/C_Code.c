@@ -154,6 +154,7 @@ const char StatNamesText[][5] = {
     // "HP", "Str", "Skl", "Spd", "Def", "Res", "Lck", "Mag",
     "HP", "Str", "Skl", "Spd", "Def", "Res", "Mag",
 };
+
 const char PronounsText[][15] = {
     "they/them",
     "he/him",
@@ -908,6 +909,15 @@ u8 BoonSelect(struct MenuProc * menu)
     proc->boon = menu->itemCurrent;
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
+u8 DisplayIfStrMag()
+{
+
+    if (IsStrMagInstalled())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_NOTSHOWN;
+}
 const struct MenuItemDef gAvatarBoonItems[] = {
     { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Hp
     { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Str
@@ -918,7 +928,7 @@ const struct MenuItemDef gAvatarBoonItems[] = {
     { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Def
     { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Res
     // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Luck
-    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Mag
+    { "はい", 0x4FF, 0, 0, 0x32, (void *)DisplayIfStrMag, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Mag
     MenuItemsEnd
 };
 
@@ -929,6 +939,7 @@ u8 BaneSelect(struct MenuProc * menu)
     proc->bane = menu->itemCurrent;
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
+
 const struct MenuItemDef gAvatarBaneItems[] = {
     { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Hp
     { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Str
@@ -939,7 +950,7 @@ const struct MenuItemDef gAvatarBaneItems[] = {
     { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Def
     { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Res
     // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Luck
-    { "はい", 0x4FF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Mag
+    { "はい", 0x4FF, 0, 0, 0x32, (void *)DisplayIfStrMag, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Mag
     MenuItemsEnd
 };
 
@@ -992,21 +1003,25 @@ u8 AssetOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     int id = proc->boon;
-    // int numOfEntries = sizeof(StatNamesText) >> 2;
+    int numOfEntries = NumOfStats;
+    if (!IsStrMagInstalled())
+    {
+        numOfEntries--;
+    }
     u16 keys = gKeyStatusPtr->repeatedKeys;
     if (keys & DPAD_LEFT)
     {
         proc->boon--;
         if (proc->boon < 0)
         {
-            proc->boon = NumOfStats - 1;
+            proc->boon = numOfEntries - 1;
         }
     }
 
     if (keys & DPAD_RIGHT)
     {
         proc->boon++;
-        if (proc->boon >= NumOfStats)
+        if (proc->boon >= numOfEntries)
         {
             proc->boon = 0;
         }
@@ -1023,19 +1038,24 @@ u8 FlawOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
     struct AvatarProc * proc = menu->proc_parent;
     u16 keys = gKeyStatusPtr->repeatedKeys;
     int id = proc->bane;
+    int numOfEntries = NumOfStats;
+    if (!IsStrMagInstalled())
+    {
+        numOfEntries--;
+    }
     if (keys & DPAD_LEFT)
     {
         proc->bane--;
         if (proc->bane < 0)
         {
-            proc->bane = NumOfStats - 1;
+            proc->bane = numOfEntries - 1;
         }
     }
 
     if (keys & DPAD_RIGHT)
     {
         proc->bane++;
-        if (proc->bane >= NumOfStats)
+        if (proc->bane >= numOfEntries)
         {
             proc->bane = 0;
         }
@@ -1409,7 +1429,16 @@ static int GetNewStat(int id, struct Unit * unit, const struct ClassData * oldCl
         }
         default:
     }
-    return tmp + stat;
+    stat += tmp;
+    if (stat < 0)
+    {
+        stat = 0;
+    }
+    if (id == 0 && stat < 1)
+    {
+        stat = 1; // min 1 hp
+    }
+    return stat;
 }
 
 static void ApplyUnitReclass(struct Unit * unit, u8 classId)
@@ -1438,9 +1467,9 @@ static void ApplyUnitReclass(struct Unit * unit, u8 classId)
     }
     unit->_u3A = tmp;
 
-    if (unit->maxHP < 0)
+    if (unit->maxHP <= 1)
     {
-        unit->maxHP = 0;
+        unit->maxHP = 1;
     }
     if (unit->pow < 0)
     {

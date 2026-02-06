@@ -36,7 +36,7 @@ BYTE 4 // res
 BYTE 3 // mag 
 
 FlawLossPerStat:
-BYTE 8 // hp 
+BYTE 4 // hp 
 BYTE 2 // str 
 BYTE 4 // skl 
 BYTE 2 // spd 
