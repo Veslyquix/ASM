@@ -3,6 +3,7 @@
 #define PUREFUNC __attribute__((pure))
 int Mod(int a, int b) PUREFUNC;
 
+static struct FaceData const * GetMugData(int id);
 #define NumberOfReclassOptions 6 // max 6
 extern const u8 AssetBonusPerStat[];
 extern const u8 FlawLossPerStat[];
@@ -482,12 +483,6 @@ void AvNameEnableDisp(struct AvatarProc * proc)
     SetDispEnable(TRUE, TRUE, TRUE, TRUE, TRUE);
 }
 
-// Because users repoint these tables, use pointers to them instead of the vanilla address of tables
-extern struct FaceData const * const sPortrait_data;
-static struct FaceData const * GetMugData(int id)
-{
-    return sPortrait_data + id;
-}
 int IsImgValid(const void * data, const u8 * imgData)
 {
     if (!data || !imgData)
@@ -638,7 +633,7 @@ void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
     u8 staticEyeCol[1] = { 0 };
     int portraitID = GetAvatarPortraitID(proc, staticEyeCol);
 
-    const struct FaceData * data = GetMugData(portraitID);
+    const struct FaceData * data = GetMugData(portraitID); // not vanilla hook
     const u16 * palOriginal = data->pal;
     for (int i = 0; i < 16; ++i)
     {
@@ -666,6 +661,7 @@ void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
     // pal[12] += proc->hairColID * 5; // eye colour
     // pal[15] += proc->hairColID * 5; // outline
 }
+
 void AvPortraitAdjustPal(struct AvatarProc * proc)
 {
     // u16 pal[16];
@@ -2524,3 +2520,4 @@ int StartBmAvatar(ProcPtr proc)
 
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_CLEAR | MENU_ACT_SND6A;
 }
+#include "Face.c"

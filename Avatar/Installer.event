@@ -1,9 +1,13 @@
 #include "EAstdlib.event" 
 
+
 ORG $1F00000
 
-
+#include "DynamicPortraits20231104/DynamicPortraitsInstaller.event" 
 #include "C_Code.lyn.event" 
+#ifndef jumpToHack
+#define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1)"
+#endif 
 
 #define FirstMugID 0x100 
 #define RobinF101Mug (FirstMugID+36)
@@ -14,6 +18,25 @@ ORG $1F00000
 #define CorrinF201Mug (FirstMugID+128)
 #define CorrinM101Mug (FirstMugID+141)
 #define CorrinM201Mug (FirstMugID+153)
+
+#define rgb(red, green, blue) (((b) << 10) | ((g) << 5) | (r))
+#define no_col 0xFFFF // don't change this colour 
+// #define 
+ALIGN 4 
+PortraitPalReplacements:
+SHORT 2 // portrait 
+SHORT 8 // required flag 
+// 344FDF6F3F477D2ED3252C2587206377A26245416261FE335B23BA105373FE7F base palette 
+BYTE $34 $4F $1C $53 $78 $3A $D3 $29 $D3 $25 $2C $25 $87 $20 $63 $77 $A2 $62 $45 $41 $62 $61 $FE $33 $5B $23 $BA $10 $53 $73 $FE $7F
+// Make Eirika's skin tone darker  
+
+SHORT 2 // portrait 
+SHORT 9 // required flag 
+BYTE $34 $4F $DF $6F $3F $47 $7D $2E $D3 $25 $2C $25 $87 $20 $BA $35 $F4 $1C $AD $18 $6D $19 $FE $33 $5B $23 $BA $10 $53 $73 $FE $7F
+// Give Eirika red hair 
+
+
+WORD 0xFFFFFFFF 0xFFFFFFFF 0xFFFFFFFF 0xFFFFFFFF 0xFFFFFFFF // Terminator 
 
 ALIGN 4 
 AvatarPortraits: 
@@ -48,6 +71,80 @@ BYTE 2 // mag
 PUSH 
 ORG 0x44800; BYTE 0x9 //max tact name length 
 ORG 0x482bA; BYTE 0x9 //max cursor position
+
+	ORG 0x5514	//{U}
+//	ORG 0x541C	//{J}
+	jumpToHack(NewGetPortraitData)
+// 0x5514
+// DynamicPortraits (Scraiza) 
+// Replaces extern const struct FaceData * GetPortraitData(int fid);
+
+
+// StartFace file has 9 hits for ApplyPalette
+// after each hook, need to check if in list of mugs to adjust the palette,
+// and if so, check some ram for how to change it 
+// e.g. IDs of alternate palettes 
+
+
+// use ReplaceText hack with "tHEY" -> "he"
+
+/*
+TextA:
+String("tHEY"); BYTE 0 
+TextB: ; String("he"); BYTE 0 
+
+TextA:
+String("THey"); BYTE 0 
+TextB: ; String("He"); BYTE 0 
+
+TextA:
+String("tHEY"); BYTE 0 
+TextB: ; String("she"); BYTE 0 
+
+TextA:
+String("THey"); BYTE 0 
+TextB: ; String("She"); BYTE 0 
+
+
+
+TextA:
+String("tHEM"); BYTE 0 
+TextB: ; String("him"); BYTE 0 
+
+TextA:
+String("THem"); BYTE 0 
+TextB: ; String("Him"); BYTE 0 
+
+TextA:
+String("tHEM"); BYTE 0 
+TextB: ; String("her"); BYTE 0 
+
+TextA:
+String("THem"); BYTE 0 
+TextB: ; String("Her"); BYTE 0 
+
+
+
+TextA:
+String("tHEIR"); BYTE 0 
+TextB: ; String("his"); BYTE 0 
+
+TextA:
+String("THeir"); BYTE 0 
+TextB: ; String("His"); BYTE 0 
+
+TextA:
+String("tHEIR"); BYTE 0 
+TextB: ; String("her"); BYTE 0 
+
+TextA:
+String("THeir"); BYTE 0 
+TextB: ; String("Her"); BYTE 0 
+
+
+
+*/ 
+
 POP 
 
 
