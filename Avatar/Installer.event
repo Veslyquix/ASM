@@ -1,7 +1,8 @@
 #include "EAstdlib.event" 
-#include "ReplaceText/Installer.event" 
 
 ORG $1F00000
+
+#include "ReplaceText/Installer.event" 
 
 #include "C_Code.lyn.event" 
 #ifndef jumpToHack
@@ -252,6 +253,11 @@ WORD 0
 #ifndef setText 
 #define setText(textID, offset) "PUSH; ORG (TextTable+(4*textID)); POIN (offset|0x80000000); POP"
 #endif 
+
+
+test_case:
+tx("[they]")
+setText(0x212, test_case) 
 
 // Debug text entries 
 setText(0x2B, PronounMenuText) // "Viwer Map" 

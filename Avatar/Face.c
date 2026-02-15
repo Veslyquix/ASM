@@ -47,7 +47,7 @@ const struct FaceData * NewGetPortraitData(int fid)
     int tmp;
     while (palReplacements->fidA && palReplacements->fidA != 0xFFFF)
     {
-        brk;
+
         if (palReplacements->fidA <= newFid && palReplacements->fidB >= newFid && CheckFlag(palReplacements->flag))
         {
             basePal = data->pal;

@@ -3,6 +3,22 @@
 #define HePronounFlag 0xF1
 #define ShePronounFlag 0xF2
 
+// the randomizer takes over GetStringFromIndex, so take over for now 
+PUSH
+ORG $a240
+ALIGN 4
+WORD $46C04778 $E59FC000 $E12FFF1C
+POIN GetStringFromIndex
+POP
+
+ALIGN 4
+PUSH
+ORG CURRENTOFFSET+$1;GetStringFromIndex:
+POP
+WORD $B5104B09 $4B096018 $681B4C09 $210080 $4B0858C0 $F812F000 $4B070020 $F80EF000 $BC100020 $4708BC02 $202B6AC $800A2A0 $202A6AC $8002BA5 $800A1C9 $46C04718
+// for SRR 
+
+
 // Feel free to add more pronouns to ReplaceTextList if desired 
 
 // they / their / theirs / them / have / are 
@@ -23,9 +39,11 @@
 // they pass by 
 
 
+#inctbl "fe8TR" "fe8_tr.tbl"
+#define tx(string2) STRING string2 "fe8TR"; BYTE 0 0; // fe8 version 
+// #define tx(characters) String(characters); BYTE 0 0 
 
 
-#define tx(characters) (String("characters"); BYTE 0)
 
 ALIGN 4 
 ReplaceTextList:
@@ -56,6 +74,7 @@ SHORT ShePronounFlag;  BYTE 0xFF 0; POIN code_have text_has
 SHORT TheyPronounFlag; BYTE 0xFF 0; POIN code_Have text_Have 
 SHORT HePronounFlag;   BYTE 0xFF 0; POIN code_Have text_Has
 SHORT ShePronounFlag;  BYTE 0xFF 0; POIN code_Have text_Has 
+
 
 /* [them] / [Them]
 The toy belongs to him. 
@@ -156,8 +175,8 @@ text_Them:
 tx("Them")
 text_Him:
 tx("Him")
-text_Her:
-tx("Her")
+// text_Her:
+// tx("Her")
 
 
 code_their:
@@ -174,8 +193,8 @@ text_Their:
 tx("Their")
 text_His:
 tx("His")
-text_Her:
-tx("Her")
+// text_Her:
+// tx("Her")
 
 
 code_theirs:
@@ -184,14 +203,14 @@ code_Theirs:
 tx("[Theirs]") 
 text_theirs:
 tx("theirs")
-text_his:
-tx("his")
+// text_his:
+// tx("his")
 text_hers: 
 tx("hers")
 text_Theirs:
 tx("Theirs")
-text_His:
-tx("His")
+// text_His:
+// tx("His")
 text_Hers: 
 tx("Hers") 
 

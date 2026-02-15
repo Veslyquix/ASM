@@ -1,9 +1,5 @@
 
 
-.if FE8 == true 
-.include "fe8.s" 
-.endif 
-
 .macro SET_FUNC name, value
 	.global \name
 	.type   \name, function
@@ -15,6 +11,13 @@
 	.type   \name, object
 	.set    \name, \value
 .endm
+
+
+.if FE8 == true 
+.include "fe8.s" 
+SET_DATA ggMsgStringTable, 0x800a2a0 
+.endif 
+
 
 .if FE6 == true 
 SET_FUNC UpdateMapViewWithFog, 0x801C6C5
