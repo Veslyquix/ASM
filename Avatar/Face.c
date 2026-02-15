@@ -36,6 +36,9 @@ const struct FaceData * NewGetPortraitData(int fid)
     // and the palette, also now in ram, as desired
     // const struct FaceData * data = GetMugData(fid);
     const struct FaceData * data = DynamicPortraits(fid);
+    int newFid = ((int)data - (int)GetMugData(0)) / 0x1C; // calc which ID it is now
+    // so we don't have to edit the DynamicPortraits asm
+
     CpuFastCopy(data, (void *)&Font_Sio_02000C60_Reused, 0x1C); // src, dst, bytes
     CpuFastCopy(data->pal, (void *)&Sio_02000C80_Reused, 0x10);
     const u16 * basePal;
@@ -44,7 +47,8 @@ const struct FaceData * NewGetPortraitData(int fid)
     int tmp;
     while (palReplacements->fidA && palReplacements->fidA != 0xFFFF)
     {
-        if (palReplacements->fidA <= fid && palReplacements->fidB >= fid && CheckFlag(palReplacements->flag))
+        brk;
+        if (palReplacements->fidA <= newFid && palReplacements->fidB >= newFid && CheckFlag(palReplacements->flag))
         {
             basePal = data->pal;
             Sio_02000C80_Reused[0] = 0xFFFF;

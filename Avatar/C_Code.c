@@ -175,10 +175,24 @@ int CountNumOfStats(void)
     }
     return numOfEntries;
 }
-extern short MugFlags[];
+extern u16 MugFlags[];
+extern u16 HairColFlags[];
+extern u16 SkinColFlags[];
 
 void UnsetAvatarPortraitFlags(struct AvatarProc * proc)
 {
+    u16 * data = HairColFlags;
+    while (*data)
+    {
+        ClearFlag(*data);
+        data++;
+    }
+    data = SkinColFlags;
+    while (*data)
+    {
+        ClearFlag(*data);
+        data++;
+    }
 
     int count = CountAvatarPortraits();
     int numHairStyles;
@@ -196,22 +210,34 @@ void UnsetAvatarPortraitFlags(struct AvatarProc * proc)
 void AvatarSaveFlags(struct AvatarProc * proc)
 {
     UnsetAvatarPortraitFlags(proc);
+
+    int count = CountAvatarPortraits();
+    int fid = ((proc->portraitID & 0xFF) % count);
+
+    int hairStyle = (proc->hairID & 0xFF) % CountNumHairstyles(fid);
+
+    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(fid);
+    int skinTone = (proc->skinID & 0xFF) % CountNumSkinTones(fid);
+    int eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols(fid);
+    int pronoun = (proc->pronoun & 0xFF) % CountNumPronouns();
+    int boon = (proc->boon & 0xFF) % CountNumOfStats();
+    int bane = (proc->bane & 0xFF) % CountNumOfStats();
+
+    SetFlag(MugFlags[fid] + hairStyle);
+    SetFlag(HairColFlags[hairCol]);
+    SetFlag(SkinColFlags[skinTone]);
+
+    // I was considering an alternative way to save things instead of via flags..
     if ((int)AvatarRam != 0)
     {
-        int count = CountAvatarPortraits();
-        int fid = ((proc->portraitID & 0xFF) % count);
         AvatarRam->fid = fid;
-
-        int hairStyle = (proc->hairID & 0xFF) % CountNumHairstyles(fid);
         AvatarRam->hairStyle = hairStyle;
-        SetFlag(MugFlags[fid] + hairStyle);
-
-        AvatarRam->hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(fid);
-        AvatarRam->eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols(fid);
-        AvatarRam->skinTone = (proc->skinID & 0xFF) % CountNumSkinTones(fid);
-        AvatarRam->pronoun = (proc->pronoun & 0xFF) % CountNumPronouns();
-        AvatarRam->boon = (proc->boon & 0xFF) % CountNumOfStats();
-        AvatarRam->bane = (proc->bane & 0xFF) % CountNumOfStats();
+        AvatarRam->hairCol = hairCol;
+        AvatarRam->eyeCol = eyeCol;
+        AvatarRam->skinTone = skinTone;
+        AvatarRam->pronoun = pronoun;
+        AvatarRam->boon = boon;
+        AvatarRam->bane = bane;
     }
 }
 
@@ -470,10 +496,19 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
 
     PROC_LABEL(AvEnd),
-    PROC_CALL(AvatarSaveFlags),
+    // PROC_CALL(AvatarSaveFlags), // saved in confirm reclass
     PROC_CALL(ForceBMapDispResume),
     PROC_END,
 };
+
+void CallAvatarSaveFlags(void)
+{
+    struct AvatarProc * proc = Proc_Find(ProcScr_AvatarHandler);
+    if (proc)
+    {
+        AvatarSaveFlags(proc);
+    }
+}
 
 u8 AvatarConfirm_OnYesPress(struct Proc * menu)
 {
@@ -667,19 +702,20 @@ const u16 skinTones[][3] = {
 #define CorrinNumHairstyles 12
 const u16 hairColours[][3] = {
     { gbapal(30, 30, 30), gbapal(25, 23, 23), gbapal(19, 16, 16) }, // white
-    { gbapal(29, 26, 23), gbapal(25, 22, 19), gbapal(17, 16, 14) }, // light brown
-    { gbapal(25, 23, 23), gbapal(19, 16, 16), gbapal(15, 12, 11) }, // brown
+    { gbapal(29, 26, 23), gbapal(25, 22, 19), gbapal(17, 16, 14) }, // light
+    { gbapal(25, 23, 23), gbapal(19, 16, 16), gbapal(15, 12, 11) }, // grey
     { gbapal(21, 13, 8), gbapal(14, 9, 5), gbapal(9, 6, 4) },       // dark brown
-    { gbapal(16, 16, 18), gbapal(11, 11, 13), gbapal(9, 7, 10) },   // grey brown
+    { gbapal(16, 16, 18), gbapal(11, 11, 13), gbapal(9, 7, 10) },   // dark
     { gbapal(16, 18, 20), gbapal(10, 11, 13), gbapal(7, 7, 10) },   // grey blue
-    { gbapal(19, 25, 29), gbapal(11, 18, 22), gbapal(8, 12, 15) },  // light blue
     { gbapal(10, 16, 22), gbapal(7, 10, 17), gbapal(7, 8, 10) },    // blue
+    { gbapal(19, 25, 29), gbapal(11, 18, 22), gbapal(8, 12, 15) },  // light blue
     { gbapal(21, 28, 16), gbapal(17, 23, 12), gbapal(15, 15, 11) }, // light green
     { gbapal(5, 15, 13), gbapal(2, 10, 8), gbapal(1, 7, 6) },       // dark green
+    { gbapal(26, 13, 13), gbapal(20, 7, 7), gbapal(13, 4, 5) },     // red
+    { gbapal(29, 15, 9), gbapal(24, 10, 5), gbapal(17, 7, 2) },     // orange
     { gbapal(28, 24, 14), gbapal(23, 18, 8), gbapal(19, 14, 9) },   // blonde
     { gbapal(31, 23, 21), gbapal(31, 17, 15), gbapal(24, 12, 8) },  // pink
-    { gbapal(29, 15, 9), gbapal(24, 10, 5), gbapal(17, 7, 2) },     // orange
-    { gbapal(26, 13, 13), gbapal(20, 7, 7), gbapal(13, 4, 5) },     // red
+
 };
 
 // red, brown, gold, blue, green
@@ -739,13 +775,13 @@ void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
     {
         buffer[i] = palOriginal[i];
     }
-    int skinToneId = proc->skinID % CountNumSkinTones(portraitID);
+    int skinToneId = (proc->skinID & 0xFF) % CountNumSkinTones(portraitID);
     buffer[2] = skinTones[skinToneId][0]; // main
     buffer[4] = skinTones[skinToneId][1]; // shadow
     buffer[7] = skinTones[skinToneId][2]; // dark shadow
     // pal[10] += proc->skinID * 5; // outline / darkest
 
-    int hairCol = proc->hairColID % CountNumHairCols(portraitID);
+    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(portraitID);
     buffer[3] = hairColours[hairCol][0];
     buffer[6] = hairColours[hairCol][1];
     buffer[9] = hairColours[hairCol][2];
@@ -757,9 +793,6 @@ void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
         int eyeCol = proc->eyeColID % CountNumEyeCols(portraitID);
         buffer[12] = eyeCols[eyeCol];
     }
-
-    // pal[12] += proc->hairColID * 5; // eye colour
-    // pal[15] += proc->hairColID * 5; // outline
 }
 
 void AvPortraitAdjustPal(struct AvatarProc * proc)
@@ -1739,6 +1772,7 @@ static u8 ReclassSubConfirmMenuOnSelect(struct MenuProc * proc, struct MenuItemP
 {
     if (b->itemNumber == 0)
     {
+        CallAvatarSaveFlags();
         ProcPtr found;
         EndMenu(proc);
         EndMenu(proc->proc_parent);
