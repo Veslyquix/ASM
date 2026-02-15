@@ -44,8 +44,219 @@ BYTE  #0x00 We don't care about Seth's class here
 
 */
 
-//samples
 
+
+
+
+#define EirikaPortrait 2 
+
+SHORT EirikaPortrait
+SHORT RobinF101Mug
+SHORT RobinF101_Flag
+BYTE 0 0 // required char with x class to exist, so don't use 
+SHORT EirikaPortrait
+SHORT RobinF101Mug+1
+SHORT RobinF101_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinF101Mug+2
+SHORT RobinF101_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinF101Mug+3
+SHORT RobinF101_Flag+3
+BYTE 0 0 
+
+SHORT EirikaPortrait
+SHORT RobinF201Mug+0
+SHORT RobinF201_Flag+0
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinF201Mug+1
+SHORT RobinF201_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinF201Mug+2
+SHORT RobinF201_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinF201Mug+3
+SHORT RobinF201_Flag+3
+BYTE 0 0 
+
+
+SHORT EirikaPortrait
+SHORT RobinM101Mug+0
+SHORT RobinM101_Flag+0
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinM101Mug+1
+SHORT RobinM101_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinM101Mug+2
+SHORT RobinM101_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinM101Mug+3
+SHORT RobinM101_Flag+3
+BYTE 0 0 
+
+SHORT EirikaPortrait
+SHORT RobinM201Mug+0
+SHORT RobinM201_Flag+0
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinM201Mug+1
+SHORT RobinM201_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinM201Mug+2
+SHORT RobinM201_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT RobinM201Mug+3
+SHORT RobinM201_Flag+3
+BYTE 0 0 
+
+
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+0
+SHORT CorrinF101_Flag+0
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+1
+SHORT CorrinF101_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+2
+SHORT CorrinF101_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+3
+SHORT CorrinF101_Flag+3
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+4
+SHORT CorrinF101_Flag+4
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+5
+SHORT CorrinF101_Flag+5
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+6
+SHORT CorrinF101_Flag+6
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF101Mug+7
+SHORT CorrinF101_Flag+7
+BYTE 0 0 
+
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+0
+SHORT CorrinF201_Flag+0
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+1
+SHORT CorrinF201_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+2
+SHORT CorrinF201_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+3
+SHORT CorrinF201_Flag+3
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+4
+SHORT CorrinF201_Flag+4
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+5
+SHORT CorrinF201_Flag+5
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+6
+SHORT CorrinF201_Flag+6
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinF201Mug+7
+SHORT CorrinF201_Flag+7
+BYTE 0 0 
+
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+0
+SHORT CorrinM101_Flag+0
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+1
+SHORT CorrinM101_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+2
+SHORT CorrinM101_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+3
+SHORT CorrinM101_Flag+3
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+4
+SHORT CorrinM101_Flag+4
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+5
+SHORT CorrinM101_Flag+5
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+6
+SHORT CorrinM101_Flag+6
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM101Mug+7
+SHORT CorrinM101_Flag+7
+BYTE 0 0 
+
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+0
+SHORT CorrinM201_Flag+0
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+1
+SHORT CorrinM201_Flag+1
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+2
+SHORT CorrinM201_Flag+2
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+3
+SHORT CorrinM201_Flag+3
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+4
+SHORT CorrinM201_Flag+4
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+5
+SHORT CorrinM201_Flag+5
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+6
+SHORT CorrinM201_Flag+6
+BYTE 0 0 
+SHORT EirikaPortrait
+SHORT CorrinM201Mug+7
+SHORT CorrinM201_Flag+7
+BYTE 0 0 
+
+
+
+
+//samples
+/*
 //Sample 1: Eirika changes to Ross if Gilliam exists
 SHORT 0x0002
 SHORT 0x0009
@@ -66,6 +277,7 @@ SHORT 0x000C
 SHORT 0x0000
 BYTE  0x03 
 BYTE  0x0B 
+*/
 
 
 WORD 0x0 0x0//Terminator, don't delete this or very bad things will happen

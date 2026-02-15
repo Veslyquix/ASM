@@ -20,9 +20,10 @@ static struct FaceData const * GetMugData(int id)
 }
 struct PortraitPalReplacementStruct
 {
-    u16 fid;
+    u16 fidA; // range of portraits affected
+    u16 fidB;
     u16 flag;
-    s16 pal[16];
+    s16 pal[15];
 };
 extern struct PortraitPalReplacementStruct PortraitPalReplacements[];
 
@@ -41,17 +42,19 @@ const struct FaceData * NewGetPortraitData(int fid)
     Font_Sio_02000C60_Reused.pal = (void *)&Sio_02000C80_Reused;
     struct PortraitPalReplacementStruct * palReplacements = &PortraitPalReplacements[0];
     int tmp;
-    while (palReplacements->fid && palReplacements->fid != 0xFFFF)
+    while (palReplacements->fidA && palReplacements->fidA != 0xFFFF)
     {
-        if (palReplacements->fid == fid && CheckFlag(palReplacements->flag))
+        if (palReplacements->fidA <= fid && palReplacements->fidB >= fid && CheckFlag(palReplacements->flag))
         {
             basePal = data->pal;
-            for (int i = 0; i < 16; ++i)
+            Sio_02000C80_Reused[0] = 0xFFFF;
+            for (int i = 0; i < 15; ++i)
             {
+                // brk;
                 tmp = palReplacements->pal[i];
-                if (tmp != (-1) && basePal[i] != tmp)
+                if (tmp != (-1) && basePal[i + 1] != tmp)
                 {
-                    Sio_02000C80_Reused[i] = tmp;
+                    Sio_02000C80_Reused[i + 1] = tmp; // don't adjust pal ID 0, as it is transparent
                 }
             }
         }

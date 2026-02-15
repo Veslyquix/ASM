@@ -125,6 +125,96 @@ struct AvatarProc
     s8 bane;
 };
 
+struct AvatarFlags
+{
+    u8 fid : 4;
+    u8 hairStyle : 4;
+    u8 hairCol : 5;
+    u8 pronoun : 3;
+    u8 skinTone : 4;
+    u8 eyeCol : 4;
+    u8 boon : 4;
+    u8 bane : 4;
+};
+extern struct AvatarFlags * AvatarRam;
+
+int CountNumHairstyles(int fid);
+int CountAvatarPortraits(void);
+
+#define NumHairCols 14
+#define NumSkinTones 5
+#define NumEyeCols 5
+int CountNumHairCols(int fid)
+{
+
+    return NumHairCols;
+}
+int CountNumSkinTones(int fid)
+{
+
+    return NumSkinTones;
+}
+int CountNumEyeCols(int fid)
+{
+
+    return NumEyeCols;
+}
+
+int CountNumPronouns(void)
+{
+    return 3;
+}
+#define NumOfStats 7
+int CountNumOfStats(void)
+{
+
+    int numOfEntries = NumOfStats;
+    if (!IsStrMagInstalled())
+    {
+        numOfEntries--;
+    }
+    return numOfEntries;
+}
+extern short MugFlags[];
+
+void UnsetAvatarPortraitFlags(struct AvatarProc * proc)
+{
+
+    int count = CountAvatarPortraits();
+    int numHairStyles;
+    for (int i = 0; i < count; ++i)
+    {
+        numHairStyles = CountNumHairstyles(i);
+        for (int c = 0; c < numHairStyles; ++c)
+        {
+            ClearFlag(MugFlags[i] + c);
+        }
+    }
+}
+
+// this needs to run before the class change, as portrait is shown there
+void AvatarSaveFlags(struct AvatarProc * proc)
+{
+    UnsetAvatarPortraitFlags(proc);
+    if ((int)AvatarRam != 0)
+    {
+        int count = CountAvatarPortraits();
+        int fid = ((proc->portraitID & 0xFF) % count);
+        AvatarRam->fid = fid;
+
+        int hairStyle = (proc->hairID & 0xFF) % CountNumHairstyles(fid);
+        AvatarRam->hairStyle = hairStyle;
+        SetFlag(MugFlags[fid] + hairStyle);
+
+        AvatarRam->hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(fid);
+        AvatarRam->eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols(fid);
+        AvatarRam->skinTone = (proc->skinID & 0xFF) % CountNumSkinTones(fid);
+        AvatarRam->pronoun = (proc->pronoun & 0xFF) % CountNumPronouns();
+        AvatarRam->boon = (proc->boon & 0xFF) % CountNumOfStats();
+        AvatarRam->bane = (proc->bane & 0xFF) % CountNumOfStats();
+    }
+}
+
 #define AvRestart 0
 #define AvEnd 99
 #define AvName 1
@@ -380,6 +470,7 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
 
     PROC_LABEL(AvEnd),
+    PROC_CALL(AvatarSaveFlags),
     PROC_CALL(ForceBMapDispResume),
     PROC_END,
 };
@@ -563,7 +654,7 @@ int CountAvatarPortraits(void)
 }
 
 #define gbapal(r, g, b) (((b) << 10) | ((g) << 5) | (r))
-#define NumSkinTones 5
+
 const u16 skinTones[][3] = {
     { gbapal(31, 30, 29), gbapal(30, 25, 19), gbapal(29, 20, 15) },
     { gbapal(31, 31, 25), gbapal(31, 25, 16), gbapal(29, 19, 12) },
@@ -572,7 +663,6 @@ const u16 skinTones[][3] = {
     { gbapal(28, 24, 20), gbapal(24, 19, 14), gbapal(19, 14, 10) },
 };
 
-#define NumHairCols 14
 #define RobinNumHairstyles 4
 #define CorrinNumHairstyles 12
 const u16 hairColours[][3] = {
@@ -592,26 +682,36 @@ const u16 hairColours[][3] = {
     { gbapal(26, 13, 13), gbapal(20, 7, 7), gbapal(13, 4, 5) },     // red
 };
 
-#define NumEyeCols 5
 // red, brown, gold, blue, green
 const u16 eyeCols[] = {
     gbapal(24, 5, 5), gbapal(21, 13, 6), gbapal(28, 24, 0), gbapal(10, 16, 31), gbapal(5, 21, 7),
 };
 
+int CountNumHairstyles(int fid)
+{
+    int numHairStyles = CorrinNumHairstyles;
+    if (fid < 4)
+    {
+        numHairStyles = RobinNumHairstyles;
+    }
+    return numHairStyles;
+}
+
 int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol)
 {
     // 8 styles after 4 Robin portraits, or
     // 12 hairstyles after 4 Corrin portraits
-    int numHairStyles = CorrinNumHairstyles;
+
     u32 portraitID = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
+    // brk;
+    int numHairStyles = CountNumHairstyles(portraitID);
     // &0xFF was needed here, while changing proc->portraitID to a u8 did not work as expected
 
     if (portraitID < 4)
     {
         staticEyeCol[0] = true;
-        numHairStyles = RobinNumHairstyles;
     }
-    portraitID = AvatarPortraits[portraitID] + proc->hairID % numHairStyles;
+    portraitID = AvatarPortraits[portraitID] + (proc->hairID & 0xFF) % numHairStyles;
     // MODULO HERE, @Jester
     return portraitID;
 }
@@ -639,13 +739,13 @@ void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
     {
         buffer[i] = palOriginal[i];
     }
-    int skinToneId = proc->skinID % NumSkinTones;
+    int skinToneId = proc->skinID % CountNumSkinTones(portraitID);
     buffer[2] = skinTones[skinToneId][0]; // main
     buffer[4] = skinTones[skinToneId][1]; // shadow
     buffer[7] = skinTones[skinToneId][2]; // dark shadow
     // pal[10] += proc->skinID * 5; // outline / darkest
 
-    int hairCol = proc->hairColID % NumHairCols;
+    int hairCol = proc->hairColID % CountNumHairCols(portraitID);
     buffer[3] = hairColours[hairCol][0];
     buffer[6] = hairColours[hairCol][1];
     buffer[9] = hairColours[hairCol][2];
@@ -654,7 +754,7 @@ void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
     if (!*staticEyeCol)
     {
         // Robin's eye col can't be changed
-        int eyeCol = proc->eyeColID % NumEyeCols;
+        int eyeCol = proc->eyeColID % CountNumEyeCols(portraitID);
         buffer[12] = eyeCols[eyeCol];
     }
 
@@ -994,12 +1094,12 @@ void RedrawAvatarMainMenu(struct AvatarProc * proc, struct MenuProc * menu)
 }
 
 // sizeof(StatNamesText);
-#define NumOfStats 7
+
 u8 AssetOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     int id = proc->boon;
-    int numOfEntries = NumOfStats;
+    int numOfEntries = CountNumOfStats();
     if (!IsStrMagInstalled())
     {
         numOfEntries--;
@@ -1034,11 +1134,7 @@ u8 FlawOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
     struct AvatarProc * proc = menu->proc_parent;
     u16 keys = gKeyStatusPtr->repeatedKeys;
     int id = proc->bane;
-    int numOfEntries = NumOfStats;
-    if (!IsStrMagInstalled())
-    {
-        numOfEntries--;
-    }
+    int numOfEntries = CountNumOfStats();
     if (keys & DPAD_LEFT)
     {
         proc->bane--;
