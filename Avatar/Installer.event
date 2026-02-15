@@ -82,28 +82,30 @@ SHORT CorrinM201_Flag
 
 #define PortraitPals(PortraitID_A, PortraitID_B, Flag, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) "SHORT PortraitID_A PortraitID_B Flag a b c d e f g h i j k l m n o"
 
+#define NumOfPortraits 48 
+
 ALIGN 4 
 PortraitPalReplacements:
-// PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Base, rgb(30, 30, 29), rgb(31, 30, 29), rgb(29, 26, 23), rgb(30, 25, 19), rgb(25, 23, 23), rgb(25, 22, 19), rgb(29, 20, 15), rgb(19, 16, 16), rgb(17, 16, 14), rgb(19, 14, 11), rgb(8, 12, 17), rgb(24, 5, 5), rgb(12, 9, 9), rgb(7, 6, 6), rgb(7, 4, 8))
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Blonde, skip, skip, rgb(28, 24, 14), skip, skip, rgb(23, 18, 8), skip, skip, rgb(19, 14, 9), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Blue, skip, skip, rgb(10, 16, 22), skip, skip, rgb(7, 10, 17), skip, skip, rgb(7, 8, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Brown, skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, rgb(15, 12, 11), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_DarkBrown, skip, skip, rgb(21, 13, 8), skip, skip, rgb(14, 9, 5), skip, skip, rgb(9, 6, 4), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_DarkGreen, skip, skip, rgb(5, 15, 13), skip, skip, rgb(2, 10, 8), skip, skip, rgb(1, 7, 6), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_GreyBlue, skip, skip, rgb(16, 18, 20), skip, skip, rgb(10, 11, 13), skip, skip, rgb(7, 7, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_GreyBrown, skip, skip, rgb(16, 16, 18), skip, skip, rgb(11, 11, 13), skip, skip, rgb(9, 7, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_LightBlue, skip, skip, rgb(19, 25, 29), skip, skip, rgb(11, 18, 22), skip, skip, rgb(8, 12, 15), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_LightBrown, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_LightGreen, skip, skip, rgb(21, 28, 16), skip, skip, rgb(17, 23, 12), skip, skip, rgb(15, 15, 11), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Orange, skip, skip, rgb(29, 15, 9), skip, skip, rgb(24, 10, 5), skip, skip, rgb(17, 7, 2), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Pink, skip, skip, rgb(31, 23, 21), skip, skip, rgb(31, 17, 15), skip, skip, rgb(24, 12, 8), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Red, skip, skip, rgb(26, 13, 13), skip, skip, rgb(20, 7, 7), skip, skip, rgb(13, 4, 5), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Skin1, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Skin2, skip, rgb(31, 31, 25), skip, rgb(31, 25, 16), skip, skip, rgb(29, 19, 12), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Skin3, skip, rgb(31, 28, 24), skip, rgb(29, 23, 19), skip, skip, rgb(26, 17, 14), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Skin4, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_Skin5, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+20, CorrinFlag_White, skip, skip, rgb(30, 30, 30), skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, skip, skip, skip, skip)
+// PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Base, rgb(30, 30, 29), rgb(31, 30, 29), rgb(29, 26, 23), rgb(30, 25, 19), rgb(25, 23, 23), rgb(25, 22, 19), rgb(29, 20, 15), rgb(19, 16, 16), rgb(17, 16, 14), rgb(19, 14, 11), rgb(8, 12, 17), rgb(24, 5, 5), rgb(12, 9, 9), rgb(7, 6, 6), rgb(7, 4, 8))
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Blonde, skip, skip, rgb(28, 24, 14), skip, skip, rgb(23, 18, 8), skip, skip, rgb(19, 14, 9), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Blue, skip, skip, rgb(10, 16, 22), skip, skip, rgb(7, 10, 17), skip, skip, rgb(7, 8, 10), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Brown, skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, rgb(15, 12, 11), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_DarkBrown, skip, skip, rgb(21, 13, 8), skip, skip, rgb(14, 9, 5), skip, skip, rgb(9, 6, 4), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_DarkGreen, skip, skip, rgb(5, 15, 13), skip, skip, rgb(2, 10, 8), skip, skip, rgb(1, 7, 6), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_GreyBlue, skip, skip, rgb(16, 18, 20), skip, skip, rgb(10, 11, 13), skip, skip, rgb(7, 7, 10), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_GreyBrown, skip, skip, rgb(16, 16, 18), skip, skip, rgb(11, 11, 13), skip, skip, rgb(9, 7, 10), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_LightBlue, skip, skip, rgb(19, 25, 29), skip, skip, rgb(11, 18, 22), skip, skip, rgb(8, 12, 15), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_LightBrown, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_LightGreen, skip, skip, rgb(21, 28, 16), skip, skip, rgb(17, 23, 12), skip, skip, rgb(15, 15, 11), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Orange, skip, skip, rgb(29, 15, 9), skip, skip, rgb(24, 10, 5), skip, skip, rgb(17, 7, 2), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Pink, skip, skip, rgb(31, 23, 21), skip, skip, rgb(31, 17, 15), skip, skip, rgb(24, 12, 8), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Red, skip, skip, rgb(26, 13, 13), skip, skip, rgb(20, 7, 7), skip, skip, rgb(13, 4, 5), skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin1, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin2, skip, rgb(31, 31, 25), skip, rgb(31, 25, 16), skip, skip, rgb(29, 19, 12), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin3, skip, rgb(31, 28, 24), skip, rgb(29, 23, 19), skip, skip, rgb(26, 17, 14), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin4, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin5, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_White, skip, skip, rgb(30, 30, 30), skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, skip, skip, skip, skip)
 
 
 /*
