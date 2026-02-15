@@ -1,5 +1,5 @@
 #include "EAstdlib.event" 
-
+#include "ReplaceText/Installer.event" 
 
 ORG $1F00000
 
@@ -144,26 +144,6 @@ PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin3, skip, rg
 PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin4, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
 PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin5, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
 
-
-/*
-
-SHORT RobinF101Mug Robin101Mug+8 
-
-
-
-SHORT 2 // portrait 
-SHORT 8 // required flag 
-// 344FDF6F3F477D2ED3252C2587206377A26245416261FE335B23BA105373FE7F base palette 
-BYTE $34 $4F $1C $53 $78 $3A $D3 $29 $D3 $25 $2C $25 $87 $20 $63 $77 $A2 $62 $45 $41 $62 $61 $FE $33 $5B $23 $BA $10 $53 $73 $FE $7F
-// Make Eirika's skin tone darker  
-
-SHORT 2 // portrait 
-SHORT 9 // required flag 
-BYTE $34 $4F $DF $6F $3F $47 $7D $2E $D3 $25 $2C $25 $87 $20 $BA $35 $F4 $1C $AD $18 $6D $19 $FE $33 $5B $23 $BA $10 $53 $73 $FE $7F
-// Give Eirika red hair 
-*/
-
-
 SHORT 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF // Terminator 
 
 ALIGN 4 
@@ -172,15 +152,15 @@ SHORT RobinF101Mug RobinF201Mug RobinM101Mug RobinM201Mug CorrinF101Mug CorrinF2
 SHORT 0 
 
 ALIGN 4 
-AvatarClasses:
+AvatarClasses: // max 6 or 7 classes 
 BYTE Cavalier Knight Mercenary Archer Mage 
 BYTE 0 0 0 0 0 0 0 0 
 
 
 ALIGN 4 
 AvatarRam:
-WORD 0x203EC04 // in BWL 
-// WORD 0
+// WORD 0x203EC04 // in BWL 
+WORD 0
 
 
 
@@ -220,65 +200,6 @@ ORG 0x482bA; BYTE 0x9 //max cursor position
 // and if so, check some ram for how to change it 
 // e.g. IDs of alternate palettes 
 
-
-// use ReplaceText hack with "tHEY" -> "he"
-
-/*
-TextA:
-String("tHEY"); BYTE 0 
-TextB: ; String("he"); BYTE 0 
-
-TextA:
-String("THey"); BYTE 0 
-TextB: ; String("He"); BYTE 0 
-
-TextA:
-String("tHEY"); BYTE 0 
-TextB: ; String("she"); BYTE 0 
-
-TextA:
-String("THey"); BYTE 0 
-TextB: ; String("She"); BYTE 0 
-
-
-
-TextA:
-String("tHEM"); BYTE 0 
-TextB: ; String("him"); BYTE 0 
-
-TextA:
-String("THem"); BYTE 0 
-TextB: ; String("Him"); BYTE 0 
-
-TextA:
-String("tHEM"); BYTE 0 
-TextB: ; String("her"); BYTE 0 
-
-TextA:
-String("THem"); BYTE 0 
-TextB: ; String("Her"); BYTE 0 
-
-
-
-TextA:
-String("tHEIR"); BYTE 0 
-TextB: ; String("his"); BYTE 0 
-
-TextA:
-String("THeir"); BYTE 0 
-TextB: ; String("His"); BYTE 0 
-
-TextA:
-String("tHEIR"); BYTE 0 
-TextB: ; String("her"); BYTE 0 
-
-TextA:
-String("THeir"); BYTE 0 
-TextB: ; String("Her"); BYTE 0 
-
-
-
-*/ 
 
 POP 
 
@@ -389,3 +310,5 @@ AvatarPortraitBoxTSA:
 
 
 #include "DynamicPortraits20231104/DynamicPortraitsInstaller.event" 
+
+
