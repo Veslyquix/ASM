@@ -1,20 +1,149 @@
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_00Base, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_01WhiteHair, skip, skip, rgb(30, 30, 30), skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_02LightHair, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_03GreyHair, skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, rgb(15, 12, 11), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_04BrownHair, skip, skip, rgb(21, 13, 8), skip, skip, rgb(14, 9, 5), skip, skip, rgb(9, 6, 4), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_05DarkHair, skip, skip, rgb(16, 16, 18), skip, skip, rgb(11, 11, 13), skip, skip, rgb(9, 7, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_06GreyBlueHair, skip, skip, rgb(16, 18, 20), skip, skip, rgb(10, 11, 13), skip, skip, rgb(7, 7, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_07BlueHair, skip, skip, rgb(10, 16, 22), skip, skip, rgb(7, 10, 17), skip, skip, rgb(7, 8, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_08LightBlueHair, skip, skip, rgb(19, 25, 29), skip, skip, rgb(11, 18, 22), skip, skip, rgb(8, 12, 15), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_09LightGreenHair, skip, skip, rgb(21, 28, 16), skip, skip, rgb(17, 23, 12), skip, skip, rgb(15, 15, 11), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_10DarkGreenHair, skip, skip, rgb(5, 15, 13), skip, skip, rgb(2, 10, 8), skip, skip, rgb(1, 7, 6), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_11RedHair, skip, skip, rgb(26, 13, 13), skip, skip, rgb(20, 7, 7), skip, skip, rgb(13, 4, 5), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_12OrangeHair, skip, skip, rgb(29, 15, 9), skip, skip, rgb(24, 10, 5), skip, skip, rgb(17, 7, 2), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_13BlondeHair, skip, skip, rgb(28, 24, 14), skip, skip, rgb(23, 18, 8), skip, skip, rgb(19, 14, 9), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_14PinkHair, skip, skip, rgb(31, 23, 21), skip, skip, rgb(31, 17, 15), skip, skip, rgb(24, 12, 8), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin1, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin2, skip, rgb(31, 31, 25), skip, rgb(31, 25, 16), skip, skip, rgb(29, 19, 12), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin3, skip, rgb(31, 28, 24), skip, rgb(29, 23, 19), skip, skip, rgb(26, 17, 14), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin4, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin5, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
+//Generated! (No need to edit this file manually) 
+ALIGN 4
+DynamicPortraitTable:
+DynPor(StartingMug, StartingMug+1, StartingFlag+0)
+DynPor(StartingMug, StartingMug+2, StartingFlag+1)
+DynPor(StartingMug, StartingMug+3, StartingFlag+2)
+DynPor(StartingMug, StartingMug+4, StartingFlag+3)
+DynPor(StartingMug, StartingMug+5, StartingFlag+4)
+DynPor(StartingMug, StartingMug+6, StartingFlag+5)
+DynPor(StartingMug, StartingMug+7, StartingFlag+6)
+DynPor(StartingMug, StartingMug+8, StartingFlag+7)
+DynPor(StartingMug, StartingMug+9, StartingFlag+8)
+DynPor(StartingMug, StartingMug+10, StartingFlag+9)
+DynPor(StartingMug, StartingMug+11, StartingFlag+10)
+DynPor(StartingMug, StartingMug+12, StartingFlag+11)
+DynPor(StartingMug, StartingMug+13, StartingFlag+12)
+DynPor(StartingMug, StartingMug+14, StartingFlag+13)
+DynPor(StartingMug, StartingMug+15, StartingFlag+14)
+DynPor(StartingMug, StartingMug+16, StartingFlag+15)
+DynPor(StartingMug, StartingMug+17, StartingFlag+16)
+DynPor(StartingMug, StartingMug+18, StartingFlag+17)
+DynPor(StartingMug, StartingMug+19, StartingFlag+18)
+DynPor(StartingMug, StartingMug+20, StartingFlag+19)
+DynPor(StartingMug, StartingMug+21, StartingFlag+20)
+DynPor(StartingMug, StartingMug+22, StartingFlag+21)
+DynPor(StartingMug, StartingMug+23, StartingFlag+22)
+DynPor(StartingMug, StartingMug+24, StartingFlag+23)
+DynPor(StartingMug, StartingMug+25, StartingFlag+24)
+DynPor(StartingMug, StartingMug+26, StartingFlag+25)
+DynPor(StartingMug, StartingMug+27, StartingFlag+26)
+DynPor(StartingMug, StartingMug+28, StartingFlag+27)
+DynPor(StartingMug, StartingMug+29, StartingFlag+28)
+DynPor(StartingMug, StartingMug+30, StartingFlag+29)
+DynPor(StartingMug, StartingMug+31, StartingFlag+30)
+DynPor(StartingMug, StartingMug+32, StartingFlag+31)
+DynPor(StartingMug, StartingMug+33, StartingFlag+32)
+DynPor(StartingMug, StartingMug+34, StartingFlag+33)
+DynPor(StartingMug, StartingMug+35, StartingFlag+34)
+DynPor(StartingMug, StartingMug+36, StartingFlag+35)
+DynPor(StartingMug, StartingMug+37, StartingFlag+36)
+DynPor(StartingMug, StartingMug+38, StartingFlag+37)
+DynPor(StartingMug, StartingMug+39, StartingFlag+38)
+DynPor(StartingMug, StartingMug+40, StartingFlag+39)
+DynPor(StartingMug, StartingMug+41, StartingFlag+40)
+DynPor(StartingMug, StartingMug+42, StartingFlag+41)
+DynPor(StartingMug, StartingMug+43, StartingFlag+42)
+DynPor(StartingMug, StartingMug+44, StartingFlag+43)
+DynPor(StartingMug, StartingMug+45, StartingFlag+44)
+DynPor(StartingMug, StartingMug+46, StartingFlag+45)
+DynPor(StartingMug, StartingMug+47, StartingFlag+46)
+DynPor(StartingMug, StartingMug+48, StartingFlag+47)
+DynPor(StartingMug, StartingMug+49, StartingFlag+48)
+DynPor(StartingMug, StartingMug+50, StartingFlag+49)
+DynPor(StartingMug, StartingMug+51, StartingFlag+50)
+DynPor(StartingMug, StartingMug+52, StartingFlag+51)
+DynPor(StartingMug, StartingMug+53, StartingFlag+52)
+DynPor(StartingMug, StartingMug+54, StartingFlag+53)
+DynPor(StartingMug, StartingMug+55, StartingFlag+54)
+DynPor(StartingMug, StartingMug+56, StartingFlag+55)
+DynPor(StartingMug, StartingMug+57, StartingFlag+56)
+DynPor(StartingMug, StartingMug+58, StartingFlag+57)
+DynPor(StartingMug, StartingMug+59, StartingFlag+58)
+DynPor(StartingMug, StartingMug+60, StartingFlag+59)
+DynPor(StartingMug, StartingMug+61, StartingFlag+60)
+DynPor(StartingMug, StartingMug+62, StartingFlag+61)
+DynPor(StartingMug, StartingMug+63, StartingFlag+62)
+WORD 0 0 //Terminator
+
+ALIGN 4
+NumHairstyles:
+BYTE 12 //CorrinF1
+BYTE 12 //CorrinF2
+BYTE 12 //CorrinM1
+BYTE 12 //CorrinM2
+BYTE 4 //RobinF1
+BYTE 4 //RobinF2
+BYTE 4 //RobinM1
+BYTE 4 //RobinM2
+BYTE 0 //Terminator
+
+ALIGN 4
+AvatarPortraits:
+SHORT StartingMug+0 //CorrinF1
+SHORT StartingMug+12 //CorrinF2
+SHORT StartingMug+24 //CorrinM1
+SHORT StartingMug+36 //CorrinM2
+SHORT StartingMug+48 //RobinF1
+SHORT StartingMug+52 //RobinF2
+SHORT StartingMug+56 //RobinM1
+SHORT StartingMug+60 //RobinM2
+SHORT 0 //Terminator
+
+ALIGN 4
+MugFlags:
+SHORT StartingFlag+0 //CorrinF1
+SHORT StartingFlag+12 //CorrinF2
+SHORT StartingFlag+24 //CorrinM1
+SHORT StartingFlag+36 //CorrinM2
+SHORT StartingFlag+48 //RobinF1
+SHORT StartingFlag+52 //RobinF2
+SHORT StartingFlag+56 //RobinM1
+SHORT StartingFlag+60 //RobinM2
+SHORT 0 //Terminator
+
+ALIGN 4
+PortraitPalReplacements:
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+63, skip, skip, rgb(30, 30, 30), skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+64, skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, rgb(15, 12, 11), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+65, skip, skip, rgb(21, 13, 8), skip, skip, rgb(14, 9, 5), skip, skip, rgb(9, 6, 4), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+66, skip, skip, rgb(16, 16, 18), skip, skip, rgb(11, 11, 13), skip, skip, rgb(9, 7, 10), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+67, skip, skip, rgb(16, 18, 20), skip, skip, rgb(10, 11, 13), skip, skip, rgb(7, 7, 10), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+68, skip, skip, rgb(10, 16, 22), skip, skip, rgb(7, 10, 17), skip, skip, rgb(7, 8, 10), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+69, skip, skip, rgb(19, 25, 29), skip, skip, rgb(11, 18, 22), skip, skip, rgb(8, 12, 15), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+70, skip, skip, rgb(21, 28, 16), skip, skip, rgb(17, 23, 12), skip, skip, rgb(15, 15, 11), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+71, skip, skip, rgb(5, 15, 13), skip, skip, rgb(2, 10, 8), skip, skip, rgb(1, 7, 6), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+72, skip, skip, rgb(26, 13, 13), skip, skip, rgb(20, 7, 7), skip, skip, rgb(13, 4, 5), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+73, skip, skip, rgb(29, 15, 9), skip, skip, rgb(24, 10, 5), skip, skip, rgb(17, 7, 2), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+74, skip, skip, rgb(28, 24, 14), skip, skip, rgb(23, 18, 8), skip, skip, rgb(19, 14, 9), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+75, skip, skip, rgb(31, 23, 21), skip, skip, rgb(31, 17, 15), skip, skip, rgb(24, 12, 8), skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+76, skip, rgb(31, 31, 25), skip, rgb(31, 25, 16), skip, skip, rgb(29, 19, 12), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+77, skip, rgb(31, 28, 24), skip, rgb(29, 23, 19), skip, skip, rgb(26, 17, 14), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+78, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+79, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
+SHORT 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF // Terminator
+
+ALIGN 4
+HairColFlags:
+SHORT StartingFlag+63
+SHORT StartingFlag+64
+SHORT StartingFlag+65
+SHORT StartingFlag+66
+SHORT StartingFlag+67
+SHORT StartingFlag+68
+SHORT StartingFlag+69
+SHORT StartingFlag+70
+SHORT StartingFlag+71
+SHORT StartingFlag+72
+SHORT StartingFlag+73
+SHORT StartingFlag+74
+SHORT StartingFlag+75
+SHORT 0 //Terminator
+
+ALIGN 4
+SkinColFlags:
+SHORT StartingFlag+76
+SHORT StartingFlag+77
+SHORT StartingFlag+78
+SHORT StartingFlag+79
+SHORT 0 //Terminator

@@ -16,8 +16,10 @@ POP
 #incbin "DynamicPortraitIDSetter.dmp"
 POIN DynamicPortraitTable
 
+// Moved into GeneratedInstaller.event 
+
 ALIGN 4
-DynamicPortraitTable:
+// DynamicPortraitTable:
 /* Each table entry works like this:
 
 SHORT For the base portrait ID
@@ -44,12 +46,15 @@ BYTE  #0x00 We don't care about Seth's class here
 
 */
 
-
+#define DynPor(mugA, mugB, flag) "SHORT mugA mugB flag 0;"
+#define DynPor(mugA, mugB, flag, char, class) "SHORT mugA mugB flag; BYTE char class"
 
 
 
 #define EirikaPortrait 2 
 
+
+/*
 SHORT EirikaPortrait
 SHORT RobinF101Mug
 SHORT RobinF101_Flag
@@ -252,7 +257,7 @@ SHORT CorrinM201Mug+7
 SHORT CorrinM201_Flag+7
 BYTE 0 0 
 
-
+*/
 
 
 //samples
@@ -280,4 +285,4 @@ BYTE  0x0B
 */
 
 
-WORD 0x0 0x0//Terminator, don't delete this or very bad things will happen
+// WORD 0x0 0x0//Terminator, don't delete this or very bad things will happen

@@ -2,26 +2,58 @@
 
 ORG $1F00000
 
+// #include "FixMugs_FE8.event" 
+#ifndef TextTable 
+	// #define TextTable 0x15D48C 
+	#define TextTable 0xFE4000
+#endif 
+#ifndef setText 
+#define setText(textID, offset) "PUSH; ORG (TextTable+(4*textID)); POIN (offset|0x80000000); POP"
+#endif 
+
 #include "ReplaceText/Installer.event" 
 
 #include "C_Code.lyn.event" 
 #ifndef jumpToHack
 #define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1)"
 #endif 
+#define rgb(red, green, blue) (((blue) << 10) | ((green) << 5) | (red))
+#define no_col 0xFFFF // don't change this colour 
+#define skip 0xFFFF 
+#define PortraitPals(PortraitID_A, PortraitID_B, Flag, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) "SHORT PortraitID_A PortraitID_B Flag a b c d e f g h i j k l m n o"
+
+
 
 #define FirstMugID 0x100 
-#define CorrinF101Mug (FirstMugID+0)
-#define CorrinF201Mug (FirstMugID+12)
-#define CorrinM101Mug (FirstMugID+24)
-#define CorrinM201Mug (FirstMugID+36)
-#define RobinF101Mug (FirstMugID+48)
-#define RobinF201Mug (FirstMugID+52)
-#define RobinM101Mug (FirstMugID+56)
-#define RobinM201Mug (FirstMugID+60)
+// #define CorrinF101Mug (FirstMugID+0)
+// #define CorrinF201Mug (FirstMugID+12)
+// #define CorrinM101Mug (FirstMugID+24)
+// #define CorrinM201Mug (FirstMugID+36)
+// #define RobinF101Mug (FirstMugID+48)
+// #define RobinF201Mug (FirstMugID+52)
+// #define RobinM101Mug (FirstMugID+56)
+// #define RobinM201Mug (FirstMugID+60)
+
+#define StartingMug 0x100 // mugs in order
+// e.g. 
+// CorrinF1_LongHair
+// CorrinF1_ShortHair
+// etc. 
+
+// for each recolour and hairstyle, we need a global flag 
+#define StartingFlag 0xC1 
 
 
+#define TheyPronounFlag 0xF0 
+#define HePronounFlag 0xF1
+#define ShePronounFlag 0xF2
 
 
+#include "DynamicPortraits20231104/DynamicPortraitsInstaller.event" 
+#include "GeneratedInstaller.event" 
+
+
+/*
 #define RobinF101_Flag 0xC1 
 #define RobinF201_Flag 0xC5
 #define RobinM101_Flag 0xC9
@@ -46,14 +78,6 @@ SHORT 00
 
 
 
-
-
-
-
-#define rgb(red, green, blue) (((blue) << 10) | ((green) << 5) | (red))
-#define no_col 0xFFFF // don't change this colour 
-#define skip 0xFFFF 
-// #define 
 
 
 // for vanilla portraits, skin tones should be pal IDs 1, 2, and 3
@@ -114,7 +138,6 @@ SHORT CorrinFlag_Skin5
 SHORT 0 
 
 
-#define PortraitPals(PortraitID_A, PortraitID_B, Flag, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) "SHORT PortraitID_A PortraitID_B Flag a b c d e f g h i j k l m n o"
 
 
 #define Corrin_Base CorrinF101Mug
@@ -151,6 +174,7 @@ ALIGN 4
 AvatarPortraits: 
 SHORT RobinF101Mug RobinF201Mug RobinM101Mug RobinM201Mug CorrinF101Mug CorrinF201Mug CorrinM101Mug CorrinM201Mug
 SHORT 0 
+*/
 
 ALIGN 4 
 AvatarClasses: // max 6 or 7 classes 
@@ -189,23 +213,26 @@ ORG 0x44800; BYTE 0x9 //max tact name length
 ORG 0x482bA; BYTE 0x9 //max cursor position
 
 	ORG 0x5514	//{U}
-//	ORG 0x541C	//{J}
 	jumpToHack(NewGetPortraitData)
-// 0x5514
-// DynamicPortraits (Scraiza) 
-// Replaces extern const struct FaceData * GetPortraitData(int fid);
-
-
-// StartFace file has 9 hits for ApplyPalette
-// after each hook, need to check if in list of mugs to adjust the palette,
-// and if so, check some ram for how to change it 
-// e.g. IDs of alternate palettes 
-
 
 POP 
 
 
+
+emptyStr:
+String(" "); BYTE 0 0 
+setText(0xEFF, emptyStr) 
+
 PUSH 
+ORG (TextTable+(4*0xEFF)) // Reserved textID 0xEFF as [Tact] 
+WORD 0x8202bd10 // by 7743 
+
+ORG $803D64
+// SHORT $26a // Eirika portrait as tact 
+SHORT $EFF // Eirika portrait as tact 
+ORG $803D6A
+SHORT 0x100 // Eirika portrait as tact 
+
 ORG $9E85D6 
 BYTE 0 // Prologue event flag 
 ORG $9EF0D8 
@@ -246,18 +273,11 @@ MagClassTable:
 #endif 
 WORD 0 
 
-#ifndef TextTable 
-	// #define TextTable 0x15D48C 
-	#define TextTable 0xFE4000
-#endif 
-#ifndef setText 
-#define setText(textID, offset) "PUSH; ORG (TextTable+(4*textID)); POIN (offset|0x80000000); POP"
-#endif 
 
 
-test_case:
-tx("[they]")
-setText(0x212, test_case) 
+// test_case:
+// tx("[they]")
+// setText(0x212, test_case) 
 
 // Debug text entries 
 setText(0x2B, PronounMenuText) // "Viwer Map" 
@@ -315,6 +335,6 @@ AvatarPortraitBoxTSA:
 
 
 
-#include "DynamicPortraits20231104/DynamicPortraitsInstaller.event" 
+
 
 

@@ -1,7 +1,5 @@
 
-#define TheyPronounFlag 0xF0 
-#define HePronounFlag 0xF1
-#define ShePronounFlag 0xF2
+
 
 // the randomizer takes over GetStringFromIndex, so take over for now 
 PUSH
