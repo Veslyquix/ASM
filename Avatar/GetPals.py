@@ -81,7 +81,7 @@ def main():
             count = len(variants)
             for c in range(count):
                 if total != 0:
-                    out.write(f"DynPor(StartingMug, StartingMug+{total}, StartingFlag+{total-1})\n")
+                    out.write(f"DynPor(StartingMug, StartingMug+{total}, StartingFlag+{total})\n")
                 total+= 1
         out.write(f"WORD 0 0 //Terminator\n")
         out.write(f"\nALIGN 4\nNumHairstyles:\n")
@@ -106,7 +106,7 @@ def main():
             count = len(variants)
             out.write(f"SHORT StartingFlag+{total} //{base}\n")
             total += count
-        total -= 1
+##        total -= 1
         out.write(f"SHORT 0 //Terminator\n")
         out.write(f"\nALIGN 4\nPortraitPalReplacements:\n")
         

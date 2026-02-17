@@ -185,7 +185,7 @@ int CountNumHairCols(int fid)
         i++;
         data++;
     }
-    return i;
+    return i + 1;
 }
 int CountNumSkinTones(int fid)
 {
@@ -196,7 +196,7 @@ int CountNumSkinTones(int fid)
         i++;
         data++;
     }
-    return i;
+    return i + 1;
 }
 int CountNumEyeCols(int fid)
 {
@@ -207,7 +207,7 @@ int CountNumEyeCols(int fid)
         i++;
         data++;
     }
-    return i;
+    return i + 1;
 }
 
 int CountNumPronouns(void)
@@ -227,62 +227,12 @@ int CountNumOfStats(void)
 }
 
 extern int AvatarTotalFlags;
-
+extern int StartingFlag_Link;
 void UnsetAllAvatarFlags(struct AvatarProc * proc)
 {
     for (int i = 0; i < AvatarTotalFlags; ++i)
     {
-        ClearFlag(i);
-    }
-}
-
-void UnsetAvatarPortraitFlags(struct AvatarProc * proc, int hairID)
-{
-    u16 * data = MugFlags;
-    while (*data)
-    {
-        ClearFlag(*data + hairID);
-        data++;
-    }
-}
-
-void UnsetAvatarHairstyleFlags(struct AvatarProc * proc)
-{
-    int fid = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
-    u16 * data = MugFlags;
-    int count = NumHairstyles[fid];
-    for (int i = 0; i < count; ++i)
-    {
-        ClearFlag(MugFlags[fid] + i);
-    }
-}
-
-void UnsetHairColFlags(struct AvatarProc * proc)
-{
-    u16 * data = HairColFlags;
-    while (*data)
-    {
-        ClearFlag(*data);
-        data++;
-    }
-}
-
-void UnsetSkinFlags(struct AvatarProc * proc)
-{
-    u16 * data = SkinColFlags;
-    while (*data)
-    {
-        ClearFlag(*data);
-        data++;
-    }
-}
-void UnsetEyeFlags(struct AvatarProc * proc)
-{
-    u16 * data = EyeColFlags;
-    while (*data)
-    {
-        ClearFlag(*data);
-        data++;
+        ClearFlag(StartingFlag_Link + i);
     }
 }
 
@@ -422,9 +372,24 @@ void DecrementEyeFlag(struct AvatarProc * proc)
     SetEyeFlag(proc);
 }
 
+extern u16 PronounFlags[];
+void UpdatePronounFlags(struct AvatarProc * proc)
+{
+    int count = CountNumPronouns();
+    for (int i = 0; i < count; ++i)
+    {
+        ClearFlag(PronounFlags[i]);
+    }
+    int pronoun = (proc->pronoun & 0xFF) % count;
+    SetFlag(PronounFlags[pronoun]);
+}
+
 // this needs to run before the class change, as portrait is shown there
 void AvatarSaveFlags(struct AvatarProc * proc)
 {
+    UpdatePronounFlags(proc);
+
+    return;
     UnsetAllAvatarFlags(proc);
 
     int count = CountAvatarPortraits();
@@ -474,7 +439,6 @@ void AvatarSaveFlags(struct AvatarProc * proc)
 static void StartBlockingReclassHandler(struct AvatarProc * proc);
 void AvNameEnableDisp(struct AvatarProc * proc);
 void AvatarNameInput(struct AvatarProc * proc);
-int AvPortraitSelection(struct AvatarProc * proc);
 u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item);
 const struct MenuDef gAvatarMenuDef;
 const struct MenuDef gAvatarConfirmMenuDef;
@@ -483,7 +447,7 @@ const struct MenuDef gBaneMenuDef;
 
 void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y, int flip);
 
-int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol);
+int GetAdjustedPortraitID(int fid);
 const char StatNamesText[][5] = {
     // "HP", "Str", "Skl", "Spd", "Def", "Res", "Lck", "Mag",
     "HP", "Str", "Skl", "Spd", "Def", "Res", "Mag",
@@ -522,8 +486,7 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
 
     if (proc->portraitChosen)
     {
-        u8 staticEyeCol[1] = { 0 };
-        fid = GetAvatarPortraitID(proc, staticEyeCol);
+        fid = AvatarPortraits[0];
     }
 
     struct Text * th = gStatScreen.text;
@@ -894,100 +857,16 @@ void AvatarStartFace(int id, struct AvatarProc * proc)
 
 } // 859133c T sTalkState
 
-#define gbapal(r, g, b) (((b) << 10) | ((g) << 5) | (r))
-
-const u16 skinTones[][3] = {
-    { gbapal(31, 30, 29), gbapal(30, 25, 19), gbapal(29, 20, 15) },
-    { gbapal(31, 31, 25), gbapal(31, 25, 16), gbapal(29, 19, 12) },
-    { gbapal(31, 28, 24), gbapal(29, 23, 19), gbapal(26, 17, 14) },
-    { gbapal(30, 24, 18), gbapal(28, 19, 13), gbapal(22, 13, 10) },
-    { gbapal(28, 24, 20), gbapal(24, 19, 14), gbapal(19, 14, 10) },
-};
-
-const u16 hairColours[][3] = {
-    { gbapal(30, 30, 30), gbapal(25, 23, 23), gbapal(19, 16, 16) }, // white
-    { gbapal(29, 26, 23), gbapal(25, 22, 19), gbapal(17, 16, 14) }, // light
-    { gbapal(25, 23, 23), gbapal(19, 16, 16), gbapal(15, 12, 11) }, // grey
-    { gbapal(21, 13, 8), gbapal(14, 9, 5), gbapal(9, 6, 4) },       // dark brown
-    { gbapal(16, 16, 18), gbapal(11, 11, 13), gbapal(9, 7, 10) },   // dark
-    { gbapal(16, 18, 20), gbapal(10, 11, 13), gbapal(7, 7, 10) },   // grey blue
-    { gbapal(10, 16, 22), gbapal(7, 10, 17), gbapal(7, 8, 10) },    // blue
-    { gbapal(19, 25, 29), gbapal(11, 18, 22), gbapal(8, 12, 15) },  // light blue
-    { gbapal(21, 28, 16), gbapal(17, 23, 12), gbapal(15, 15, 11) }, // light green
-    { gbapal(5, 15, 13), gbapal(2, 10, 8), gbapal(1, 7, 6) },       // dark green
-    { gbapal(26, 13, 13), gbapal(20, 7, 7), gbapal(13, 4, 5) },     // red
-    { gbapal(29, 15, 9), gbapal(24, 10, 5), gbapal(17, 7, 2) },     // orange
-    { gbapal(28, 24, 14), gbapal(23, 18, 8), gbapal(19, 14, 9) },   // blonde
-    { gbapal(31, 23, 21), gbapal(31, 17, 15), gbapal(24, 12, 8) },  // pink
-
-};
-
-// red, blue, green
-const u16 eyeCols[] = {
-    gbapal(24, 5, 5), gbapal(21, 13, 6), gbapal(28, 24, 0), gbapal(10, 16, 31), gbapal(5, 21, 7),
-};
-int GetAdjustedPortraitID(int fid);
-int GetAvatarPortraitID(struct AvatarProc * proc, u8 * staticEyeCol)
-{
-    return GetAdjustedPortraitID(0x100);
-    // 8 styles after 4 Robin portraits, or
-    // 12 hairstyles after 4 Corrin portraits
-
-    u32 portraitID = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
-    // brk;
-    int numHairStyles = CountNumHairstyles(portraitID);
-    // &0xFF was needed here, while changing proc->portraitID to a u8 did not work as expected
-
-    // if (portraitID < 4)
-    // {
-    // staticEyeCol[0] = true;
-    // }
-    portraitID = AvatarPortraits[portraitID] + (proc->hairID & 0xFF) % numHairStyles;
-    // MODULO HERE, @Jester
-    return portraitID;
-}
-
-int AvPortraitSelection(struct AvatarProc * proc)
-{
-    u8 staticEyeCol[1] = { 0 };
-    int portraitID = GetAvatarPortraitID(proc, staticEyeCol);
-    AvatarStartFace(0x100, proc);
-    // AvPortraitAdjustPal(proc);
-
-    return 0;
-    // yield
-}
-
 void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
 {
-    return;
-    u8 staticEyeCol[1] = { 0 };
-    int portraitID = GetAvatarPortraitID(proc, staticEyeCol);
-
-    const struct FaceData * data = GetMugData(portraitID); // not vanilla hook
+    int fid = GetAdjustedPortraitID(AvatarPortraits[0]);
+    const struct FaceData * data = GetPortraitData(fid);
     const u16 * palOriginal = data->pal;
     for (int i = 0; i < 16; ++i)
     {
         buffer[i] = palOriginal[i];
     }
-    int skinToneId = (proc->skinID & 0xFF) % CountNumSkinTones(portraitID);
-    buffer[2] = skinTones[skinToneId][0]; // main
-    buffer[4] = skinTones[skinToneId][1]; // shadow
-    buffer[7] = skinTones[skinToneId][2]; // dark shadow
-    // pal[10] += proc->skinID * 5; // outline / darkest
-
-    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(portraitID);
-    buffer[3] = hairColours[hairCol][0];
-    buffer[6] = hairColours[hairCol][1];
-    buffer[9] = hairColours[hairCol][2];
-    // pal[13] += proc->hairColID * 5;
-
-    if (!*staticEyeCol)
-    {
-        // Robin's eye col can't be changed
-        int eyeCol = proc->eyeColID % CountNumEyeCols(portraitID);
-        buffer[12] = eyeCols[eyeCol];
-    }
+    return;
 }
 
 void AvPortraitAdjustPal(struct AvatarProc * proc)
@@ -1025,13 +904,13 @@ u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
             case Portrait_Style:
             {
                 DecrementPortraitFlag(proc);
-                AvPortraitSelection(proc);
+                AvatarStartFace(AvatarPortraits[0], proc);
                 break;
             }
             case Portrait_Hairstyle:
             {
                 DecrementHairFlag(proc);
-                AvPortraitSelection(proc);
+                AvatarStartFace(AvatarPortraits[0], proc);
                 break;
             }
             case Portrait_Haircolour:
@@ -1063,13 +942,13 @@ u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
             case Portrait_Style:
             {
                 IncrementPortraitFlag(proc);
-                AvPortraitSelection(proc);
+                AvatarStartFace(AvatarPortraits[0], proc);
                 break;
             }
             case Portrait_Hairstyle:
             {
                 IncrementHairFlag(proc);
-                AvPortraitSelection(proc);
+                AvatarStartFace(AvatarPortraits[0], proc);
                 break;
             }
             case Portrait_Haircolour:
@@ -1158,7 +1037,7 @@ u8 AvatarPortraitSelect(struct MenuProc * menu)
 {
     UpdateMenuID(menu);
     StartMenu(&gAvatarPortraitMenuDef, (ProcPtr)menu->proc_parent);
-    AvPortraitSelection(menu->proc_parent);
+    AvatarStartFace(AvatarPortraits[0], menu->proc_parent);
     Proc_Goto(menu->proc_parent, AvPortrait);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };

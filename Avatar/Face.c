@@ -27,14 +27,91 @@ struct PortraitPalReplacementStruct
 };
 extern struct PortraitPalReplacementStruct PortraitPalReplacements[];
 
-extern struct FaceData Font_Sio_02000C60_Reused;
+extern struct FaceData Font_Sio_02000C60_Reused[4];
+
 extern u16 Sio_02000C80_Reused[];
+
 extern struct FaceData const * DynamicPortraits(int id);
 int GetAdjustedPortraitID(int fid)
 {
     const struct FaceData * data = DynamicPortraits(fid);
     int newFid = ((int)data - (int)GetMugData(0)) / 0x1C; // calc which ID it is now
     return newFid;
+}
+
+int FindSlotFromFid2(int fid)
+{
+    struct FaceProc * face;
+    struct ProcFindIterator procIter;
+    Proc_FindBegin(&procIter, gProcScr_E_FACE);
+
+    for (int i = 0; i < 4; ++i)
+    {
+        face = Proc_FindNext(&procIter);
+        if (!face)
+        {
+            return i;
+        }
+        if (face->faceId == fid)
+        {
+            return i;
+        }
+    }
+    return 0;
+}
+void UpdateMostRecentFids(int slot)
+{
+    for (int i = 4; i > 0; --i)
+    {
+        Sio_02000C80_Reused[0x44 + i] = Sio_02000C80_Reused[0x44 + i - 1];
+    }
+    Sio_02000C80_Reused[0x44] = slot;
+}
+
+int IsSlotValid(int slot)
+{
+
+    return slot > 0 && slot < 4;
+}
+
+// I don't know if this makes sense
+// the idea is to allocate ram for the adjusted palette for the 4 most
+// recent results from GetPortraitData
+int FindSlotFromFid(int fid)
+{
+    int tmp;
+    for (int i = 0; i < 4; ++i)
+    {
+        tmp = Sio_02000C80_Reused[0x40 + i];
+        if (tmp == fid)
+        {
+            UpdateMostRecentFids(i);
+            return i;
+        }
+    }
+
+    int slot;
+
+    for (int i = 0; i < 4; ++i)
+    {
+
+        slot = Sio_02000C80_Reused[0x44 + i];
+        if (!IsSlotValid(slot))
+        {
+            slot = i;
+        }
+        if (!Sio_02000C80_Reused[0x40 + slot])
+        {
+            // brk;
+            Sio_02000C80_Reused[0x40 + slot] = fid;
+            UpdateMostRecentFids(slot);
+            return slot;
+        }
+    }
+
+    UpdateMostRecentFids(3);
+
+    return 3;
 }
 
 const struct FaceData * NewGetPortraitData(int fid)
@@ -45,11 +122,14 @@ const struct FaceData * NewGetPortraitData(int fid)
     const struct FaceData * data = DynamicPortraits(fid);
     int newFid = ((int)data - (int)GetMugData(0)) / 0x1C; // calc which ID it is now
     // so we don't have to edit the DynamicPortraits asm
+    int faceSlot = FindSlotFromFid(fid);
+    // brk;
+    int palOffset = 16 * faceSlot;
 
-    CpuFastCopy(data, (void *)&Font_Sio_02000C60_Reused, 0x1C); // src, dst, bytes
-    CpuFastCopy(data->pal, (void *)&Sio_02000C80_Reused, 0x10);
+    CpuFastCopy(data, (void *)&Font_Sio_02000C60_Reused[faceSlot], 0x1C); // src, dst, bytes
+    CpuFastCopy(data->pal, (void *)&Sio_02000C80_Reused[palOffset], 0x10);
     const u16 * basePal;
-    Font_Sio_02000C60_Reused.pal = (void *)&Sio_02000C80_Reused;
+    Font_Sio_02000C60_Reused[faceSlot].pal = (void *)&Sio_02000C80_Reused[palOffset];
     struct PortraitPalReplacementStruct * palReplacements = &PortraitPalReplacements[0];
     int tmp;
     while (palReplacements->fidA && palReplacements->fidA != 0xFFFF)
@@ -58,18 +138,19 @@ const struct FaceData * NewGetPortraitData(int fid)
         if (palReplacements->fidA <= newFid && palReplacements->fidB >= newFid && CheckFlag(palReplacements->flag))
         {
             basePal = data->pal;
-            Sio_02000C80_Reused[0] = 0xFFFF;
+            Sio_02000C80_Reused[palOffset] = 0xFFFF;
             for (int i = 0; i < 15; ++i)
             {
                 // brk;
                 tmp = palReplacements->pal[i];
                 if (tmp != (-1) && basePal[i + 1] != tmp)
                 {
-                    Sio_02000C80_Reused[i + 1] = tmp; // don't adjust pal ID 0, as it is transparent
+                    Sio_02000C80_Reused[palOffset + i + 1] = tmp; // don't adjust pal ID 0, as it is transparent
                 }
             }
         }
         palReplacements++;
     }
-    return &Font_Sio_02000C60_Reused;
+    // brk;
+    return &Font_Sio_02000C60_Reused[faceSlot];
 }

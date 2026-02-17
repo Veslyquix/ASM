@@ -12,7 +12,7 @@ ORG $1F00000
 #endif 
 
 
-#define StartingMug 0x100 // mugs in order
+#define StartingMug 0x101 // mugs in order
 // e.g. 
 // CorrinF1_LongHair
 // CorrinF1_ShortHair
@@ -22,15 +22,19 @@ ORG $1F00000
 #define StartingFlag 0xC1 
 
 
-#define TheyPronounFlag 0xFF 
-#define HePronounFlag 0x100
-#define ShePronounFlag 0x101
+#define TheyPronounFlag 0x112 
+#define HePronounFlag 0x113
+#define ShePronounFlag 0x114
 
 ALIGN 4 
 AvatarClasses: // max 6 or 7 classes 
 BYTE Cavalier Knight Mercenary Archer Mage 
 BYTE 0 0 0 0 0 0 0 0 
 
+ALIGN 4 
+PronounFlags:
+SHORT TheyPronounFlag HePronounFlag ShePronounFlag 
+SHORT 0 // Terminator 
 
 AssetBonusPerStat:
 BYTE 5 // hp 
@@ -74,8 +78,13 @@ WORD 0
 
 
 
+emptyStr:
+String(" "); BYTE 0 0 
+setText(0xEFF, emptyStr) 
 
 PUSH 
+ORG (TextTable+(4*0xEFF)) // Reserved textID 0xEFF as [Tact] 
+WORD 0x8202bd10 // by 7743 
 ORG 0x44800; BYTE 0x9 //max tact name length 
 ORG 0x482bA; BYTE 0x9 //max cursor position
 
@@ -86,19 +95,44 @@ POP
 
 
 
-emptyStr:
-String(" "); BYTE 0 0 
-setText(0xEFF, emptyStr) 
+
+ALIGN 4 
+SethTactTalkEvent: 
+Text(0x93A)
+NoFade 
+ENDA 
+
+someText:
+BYTE $9 $10 $1 $2 // load tact 
+BYTE $0C $10 $04 
+BYTE $01 $0C 
+String("Is that you, ")
+BYTE $80 $20// [Tact] 
+String("?") 
+BYTE 3 // [A] 
+BYTE $9 $11 // Erase in pos 9 
+BYTE $01 $0C 
+String("[They] elude me...")
+BYTE 3 
+
+BYTE 0 0 0 0 
+
+setText(0x93A, someText) 
+
+ALIGN 4 
+TalkEventList: 
+CharacterEventBothWays(0,SethTactTalkEvent, Eirika, Seth)
+END_MAIN
 
 PUSH 
-ORG (TextTable+(4*0xEFF)) // Reserved textID 0xEFF as [Tact] 
-WORD 0x8202bd10 // by 7743 
+ORG $9E8640 
+POIN TalkEventList 
 
 ORG $803D64
 // SHORT $26a // Eirika portrait as tact 
 SHORT $EFF // Eirika portrait as tact 
 ORG $803D6A
-SHORT 0x100 // Eirika portrait as tact 
+SHORT StartingMug // Eirika portrait as tact 
 
 ORG $9E85D6 
 BYTE 0 // Prologue event flag 
@@ -199,7 +233,9 @@ ALIGN 4
 AvatarPortraitBoxTSA:
 #incbin "data/AvatarPortraitBoxTSA.dmp" 
 
-
+ALIGN 4 
+StartingFlag_Link:
+WORD StartingFlag 
 
 
 
