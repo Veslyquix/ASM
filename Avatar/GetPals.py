@@ -114,6 +114,7 @@ def main():
  
         hairFlags = []
         skinFlags = []
+        eyeFlags = []
         for base in sorted(recolours.keys()):
             variants = recolours[base]
             count = len(variants)
@@ -158,6 +159,8 @@ def main():
                 )
                 if "skin" in variant.lower():
                     skinFlags.append(flag)
+                elif "eye" in variant.lower():
+                    eyeFlags.append(flag)
                 else:
                     hairFlags.append(flag)
                 i+=1
@@ -170,12 +173,20 @@ def main():
             var = hairFlags[h]
             out.write(f"SHORT StartingFlag+{var}\n")
         out.write(f"SHORT 0 //Terminator\n")
+        out.write(f"\nALIGN 4\nEyeColFlags:\n")
+        for e in range(len(eyeFlags)):
+            var = eyeFlags[e]
+            out.write(f"SHORT StartingFlag+{var}\n")
+        out.write(f"SHORT 0 //Terminator\n")
         out.write(f"\nALIGN 4\nSkinColFlags:\n")
         for s in range(len(skinFlags)):
             var = skinFlags[s]
             out.write(f"SHORT StartingFlag+{var}\n")
         out.write(f"SHORT 0 //Terminator\n")
-    flag = hex(flag)
+        flag = hex(flag)
+        out.write(f"\nALIGN 4\nAvatarTotalFlags:\nWORD {flag}")
+
+    
     print(f"Done! GeneratedInstaller.event created.\n{flag} global flags used.")
 
 

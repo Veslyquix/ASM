@@ -11,28 +11,6 @@ ORG $1F00000
 #define setText(textID, offset) "PUSH; ORG (TextTable+(4*textID)); POIN (offset|0x80000000); POP"
 #endif 
 
-#include "ReplaceText/Installer.event" 
-
-#include "C_Code.lyn.event" 
-#ifndef jumpToHack
-#define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1)"
-#endif 
-#define rgb(red, green, blue) (((blue) << 10) | ((green) << 5) | (red))
-#define no_col 0xFFFF // don't change this colour 
-#define skip 0xFFFF 
-#define PortraitPals(PortraitID_A, PortraitID_B, Flag, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) "SHORT PortraitID_A PortraitID_B Flag a b c d e f g h i j k l m n o"
-
-
-
-#define FirstMugID 0x100 
-// #define CorrinF101Mug (FirstMugID+0)
-// #define CorrinF201Mug (FirstMugID+12)
-// #define CorrinM101Mug (FirstMugID+24)
-// #define CorrinM201Mug (FirstMugID+36)
-// #define RobinF101Mug (FirstMugID+48)
-// #define RobinF201Mug (FirstMugID+52)
-// #define RobinM101Mug (FirstMugID+56)
-// #define RobinM201Mug (FirstMugID+60)
 
 #define StartingMug 0x100 // mugs in order
 // e.g. 
@@ -44,149 +22,14 @@ ORG $1F00000
 #define StartingFlag 0xC1 
 
 
-#define TheyPronounFlag 0xF0 
-#define HePronounFlag 0xF1
-#define ShePronounFlag 0xF2
-
-
-#include "DynamicPortraits20231104/DynamicPortraitsInstaller.event" 
-#include "GeneratedInstaller.event" 
-
-
-/*
-#define RobinF101_Flag 0xC1 
-#define RobinF201_Flag 0xC5
-#define RobinM101_Flag 0xC9
-#define RobinM201_Flag 0xCD
-
-#define CorrinF101_Flag 0xD1 
-#define CorrinF201_Flag 0xD9
-#define CorrinM101_Flag 0xE1
-#define CorrinM201_Flag 0xE9
-ALIGN 4 
-MugFlags:
-SHORT RobinF101_Flag // 0xC1 - 0xE0 (so 0xE1 is free) 
-SHORT RobinF201_Flag 
-SHORT RobinM101_Flag 
-SHORT RobinM201_Flag 
-SHORT CorrinF101_Flag 
-SHORT CorrinF201_Flag 
-SHORT CorrinM101_Flag 
-SHORT CorrinM201_Flag 
-SHORT 00 
-
-
-
-
-
-
-// for vanilla portraits, skin tones should be pal IDs 1, 2, and 3
-// hair 7, 8, and 9 
-
-
-// Hair Colours 
-#define CorrinFlag_00Base 0
-#define CorrinFlag_01WhiteHair 0xE6 
-#define CorrinFlag_02LightHair 0xE7 
-#define CorrinFlag_03GreyHair 0xE8
-#define CorrinFlag_04BrownHair 0xE9 
-#define CorrinFlag_05DarkHair 0xEA 
-#define CorrinFlag_06GreyBlueHair 0xEB
-#define CorrinFlag_07BlueHair 0xEC 
-#define CorrinFlag_08LightBlueHair 0xED 
-#define CorrinFlag_09LightGreenHair 0xEE 
-#define CorrinFlag_10DarkGreenHair 0xEF 
-#define CorrinFlag_11RedHair 0xF0 
-#define CorrinFlag_12OrangeHair 0xF1 
-#define CorrinFlag_13BlondeHair 0xF2 
-#define CorrinFlag_14PinkHair 0xF3 
-
-
-// Skin colours 
-#define CorrinFlag_Skin1 0xE1 
-#define CorrinFlag_Skin2 0xE2
-#define CorrinFlag_Skin3 0xE3 
-#define CorrinFlag_Skin4 0xE4 
-#define CorrinFlag_Skin5 0xE5 
-
-
-
-
-HairColFlags:
-SHORT CorrinFlag_01WhiteHair 
-SHORT CorrinFlag_02LightHair 
-SHORT CorrinFlag_03GreyHair 
-SHORT CorrinFlag_04BrownHair 
-SHORT CorrinFlag_05DarkHair 
-SHORT CorrinFlag_06GreyBlueHair 
-SHORT CorrinFlag_07BlueHair 
-SHORT CorrinFlag_08LightBlueHair 
-SHORT CorrinFlag_09LightGreenHair 
-SHORT CorrinFlag_10DarkGreenHair 
-SHORT CorrinFlag_11RedHair 
-SHORT CorrinFlag_12OrangeHair 
-SHORT CorrinFlag_13BlondeHair 
-SHORT CorrinFlag_14PinkHair 
-SHORT 0 // Terminator 
-
-SkinColFlags:
-SHORT CorrinFlag_Skin1
-SHORT CorrinFlag_Skin2
-SHORT CorrinFlag_Skin3
-SHORT CorrinFlag_Skin4
-SHORT CorrinFlag_Skin5
-SHORT 0 
-
-
-
-
-#define Corrin_Base CorrinF101Mug
-
-
-#define NumOfPortraits 64 
-
-ALIGN 4 
-PortraitPalReplacements:
-// PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_00Base, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_01WhiteHair, skip, skip, rgb(30, 30, 30), skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_02LightHair, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_03GreyHair, skip, skip, rgb(25, 23, 23), skip, skip, rgb(19, 16, 16), skip, skip, rgb(15, 12, 11), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_04BrownHair, skip, skip, rgb(21, 13, 8), skip, skip, rgb(14, 9, 5), skip, skip, rgb(9, 6, 4), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_05DarkHair, skip, skip, rgb(16, 16, 18), skip, skip, rgb(11, 11, 13), skip, skip, rgb(9, 7, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_06GreyBlueHair, skip, skip, rgb(16, 18, 20), skip, skip, rgb(10, 11, 13), skip, skip, rgb(7, 7, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_07BlueHair, skip, skip, rgb(10, 16, 22), skip, skip, rgb(7, 10, 17), skip, skip, rgb(7, 8, 10), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_08LightBlueHair, skip, skip, rgb(19, 25, 29), skip, skip, rgb(11, 18, 22), skip, skip, rgb(8, 12, 15), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_09LightGreenHair, skip, skip, rgb(21, 28, 16), skip, skip, rgb(17, 23, 12), skip, skip, rgb(15, 15, 11), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_10DarkGreenHair, skip, skip, rgb(5, 15, 13), skip, skip, rgb(2, 10, 8), skip, skip, rgb(1, 7, 6), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_11RedHair, skip, skip, rgb(26, 13, 13), skip, skip, rgb(20, 7, 7), skip, skip, rgb(13, 4, 5), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_12OrangeHair, skip, skip, rgb(29, 15, 9), skip, skip, rgb(24, 10, 5), skip, skip, rgb(17, 7, 2), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_13BlondeHair, skip, skip, rgb(28, 24, 14), skip, skip, rgb(23, 18, 8), skip, skip, rgb(19, 14, 9), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_14PinkHair, skip, skip, rgb(31, 23, 21), skip, skip, rgb(31, 17, 15), skip, skip, rgb(24, 12, 8), skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin1, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin2, skip, rgb(31, 31, 25), skip, rgb(31, 25, 16), skip, skip, rgb(29, 19, 12), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin3, skip, rgb(31, 28, 24), skip, rgb(29, 23, 19), skip, skip, rgb(26, 17, 14), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin4, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(Corrin_Base, Corrin_Base+NumOfPortraits, CorrinFlag_Skin5, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
-
-SHORT 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF // Terminator 
-
-ALIGN 4 
-AvatarPortraits: 
-SHORT RobinF101Mug RobinF201Mug RobinM101Mug RobinM201Mug CorrinF101Mug CorrinF201Mug CorrinM101Mug CorrinM201Mug
-SHORT 0 
-*/
+#define TheyPronounFlag 0xFF 
+#define HePronounFlag 0x100
+#define ShePronounFlag 0x101
 
 ALIGN 4 
 AvatarClasses: // max 6 or 7 classes 
 BYTE Cavalier Knight Mercenary Archer Mage 
 BYTE 0 0 0 0 0 0 0 0 
-
-
-ALIGN 4 
-AvatarRam:
-// WORD 0x203EC04 // in BWL 
-WORD 0
-
 
 
 AssetBonusPerStat:
@@ -206,6 +49,30 @@ BYTE 2 // spd
 BYTE 2 // def 
 BYTE 3 // res 
 BYTE 2 // mag 
+
+
+#include "ReplaceText/Installer.event" 
+
+#include "C_Code.lyn.event" 
+#ifndef jumpToHack
+#define jumpToHack(offset) "BYTE 0x00 0x4B 0x18 0x47; POIN (offset|0x1)"
+#endif 
+#define rgb(red, green, blue) (((blue) << 10) | ((green) << 5) | (red))
+#define no_col 0xFFFF // don't change this colour 
+#define skip 0xFFFF 
+#define PortraitPals(PortraitID_A, PortraitID_B, Flag, a, b, c, d, e, f, g, h, i, j, k, l, m, n, o) "SHORT PortraitID_A PortraitID_B Flag a b c d e f g h i j k l m n o"
+
+#include "DynamicPortraits20231104/DynamicPortraitsInstaller.event" 
+#include "GeneratedInstaller.event" 
+
+
+
+ALIGN 4 
+AvatarRam:
+// WORD 0x203EC04 // in BWL 
+WORD 0
+
+
 
 
 PUSH 

@@ -117,10 +117,12 @@ PortraitPals(StartingMug, StartingMug+63, StartingFlag+72, skip, skip, rgb(26, 1
 PortraitPals(StartingMug, StartingMug+63, StartingFlag+73, skip, skip, rgb(29, 15, 9), skip, skip, rgb(24, 10, 5), skip, skip, rgb(17, 7, 2), skip, skip, skip, skip, skip, skip)
 PortraitPals(StartingMug, StartingMug+63, StartingFlag+74, skip, skip, rgb(28, 24, 14), skip, skip, rgb(23, 18, 8), skip, skip, rgb(19, 14, 9), skip, skip, skip, skip, skip, skip)
 PortraitPals(StartingMug, StartingMug+63, StartingFlag+75, skip, skip, rgb(31, 23, 21), skip, skip, rgb(31, 17, 15), skip, skip, rgb(24, 12, 8), skip, skip, skip, skip, skip, skip)
-PortraitPals(StartingMug, StartingMug+63, StartingFlag+76, skip, rgb(31, 31, 25), skip, rgb(31, 25, 16), skip, skip, rgb(29, 19, 12), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(StartingMug, StartingMug+63, StartingFlag+77, skip, rgb(31, 28, 24), skip, rgb(29, 23, 19), skip, skip, rgb(26, 17, 14), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(StartingMug, StartingMug+63, StartingFlag+78, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
-PortraitPals(StartingMug, StartingMug+63, StartingFlag+79, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+76, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, rgb(4, 10, 25), skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+77, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, skip, rgb(4, 18, 5), skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+78, skip, rgb(31, 31, 25), skip, rgb(31, 25, 16), skip, skip, rgb(29, 19, 12), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+79, skip, rgb(31, 28, 24), skip, rgb(29, 23, 19), skip, skip, rgb(26, 17, 14), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+80, skip, rgb(30, 24, 18), skip, rgb(28, 19, 13), skip, skip, rgb(22, 13, 10), skip, skip, skip, skip, skip, skip, skip, skip)
+PortraitPals(StartingMug, StartingMug+63, StartingFlag+81, skip, rgb(28, 24, 20), skip, rgb(24, 19, 14), skip, skip, rgb(19, 14, 10), skip, skip, skip, skip, skip, skip, skip, skip)
 SHORT 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF 0xFFFF // Terminator
 
 ALIGN 4
@@ -141,9 +143,19 @@ SHORT StartingFlag+75
 SHORT 0 //Terminator
 
 ALIGN 4
-SkinColFlags:
+EyeColFlags:
 SHORT StartingFlag+76
 SHORT StartingFlag+77
+SHORT 0 //Terminator
+
+ALIGN 4
+SkinColFlags:
 SHORT StartingFlag+78
 SHORT StartingFlag+79
+SHORT StartingFlag+80
+SHORT StartingFlag+81
 SHORT 0 //Terminator
+
+ALIGN 4
+AvatarTotalFlags:
+WORD 0x51

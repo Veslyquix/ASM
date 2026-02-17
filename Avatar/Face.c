@@ -30,6 +30,13 @@ extern struct PortraitPalReplacementStruct PortraitPalReplacements[];
 extern struct FaceData Font_Sio_02000C60_Reused;
 extern u16 Sio_02000C80_Reused[];
 extern struct FaceData const * DynamicPortraits(int id);
+int GetAdjustedPortraitID(int fid)
+{
+    const struct FaceData * data = DynamicPortraits(fid);
+    int newFid = ((int)data - (int)GetMugData(0)) / 0x1C; // calc which ID it is now
+    return newFid;
+}
+
 const struct FaceData * NewGetPortraitData(int fid)
 {
     // put portrait data into ram and edit the palette pointer
