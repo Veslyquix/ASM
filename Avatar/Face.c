@@ -12,7 +12,7 @@ struct FaceDataWithPad
     u8 pad[7]; // make it size 0x20 which fixes issues with ram overlapping fsr
 };
 
-#define NumFaceDataSlots 8
+#define NumFaceDataSlots 4
 #define PaletteSpace (NumFaceDataSlots * 0x10)
 extern struct FaceDataWithPad FaceDataRam[NumFaceDataSlots]; // 1. 0x1C bytes ram * NumFaceDataSlots for the most
                                                              // recent calls to GetPortraitData
