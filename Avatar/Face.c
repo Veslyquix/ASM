@@ -10,6 +10,13 @@ struct FaceData
     /* 16 */ u8 xEyes, yEyes;
     /* 18 */ u8 blinkKind;
 };
+
+#define NumFaceDataSlots 4
+extern struct FaceData Font_Sio_02000C60_Reused[NumFaceDataSlots]; // 1. 0x1C bytes ram * NumFaceDataSlots for the most
+                                                                   // recent calls to GetPortraitData
+extern u16 Sio_02000C80_Reused[]; // 2. 0x20 bytes ram * NumFaceDataSlots for the 16 colour palette
+// extern u16 Sio_02000C80_Reused[0x10 * NumFaceDataSlots]; // 3. fids
+
 // Because users repoint these tables, use pointers to them instead of the vanilla address of tables
 extern struct FaceData const * const sPortrait_data;
 
@@ -26,10 +33,6 @@ struct PortraitPalReplacementStruct
     s16 pal[15];
 };
 extern struct PortraitPalReplacementStruct PortraitPalReplacements[];
-
-extern struct FaceData Font_Sio_02000C60_Reused[4];
-
-extern u16 Sio_02000C80_Reused[];
 
 extern struct FaceData const * DynamicPortraits(int id);
 int GetAdjustedPortraitID(int fid)
@@ -59,19 +62,41 @@ int FindSlotFromFid2(int fid)
     }
     return 0;
 }
-void UpdateMostRecentFids(int slot)
-{
-    for (int i = 4; i > 0; --i)
-    {
-        Sio_02000C80_Reused[0x44 + i] = Sio_02000C80_Reused[0x44 + i - 1];
-    }
-    Sio_02000C80_Reused[0x44] = slot;
-}
 
 int IsSlotValid(int slot)
 {
 
-    return slot > 0 && slot < 4;
+    return slot > 0 && slot < NumFaceDataSlots;
+}
+
+// Eirika, Seth, Colm
+
+// 1. Seth is already within the 4 most recent
+// new order: Seth, Eirika, Colm
+
+//
+
+// 2. Gilliam is added, while the others are pushed back
+// new order: Gilliam, Seth, Eirika, Colm
+
+// 3. Eirika is used
+// new order: Eirika, Gilliam, Seth, Colm
+// Eirika (slot) swap,
+//
+
+// swap starting at the slot until this fid is the newest
+// e.g. Gilliam, Seth, Eirika, Colm
+// Eirika is used
+// new order: Eirika, Gilliam, Seth, Colm
+void UpdateMostRecentFids(int slot)
+{
+    int tmp;
+    for (int i = slot; i > 0; --i)
+    {
+        tmp = Sio_02000C80_Reused[0x40 + i - 1];
+        Sio_02000C80_Reused[0x40 + i - 1] = Sio_02000C80_Reused[0x40 + i];
+        Sio_02000C80_Reused[0x40 + i] = tmp;
+    }
 }
 
 // I don't know if this makes sense
@@ -82,36 +107,17 @@ int FindSlotFromFid(int fid)
     int tmp;
     for (int i = 0; i < 4; ++i)
     {
-        tmp = Sio_02000C80_Reused[0x40 + i];
+        tmp = Sio_02000C80_Reused[(0x10 * NumFaceDataSlots) + i];
         if (tmp == fid)
         {
             UpdateMostRecentFids(i);
-            return i;
+            return i; // they are used already
         }
     }
-
-    int slot;
-
-    for (int i = 0; i < 4; ++i)
-    {
-
-        slot = Sio_02000C80_Reused[0x44 + i];
-        if (!IsSlotValid(slot))
-        {
-            slot = i;
-        }
-        if (!Sio_02000C80_Reused[0x40 + slot])
-        {
-            // brk;
-            Sio_02000C80_Reused[0x40 + slot] = fid;
-            UpdateMostRecentFids(slot);
-            return slot;
-        }
-    }
-
-    UpdateMostRecentFids(3);
-
-    return 3;
+    // they aren't used yet, so put them in the last slot
+    Sio_02000C80_Reused[(0x10 * NumFaceDataSlots) + NumFaceDataSlots - 1] = fid;
+    UpdateMostRecentFids(NumFaceDataSlots - 1);
+    return 0;
 }
 
 const struct FaceData * NewGetPortraitData(int fid)
