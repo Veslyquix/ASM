@@ -162,14 +162,11 @@ const struct FaceData * NewGetPortraitData(int fid)
     // const struct FaceData * data = GetMugData(fid);
     const struct FaceData * data = DynamicPortraits(fid);
     int newFid = ((int)data - (int)GetMugData(0)) / 0x1C; // calc which ID it is now
-    brk;
     // so we don't have to edit the DynamicPortraits asm
     int faceSlot = FindSlotFromFid(fid);
-    // brk;
     int palOffset = 16 * faceSlot;
 
     CpuFastCopy(data, (void *)&FaceDataRam[faceSlot], 0x1C); // src, dst, bytes
-    // brk;
     CpuFastCopy(data->pal, (void *)&FacePalRam[palOffset], 0x10);
     const u16 * basePal;
     FaceDataRam[faceSlot].pal = (void *)&FacePalRam[palOffset];
@@ -184,7 +181,6 @@ const struct FaceData * NewGetPortraitData(int fid)
             FacePalRam[palOffset] = 0xFFFF;
             for (int i = 0; i < 15; ++i)
             {
-                // brk;
                 tmp = palReplacements->pal[i];
                 if (tmp != (-1) && basePal[i + 1] != tmp)
                 {
@@ -194,6 +190,5 @@ const struct FaceData * NewGetPortraitData(int fid)
         }
         palReplacements++;
     }
-    // brk;
     return (void *)&FaceDataRam[faceSlot];
 }

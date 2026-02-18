@@ -1,6 +1,6 @@
 #include "EAstdlib.event" 
 
-ORG $1F00000
+
 
 // #include "FixMugs_FE8.event" 
 #ifndef TextTable 
@@ -54,8 +54,10 @@ BYTE 2 // def
 BYTE 3 // res 
 BYTE 2 // mag 
 
-
+#ifndef SRR 
+MESSAGE ajsdhafkjhasl
 #include "ReplaceText/Installer.event" 
+#endif 
 
 #include "C_Code.lyn.event" 
 #ifndef jumpToHack
@@ -104,8 +106,9 @@ NoFade
 ENDA 
 
 someText:
-BYTE $9 $10 $1 $2 // load tact 
+
 BYTE $A $10 $5 $1 // load Gilliam 
+BYTE $9 $10 $1 $2 // load tact 
 BYTE $B $10 $6 $1 // load Franz 
 BYTE $0C $10 $04 $01 // Load Seth (4)  
 BYTE $0C // Serif ?  

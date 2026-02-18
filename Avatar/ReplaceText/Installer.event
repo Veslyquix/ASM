@@ -1,6 +1,12 @@
 
+ALIGN 4 
+ControlCodesStartWithBracket: // Only replace text starting with [ 
+// there will be lag if you make this false 
+// but then you could replace vanilla text
+WORD 1 // True 
+// WORD 0 // False 
 
-
+#ifdef SRR 
 // the randomizer takes over GetStringFromIndex, so take over for now 
 PUSH
 ORG $a240
@@ -15,6 +21,7 @@ ORG CURRENTOFFSET+$1;GetStringFromIndex:
 POP
 WORD $B5104B09 $4B096018 $681B4C09 $210080 $4B0858C0 $F812F000 $4B070020 $F80EF000 $BC100020 $4708BC02 $202B6AC $800A2A0 $202A6AC $8002BA5 $800A1C9 $46C04718
 // for SRR 
+#endif 
 
 
 // Feel free to add more pronouns to ReplaceTextList if desired 

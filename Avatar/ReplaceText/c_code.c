@@ -197,7 +197,7 @@ int ReplaceIfMatching(int usedBufferLength[], const char * find, const char * re
     }
     return len2;
 }
-
+extern int ControlCodesStartWithBracket;
 void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800384C
 {
     // asm("mov r11, r11");
@@ -237,12 +237,16 @@ void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800
     }
 
     int replacedLen = 0;
-
+    // asm("mov r11, r11");
     for (int i = 0; i < TextBufferSize; ++i)
     {
         if (!b[i])
         {
             return;
+        }
+        if (ControlCodesStartWithBracket && b[i] != 0x5B) // control codes to start with `[`
+        {
+            continue;
         }
         for (int c = 0; c < ListSize; ++c)
         {
@@ -275,7 +279,7 @@ void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800
             {
                 i += replacedLen - 1;
                 break;
-            };
+            }
         }
     }
 
