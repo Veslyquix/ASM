@@ -98,14 +98,17 @@ POP
 
 ALIGN 4 
 SethTactTalkEvent: 
+ASMC 0x80790A5 
 Text(0x93A)
 NoFade 
 ENDA 
 
 someText:
 BYTE $9 $10 $1 $2 // load tact 
-BYTE $0C $10 $04 
-BYTE $01 $0C 
+BYTE $A $10 $5 $1 // load Gilliam 
+BYTE $B $10 $6 $1 // load Franz 
+BYTE $0C $10 $04 $01 // Load Seth (4)  
+BYTE $0C // Serif ?  
 String("Is that you, ")
 BYTE $80 $20// [Tact] 
 String("?") 
@@ -139,11 +142,15 @@ BYTE 0 // Prologue event flag
 ORG $9EF0D8 
 ALIGN 4
 AvatarMenuWithBackgroundEvent:
+CHECK_ACTIVE 
+SVAL 1 Seth 
+BNE 99 sC s1 
 SVAL 1 1 // Unit ID, which should be loaded already 
 FADI 8 
 SVAL 3 1 // Background 
 ASMC StartBmAvatar
 // CLEAN 
+LABEL 99 
 NoFade 
 ENDA 
 POP 
