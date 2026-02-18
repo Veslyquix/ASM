@@ -171,6 +171,9 @@ int ReplaceIfMatching(int usedBufferLength[], const char * find, const char * re
 
     int i;
     char * buffer = &b[c];
+    if (!find[0])
+        return 0;
+
     for (i = 0; find[i]; ++i) // while find[i] is non-zero (eg. a character), compare
     {
         if (buffer[i] != find[i])

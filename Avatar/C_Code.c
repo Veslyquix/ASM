@@ -125,19 +125,6 @@ struct AvatarProc
     s8 bane;
 };
 
-struct AvatarFlags
-{
-    u8 fid : 4;
-    u8 hairStyle : 4;
-    u8 hairCol : 5;
-    u8 pronoun : 3;
-    u8 skinTone : 4;
-    u8 eyeCol : 4;
-    u8 boon : 4;
-    u8 bane : 4;
-};
-extern struct AvatarFlags * AvatarRam;
-
 extern u16 AvatarPortraits[];
 extern u8 NumHairstyles[];
 int CountAvatarPortraits(void)
@@ -382,45 +369,6 @@ void UpdatePronounFlags(struct AvatarProc * proc)
     }
     int pronoun = (proc->pronoun & 0xFF) % count;
     SetFlag(PronounFlags[pronoun]);
-}
-
-// this needs to run before the class change, as portrait is shown there
-void AvatarSaveFlags(struct AvatarProc * proc)
-{
-    UpdatePronounFlags(proc);
-
-    return;
-    UnsetAllAvatarFlags(proc);
-
-    int count = CountAvatarPortraits();
-    int fid = ((proc->portraitID & 0xFF) % count);
-
-    int hairStyle = (proc->hairID & 0xFF) % CountNumHairstyles(fid);
-
-    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(fid);
-    int skinTone = (proc->skinID & 0xFF) % CountNumSkinTones(fid);
-    int eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols(fid);
-    int pronoun = (proc->pronoun & 0xFF) % CountNumPronouns();
-    int boon = (proc->boon & 0xFF) % CountNumOfStats();
-    int bane = (proc->bane & 0xFF) % CountNumOfStats();
-
-    SetFlag(MugFlags[fid] + hairStyle);
-    SetFlag(HairColFlags[hairCol]);
-    SetFlag(SkinColFlags[skinTone]);
-    SetFlag(EyeColFlags[eyeCol]);
-
-    // I was considering an alternative way to save things instead of via flags..
-    if ((int)AvatarRam != 0)
-    {
-        AvatarRam->fid = fid;
-        AvatarRam->hairStyle = hairStyle;
-        AvatarRam->hairCol = hairCol;
-        AvatarRam->eyeCol = eyeCol;
-        AvatarRam->skinTone = skinTone;
-        AvatarRam->pronoun = pronoun;
-        AvatarRam->boon = boon;
-        AvatarRam->bane = bane;
-    }
 }
 
 #define AvRestart 0
@@ -677,17 +625,16 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
 
     PROC_LABEL(AvEnd),
-    // PROC_CALL(AvatarSaveFlags), // saved in confirm reclass
     PROC_CALL(ForceBMapDispResume),
     PROC_END,
 };
 
-void CallAvatarSaveFlags(void)
+void CallUpdatePronounFlags(void)
 {
     struct AvatarProc * proc = Proc_Find(ProcScr_AvatarHandler);
     if (proc)
     {
-        AvatarSaveFlags(proc);
+        UpdatePronounFlags(proc);
     }
 }
 
@@ -1848,7 +1795,7 @@ static u8 ReclassSubConfirmMenuOnSelect(struct MenuProc * proc, struct MenuItemP
 {
     if (b->itemNumber == 0)
     {
-        CallAvatarSaveFlags();
+        CallUpdatePronounFlags();
         ProcPtr found;
         EndMenu(proc);
         EndMenu(proc->proc_parent);
