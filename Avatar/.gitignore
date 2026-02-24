@@ -2,3 +2,6 @@ Tools/*
 EventAssembler/*
 Garytop/*
 *.sym
+build/*
+dist/*
+GetPals.spec

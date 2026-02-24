@@ -48,12 +48,18 @@ WORD $B5104B09 $4B096018 $681B4C09 $210080 $4B0858C0 $F812F000 $4B070020 $F80EF0
 #define tx(string2) STRING string2 "fe8TR"; BYTE 0 0; // fe8 version 
 // #define tx(characters) String(characters); BYTE 0 0 
 
+ALIGN 4 
+code_tact2:
+tx("[tact2]") 
 
 
 ALIGN 4 
 ReplaceTextList:
 // required flag, required chapter, pad, text to find, replacement text 
 // SHORT 0; 			BYTE 0xFF 		0; 	POIN TextA 			TextB 
+
+SHORT 0; BYTE 0xFF 0; POIN code_tact2; WORD TACT2_RAM
+
 /* [they] / [They] 
 E.g. 
 They have the toy. 

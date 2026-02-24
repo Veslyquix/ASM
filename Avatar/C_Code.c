@@ -158,6 +158,16 @@ int CountMaxHairstyles(void)
     return c;
 }
 
+u8 HairstyleUsability(const struct MenuItemDef * item, int id)
+{
+    // brk;
+    if (CountMaxHairstyles() <= 1)
+    {
+        return MENU_NOTSHOWN;
+    }
+    return MENU_ENABLED;
+}
+
 extern u16 MugFlags[];
 extern u16 HairColFlags[];
 extern u16 SkinColFlags[];
@@ -575,6 +585,17 @@ static void ForceBMapDispResume(void)
         BMapDispResume();
     }
 }
+
+extern char * TACT2_RAM_Link;
+void CopyTactName(void)
+{
+    char * src = GetTacticianName();
+    char * dst = TACT2_RAM_Link;
+
+    while ((*dst++ = *src++))
+        ;
+}
+
 const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
     PROC_NAME("Avatar Handler"),
@@ -594,6 +615,7 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_CALL(AvNameEnableDisp),
     PROC_CALL(StartFastFadeFromBlack),
     PROC_REPEAT(WaitForFade),
+    // PROC_CALL(CopyTactName), // <- could copy Tact name into ram for the nth tact name based on an array
     PROC_GOTO(AvRestart),
 
     PROC_LABEL(AvPronoun),
@@ -638,41 +660,41 @@ void CallUpdatePronounFlags(void)
     }
 }
 
-u8 AvatarConfirm_OnYesPress(struct Proc * menu)
+u8 AvatarConfirm_OnYesPress(struct MenuProc * menu, struct MenuItemProc * item)
 {
     Proc_Goto(menu->proc_parent, AvEnd);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
-u8 AvatarConfirm_OnBPress(struct Proc * menu)
+u8 AvatarConfirm_OnBPress(struct MenuProc * menu, struct MenuItemProc * item)
 {
     Proc_Goto(menu->proc_parent, AvRestart);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
 
 const struct MenuItemDef YesNoSelectionMenuItems[] = {
-    { "はい", 0x843, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarConfirm_OnYesPress, 0, 0, 0 }, // Yes >
-    { "いいえ", 0x844, 0, 0, 0x33, MenuAlwaysEnabled, 0, (void *)AvatarConfirm_OnBPress, 0, 0, 0 }, // No
+    { "はい", 0x843, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarConfirm_OnYesPress, 0, 0, 0 }, // Yes >
+    { "いいえ", 0x844, 0, 0, 0x33, MenuAlwaysEnabled, 0, AvatarConfirm_OnBPress, 0, 0, 0 }, // No
     MenuItemsEnd
 };
 const struct MenuDef gAvatarConfirmMenuDef = {
-    { 24, 14, 5, 0 }, 0, YesNoSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+    { 24, 14, 5, 0 }, 0, YesNoSelectionMenuItems, 0, 0, 0, AvatarConfirm_OnBPress, 0, 0
 };
 
-u8 AvatarPronoun_OnThey(struct Proc * menu)
+u8 AvatarPronoun_OnThey(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     proc->pronoun = PronounThey;
     Proc_Goto(menu->proc_parent, AvRestart);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
-u8 AvatarPronoun_OnHim(struct Proc * menu)
+u8 AvatarPronoun_OnHim(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     proc->pronoun = PronounHim;
     Proc_Goto(menu->proc_parent, AvRestart);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
-u8 AvatarPronoun_OnHer(struct Proc * menu)
+u8 AvatarPronoun_OnHer(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     proc->pronoun = PronounHer;
@@ -680,7 +702,7 @@ u8 AvatarPronoun_OnHer(struct Proc * menu)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
 
-u8 AvatarPortrait_OnSelection(struct Proc * menu)
+u8 AvatarPortrait_OnSelection(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
     proc->portraitChosen = true;
@@ -688,30 +710,25 @@ u8 AvatarPortrait_OnSelection(struct Proc * menu)
 };
 
 const struct MenuItemDef PronounSelectionMenuItems[] = {
-    { "はい", 0x31, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnThey, 0, 0, 0 }, // They/Them
-    { "はい", 0x32, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnHim, 0, 0, 0 },  // he/him
-    { "はい", 0x33, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronoun_OnHer, 0, 0, 0 },  // she/her
+    { "はい", 0x31, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPronoun_OnThey, 0, 0, 0 }, // They/Them
+    { "はい", 0x32, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPronoun_OnHim, 0, 0, 0 },  // he/him
+    { "はい", 0x33, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPronoun_OnHer, 0, 0, 0 },  // she/her
     MenuItemsEnd
 };
 const struct MenuDef gAvatarPronounMenuDef = {
-    { 1, 1, 8, 0 }, 0, PronounSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+    { 1, 1, 8, 0 }, 0, PronounSelectionMenuItems, 0, 0, 0, AvatarConfirm_OnBPress, 0, 0
 };
 
 const struct MenuItemDef PortraitSelectionMenuItems[] = {
-    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
-      0 }, // Portrait
-    { "はい", 0x2E, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
-      0 }, // Hair Style
-    { "はい", 0x2F, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
-      0 }, // Hair Colour
-    { "はい", 0x29, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
-      0 }, // Eye Colour
-    { "はい", 0x30, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortrait_OnSelection, (void *)AvPortraitIdle, 0,
-      0 }, // Skin Tone
+    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 },  // Portrait
+    { "はい", 0x2E, 0, 0, 0x32, HairstyleUsability, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Hair Style
+    { "はい", 0x2F, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Hair Colour
+    { "はい", 0x29, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Eye Colour
+    { "はい", 0x30, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Skin Tone
     MenuItemsEnd
 };
 const struct MenuDef gAvatarPortraitMenuDef = {
-    { 14, 1, 8, 0 }, 0, PortraitSelectionMenuItems, 0, 0, 0, (void *)AvatarConfirm_OnBPress, 0, 0
+    { 14, 1, 8, 0 }, 0, PortraitSelectionMenuItems, 0, 0, 0, AvatarConfirm_OnBPress, 0, 0
 };
 
 void AvatarNameInput(struct AvatarProc * proc)
@@ -841,7 +858,8 @@ u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
     // portrait style, hair style, hair colour, skin tone
     u16 keys = gKeyStatusPtr->repeatedKeys;
 
-    proc->portraitCursorID = menu->itemCurrent;
+    // proc->portraitCursorID = menu->itemCurrent;
+    proc->portraitCursorID = item->itemNumber;
 
     if (keys & DPAD_LEFT)
     {
@@ -958,14 +976,14 @@ void UpdateMenuID(struct MenuProc * menu)
     struct AvatarProc * proc = menu->proc_parent;
     proc->menuID = menu->itemCurrent;
 }
-u8 AvatarReturnToMenu(struct MenuProc * menu)
+u8 AvatarReturnToMenu(struct MenuProc * menu, struct MenuItemProc * item)
 {
     // UpdateMenuID(menu); // submenu will be on a different ID
     Proc_Goto(menu->proc_parent, AvRestart);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
 
-u8 AvatarNameSelect(struct MenuProc * menu)
+u8 AvatarNameSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     UpdateMenuID(menu);
     Proc_Goto(menu->proc_parent, AvName);
@@ -973,14 +991,14 @@ u8 AvatarNameSelect(struct MenuProc * menu)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
 
-u8 AvatarPronounSelect(struct MenuProc * menu)
+u8 AvatarPronounSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     UpdateMenuID(menu);
     Proc_Goto(menu->proc_parent, AvPronoun);
     StartMenu(&gAvatarPronounMenuDef, (ProcPtr)menu->proc_parent);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
-u8 AvatarPortraitSelect(struct MenuProc * menu)
+u8 AvatarPortraitSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     UpdateMenuID(menu);
     StartMenu(&gAvatarPortraitMenuDef, (ProcPtr)menu->proc_parent);
@@ -989,7 +1007,7 @@ u8 AvatarPortraitSelect(struct MenuProc * menu)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
 
-u8 AvatarBoonSelect(struct MenuProc * menu)
+u8 AvatarBoonSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     UpdateMenuID(menu);
     Proc_Goto(menu->proc_parent, AvBoon);
@@ -997,7 +1015,7 @@ u8 AvatarBoonSelect(struct MenuProc * menu)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
 
-u8 AvatarBaneSelect(struct MenuProc * menu)
+u8 AvatarBaneSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     UpdateMenuID(menu);
     Proc_Goto(menu->proc_parent, AvBane);
@@ -1005,7 +1023,7 @@ u8 AvatarBaneSelect(struct MenuProc * menu)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
 int CanSelectClass(void);
-u8 AvatarClassSelect(struct MenuProc * menu)
+u8 AvatarClassSelect(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     if (CanSelectClass())
     {
@@ -1055,13 +1073,13 @@ int BaneCommandDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     return 0;
 }
 
-u8 BoonSelect(struct MenuProc * menu)
+u8 BoonSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
-    proc->boon = menu->itemCurrent;
+    proc->boon = item->itemNumber;
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
-u8 DisplayIfStrMag()
+u8 DisplayIfStrMag(const struct MenuItemDef * item, int id)
 {
 
     if (IsStrMagInstalled())
@@ -1071,42 +1089,42 @@ u8 DisplayIfStrMag()
     return MENU_NOTSHOWN;
 }
 const struct MenuItemDef gAvatarBoonItems[] = {
-    { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Hp
-    { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Str
+    { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Hp
+    { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Str
 
-    { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Skl
-    { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Spd
+    { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Skl
+    { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Spd
 
-    { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Def
-    { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Res
-    // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Luck
-    { "はい", 0x4FF, 0, 0, 0x32, (void *)DisplayIfStrMag, BoonCommandDraw, (void *)BoonSelect, 0, 0, 0 }, // Mag
+    { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Def
+    { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Res
+    // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Luck
+    { "はい", 0x4FF, 0, 0, 0x32, DisplayIfStrMag, BoonCommandDraw, BoonSelect, 0, 0, 0 }, // Mag
     MenuItemsEnd
 };
 
-const struct MenuDef gBoonMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarBoonItems, 0, 0, 0, (void *)AvatarReturnToMenu, 0, 0 };
-u8 BaneSelect(struct MenuProc * menu)
+const struct MenuDef gBoonMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarBoonItems, 0, 0, 0, AvatarReturnToMenu, 0, 0 };
+u8 BaneSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
-    proc->bane = menu->itemCurrent;
+    proc->bane = item->itemNumber;
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
 
 const struct MenuItemDef gAvatarBaneItems[] = {
-    { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Hp
-    { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Str
+    { "はい", 0x4E9, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Hp
+    { "はい", 0x4FE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Str
 
-    { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Skl
-    { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Spd
+    { "はい", 0x4EC, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Skl
+    { "はい", 0x4ED, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Spd
 
-    { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Def
-    { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Res
-    // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Luck
-    { "はい", 0x4FF, 0, 0, 0x32, (void *)DisplayIfStrMag, BaneCommandDraw, (void *)BaneSelect, 0, 0, 0 }, // Mag
+    { "はい", 0x4EF, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Def
+    { "はい", 0x4F0, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Res
+    // { "はい", 0x4EE, 0, 0, 0x32, MenuAlwaysEnabled, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Luck
+    { "はい", 0x4FF, 0, 0, 0x32, DisplayIfStrMag, BaneCommandDraw, BaneSelect, 0, 0, 0 }, // Mag
     MenuItemsEnd
 };
 
-const struct MenuDef gBaneMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarBaneItems, 0, 0, 0, (void *)AvatarReturnToMenu, 0, 0 };
+const struct MenuDef gBaneMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarBaneItems, 0, 0, 0, AvatarReturnToMenu, 0, 0 };
 
 int CanSelectClass(void)
 {
@@ -1118,7 +1136,7 @@ int CanSelectClass(void)
     }
     return true;
 }
-int AvatarClassUsability(const struct MenuItemDef * def, int number)
+u8 AvatarClassUsability(const struct MenuItemDef * def, int number)
 {
 
     if (CanSelectClass())
@@ -1217,18 +1235,16 @@ u8 FlawOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
     return 0;
 }
 const struct MenuItemDef gAvatarMenuItems[] = {
-    { "はい", 0x4E5, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarNameSelect, 0, 0, 0 },    // Name
-    { "はい", 0x2B, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPronounSelect, 0, 0, 0 },  // Pronouns
-    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarPortraitSelect, 0, 0, 0 }, // Portrait
-    { "はい", 0x2D, 0, 0, 0x32, MenuAlwaysEnabled, AssetDraw, (void *)AvatarBoonSelect, (void *)AssetOnIdle, 0,
-      0 }, // Boon
-    { "はい", 0x34, 0, 0, 0x32, MenuAlwaysEnabled, FlawDraw, (void *)AvatarBaneSelect, (void *)FlawOnIdle, 0,
-      0 },                                                                                              // Bane
-    { "はい", 0x4E6, 0, 0, 0x32, (void *)AvatarClassUsability, 0, (void *)AvatarClassSelect, 0, 0, 0 }, // Class
-    // { "はい", 0x848, 0, 0, 0x32, MenuAlwaysEnabled, 0, (void *)AvatarBPress, 0, 0, 0 },            // Exit
+    { "はい", 0x4E5, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarNameSelect, 0, 0, 0 },                  // Name
+    { "はい", 0x2B, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPronounSelect, 0, 0, 0 },                // Pronouns
+    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortraitSelect, 0, 0, 0 },               // Portrait
+    { "はい", 0x2D, 0, 0, 0x32, MenuAlwaysEnabled, AssetDraw, AvatarBoonSelect, AssetOnIdle, 0, 0 }, // Boon
+    { "はい", 0x34, 0, 0, 0x32, MenuAlwaysEnabled, FlawDraw, AvatarBaneSelect, FlawOnIdle, 0, 0 },   // Bane
+    { "はい", 0x4E6, 0, 0, 0x32, AvatarClassUsability, 0, AvatarClassSelect, 0, 0, 0 },              // Class
+    // { "はい", 0x848, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarBPress, 0, 0, 0 },            // Exit
     MenuItemsEnd
 };
-// const struct MenuDef gAvatarMenuDef = { { 1, 1, 10, 0 }, 0, gAvatarMenuItems, 0, 0, 0, (void *)AvatarBPress, 0, 0 };
+// const struct MenuDef gAvatarMenuDef = { { 1, 1, 10, 0 }, 0, gAvatarMenuItems, 0, 0, 0, AvatarBPress, 0, 0 };
 const struct MenuDef gAvatarMenuDef = { { 1, 1, 10, 0 }, 0, gAvatarMenuItems, 0, 0, 0, 0, 0, 0 };
 
 static bool StartAndWaitReclassSelect(struct ProcPromoMain * proc);

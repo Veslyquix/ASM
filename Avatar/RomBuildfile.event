@@ -1,6 +1,102 @@
 #define SRR 
 ORG $1F00000
+#define TextTable 0xFE4000
+
+
 #include "Installer.event" 
+
+
+
+
+#ifdef SRR 
+ALIGN 4 
+SethTactTalkEvent: 
+// ASMC 0x80790A5 // EndMMS 
+Text(0x93A)
+NoFade 
+ENDA 
+
+someText:
+// BYTE $A $10 $5 $1 // load Gilliam 
+BYTE $9 $10 $1 $2 // load tact 
+// BYTE $B $10 $6 $1 // load Franz 
+BYTE $0C $10 $04 $01 // Load Seth (4)  
+BYTE $0C // Serif ?  
+String("Is that you, ")
+BYTE $80 $20// [Tact] 
+String("?") 
+BYTE 3 // [A] 
+BYTE $9 $11 // Erase in pos 9 
+BYTE $01 $0C 
+String("[They] eludes me...")
+BYTE 3 // [A]
+BYTE 0 0 0 0 
+
+setText(0x93A, someText) 
+
+ALIGN 4 
+TalkEventList: 
+CharacterEventBothWays(0,SethTactTalkEvent, Eirika, Seth)
+END_MAIN
+
+PUSH 
+ORG $9E8640 
+POIN TalkEventList 
+
+ORG $803D64
+SHORT $EFF // Eirika name as tact 
+ORG $803D6A
+SHORT StartingMug // Eirika portrait as tact 
+
+ORG $9E85D6 
+BYTE 0 // Prologue event flag 
+
+ORG $9EF0D8 
+ALIGN 4
+CHECK_ACTIVE 
+SVAL 1 Seth 
+BNE 99 sC s1 
+SVAL 1 1 // Unit ID, which should be loaded already 
+FADI 8 
+SVAL 3 1 // Background 
+ASMC StartBmAvatar
+// CLEAN 
+LABEL 99 
+NoFade 
+ENDA 
+POP  
+#endif 
+
+
+
+
+
+
+
+
+// when done SaveTactician(), 
+
+
+// To have multiple avatars, I'd need to do something like this: 
+ALIGN 4 
+AvatarID_Table:
+POIN AvatarClasses 
+POIN PronounFlags 
+POIN AssetBonusPerStat 
+POIN FlawLossPerStat 
+POIN StartingFlag_Link 
+POIN NumHairstyles 
+POIN AvatarPortraits
+POIN MugFlags 
+POIN PortraitPalReplacements 
+POIN HairColFlags
+POIN EyeColFlags 
+POIN SkinColFlags
+POIN AvatarTotalFlags
+WORD 0 // Terminator 
+
+
+
 
 
 
