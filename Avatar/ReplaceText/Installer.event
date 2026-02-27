@@ -12,7 +12,15 @@ WORD 1 // True
 // [ifDeadXX][endif]
 // [ifMissingXX][endif]
 
-
+#ifndef TheyPronounFlag 
+    #define TheyPronounFlag 0x114
+#endif 
+#ifndef HePronounFlag 
+    #define HePronounFlag 0x115
+#endif 
+#ifndef ShePronounFlag 
+    #define ShePronounFlag 0x116
+#endif 
 
 
 #inctbl "fe8TR" "fe8_tr.tbl"
