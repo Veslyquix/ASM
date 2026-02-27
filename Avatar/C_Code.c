@@ -205,16 +205,25 @@ int CountNumPronouns(void)
 
 int CanPortraitBeEditedAtAll(void)
 {
-    if (CountAvatarPortraits() <= 0 && CountMaxHairstyles() <= 1 && CountNumHairCols() <= 1 && CountNumEyeCols() <= 1 &&
+    if (CountAvatarPortraits() <= 1 && CountMaxHairstyles() <= 1 && CountNumHairCols() <= 1 && CountNumEyeCols() <= 1 &&
         CountNumSkinTones() <= 1)
         return false;
 
     return true;
 }
 
+u8 PortraitEditingUsability(const struct MenuItemDef * item, int id)
+{
+    if (CanPortraitBeEditedAtAll())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_NOTSHOWN;
+}
+
 int CanPortraitStyleBeEdited(void)
 {
-    return CountAvatarPortraits() > 0;
+    return CountAvatarPortraits() > 1;
 }
 
 u8 PortraitStyleUsability(const struct MenuItemDef * item, int id)
@@ -492,6 +501,10 @@ void AvatarDrawMainMenu(struct AvatarProc * proc)
     // InitSystemTextFont();
     InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + 0x3000), 0x180, 0);
 
+    if (!CanPortraitBeEditedAtAll())
+    {
+        fid = AvatarPortraits[0]; // use the only option as the default.
+    } // If they put no portraits, then it'll be 0 anyway
     if (proc->portraitChosen)
     {
         fid = AvatarPortraits[0];
@@ -646,6 +659,8 @@ void CopyTactName(void)
         ;
 }
 
+void AvPortraitStartMenu(struct AvatarProc * proc);
+
 const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_SLEEP(3),
     PROC_NAME("Avatar Handler"),
@@ -673,6 +688,7 @@ const struct ProcCmd ProcScr_AvatarHandler[] = {
     PROC_GOTO(AvRestart),
 
     PROC_LABEL(AvPortrait),
+    PROC_CALL(AvPortraitStartMenu),
     // PROC_CALL_2(AvPortraitSelection),
     // PROC_REPEAT(AvPortraitIdle),
     PROC_SLEEP(3),
@@ -712,11 +728,18 @@ void CallUpdatePronounFlags(void)
 
 u8 AvatarConfirm_OnYesPress(struct MenuProc * menu, struct MenuItemProc * item)
 {
+    UpdatePronounFlags(menu->proc_parent);
     Proc_Goto(menu->proc_parent, AvEnd);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
 u8 AvatarConfirm_OnBPress(struct MenuProc * menu, struct MenuItemProc * item)
 {
+    Proc_Goto(menu->proc_parent, AvRestart);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
+};
+u8 AvatarPortrait_OnBPress(struct MenuProc * menu, struct MenuItemProc * item)
+{
+    EndFaceById(0);
     Proc_Goto(menu->proc_parent, AvRestart);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
 };
@@ -780,7 +803,7 @@ const struct MenuItemDef PortraitSelectionMenuItems[] = {
     MenuItemsEnd
 };
 const struct MenuDef gAvatarPortraitMenuDef = {
-    { 14, 1, 8, 0 }, 0, PortraitSelectionMenuItems, 0, 0, 0, AvatarConfirm_OnBPress, 0, 0
+    { 14, 1, 8, 0 }, 0, PortraitSelectionMenuItems, 0, 0, 0, AvatarPortrait_OnBPress, 0, 0
 };
 
 void AvatarNameInput(struct AvatarProc * proc)
@@ -843,7 +866,7 @@ void StartFaceFadeInCustom(struct FaceProc * proc, struct AvatarProc * avatarPro
 
     return;
 }
-
+extern int ShouldPortraitsBlink;
 void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y, int flip)
 {
     EndFaceById(0);
@@ -855,7 +878,10 @@ void AvatarStartFaceAt(int id, struct AvatarProc * proc, int x, int y, int flip)
     {
         pTalkState->faces[pTalkState->activeFaceSlot] =
             StartFace(0, id, x, y, FACE_DISP_KIND(FACE_96x80) | flip); // blink
-        // SetFaceBlinkControlById(0, 0);
+        if (!ShouldPortraitsBlink)
+        {
+            SetFaceBlinkControlById(0, 5);
+        }
         // StartFaceFadeInCustom(pTalkState->faces[pTalkState->activeFaceSlot], proc);
         StartFaceFadeIn(pTalkState->faces[pTalkState->activeFaceSlot]);
 
@@ -872,7 +898,11 @@ void AvatarStartFace(int id, struct AvatarProc * proc)
     AvatarStartFaceAt(id, proc, x, y, FACE_DISP_FLIPPED);
 
 } // 859133c T sTalkState
-
+void AvPortraitStartMenu(struct AvatarProc * proc)
+{
+    StartMenu(&gAvatarPortraitMenuDef, proc);
+    AvatarStartFace(AvatarPortraits[0], proc);
+}
 void PortraitAdjustPal(struct AvatarProc * proc, u16 * buffer)
 {
     int fid = GetAdjustedPortraitID(AvatarPortraits[0]);
@@ -989,37 +1019,35 @@ u8 AvPortraitIdle(struct MenuProc * menu, struct MenuItemProc * item)
         }
     }
 
-    // randomly talk or blink
-    int time = GetGameClock();
-    switch ((time & 0x1FF) >> 7)
+    if (ShouldPortraitsBlink)
     {
-        case 0:
-        case 2:
+        // randomly talk or blink
+        int time = GetGameClock();
+        switch ((time & 0x1FF) >> 7)
         {
-            SetTalkFaceMouthMove(0);
-            break;
-        }
-        case 1:
-        {
-            SetTalkFaceNoMouthMove(0);
-            SetTalkFaceDisp(0, 1); // smile
-            break;
-        }
-        case 3:
-        {
-            SetTalkFaceNoMouthMove(0);
-            SetTalkFaceDisp(0, 0); // neutral
-            break;
+            case 0:
+            case 2:
+            {
+                SetTalkFaceMouthMove(0);
+                break;
+            }
+            case 1:
+            {
+                SetTalkFaceNoMouthMove(0);
+                SetTalkFaceDisp(0, 1); // smile
+                break;
+            }
+            case 3:
+            {
+                SetTalkFaceNoMouthMove(0);
+                SetTalkFaceDisp(0, 0); // neutral
+                break;
+            }
         }
     }
     return 0;
 }
 
-u8 AvatarBPress(struct MenuProc * menu)
-{
-    Proc_Goto(menu->proc_parent, AvConfirm);
-    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6B | MENU_ACT_CLEAR;
-};
 void UpdateMenuID(struct MenuProc * menu)
 {
     BG_Fill(gBG2TilemapBuffer, 0);
@@ -1028,6 +1056,17 @@ void UpdateMenuID(struct MenuProc * menu)
     struct AvatarProc * proc = menu->proc_parent;
     proc->menuID = menu->itemCurrent;
 }
+int CanSelectClass(void);
+u8 AvatarBPress(struct MenuProc * menu, struct MenuItemProc * item)
+{
+    if (CanSelectClass())
+    {
+        UpdateMenuID(menu);
+        Proc_Goto(menu->proc_parent, AvConfirm);
+        return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+    }
+    return MENU_ACT_SND6B;
+};
 u8 AvatarReturnToMenu(struct MenuProc * menu, struct MenuItemProc * item)
 {
     // UpdateMenuID(menu); // submenu will be on a different ID
@@ -1053,8 +1092,6 @@ u8 AvatarPronounSelect(struct MenuProc * menu, struct MenuItemProc * item)
 u8 AvatarPortraitSelect(struct MenuProc * menu, struct MenuItemProc * item)
 {
     UpdateMenuID(menu);
-    StartMenu(&gAvatarPortraitMenuDef, (ProcPtr)menu->proc_parent);
-    AvatarStartFace(AvatarPortraits[0], menu->proc_parent);
     Proc_Goto(menu->proc_parent, AvPortrait);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
@@ -1074,7 +1111,7 @@ u8 AvatarBaneSelect(struct MenuProc * menu, struct MenuItemProc * item)
     StartMenu(&gBaneMenuDef, (ProcPtr)menu->proc_parent);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 };
-int CanSelectClass(void);
+
 u8 AvatarClassSelect(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     if (CanSelectClass())
@@ -1252,7 +1289,7 @@ int CanSelectClass(void)
         result = false;
     }
 
-    if (CanShowAsset() && proc->bane == Unchosen)
+    if (CanShowAsset() && proc->boon == Unchosen)
     {
         result = false;
     }
@@ -1264,14 +1301,33 @@ int CanSelectClass(void)
 
     return result;
 }
+extern int IsClassAvailable;
 u8 AvatarClassUsability(const struct MenuItemDef * def, int number)
 {
+    if (!IsClassAvailable)
+    {
+        return MENU_NOTSHOWN;
+    }
     if (CanSelectClass())
     {
         return MENU_ENABLED;
     }
     return MENU_DISABLED;
 }
+
+u8 AvatarExitUsability(const struct MenuItemDef * def, int number)
+{
+    if (IsClassAvailable)
+    {
+        return MENU_NOTSHOWN;
+    }
+    if (CanSelectClass())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_DISABLED;
+}
+
 extern struct Font gDefaultFont;
 void ResetTextCursorForMenu(struct MenuProc * menu) // sub_80CDA4C
 {
@@ -1295,6 +1351,38 @@ void RedrawAvatarMainMenu(struct AvatarProc * proc, struct MenuProc * menu)
 }
 
 // sizeof(StatNamesText);
+
+u8 PronounOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
+{
+    struct AvatarProc * proc = menu->proc_parent;
+    int id = proc->pronoun;
+    int numOfEntries = CountNumPronouns();
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    if (keys & DPAD_LEFT)
+    {
+        proc->pronoun--;
+        if (proc->pronoun < 0)
+        {
+            proc->pronoun = numOfEntries - 1;
+        }
+    }
+
+    if (keys & DPAD_RIGHT)
+    {
+        proc->pronoun++;
+        if (proc->pronoun >= numOfEntries)
+        {
+            proc->pronoun = 0;
+        }
+    }
+
+    if (id != proc->pronoun)
+    {
+        RedrawAvatarMainMenu(proc, menu);
+        AvatarDrawMainMenu(proc);
+    }
+    return 0;
+}
 
 u8 AssetOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 {
@@ -1330,6 +1418,7 @@ u8 AssetOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
     }
     return 0;
 }
+
 u8 FlawOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 {
     struct AvatarProc * proc = menu->proc_parent;
@@ -1364,12 +1453,12 @@ u8 FlawOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 
 const struct MenuItemDef gAvatarMenuItems[] = {
     { "はい", 0x4E5, 0, 0, 0x32, NameUsability, 0, AvatarNameSelect, 0, 0, 0 },                   // Name
-    { "はい", 0x2B, 0, 0, 0x32, PronounUsability, 0, AvatarPronounSelect, 0, 0, 0 },              // Pronouns
-    { "はい", 0x2C, 0, 0, 0x32, PortraitStyleUsability, 0, AvatarPortraitSelect, 0, 0, 0 },       // Portrait
+    { "はい", 0x2B, 0, 0, 0x32, PronounUsability, 0, AvatarPronounSelect, PronounOnIdle, 0, 0 },  // Pronouns
+    { "はい", 0x2C, 0, 0, 0x32, PortraitEditingUsability, 0, AvatarPortraitSelect, 0, 0, 0 },     // Portrait
     { "はい", 0x2D, 0, 0, 0x32, AssetUsability, AssetDraw, AvatarBoonSelect, AssetOnIdle, 0, 0 }, // Boon
     { "はい", 0x34, 0, 0, 0x32, FlawUsability, FlawDraw, AvatarBaneSelect, FlawOnIdle, 0, 0 },    // Bane
     { "はい", 0x4E6, 0, 0, 0x32, AvatarClassUsability, 0, AvatarClassSelect, 0, 0, 0 },           // Class
-    // { "はい", 0x848, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarBPress, 0, 0, 0 },            // Exit
+    { "はい", 0x848, 0, 0, 0x32, AvatarExitUsability, 0, AvatarBPress, 0, 0, 0 },                 // Exit
     MenuItemsEnd
 };
 // const struct MenuDef gAvatarMenuDef = { { 1, 1, 10, 0 }, 0, gAvatarMenuItems, 0, 0, 0, AvatarBPress, 0, 0 };

@@ -44,12 +44,16 @@ SHORT 0 // Terminator
 
 ALIGN 4 
 IsNameInputAvailable:
-WORD 1 
+WORD 1
 IsPronounAvailable:
 WORD 1 
 IsAssetAvailable:
-WORD 1 
+WORD 1
 IsFlawAvailable:
+WORD 1 
+IsClassAvailable:
+WORD 1 
+ShouldPortraitsBlink:
 WORD 1 
 
 AssetBonusPerStat:
