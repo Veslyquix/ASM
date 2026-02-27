@@ -1,6 +1,8 @@
 
 #include "headers/prelude.h"
 #include "headers/types.h"
+#include "headers/gbafe.h"
+
 #define ABS(aValue) ((aValue) >= 0 ? (aValue) : -(aValue))
 extern u8 gCh;
 extern int CheckFlag(int flag);
@@ -102,7 +104,7 @@ void ShiftDataInBuffer(char * buffer, int amount, int offset, int usedBufferLeng
         int bytesToMove = length - offset;
 
         // Manual safe copy: shift right (back to front to avoid overwrite)
-        for (int i = bytesToMove; i >= 0; --i)
+        for (int i = bytesToMove - 1; i >= 0; --i)
         {
             buffer[offset + amount + i] = buffer[offset + i];
         }
@@ -152,7 +154,7 @@ void ShiftDataInBufferSmall(char * buffer, int amount, int offset, int usedBuffe
         if (length + amount >= 0x1000)
             return;
 
-        for (int i = length; i >= offset; --i)
+        for (int i = length - 1; i >= offset; --i)
         {
             buffer[i + amount] = buffer[i];
         }
@@ -200,10 +202,203 @@ int ReplaceIfMatching(int usedBufferLength[], const char * find, const char * re
     }
     return len2;
 }
+
+static int ParseNumberHex(const char * str, int start, int digits)
+{
+    int result = 0;
+
+    for (int i = 0; i < digits; ++i)
+    {
+        char c = str[start + i];
+        int value;
+
+        if (c >= '0' && c <= '9')
+        {
+            value = c - '0';
+        }
+        else if (c >= 'A' && c <= 'F')
+        {
+            value = 10 + (c - 'A');
+        }
+        else if (c >= 'a' && c <= 'f')
+        {
+            value = 10 + (c - 'a');
+        }
+        else
+        {
+            break; // stop on first non-hex character
+        }
+
+        result = (result << 4) | value; // multiply by 16
+    }
+
+    return result;
+}
+void RemoveRange(char * buffer, int start, int end, int usedLength[1])
+{
+    int length = usedLength[0];
+
+    if (start < 0 || end < start || end > length)
+        return;
+
+    int removeSize = end - start;
+
+    int bytesToMove = length - end;
+
+    // Move remaining data left
+    for (int i = 0; i < bytesToMove; i++)
+    {
+        buffer[start + i] = buffer[end + i];
+    }
+
+    // Update length
+    usedLength[0] -= removeSize;
+
+    // Clear trailing bytes (optional but good)
+    for (int i = usedLength[0]; i < length; i++)
+    {
+        buffer[i] = 0;
+    }
+
+    // Ensure null termination
+    buffer[usedLength[0]] = 0;
+}
+static int IsIfTag(const char * b, int i)
+{
+    return (b[i] == '[' && b[i + 1] == 'i' && b[i + 2] == 'f');
+}
+
+static int IsEndIf(const char * b, int i)
+{
+    return (
+        b[i] == '[' && b[i + 1] == 'e' && b[i + 2] == 'n' && b[i + 3] == 'd' && b[i + 4] == 'i' && b[i + 5] == 'f' &&
+        b[i + 6] == ']');
+}
+extern struct Unit * GetUnitFromCharId(int id);
+static int IsUnitAlive(int id)
+{
+    struct Unit * unit = GetUnitFromCharId(id);
+    if (!UNIT_IS_VALID(unit))
+    {
+        return false;
+    }
+    if (unit->state & US_DEAD)
+    {
+        return false;
+    }
+    return true;
+}
+static int IsUnitDead(int id)
+{
+    struct Unit * unit = GetUnitFromCharId(id);
+    if (!UNIT_IS_VALID(unit))
+    {
+        return false;
+    }
+    if (unit->state & US_DEAD)
+    {
+        return true;
+    }
+    return false;
+}
+
+static int IsUnitMissing(int id)
+{
+    struct Unit * unit = GetUnitFromCharId(id);
+    if (!UNIT_IS_VALID(unit))
+    {
+        return true;
+    }
+    return false;
+}
+
+static int TryHandleConditional(char * b, int i, int usedLength[1])
+{
+    if (!IsIfTag(b, i))
+    {
+        // Remove stray [endif]
+        if (IsEndIf(b, i))
+        {
+            RemoveRange(b, i, i + 7, usedLength);
+            return 1;
+        }
+        return 0;
+    }
+
+    int condition = 0;
+    int tagEnd = i;
+
+    // Determine which IF type
+    if (b[i + 3] == 'F') // ifFlag
+    {
+        int flag = ParseNumberHex(b, i + 7, 3);
+        condition = CheckFlag(flag);
+    }
+    else if (b[i + 3] == 'A') // ifAlive
+    {
+        int charId = ParseNumberHex(b, i + 8, 2);
+        condition = IsUnitAlive(charId);
+    }
+    else if (b[i + 3] == 'D') // ifDead
+    {
+        int charId = ParseNumberHex(b, i + 7, 2);
+        condition = IsUnitDead(charId);
+    }
+    else if (b[i + 3] == 'M') // ifMissing
+    {
+        int charId = ParseNumberHex(b, i + 10, 2);
+        condition = IsUnitMissing(charId);
+    }
+    else
+    {
+        return 0; // unknown tag
+    }
+
+    // find closing bracket of opening tag
+    while (b[tagEnd] && b[tagEnd] != ']')
+        ++tagEnd;
+
+    if (!b[tagEnd])
+        return 0;
+
+    tagEnd++; // include ']'
+
+    // Remove the [ifXXXX] tag itself
+    RemoveRange(b, i, tagEnd, usedLength);
+
+    if (condition)
+        return 1; // keep inner contents
+
+    // CONDITION FALSE — remove until matching endif
+    int depth = 1;
+    int scan = i;
+
+    while (scan < usedLength[0])
+    {
+        if (IsIfTag(b, scan))
+        {
+            depth++;
+        }
+        else if (IsEndIf(b, scan))
+        {
+            depth--;
+
+            if (depth == 0)
+            {
+                RemoveRange(b, i, scan + 7, usedLength);
+                return 1;
+            }
+        }
+
+        scan++;
+    }
+
+    return 1;
+}
+
 extern int ControlCodesStartWithBracket;
 void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800384C
 {
-    // asm("mov r11, r11");
     int length[1] = { 0 };
     if ((int)a & 0x80000000)
     { // anti huffman
@@ -240,30 +435,36 @@ void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800
     }
 
     int replacedLen = 0;
-    // asm("mov r11, r11");
-    for (int i = 0; i < TextBufferSize; ++i)
+    for (int i = 0; i < length[0]; ++i)
     {
         if (!b[i])
         {
             return;
         }
+        if (TryHandleConditional(b, i, length))
+        {
+            i--;
+            continue;
+        }
+
         if (ControlCodesStartWithBracket && b[i] != 0x5B) // control codes to start with `[`
         {
             continue;
         }
+
         for (int c = 0; c < ListSize; ++c)
         {
             if (!b[i])
             {
                 return;
             }
+
             if (!ReplaceTextList[c].find)
             {
                 break;
             }
             if (ReplaceTextList[c].flag)
             {
-                // asm("mov r11, r11");
                 if (!CheckFlag(ReplaceTextList[c].flag))
                 {
                     continue;
@@ -285,38 +486,4 @@ void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800
             }
         }
     }
-
-    /*
-        for (int c = 0; c < 255; ++c)
-        {
-            if (!ReplaceTextList[c].find)
-            {
-                break;
-            }
-            if (ReplaceTextList[c].flag)
-            {
-                if (!CheckFlag(ReplaceTextList[c].flag))
-                {
-                    continue;
-                }
-            }
-            if (ReplaceTextList[c].chapterID != 0xFF)
-            {
-                if (gCh != ReplaceTextList[c].chapterID)
-                {
-                    continue;
-                }
-            }
-            for (int i = 0; i < 0x555; ++i)
-            {
-                i = ReplaceIfMatching(length, ReplaceTextList[c].find, ReplaceTextList[c].replace, i, b);
-                if (!b[i])
-                {
-                    break;
-                }
-            }
-        }
-        */
-
-    // asm("mov r11, r11");
 }

@@ -6,37 +6,20 @@ ControlCodesStartWithBracket: // Only replace text starting with [
 WORD 1 // True 
 // WORD 0 // False 
 
+// Also adds these codes to make conditional dialogue easier: 
+// [ifFlagXXX][endif] // replace XXX with flag e.g. 0B0 is casual mode 
+// [ifAliveXX][endif] // replace XX for 01 for Eirika 
+// [ifDeadXX][endif]
+// [ifMissingXX][endif]
 
 
-// Feel free to add more pronouns to ReplaceTextList if desired 
-
-// they / their / theirs / them / have / are 
-// he / his / his / him / has / is 
-// she / her / hers / her / has / is 
-
-
-
-// is / are 
-// has / have 
-
-// some of this grammar is hard to handle 
-// he flies to me 
-// they fly to me 
-// he steals from me 
-// they steal from me 
-// he passes by 
-// they pass by 
 
 
 #inctbl "fe8TR" "fe8_tr.tbl"
 #define tx(string2) STRING string2 "fe8TR"; BYTE 0 0; // fe8 version 
 // #define tx(characters) String(characters); BYTE 0 0 
 
-ALIGN 4 
-code_tact2:
-tx("[tact2]") 
-
-
+// Feel free to add more pronouns to ReplaceTextList if desired 
 ALIGN 4 
 ReplaceTextList:
 // required flag, required chapter, pad, text to find, replacement text 

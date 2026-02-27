@@ -27,9 +27,32 @@ BYTE $80 $20// [Tact]
 String("?") 
 BYTE 3 // [A] 
 BYTE $9 $11 // Erase in pos 9 
-BYTE $01 $0C 
-String("[They] eludes me...")
+String("[ifFlagC1]")
+BYTE 1 $0C 
+String("Flag 1 is on...")
 BYTE 3 // [A]
+
+String("[ifMissing03]")
+BYTE 1 $0C 
+String("Gilliam is unrecruited...")
+BYTE 3 // [A]
+String("[endif]")
+
+String("[endif]")
+
+String("[ifAlive03]")
+BYTE 1 $0C 
+String("Gilliam is alive...")
+BYTE 3 // [A]
+String("[endif]")
+
+String("[ifDead03]")
+BYTE 1 $0C 
+String("Gilliam is dead...")
+BYTE 3 // [A]
+String("[endif]")
+
+
 BYTE 0 0 0 0 
 
 setText(0x93A, someText) 
