@@ -158,22 +158,12 @@ int CountMaxHairstyles(void)
     return c;
 }
 
-u8 HairstyleUsability(const struct MenuItemDef * item, int id)
-{
-    // brk;
-    if (CountMaxHairstyles() <= 1)
-    {
-        return MENU_NOTSHOWN;
-    }
-    return MENU_ENABLED;
-}
-
 extern u16 MugFlags[];
 extern u16 HairColFlags[];
 extern u16 SkinColFlags[];
 extern u16 EyeColFlags[];
 
-int CountNumHairCols(int fid)
+int CountNumHairCols()
 {
     u16 * data = HairColFlags;
     int i = 0;
@@ -184,7 +174,8 @@ int CountNumHairCols(int fid)
     }
     return i + 1;
 }
-int CountNumSkinTones(int fid)
+
+int CountNumSkinTones()
 {
     u16 * data = SkinColFlags;
     int i = 0;
@@ -195,7 +186,7 @@ int CountNumSkinTones(int fid)
     }
     return i + 1;
 }
-int CountNumEyeCols(int fid)
+int CountNumEyeCols()
 {
     u16 * data = EyeColFlags;
     int i = 0;
@@ -211,6 +202,65 @@ int CountNumPronouns(void)
 {
     return 3;
 }
+
+int CanPortraitBeEditedAtAll(void)
+{
+    if (CountAvatarPortraits() <= 0 && CountMaxHairstyles() <= 1 && CountNumHairCols() <= 1 && CountNumEyeCols() <= 1 &&
+        CountNumSkinTones() <= 1)
+        return false;
+
+    return true;
+}
+
+int CanPortraitStyleBeEdited(void)
+{
+    return CountAvatarPortraits() > 0;
+}
+
+u8 PortraitStyleUsability(const struct MenuItemDef * item, int id)
+{
+    if (CanPortraitStyleBeEdited())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_NOTSHOWN;
+}
+
+u8 HairstyleUsability(const struct MenuItemDef * item, int id)
+{
+    if (CountMaxHairstyles() <= 1)
+    {
+        return MENU_NOTSHOWN;
+    }
+    return MENU_ENABLED;
+}
+
+u8 HairColourUsability(const struct MenuItemDef * item, int id)
+{
+    if (CountNumHairCols() <= 1)
+    {
+        return MENU_NOTSHOWN;
+    }
+    return MENU_ENABLED;
+}
+
+u8 EyeColourUsability(const struct MenuItemDef * item, int id)
+{
+    if (CountNumEyeCols() <= 1)
+    {
+        return MENU_NOTSHOWN;
+    }
+    return MENU_ENABLED;
+}
+u8 SkinToneUsability(const struct MenuItemDef * item, int id)
+{
+    if (CountNumSkinTones() <= 1)
+    {
+        return MENU_NOTSHOWN;
+    }
+    return MENU_ENABLED;
+}
+
 #define NumOfStats 7
 int CountNumOfStats(void)
 {
@@ -289,16 +339,16 @@ void DecrementHairFlag(struct AvatarProc * proc)
 
 void SetHairColFlag(struct AvatarProc * proc)
 {
-    int count = CountAvatarPortraits();
-    int fid = ((proc->portraitID & 0xFF) % count);
-    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(fid);
+    // int count = CountAvatarPortraits();
+    // int fid = ((proc->portraitID & 0xFF) % count);
+    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols();
     SetFlag(HairColFlags[hairCol]);
 }
 void ClearHairColFlag(struct AvatarProc * proc)
 {
-    int count = CountAvatarPortraits();
-    int fid = ((proc->portraitID & 0xFF) % count);
-    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols(fid);
+    // int count = CountAvatarPortraits();
+    // int fid = ((proc->portraitID & 0xFF) % count);
+    int hairCol = (proc->hairColID & 0xFF) % CountNumHairCols();
     ClearFlag(HairColFlags[hairCol]);
 }
 
@@ -317,14 +367,14 @@ void DecrementHairColFlag(struct AvatarProc * proc)
 
 void SetSkinFlag(struct AvatarProc * proc)
 {
-    int fid = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
-    int skinCol = (proc->skinID & 0xFF) % CountNumSkinTones(fid);
+    // int fid = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
+    int skinCol = (proc->skinID & 0xFF) % CountNumSkinTones();
     SetFlag(SkinColFlags[skinCol]);
 }
 void ClearSkinFlag(struct AvatarProc * proc)
 {
-    int fid = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
-    int skinCol = (proc->skinID & 0xFF) % CountNumSkinTones(fid);
+    // int fid = ((proc->portraitID & 0xFF) % CountAvatarPortraits());
+    int skinCol = (proc->skinID & 0xFF) % CountNumSkinTones();
     ClearFlag(SkinColFlags[skinCol]);
 }
 
@@ -343,16 +393,16 @@ void DecrementSkinFlag(struct AvatarProc * proc)
 
 void SetEyeFlag(struct AvatarProc * proc)
 {
-    int count = CountAvatarPortraits();
-    int fid = ((proc->portraitID & 0xFF) % count);
-    int eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols(fid);
+    // int count = CountAvatarPortraits();
+    // int fid = ((proc->portraitID & 0xFF) % count);
+    int eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols();
     SetFlag(EyeColFlags[eyeCol]);
 }
 void ClearEyeFlag(struct AvatarProc * proc)
 {
-    int count = CountAvatarPortraits();
-    int fid = ((proc->portraitID & 0xFF) % count);
-    int eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols(fid);
+    // int count = CountAvatarPortraits();
+    // int fid = ((proc->portraitID & 0xFF) % count);
+    int eyeCol = (proc->eyeColID & 0xFF) % CountNumEyeCols();
     ClearFlag(EyeColFlags[eyeCol]);
 }
 
@@ -720,11 +770,13 @@ const struct MenuDef gAvatarPronounMenuDef = {
 };
 
 const struct MenuItemDef PortraitSelectionMenuItems[] = {
-    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 },  // Portrait
+    { "はい", 0x2C, 0, 0, 0x32, PortraitStyleUsability, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0,
+      0 },                                                                                                 // Portrait
     { "はい", 0x2E, 0, 0, 0x32, HairstyleUsability, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Hair Style
-    { "はい", 0x2F, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Hair Colour
-    { "はい", 0x29, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Eye Colour
-    { "はい", 0x30, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Skin Tone
+    { "はい", 0x2F, 0, 0, 0x32, HairColourUsability, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0,
+      0 }, // Hair Colour
+    { "はい", 0x29, 0, 0, 0x32, EyeColourUsability, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 }, // Eye Colour
+    { "はい", 0x30, 0, 0, 0x32, SkinToneUsability, 0, AvatarPortrait_OnSelection, AvPortraitIdle, 0, 0 },  // Skin Tone
     MenuItemsEnd
 };
 const struct MenuDef gAvatarPortraitMenuDef = {
@@ -1125,20 +1177,95 @@ const struct MenuItemDef gAvatarBaneItems[] = {
 };
 
 const struct MenuDef gBaneMenuDef = { { 1, 1, 8, 0 }, 0, gAvatarBaneItems, 0, 0, 0, AvatarReturnToMenu, 0, 0 };
+extern int IsNameInputAvailable;
+int CanShowNameInput(void)
+{
+    return IsNameInputAvailable;
+}
+
+extern int IsPronounAvailable;
+int CanShowPronoun(void)
+{
+    return IsPronounAvailable;
+}
+extern int IsAssetAvailable;
+extern int IsFlawAvailable;
+int CanShowAsset(void)
+{
+    return IsAssetAvailable;
+}
+int CanShowFlaw(void)
+{
+    return IsFlawAvailable;
+}
+
+u8 PronounUsability(const struct MenuItemDef * item, int id)
+{
+    if (CanShowPronoun())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_NOTSHOWN;
+}
+u8 NameUsability(const struct MenuItemDef * item, int id)
+{
+    if (CanShowNameInput())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_NOTSHOWN;
+}
+
+u8 AssetUsability(const struct MenuItemDef * item, int id)
+{
+    if (CanShowAsset())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_NOTSHOWN;
+}
+u8 FlawUsability(const struct MenuItemDef * item, int id)
+{
+    if (CanShowFlaw())
+    {
+        return MENU_ENABLED;
+    }
+    return MENU_NOTSHOWN;
+}
 
 int CanSelectClass(void)
 {
     struct AvatarProc * proc = Proc_Find(ProcScr_AvatarHandler);
-    if (!*GetTacticianName() || !proc->portraitChosen || proc->pronoun == Unchosen || proc->bane == Unchosen ||
-        proc->boon == Unchosen)
+    int result = true;
+    if (CanShowNameInput() && !*GetTacticianName())
     {
-        return false;
+        result = false;
     }
-    return true;
+
+    if (CanPortraitBeEditedAtAll() && !proc->portraitChosen)
+    {
+        result = false;
+    }
+
+    if (CanShowPronoun() && proc->pronoun == Unchosen)
+    {
+        result = false;
+    }
+
+    if (CanShowAsset() && proc->bane == Unchosen)
+    {
+        result = false;
+    }
+
+    if (CanShowFlaw() && proc->bane == Unchosen)
+    {
+        result = false;
+    }
+
+    return result;
 }
 u8 AvatarClassUsability(const struct MenuItemDef * def, int number)
 {
-
     if (CanSelectClass())
     {
         return MENU_ENABLED;
@@ -1156,7 +1283,7 @@ void ResetTextCursorForMenu(struct MenuProc * menu) // sub_80CDA4C
     }
     if (CanSelectClass())
     {
-        menu->menuItems[5]->availability = MENU_ENABLED; /// ahhhhhh
+        menu->menuItems[menu->itemCount - 1]->availability = MENU_ENABLED; /// ahhhhhh
     }
 }
 
@@ -1234,13 +1361,14 @@ u8 FlawOnIdle(struct MenuProc * menu, struct MenuItemProc * item)
 
     return 0;
 }
+
 const struct MenuItemDef gAvatarMenuItems[] = {
-    { "はい", 0x4E5, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarNameSelect, 0, 0, 0 },                  // Name
-    { "はい", 0x2B, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPronounSelect, 0, 0, 0 },                // Pronouns
-    { "はい", 0x2C, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarPortraitSelect, 0, 0, 0 },               // Portrait
-    { "はい", 0x2D, 0, 0, 0x32, MenuAlwaysEnabled, AssetDraw, AvatarBoonSelect, AssetOnIdle, 0, 0 }, // Boon
-    { "はい", 0x34, 0, 0, 0x32, MenuAlwaysEnabled, FlawDraw, AvatarBaneSelect, FlawOnIdle, 0, 0 },   // Bane
-    { "はい", 0x4E6, 0, 0, 0x32, AvatarClassUsability, 0, AvatarClassSelect, 0, 0, 0 },              // Class
+    { "はい", 0x4E5, 0, 0, 0x32, NameUsability, 0, AvatarNameSelect, 0, 0, 0 },                   // Name
+    { "はい", 0x2B, 0, 0, 0x32, PronounUsability, 0, AvatarPronounSelect, 0, 0, 0 },              // Pronouns
+    { "はい", 0x2C, 0, 0, 0x32, PortraitStyleUsability, 0, AvatarPortraitSelect, 0, 0, 0 },       // Portrait
+    { "はい", 0x2D, 0, 0, 0x32, AssetUsability, AssetDraw, AvatarBoonSelect, AssetOnIdle, 0, 0 }, // Boon
+    { "はい", 0x34, 0, 0, 0x32, FlawUsability, FlawDraw, AvatarBaneSelect, FlawOnIdle, 0, 0 },    // Bane
+    { "はい", 0x4E6, 0, 0, 0x32, AvatarClassUsability, 0, AvatarClassSelect, 0, 0, 0 },           // Class
     // { "はい", 0x848, 0, 0, 0x32, MenuAlwaysEnabled, 0, AvatarBPress, 0, 0, 0 },            // Exit
     MenuItemsEnd
 };

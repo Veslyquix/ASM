@@ -42,6 +42,15 @@ PronounFlags:
 SHORT TheyPronounFlag HePronounFlag ShePronounFlag 
 SHORT 0 // Terminator 
 
+ALIGN 4 
+IsNameInputAvailable:
+WORD 1 
+IsPronounAvailable:
+WORD 1 
+IsAssetAvailable:
+WORD 1 
+IsFlawAvailable:
+WORD 1 
 
 AssetBonusPerStat:
 BYTE 5 // hp 

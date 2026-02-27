@@ -70,7 +70,7 @@ def main():
         base, variant = name.split("_", 1)
         hairstyles[base].append((variant, os.path.join(HAIRSTYLES_FOLDER, file)))
     i = 0
-    flag = 0
+    flagCount = 0
     with open(OUTPUT_FILE, "w") as out:
         
         total = 0
@@ -109,6 +109,7 @@ def main():
 ##        total -= 1
         out.write(f"SHORT 0 //Terminator\n")
         out.write(f"\nALIGN 4\nPortraitPalReplacements:\n")
+        flagCount = total
         
         
  
@@ -148,21 +149,21 @@ def main():
                 if allBase:
                     continue
                 rgb_list = ", ".join(output_entries)
-                flag = total + i
+                flagCount = total + i
 
                 line = (
                     f"PortraitPals(StartingMug, "
                     f"StartingMug+{total}, "
                     #f"{base}Flag_{variant}, "
-                    f"StartingFlag+{flag}, "
+                    f"StartingFlag+{flagCount}, "
                     f"{rgb_list})"
                 )
                 if "skin" in variant.lower():
-                    skinFlags.append(flag)
+                    skinFlags.append(flagCount)
                 elif "eye" in variant.lower():
-                    eyeFlags.append(flag)
+                    eyeFlags.append(flagCount)
                 else:
-                    hairFlags.append(flag)
+                    hairFlags.append(flagCount)
                 i+=1
 
                 out.write(line + "\n")
@@ -183,11 +184,11 @@ def main():
             var = skinFlags[s]
             out.write(f"SHORT StartingFlag+{var}\n")
         out.write(f"SHORT 0 //Terminator\n")
-        flag = hex(flag)
-        out.write(f"\nALIGN 4\nAvatarTotalFlags:\nWORD {flag}")
+        flagCount = hex(flagCount)
+        out.write(f"\nALIGN 4\nAvatarTotalFlags:\nWORD {flagCount}")
 
     
-    print(f"Done! GeneratedInstaller.event created.\n{flag} global flags used.")
+    print(f"Done! GeneratedInstaller.event created.\n{flagCount} global flags used.")
 
 
 if __name__ == "__main__":
