@@ -6,22 +6,6 @@ ControlCodesStartWithBracket: // Only replace text starting with [
 WORD 1 // True 
 // WORD 0 // False 
 
-#ifdef SRR 
-// the randomizer takes over GetStringFromIndex, so take over for now 
-PUSH
-ORG $a240
-ALIGN 4
-WORD $46C04778 $E59FC000 $E12FFF1C
-POIN GetStringFromIndex
-POP
-
-ALIGN 4
-PUSH
-ORG CURRENTOFFSET+$1;GetStringFromIndex:
-POP
-WORD $B5104B09 $4B096018 $681B4C09 $210080 $4B0858C0 $F812F000 $4B070020 $F80EF000 $BC100020 $4708BC02 $202B6AC $800A2A0 $202A6AC $8002BA5 $800A1C9 $46C04718
-// for SRR 
-#endif 
 
 
 // Feel free to add more pronouns to ReplaceTextList if desired 
@@ -57,9 +41,6 @@ ALIGN 4
 ReplaceTextList:
 // required flag, required chapter, pad, text to find, replacement text 
 // SHORT 0; 			BYTE 0xFF 		0; 	POIN TextA 			TextB 
-
-SHORT 0; BYTE 0xFF 0; POIN code_tact2; WORD TACT2_RAM
-
 /* [they] / [They] 
 E.g. 
 They have the toy. 
@@ -267,3 +248,19 @@ TextF: ; STRING "arbitrary text " "FE6TR"; BYTE 0
 
 
 
+#ifdef SRR 
+// the randomizer takes over GetStringFromIndex, so take over for now 
+PUSH
+ORG $a240
+ALIGN 4
+WORD $46C04778 $E59FC000 $E12FFF1C
+POIN GetStringFromIndex
+POP
+
+ALIGN 4
+PUSH
+ORG CURRENTOFFSET+$1;GetStringFromIndex:
+POP
+WORD $B5104B09 $4B096018 $681B4C09 $210080 $4B0858C0 $F812F000 $4B070020 $F80EF000 $BC100020 $4708BC02 $202B6AC $800A2A0 $202A6AC $8002BA5 $800A1C9 $46C04718
+// for SRR 
+#endif 
