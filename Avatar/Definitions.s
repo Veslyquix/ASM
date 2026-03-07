@@ -13,8 +13,10 @@
 .endm
 
 @ division & other libgcc functions
-SET_FUNC __aeabi_idiv,    __divsi3
-SET_FUNC __aeabi_idivmod, __modsi3
+fun Div, __aeabi_idiv
+fun Div, __aeabi_idivmod
+fun Div, __aeabi_uidiv
+fun Div, __aeabi_uidivmod
 SET_DATA sUnknown_08A30800, 0x80CCC1c @ or 0x80B3A48
 SET_DATA sUnknown_08A30978, 0x80CCC28 @ or 0x80B3A50
 SET_DATA classTablePoin, 0x8017AB8 
