@@ -1145,7 +1145,7 @@ void EditWExpInit(DebuggerProc * proc)
     int h = (WExpOptions * 2) + 2;
 
     DrawUiFrame(
-        BG_GetMapBuffer(2),            // back BG
+        BG_GetMapBuffer(1),            // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
     BG_EnableSyncByMask(BG2_SYNC_BIT);
 
@@ -1172,10 +1172,11 @@ void DebuggerDisplayWeaponExp(int num, int x, int y, int wtype, int wexp)
     // int wexp = gStatScreen.unit->ranks[wtype];
 
     // Display weapon type icon
+
     DrawIcon(
         gBG0TilemapBuffer + TILEMAP_INDEX(x, y),
         0x70 + wtype, // TODO: icon id definitions
-        TILEREF(0, 2));
+        TILEREF(0, 5));
 
     x += 4;
 
@@ -1187,16 +1188,17 @@ void DebuggerDisplayWeaponExp(int num, int x, int y, int wtype, int wexp)
     GetWeaponExpProgressState(wexp, &progress, &progressMax);
 
     DrawStatBarGfx(
-        0x180 + num * 6, 5,
-        // gUiTmScratchC + TILEMAP_INDEX(x + 2, y + 1), TILEREF(0,
-        // STATSCREEN_BGPAL_6),
-        gBG1TilemapBuffer + TILEMAP_INDEX(x + 2, y + 1), TILEREF(0, 1), 0x22, (progress * 34) / (progressMax - 1), 0);
+        0x180 + num * 6, 5, gBG2TilemapBuffer + TILEMAP_INDEX(x + 2, y + 1), TILEREF(0, 1), 0x22,
+        (progress * 34) / (progressMax - 1), 0);
 }
 
 void RedrawUnitWExpMenu(DebuggerProc * proc)
 {
+    LoadIconPalettes(4);
     TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - 2, Y_HAND), 9, 2 * WExpOptions, 0);
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+    gLCDControlBuffer.bg1cnt.priority = 1;
+    gLCDControlBuffer.bg2cnt.priority = 0;
     // ResetText();
     int c = 0;
     struct Text * th = gStatScreen.text;
@@ -1222,13 +1224,15 @@ void RedrawUnitWExpMenu(DebuggerProc * proc)
 
     for (int i = 0; i < WExpOptions; ++i)
     {
+        // DisplayWeaponExp(i, x - 2, Y_HAND + (i * 2),
+        // proc->tmp[i]); // first i is bar ID, second i is wep type ID
         DebuggerDisplayWeaponExp(
             i, x - 2, Y_HAND + (i * 2), i,
             proc->tmp[i]); // first i is bar ID, second i is wep type ID
         PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
     }
 
-    SetBlendTargetA(0, 0, 1, 0, 0);
+    SetBlendTargetA(0, 1, 0, 0, 0); // transparent ui
     // SetBlendTargetB(0, 0, 0, 0, 1);
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
 }
@@ -1814,6 +1818,7 @@ void RedrawItemMenu(DebuggerProc * proc)
 
     for (int i = 0; i < NumberOfItems; ++i)
     {
+
         icon =
             GetItemIconId(proc->tmp[i] & 0xFFFF); // 0xFFFF because Durability based items expects short, not word fsr
         if (icon >= 0)
@@ -3675,6 +3680,8 @@ void OffsetTileset(DebuggerProc * proc, int amount)
 
 void ClearTilesetRow(DebuggerProc * proc)
 {
+    gLCDControlBuffer.bg1cnt.priority = 1;
+    gLCDControlBuffer.bg2cnt.priority = 2;
     SetBackgroundTileDataOffset(2, 0);
     SetBlendTargetA(0, 1, 0, 0, 0);
     BG_Fill(gBG2TilemapBuffer, 0);
@@ -5373,7 +5380,7 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
 void GfxViewerInit(DebuggerProc * proc)
 {
     SomeMenuInit(proc);
-    struct Unit * unit = proc->unit;
+    // struct Unit * unit = proc->unit;
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
         proc->tmp[i] = 0;

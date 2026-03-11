@@ -1,4 +1,8 @@
-
+.macro blh to, reg=r3
+  ldr \reg, =\to
+  mov lr, \reg
+  .short 0xf800
+.endm
 
 .if FE8 == true 
 .include "fe8.s" 
@@ -40,6 +44,21 @@ bne loop_strlen
 sub r2, #1 
 mov r0, r2 
 bx lr 
+
+.global CallEndEvent_FE6
+.type CallEndEvent_FE6, %function 
+CallEndEvent_FE6:
+push {lr} 
+mov r0, #0xE 
+ldr r3, =0x0202AA48 
+ldsb r0, [r3, r0] 
+blh 0x802BBA0 
+ldr r0, [r0, #0x18] 
+blh 0x800D978
+pop {r3} 
+bx r3 
+.ltorg 
+
 
 
 SET_FUNC GetPidStats, 0x8084F4D
@@ -117,7 +136,7 @@ SET_FUNC EndAllMenus, 0x8041A39
 SET_FUNC RenderBmMap, 0x8018D91
 SET_FUNC RefreshBMapGraphics, 0x80292dd
 SET_FUNC Text_SetCursor, 0x80059e1 
-SET_FUNC Text_SetColor, 0x8005a39
+
 SET_FUNC Text_DrawStringAscii, 0x80064b5
 SET_FUNC PutText, 0x8005ab5
 SET_FUNC GetLang, 0x800562d
@@ -268,8 +287,25 @@ SET_FUNC MapAnim_Cleanup, 0x80619b1
 SET_FUNC UpdateActorFromBattle, 0x80254CD @ BattleApplyUnitUpdates
 SET_FUNC GetGameLock, 0x801599d
 
+SET_FUNC GetDisplayRankStringFromExp, 0x8016B85
+SET_FUNC Text_GetCursor, 0x80059C9
+SET_FUNC Text_SetCursor, 0x80059E1
+SET_FUNC Text_SetColor, 0x8005a39
+SET_FUNC Text_GetColor, 0x8005a61
+SET_FUNC UnpackUiBarPalette, 0x80412DD
+
+
+
 .endif     
 .if FE7 == true 
+SET_FUNC UnpackUiBarPalette, 0x8049AF5
+SET_FUNC Text_GetCursor, 0x8005571
+SET_FUNC Text_SetCursor, 0x8005575
+SET_FUNC Text_SetColor, 0x8005581
+SET_FUNC Text_GetColor, 0x8005585
+
+SET_FUNC GetWeaponExpProgressState, 0x8016A39
+SET_FUNC GetDisplayRankStringFromExp, 0x80169E1
 SET_FUNC GetGameLock, 0x8015329
 SET_FUNC RenderBmMapOnBg2, 0x8019585  
 SET_FUNC MoveActiveUnit, 0x801CDBD 
@@ -719,7 +755,6 @@ SET_FUNC Decompress, 0x8013CA5
 SET_FUNC memcpy, 0x809F991
 SET_FUNC ClearBg0Bg1, 0x8041679
 SET_FUNC UnitRemoveInvalidItems, 0x80174cd
-SET_FUNC Text_GetColor, 0x8005a61
 SET_FUNC PutUiWindowFrame, 0x8041359
 SET_FUNC DrawIcon, 0x8004cf9
 SET_FUNC GetItemIconId, 0x80172d9
@@ -738,7 +773,6 @@ SET_FUNC LoadIconPalettes, 0x8004d2d
 SET_FUNC GetItemIconId, 0x8017401
 SET_FUNC DrawIcon, 0x8004e29 @ maybe 
 SET_FUNC PutUiWindowFrame, 0x8049CE5
-SET_FUNC Text_GetColor, 0x8005585
 SET_FUNC UnitRemoveInvalidItems, 0x8017689
 SET_FUNC ClearBg0Bg1, 0x804a041
 SET_FUNC ApplyUnitDefaultPromotion, 0x8029819

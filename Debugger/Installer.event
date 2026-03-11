@@ -169,7 +169,7 @@ NumberOfPages:
 #ifdef _FE8_ 
 WORD 3
 #else 
-WORD 1 
+WORD 2 
 #endif 
 
 ggDebuggerMenuItems:
@@ -179,18 +179,15 @@ WORD 0
 ALIGN 4 
 gDebuggerMenuItems: 
 MenuCommand1(PickupText, PickupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, PickupUnitNow)
-// #ifdef _FE8_ 
-MenuCommand1(PromoteCommandText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
-MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
+
 MenuCommand1(LevelupText,LevelupDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LevelupNow)
-// #endif 
 MenuCommand1(EditStatsText,EditStatsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStatsNow)
 MenuCommand1(EditMiscText,EditMiscDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMiscNow)
 MenuCommand1(EditItemsText,EditItemsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditItemsNow)
 MenuCommand1(EditStateText,EditStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditStateNow)
+MenuCommand1(WExpText,WExpDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditWExpNow)
+MenuCommand1(SupportMenuText,SupportMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditSupportNow)
 MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
-
-
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
 
 
@@ -204,6 +201,11 @@ MenuCommand1(ChStateText,ChStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMen
 MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
 MenuCommand1(LoadUnitsText,LoadUnitsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LoadUnitsNow)
 MenuCommand1(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, BootmodeDrawText, ToggleBootNow)
+#else 
+MenuCommand1(PromoteCommandText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
+MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
+MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
+
 #endif 
 MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
@@ -213,10 +215,10 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 ALIGN 4 
 gDebuggerMenuItemsPage3: // must be immediately after gDebuggerMenuItemsPage2 
 #ifdef _FE8_ 
-MenuCommand1(WExpText,WExpDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditWExpNow)
-MenuCommand1(SupportMenuText,SupportMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditSupportNow)
 MenuCommand1(SupplyMenuText,SupplyMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, SupplyNow)
 MenuCommand1(ListMenuText,ListMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, ListNow) 
+MenuCommand1(PromoteCommandText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
+MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
 MenuCommand1(AiControlRemainingUnitsText,AiControlRemainingUnitsDesc, NormalText, MenuAlwaysEnabled, AiControlRemainingUnitsDrawText, AiControlRemainingUnitsNow) 
 MenuCommand1(GfxViewerText,GfxViewerDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, GfxViewerNow) 
 #ifdef VeslyBuildfile 
@@ -359,6 +361,21 @@ ALIGN 32 ; STRING "Spotted" "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "Concealed" "fe
 ALIGN 32 ; STRING "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING      "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING     "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "     " "fe6TR"; BYTE 0 0; 
 ALIGN 32 ; STRING "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING   "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING   "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING      "     " "fe6TR"; BYTE 0 0 ; ALIGN 32; STRING    "     " "fe6TR"; BYTE 0 0; 
 ALIGN 32; 
+
+ALIGN 32 
+weaponTypes:
+STRING "Sword" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Lance" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Axe" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Bow" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Staff" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Anima" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Light" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Dark" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Drg" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Drg" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+STRING "Drg" "fe6TR"; BYTE 0 0 ; ALIGN 16 
+
 
 ALIGN 16 
 LevelText: 

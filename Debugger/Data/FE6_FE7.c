@@ -13,6 +13,44 @@
 #define usable 1
 #endif
 
+#define BLDCNT_TARGETA(bg0, bg1, bg2, bg3, obj)                                                                        \
+    (((bg0) << 0) | ((bg1) << 1) | ((bg2) << 2) | ((bg3) << 3) | ((obj) << 4))
+#define BLDCNT_TARGETB(bg0, bg1, bg2, bg3, obj)                                                                        \
+    (((bg0) << 8) | ((bg1) << 9) | ((bg2) << 10) | ((bg3) << 11) | ((obj) << 12))
+#define BLDCNT_EFFECT(n) (((n) & 3) << 6)
+__attribute__((optimize("no-strict-aliasing"))) void SetBlendTargetA_(int bg0, int bg1, int bg2, int bg3, int obj)
+{
+    *((u16 *)(void *)&gLCDControlBuffer.bldcnt) &= ~BLDCNT_TARGETA(1, 1, 1, 1, 1);
+    *((u16 *)(void *)&gLCDControlBuffer.bldcnt) |= BLDCNT_TARGETA(bg0, bg1, bg2, bg3, obj);
+}
+
+__attribute__((optimize("no-strict-aliasing"))) void SetBlendTargetB_(int bg0, int bg1, int bg2, int bg3, int obj)
+{
+    *((u16 *)(void *)&gLCDControlBuffer.bldcnt) &= ~BLDCNT_TARGETB(1, 1, 1, 1, 1);
+    *((u16 *)(void *)&gLCDControlBuffer.bldcnt) |= BLDCNT_TARGETB(bg0, bg1, bg2, bg3, obj);
+}
+
+u16 * const BgTilemapBuffers_[] = {
+    gBG0TilemapBuffer,
+    gBG1TilemapBuffer,
+    gBG2TilemapBuffer,
+    gBG3TilemapBuffer,
+};
+
+u16 * BG_GetMapBuffer_(int bg)
+{
+    if (bg > 3)
+    {
+        bg = 0;
+    }
+    return BgTilemapBuffers_[bg];
+}
+void PutUiWindowFrame(int x, int y, int width, int height, int window_kind);
+void DrawUiFrame_(u16 * tilemap, int x, int y, int width, int height, int tilebase, int style)
+{
+    PutUiWindowFrame(x, y, width, height, style);
+}
+
 int Mod(int a, int b);
 extern const char BlankString[];
 char * GetStringFromIndexSafe(int index)
@@ -236,6 +274,16 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_REPEAT(StateIdle),
     PROC_GOTO(EndLabel),
 
+    PROC_LABEL(WExpLabel), // Wexp
+    PROC_CALL(EditWExpInit),
+    PROC_REPEAT(EditWExpIdle),
+    PROC_GOTO(EndLabel),
+
+    PROC_LABEL(SupportLabel), // Supports
+    PROC_CALL(EditSupportsInit),
+    PROC_REPEAT(EditSupportsIdle),
+    PROC_GOTO(EndLabel),
+
     PROC_LABEL(EndLabel),
     PROC_CALL_2(ClearActiveUnitStuff),
     PROC_CALL(SaveProcVarsToIdler),
@@ -306,7 +354,7 @@ static u16 * const BgTilemapBuffers[] = {
     gBG3TilemapBuffer,
 };
 
-static u16 * BG_GetMapBufferNew(int bg)
+static u16 * BG_GetMapBuffer_New(int bg)
 {
     if (bg > 3)
     {
@@ -658,11 +706,11 @@ void StateInit(DebuggerProc * proc)
     int h = 18; //(NumberOfOptions * 2) + 2;
 
     DrawUiFrameNew(
-        BG_GetMapBufferNew(1),         // back BG
+        BG_GetMapBuffer_New(1),        // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     // ClearUiFrame(
-    //     BG_GetMapBufferNew(1), // front BG
+    //     BG_GetMapBuffer_New(1), // front BG
     //     x, y, w, h);
 
     struct Text * th = gStatScreen.text;
@@ -822,11 +870,11 @@ void EditStatsInit(DebuggerProc * proc)
     int h = (NumberOfOptions * 2) + 2;
 
     DrawUiFrameNew(
-        BG_GetMapBufferNew(1),         // back BG
+        BG_GetMapBuffer_New(1),        // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     // ClearUiFrame(
-    //     BG_GetMapBufferNew(1), // front BG
+    //     BG_GetMapBuffer_New(1), // front BG
     //     x, y, w, h);
 
     struct Text * th = gStatScreen.text;
@@ -899,7 +947,7 @@ void EditItemsInit(DebuggerProc * proc)
     int h = (NumberOfItems * 2) + 2;
 
     DrawUiFrameNew(
-        BG_GetMapBufferNew(1),         // back BG
+        BG_GetMapBuffer_New(1),        // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     struct Text * th = gStatScreen.text;
@@ -1311,7 +1359,7 @@ void EditMiscInit(DebuggerProc * proc)
     int h = (NumberOfMisc * 2) + 2;
 
     DrawUiFrameNew(
-        BG_GetMapBufferNew(1),         // back BG
+        BG_GetMapBuffer_New(1),        // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
 
     struct Text * th = gStatScreen.text;
@@ -2026,7 +2074,7 @@ int DebuggerMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
 
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
-    PutText(&menuItem->text, BG_GetMapBufferNew(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    PutText(&menuItem->text, BG_GetMapBuffer_New(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 }
 
@@ -2269,7 +2317,7 @@ int PageMenuItemDraw(struct MenuProc * menu, struct MenuItemProc * menuItem)
     }
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
     Text_DrawString(&menuItem->text, GetDebuggerMenuText(procIdler, menuItem->itemNumber));
-    PutText(&menuItem->text, BG_GetMapBufferNew(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
+    PutText(&menuItem->text, BG_GetMapBuffer_New(0) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 }
 
@@ -2366,6 +2414,7 @@ u8 PageIdler(struct MenuProc * menu, struct MenuItemProc * command)
         SwapToPreviousUnit(proc);
         gActiveUnitMoveOrigin.x = proc->unit->xPos;
         gActiveUnitMoveOrigin.y = proc->unit->yPos;
+        EndAllMenus(); // needed in fe6 for some reason
         Proc_Goto(proc, RestartLabel);
         return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
     }
@@ -2374,6 +2423,7 @@ u8 PageIdler(struct MenuProc * menu, struct MenuItemProc * command)
         SwapToNextUnit(proc);
         gActiveUnitMoveOrigin.x = proc->unit->xPos;
         gActiveUnitMoveOrigin.y = proc->unit->yPos;
+        EndAllMenus(); // needed in fe6 for some reason
         Proc_Goto(proc, RestartLabel);
         return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
     }
@@ -2399,6 +2449,7 @@ u8 PageIdler(struct MenuProc * menu, struct MenuItemProc * command)
         proc->page = page;
         procIdler->page = page;
         Proc_Goto(proc, RestartLabel);
+        EndAllMenus(); // needed in fe6 for some reason
         return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
     }
     return MENU_ITEM_NONE;
@@ -2834,4 +2885,562 @@ u8 CallArenaIsUnitAllowed(const struct MenuItemDef * def, int number)
         return usable;
     }
     return greyed;
+}
+extern void CallEndEvent_FE6(void);
+u8 CallEndEventNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    // SetupUnitFunc();
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, EndLabel);
+#ifdef FE6
+    CallEndEvent_FE6();
+#else
+    CallEndEvent();
+#endif
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+u8 EditWExpNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, WExpLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+u8 EditSupportNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, SupportLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+#define WExpWidth 11
+#define WExpOptions 8
+#ifdef FE6
+extern const char weaponTypes[][16];
+#endif
+void RedrawUnitWExpMenu(DebuggerProc * proc);
+void EditWExpInit(DebuggerProc * proc)
+{
+    LoadIconPalettes(4);
+#ifdef FE7
+    int wexpText = 0x1111;
+#endif
+    SomeMenuInit(proc);
+    struct Unit * unit = proc->unit;
+    for (int i = 0; i < WExpOptions; ++i)
+    {
+        proc->tmp[i] = unit->ranks[i];
+    }
+
+    int x = NUMBER_X - WExpWidth - 1;
+    int y = Y_HAND - 1;
+    int w = WExpWidth + (START_X - NUMBER_X) + 3;
+    int h = (WExpOptions * 2) + 2;
+
+    DrawUiFrame_(
+        BG_GetMapBuffer_(1),           // back BG
+        x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
+    BG_EnableSyncByMask(BG2_SYNC_BIT);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < 15; ++i)
+    {
+        InitText(&th[i], WExpWidth);
+    }
+    for (int i = 0; i < WExpOptions; ++i)
+    {
+        x = Text_GetCursor(&th[i]);
+        x++;
+        Text_SetCursor(&th[i], x);
+#ifdef FE7
+        Text_DrawString(&th[i], GetStringFromIndexSafe(wexpText + i));
+#else
+        Text_DrawString(&th[i], weaponTypes[i]);
+#endif
+    }
+    RedrawUnitWExpMenu(proc);
+}
+void NewGetWeaponExpProgressState(int wexp, int * outValue, int * outMax);
+#define BGPAL_WEXP_BAR 2
+void DebuggerDisplayWeaponExp(int num, int x, int y, int wtype, int wexp)
+{
+    int progress, progressMax, color;
+    UnpackUiBarPalette(BGPAL_WEXP_BAR);
+
+    // int wexp = gStatScreen.unit->ranks[wtype];
+
+    // Display weapon type icon
+    DrawIcon(
+        gBG0TilemapBuffer + TILEMAP_INDEX(x, y),
+        0x70 + wtype, // TODO: icon id definitions
+        TILEREF(0, 5));
+
+    x += 4;
+
+    color = wexp >= WPN_EXP_S ? TEXT_COLOR_SYSTEM_GREEN : TEXT_COLOR_SYSTEM_BLUE;
+
+    // Display rank letter
+    PutSpecialChar(gBG0TilemapBuffer + TILEMAP_INDEX(x + 4, y), color, GetDisplayRankStringFromExp(wexp));
+
+    NewGetWeaponExpProgressState(wexp, &progress, &progressMax);
+
+    DrawStatBarGfx(
+        0x180 + num * 6, 5, gBG2TilemapBuffer + TILEMAP_INDEX(x + 2, y + 1), TILEREF(0, BGPAL_WEXP_BAR), 0x22,
+        (progress * 34) / (progressMax - 1), 0);
+}
+
+void RedrawUnitWExpMenu(DebuggerProc * proc)
+{
+    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - 2, Y_HAND), 9, 2 * WExpOptions, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+    gLCDControlBuffer.bg1cnt.priority = 1;
+    gLCDControlBuffer.bg2cnt.priority = 0;
+
+    // ResetText();
+    int c = 0;
+    struct Text * th = gStatScreen.text;
+
+    c = 0;
+    int x = (NUMBER_X - WExpWidth) + 2;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+    PutText(&th[c], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (c * 2)));
+    c++;
+
+    for (int i = 0; i < WExpOptions; ++i)
+    {
+        DebuggerDisplayWeaponExp(
+            i, x - 2, Y_HAND + (i * 2), i,
+            proc->tmp[i]); // first i is bar ID, second i is wep type ID
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+    }
+
+    SetBlendTargetA_(0, 1, 0, 0, 0);
+    // SetBlendTargetB_(0, 0, 0, 0, 1);
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+}
+
+void SaveWExp(DebuggerProc * proc)
+{
+    struct Unit * unit = proc->unit;
+    for (int i = 0; i < WExpOptions; ++i)
+    {
+        unit->ranks[i] = proc->tmp[i];
+    }
+}
+
+void ClearTilesetRow(DebuggerProc * proc)
+{
+    gLCDControlBuffer.bg1cnt.priority = 0;
+    SetBackgroundTileDataOffset(2, 0);
+    SetBlendTargetA_(0, 1, 0, 0, 0);
+    BG_Fill(gBG2TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
+}
+
+int NewGetWeaponLevelFromExp(int wexp)
+{
+    if (wexp < WPN_EXP_E)
+        return WPN_LEVEL_0;
+
+    if (wexp < WPN_EXP_D)
+        return WPN_LEVEL_E;
+
+    if (wexp < WPN_EXP_C)
+        return WPN_LEVEL_D;
+
+    if (wexp < WPN_EXP_B)
+        return WPN_LEVEL_C;
+
+    if (wexp < WPN_EXP_A)
+        return WPN_LEVEL_B;
+
+    if (wexp < WPN_EXP_S)
+        return WPN_LEVEL_A;
+
+    return WPN_LEVEL_S;
+}
+
+void NewGetWeaponExpProgressState(int wexp, int * outValue, int * outMax)
+{
+    switch (NewGetWeaponLevelFromExp(wexp))
+    {
+
+        case WPN_LEVEL_0:
+            *outValue = 0;
+            *outMax = 0;
+            return;
+
+        case WPN_LEVEL_E:
+            *outValue = wexp - WPN_EXP_E;
+            *outMax = WPN_EXP_D - WPN_EXP_E;
+            return;
+
+        case WPN_LEVEL_D:
+            *outValue = wexp - WPN_EXP_D;
+            *outMax = WPN_EXP_C - WPN_EXP_D;
+            return;
+
+        case WPN_LEVEL_C:
+            *outValue = wexp - WPN_EXP_C;
+            *outMax = WPN_EXP_B - WPN_EXP_C;
+            return;
+
+        case WPN_LEVEL_B:
+            *outValue = wexp - WPN_EXP_B;
+            *outMax = WPN_EXP_A - WPN_EXP_B;
+            return;
+
+        case WPN_LEVEL_A:
+            *outValue = wexp - WPN_EXP_A;
+            *outMax = WPN_EXP_S - WPN_EXP_A;
+            return;
+
+        case WPN_LEVEL_S:
+            *outValue = 0;
+            *outMax = 0;
+            return;
+
+    } // switch (GetWeaponLevelFromExp(wexp))
+}
+
+void EditWExpIdle(DebuggerProc * proc)
+{
+
+    // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
+    // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    if (keys & B_BUTTON)
+    { // press B to not save WExp
+        ClearTilesetRow(proc);
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+    };
+    if ((keys & START_BUTTON) || (keys & A_BUTTON))
+    { // press A or Start to update WExp and continue
+        SaveWExp(proc);
+        ClearTilesetRow(proc);
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+    };
+    if (proc->editing)
+    {
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8);
+        int max = 251;
+        int min = 0;
+        int max_digits = GetMaxDigits(max, 0);
+
+        if (keys & DPAD_RIGHT)
+        {
+            if (proc->digit > 0)
+            {
+                proc->digit--;
+            }
+            else
+            {
+                proc->digit = max_digits - 1;
+                proc->editing = false;
+            }
+            RedrawUnitWExpMenu(proc);
+        }
+        if (keys & DPAD_LEFT)
+        {
+            if (proc->digit < (max_digits - 1))
+            {
+                proc->digit++;
+            }
+            else
+            {
+                proc->digit = 0;
+                proc->editing = false;
+            }
+            RedrawUnitWExpMenu(proc);
+        }
+
+        if (keys & DPAD_UP)
+        {
+            if (proc->tmp[proc->id] == max)
+            {
+                proc->tmp[proc->id] = min;
+            }
+            else
+            {
+                proc->tmp[proc->id] += DigitDecimalTable[proc->digit];
+                if (proc->tmp[proc->id] > max)
+                {
+                    proc->tmp[proc->id] = max;
+                }
+            }
+            RedrawUnitWExpMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+
+            if (proc->tmp[proc->id] == min)
+            {
+                proc->tmp[proc->id] = max;
+            }
+            else
+            {
+                proc->tmp[proc->id] -= DigitDecimalTable[proc->digit];
+                if (proc->tmp[proc->id] < min)
+                {
+                    proc->tmp[proc->id] = min;
+                }
+            }
+
+            RedrawUnitWExpMenu(proc);
+        }
+    }
+    else
+    {
+        DisplayUiHand(CursorLocationTable[0].x - ((WExpWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (keys & DPAD_RIGHT)
+        {
+            proc->digit = 1;
+            proc->editing = true;
+        }
+        if (keys & DPAD_LEFT)
+        {
+            proc->digit = 0;
+            proc->editing = true;
+        }
+
+        if (keys & DPAD_UP)
+        {
+            proc->id--;
+            if (proc->id < 0)
+            {
+                proc->id = WExpOptions - 1;
+            }
+            RedrawUnitWExpMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+            proc->id++;
+            if (proc->id >= WExpOptions)
+            {
+                proc->id = 0;
+            }
+
+            RedrawUnitWExpMenu(proc);
+        }
+    }
+}
+
+#define SupportWidth 5
+#define SupportOptions 7
+void RedrawUnitSupportsMenu(DebuggerProc * proc);
+void EditSupportsInit(DebuggerProc * proc)
+{
+    SomeMenuInit(proc);
+    struct Unit * unit = proc->unit;
+    for (int i = 0; i < SupportOptions; ++i)
+    {
+        proc->tmp[i] = unit->supports[i];
+    }
+
+    int x = NUMBER_X - SupportWidth - 1;
+    int y = Y_HAND - 1;
+    int w = SupportWidth + (START_X - NUMBER_X) + 3;
+    int h = (SupportOptions * 2) + 2;
+
+    DrawUiFrame_(
+        BG_GetMapBuffer_(1),           // back BG
+        x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
+
+    // ClearUiFrame(
+    //     BG_GetMapBuffer_(1), // front BG
+    //     x, y, w, h);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < 15; ++i)
+    {
+        InitText(&th[i], SupportWidth);
+        Text_DrawString(&th[i], "");
+    }
+
+    if (unit->pCharacterData->pSupportData)
+    {
+        int uid;
+        for (int i = 0; i < SupportOptions; ++i)
+        {
+            uid = unit->pCharacterData->pSupportData->characters[i];
+            if (uid)
+            {
+                Text_DrawString(&th[i], GetStringFromIndexSafe(GetCharacterData(uid)->nameTextId));
+            }
+        }
+    }
+    RedrawUnitSupportsMenu(proc);
+}
+
+void RedrawUnitSupportsMenu(DebuggerProc * proc)
+{
+    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - 2, Y_HAND), 9, 2 * SupportOptions, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    // ResetText();
+    struct Text * th = gStatScreen.text;
+    int x = NUMBER_X - SupportWidth;
+    for (int i = 0; i < SupportOptions; ++i)
+    {
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i * 2)));
+    }
+
+    for (int i = 0; i < SupportOptions; ++i)
+    {
+        PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+    }
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
+
+void SaveSupports(DebuggerProc * proc)
+{
+    struct Unit * unit = proc->unit;
+    for (int i = 0; i < SupportOptions; ++i)
+    {
+        unit->supports[i] = proc->tmp[i];
+    }
+}
+
+void EditSupportsIdle(DebuggerProc * proc)
+{
+
+    // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
+    // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    if (keys & B_BUTTON)
+    { // press B to not save Supports
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+    };
+    if ((keys & START_BUTTON) || (keys & A_BUTTON))
+    { // press A or Start to update Supports and continue
+        SaveSupports(proc);
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+    };
+    if (proc->editing)
+    {
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x, (Y_HAND + (proc->id * 2)) * 8);
+        int max = 255;
+        int min = 0;
+        int max_digits = GetMaxDigits(max, 0);
+
+        if (keys & DPAD_RIGHT)
+        {
+            if (proc->digit > 0)
+            {
+                proc->digit--;
+            }
+            else
+            {
+                proc->digit = max_digits - 1;
+                proc->editing = false;
+            }
+            RedrawUnitSupportsMenu(proc);
+        }
+        if (keys & DPAD_LEFT)
+        {
+            if (proc->digit < (max_digits - 1))
+            {
+                proc->digit++;
+            }
+            else
+            {
+                proc->digit = 0;
+                proc->editing = false;
+            }
+            RedrawUnitSupportsMenu(proc);
+        }
+
+        if (keys & DPAD_UP)
+        {
+            if (proc->tmp[proc->id] == max)
+            {
+                proc->tmp[proc->id] = min;
+            }
+            else
+            {
+                proc->tmp[proc->id] += DigitDecimalTable[proc->digit];
+                if (proc->tmp[proc->id] > max)
+                {
+                    proc->tmp[proc->id] = max;
+                }
+            }
+            RedrawUnitSupportsMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+
+            if (proc->tmp[proc->id] == min)
+            {
+                proc->tmp[proc->id] = max;
+            }
+            else
+            {
+                proc->tmp[proc->id] -= DigitDecimalTable[proc->digit];
+                if (proc->tmp[proc->id] < min)
+                {
+                    proc->tmp[proc->id] = min;
+                }
+            }
+
+            RedrawUnitSupportsMenu(proc);
+        }
+    }
+    else
+    {
+        DisplayUiHand(CursorLocationTable[0].x - ((SupportWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (keys & DPAD_RIGHT)
+        {
+            proc->digit = 1;
+            proc->editing = true;
+        }
+        if (keys & DPAD_LEFT)
+        {
+            proc->digit = 0;
+            proc->editing = true;
+        }
+
+        if (keys & DPAD_UP)
+        {
+            proc->id--;
+            if (proc->id < 0)
+            {
+                proc->id = SupportOptions - 1;
+            }
+            RedrawUnitSupportsMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+            proc->id++;
+            if (proc->id >= SupportOptions)
+            {
+                proc->id = 0;
+            }
+
+            RedrawUnitSupportsMenu(proc);
+        }
+    }
 }
