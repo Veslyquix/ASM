@@ -75,7 +75,7 @@ push {r0}
 
 cmp r0, #2 
 beq NoAchievementForSkirmishes 
-
+bl EnsureAllRecruitmentAchievements
 bl UnlockAchievementByTurnCount
 bl UnlockAchievementByChapterTime
 
@@ -116,6 +116,7 @@ bne ChDone
 b ChNotDone 
 
 ChDone: 
+bl EnsureAllRecruitmentAchievements
 bl UnlockAchievementByTurnCount
 bl UnlockAchievementByChapterTime
 ChNotDone: 

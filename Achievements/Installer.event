@@ -210,7 +210,7 @@ rewardEnt(Reward_Growths, 2, "2% completion", "Unlock Growths", "Growths has bee
 rewardEnt(Reward_StatCaps, 3, "3% completion", "Unlock Stat Caps", "Stat Caps has been added to Config.") 
 rewardEnt(Reward_CasualMode, 4, "4% completion", "Unlock Casual Mode", "Casual Mode has been added to Config.") 
 
-rewardEnt(Reward_NES, 5, "5% completion", "Unlock NES Characters", "FE1-FE3 Characters have been unlocked.") 
+rewardEnt(Reward_NES, 5, "5% completion", "Unlock NES Characters", "FE1-FE3 Characters are now unlocked.") 
 
 rewardEnt(Reward_BonusLevels, 6, "6% completion", "Unlock Bonus Levels", "Bonus Levels has been added to Config.") 
 rewardEnt(Reward_Recruitment, 7, "7% completion", "Unlock Recruitment Order", "Recruitment order has been added to Config.") 
@@ -218,35 +218,35 @@ rewardEnt(Reward_Recruitment, 7, "7% completion", "Unlock Recruitment Order", "R
 rewardItem(Reward_GoddessIcon, 0, GoddessIcon, 8, "8% completion", "Goddess Icon") // 0th bonus ID item 
 rewardItem(Reward_JunaFruit, 1, JunaFruit, 9, "9% completion", "Heart Seal") // Heart seal
 rewardItem(Reward_Physic, 2, Physic, 10, "10% completion", "Physic") 
-rewardEnt(Reward_SNES, 10, "10% completion", "Unlock SNES Characters", "FE4-FE5 Characters have been unlocked.") 
+rewardEnt(Reward_SNES, 10, "10% completion", "Unlock SNES Characters", "FE4-FE5 Characters are now unlocked.") 
 
 rewardEnt(Reward_FilterClasses, 11, "11% completion", "Unlock Class Filtering", "Player Classes has been added to Config.") 
 rewardEnt(Reward_Clutter1, 12, "12% completion", "Unlock More Configs (1)", "Stuff has been added to Config.") 
 rewardItem(Reward_Item3000G, 3, Item3000G, 13, "13% completion", "3000 Gold") 
 rewardItem(Reward_BodyRing, 4, BodyRing, 14, "14% completion", "Body Ring") 
 rewardItem(Reward_Warp, 5, Warp, 15, "15% completion", "Warp") 
-rewardEnt(Reward_GBA, 15, "15% completion", "Unlock GBA Characters", "FE6-FE8 Characters have been unlocked.") 
+rewardEnt(Reward_GBA, 15, "15% completion", "Unlock GBA Characters", "FE6-FE8 Characters are now unlocked.") 
 
 rewardEnt(Reward_FilterChars, 16, "16% completion", "Unlock Character Filtering", "Filter Units has been added to Config.") 
 rewardEnt(Reward_Clutter2, 17, "17% completion", "Unlock More Configs (2)", "More stuff has been added to Config.") 
 rewardItem(Reward_Talisman, 6, Talisman, 18, "18% completion", "Talisman") 
 rewardItem(Reward_GuidingRing, 7, GuidingRing, 19, "19% completion", "Guiding Ring") 
 rewardItem(Reward_MetissTome, 8, MetissTome, 20, "20% completion", "Metis' Tome") 
-rewardEnt(Reward_GCN, 20, "20% completion", "Unlock GCN/Wii Characters", "FE9-FE10 Characters have been unlocked.") 
+rewardEnt(Reward_GCN, 20, "20% completion", "Unlock GCN/Wii Characters", "FE9-FE10 Characters are now unlocked.") 
 
 rewardEnt(Reward_Skills, 21, "21% completion", "Unlock Skills", "Skills has been added to Config.") 
 rewardEnt(Reward_Clutter3, 22, "22% completion", "Unlock More Configs (3)", "Even more stuff has been added to Config.") 
 rewardItem(Reward_Dracoshield, 9, Dracoshield, 23, "23% completion", "Dracoshield") 
 rewardItem(Reward_KnightCrest, 10, KnightCrest, 24, "24% completion", "Knight's Crest") 
 rewardItem(Reward_Item5000G, 11, Item5000G, 25, "25% completion", "5000 Gold") 
-rewardEnt(Reward_3DS, 25, "25% completion", "Unlock 3DS Characters", "FE13-FE14 Characters have been unlocked.") 
+rewardEnt(Reward_3DS, 25, "25% completion", "Unlock 3DS Characters", "FE13-FE14 Characters are now unlocked.") 
 
 rewardEnt(Reward_TimedHits, 26, "26% completion", "Unlock Timed Hits", "Timed Hits has been added to Config.") 
 rewardEnt(Reward_Clutter4, 27, "27% completion", "Unlock More Configs (4)", "Clutter has been added to Config.") 
 rewardItem(Reward_EnergyRing, 12, EnergyRing, 28, "28% completion", "Energy Ring") 
 rewardItem(Reward_HeroCrest, 13, HeroCrest, 29, "29% completion", "Hero's Crest") 
 rewardItem(Reward_HoplonShield, 14, HoplonShield, 30, "30% completion", "Hoplon Guard") 
-rewardEnt(Reward_Switch, 30, "30% completion", "Unlock Switch Characters", "FE16+ Characters have been unlocked.") 
+rewardEnt(Reward_Switch, 30, "30% completion", "Unlock Switch Characters", "FE16+ Characters are now unlocked.") 
 
 
 rewardItem(Reward_SecretBook, 15, SecretBook, 33, "33% completion", "Secret Book") 
@@ -547,8 +547,8 @@ chapterTimeAchievements:
 FILL (512)
 
 
-#define turnEnt(chapterID, turnCount, id, str, str2) "PUSH; ORG turnCountAchievements + (chapterID * 2); SHORT id turnCount; POP; achievementEnt(id, str, str2, Category_TurnCount)" 
-#define speedEnt(chapterID, chapterTime, id, str, str2) "PUSH; ORG chapterTimeAchievements + (chapterID * 2); SHORT id (chapterTime*60); POP; achievementEnt(id, str, str2, Category_ChapterTime)" 
+#define turnEnt(chapterID, turnCount, id, str, str2) "PUSH; ORG turnCountAchievements + (chapterID * 4); SHORT id turnCount; POP; achievementEnt(id, str, str2, Category_TurnCount)" 
+#define speedEnt(chapterID, chapterTime, id, str, str2) "PUSH; ORG chapterTimeAchievements + (chapterID * 4); SHORT id (chapterTime*60); POP; achievementEnt(id, str, str2, Category_ChapterTime)" 
 
 
 speedEnt(Prologue, 1, PrologueSR , "Out of the Frying Pan", "Complete Ch. 0 within 1 minute.")

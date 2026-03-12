@@ -109,7 +109,19 @@ int CheckNotificationConflict(struct NotificationWindowProc * proc, struct Proc 
 { // interrupted or should just not display
     return !CanNotifsDisplayCurrently(proc, playerPhase);
 }
-
+int AreAnyUnitsActive(void)
+{
+    int result = gBmSt.gameStateBits & (BM_FLAG_0 | BM_FLAG_1);
+    if (UNIT_IS_VALID(gActiveUnit) && (UNIT_FACTION(gActiveUnit) == FACTION_BLUE))
+    {
+        if (!(gActiveUnit->state & US_UNAVAILABLE) && gActiveUnit->xPos != (-1))
+        {
+            result |= gActiveUnit->state & US_HIDDEN;
+            // result |= !gBmMapUnit[gActiveUnit->yPos][gActiveUnit->xPos];
+        }
+    }
+    return result;
+}
 struct ProcCmd const gProcScr_NotificationWindow[];
 void WhileNotificationActive(struct PlayerInterfaceProc * parent)
 {
@@ -119,10 +131,11 @@ void WhileNotificationActive(struct PlayerInterfaceProc * parent)
     // ((playerPhase) && (playerPhase->proc_lockCnt))) // player phase has a blocking proc (such as the debugger)
     {
         Proc_End(parent); // do not start player phase side windows
+        EndPlayerPhaseSideWindows();
         return;
     }
 
-    if (!IsNotificationActive(proc))
+    if (!IsNotificationActive(proc) && !AreAnyUnitsActive())
     {
         // InitPlayerPhaseInterface needs to happen on the same frame that we
         // check for these procs / playphase blocking proc
@@ -274,7 +287,7 @@ int GetFreeQueueSlot(struct NotificationWindowProc * proc)
 {
     for (int i = 0; i < QueueSize; ++i)
     {
-        if (proc->queue[i] == 0xFF)
+        if (proc->queue[i] == (-1))
         {
             return i;
         }
@@ -667,7 +680,7 @@ void NotificationWindow_LoopDrawText(struct NotificationWindowProc * proc)
 
     struct Text * th = GetTextHandleForLine(proc->line);
 
-    proc->str = NotificationPrintText(proc, th, proc->str);
+    proc->str = NotificationPrintText(proc, th, proc->str, MAX_LINE_WIDTH);
 
     if (!proc->str || !*proc->str)
     {
@@ -739,6 +752,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
         proc->colour[i] = TEXT_COLOR_SYSTEM_WHITE;
     }
     const char * str = GetNextNotificationStr(proc);
+
     if (!str || !*str)
     {
         Proc_Goto(proc, EndLabel);
@@ -768,7 +782,7 @@ void NotificationWindow_Init(struct NotificationWindowProc * proc)
     int len = GetNotificationStringTextLenASCII_Wrapped(str);
     int tileWidth = (len + 7) >> 3;
     proc->line = 0;
-    proc->lines = CountStrLines(str);
+    proc->lines = CountStrLines(str, MAX_LINE_WIDTH);
     if (!proc->spriteText)
     {
         NotificationWindowDraw(proc);
@@ -849,7 +863,7 @@ int GetNotificationStringTextLenASCII_Wrapped(const char * str)
 
     return maxWidth;
 }
-int CountStrLines(const char * str)
+int CountStrLines(const char * str, int maxWidth)
 {
     if (!str)
         return 0;
@@ -871,7 +885,7 @@ int CountStrLines(const char * str)
             width += glyph->width;
             str++;
 
-            if (width > MAX_LINE_WIDTH)
+            if (width > maxWidth)
             {
                 // wrap: if we saw a space on this line, resume after it
                 if (lastSpace)
@@ -890,7 +904,7 @@ int CountStrLines(const char * str)
     return lines; // empty string -> 0, otherwise number of visual lines
 }
 
-char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str)
+char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text * th, const char * str, int maxWidth)
 {
     char * iter = (void *)str;
     int curX;
@@ -920,7 +934,7 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
             }
 
             // If the next word doesn't fit, break before this space
-            if (curX + nextWordWidth > MAX_LINE_WIDTH)
+            if (curX + nextWordWidth > maxWidth)
             {
                 forceNewLine = true;
                 // proc->line++;
@@ -928,7 +942,7 @@ char * NotificationPrintText(struct NotificationWindowProc * proc, struct Text *
                 break; // wrap before the next word
             }
         }
-        if (curX > MAX_LINE_WIDTH || *iter == CHAR_NEWLINE)
+        if (curX > maxWidth || *iter == CHAR_NEWLINE)
         {
             forceNewLine = true;
             break;
@@ -1038,6 +1052,7 @@ void NotificationIdleWhileMenuEtc(struct NotificationWindowProc * proc)
             return;
         }
     }
+
     Proc_Break(proc);
 }
 
@@ -1047,6 +1062,7 @@ void ContinueToNextNotification(struct NotificationWindowProc * proc)
     if (!proc->showingBgm)
     {
         proc->queue[proc->id] = (-1);
+
         proc->id = GetTakenQueueSlot(proc);
         proc->fastPrint = false;
         // proc->id++;

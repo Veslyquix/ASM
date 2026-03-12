@@ -232,7 +232,8 @@ void AchievementSpriteDraw_Loop(void)
 }
 
 // used in Achievement_Init and PutDrawText calls
-#define BoxMaxTileWidth 18 // normally 18
+#define BoxMaxTileWidth 19       // normally 18
+#define BoxTextMaxWidth (24 * 8) // for popups
 #define BottomMaxTileWidth 27
 #define TitleTileWidth 9
 
@@ -1090,7 +1091,6 @@ void achievement_8097668(void)
 void InitFilterText()
 {
     int chr = 0x98;
-    brk;
     InitSpriteTextFont(&gHelpBoxSt.font, (void *)(VRAM + 0x10000 + (chr << 5)), 0x16);
     SetTextFontGlyphs(1);
     // ApplyPalette(gPal_HelpTextBox, GetNotifObjPalID());
@@ -1411,6 +1411,7 @@ struct NewGuideProc
     u8 line;
     u8 type;
     u8 pressed;
+    const char * str;
 };
 void HandleItemReward(struct NewGuideProc * proc, int id)
 {
@@ -1420,7 +1421,9 @@ void HandleItemReward(struct NewGuideProc * proc, int id)
     // AddItemToConvoy(MakeNewItem(itemId));
 
     // AchievementsPopup_DrawText("Sent: ");
-    AchievementsPopup_DrawText("Claim in Extras: ");
+    const char * str = "Claim in Extras: ";
+    proc->str = str;
+    AchievementsPopup_DrawText((void *)str);
     gAchMenuSt->popupText[0].x += 16;
     AchievementsPopup_DrawText(GetItemName(itemId));
 }
@@ -1432,8 +1435,9 @@ void HandleGoldReward(struct NewGuideProc * proc, int id)
     // SetPartyGoldAmount(gold + GetPartyGoldAmount());
     LoadIconObjectGraphics(GetItemIconId(itemId), 0x140);
 
-    // AchievementsPopup_DrawText("Sent: ");
-    AchievementsPopup_DrawText("Claim in Extras: ");
+    const char * str = "Claim in Extras: ";
+    proc->str = str;
+    AchievementsPopup_DrawText((void *)str);
     gAchMenuSt->popupText[0].x += 16;
     DrawNumAsString(gold);
     AchievementsPopup_DrawText(" Gold");
@@ -1447,8 +1451,9 @@ void HandleCharReward(struct NewGuideProc * proc, int id)
 
 void HandleMiscReward(struct NewGuideProc * proc, int id)
 {
-
-    AchievementsPopup_DrawText(rewardsByPercentage[id].reward.str);
+    const char * str = rewardsByPercentage[id].reward.str;
+    proc->str = str;
+    AchievementsPopup_DrawText((void *)str);
 }
 
 void HandleReward(struct NewGuideProc * proc, int id)
@@ -1473,7 +1478,9 @@ void HandleReward(struct NewGuideProc * proc, int id)
 
         NotificationInitSpriteText(VRAM + (void *)0x10000 + (0x180 << 5));
         InitSpriteText(&gAchMenuSt->popupText[0]);
+        InitSpriteText(&gAchMenuSt->popupText[1]);
         SpriteText_DrawBackground(&gAchMenuSt->popupText[0]);
+        SpriteText_DrawBackground(&gAchMenuSt->popupText[1]);
 
         switch (proc->type)
         {
@@ -1533,7 +1540,7 @@ void AchievementsPopup_DrawText(char * str)
     proc.line = 0;
     while (str && *str)
     {
-        str = NotificationPrintText(&proc, &th[proc.line], str);
+        str = NotificationPrintText(&proc, &th[proc.line], str, BoxTextMaxWidth);
     }
     SetTextFont(font);
 }
@@ -1573,10 +1580,10 @@ void AchievementsPopupSentTimer(struct NewGuideProc * proc)
     // void PutSprite(int layer, int x, int y, const u16 * object, int oam2);
     int x = 24;
     int y = 60;
-    // PutSprite(0, x, y, gObject_16x16, OAM2_CHR(0x280) + OAM2_PAL(2));
 
-    // DisplayNotifBoxObj
-    DisplayNotifBoxObj(x, y, 184, 1 * 16, true);
+    int lines = CountStrLines(proc->str, BoxTextMaxWidth);
+    lines <<= 4;
+    DisplayNotifBoxObj(x, y, BoxTextMaxWidth, lines, true);
     if (proc->type == RewardTypeItem || proc->type == RewardTypeGold)
     {
         // PutSprite(0, x + 28, y, gObject_16x16, OAM2_CHR(0x140) + OAM2_PAL(AchievementPopupItemIconPal & 0xF));

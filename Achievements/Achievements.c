@@ -328,6 +328,21 @@ void UnlockAchievementByRecruitment(int charID)
 {
     UnlockAchievement(recruitmentAchievements[charID]);
 }
+
+void EnsureAllRecruitmentAchievements(void)
+{
+    struct Unit * unit;
+    for (int i = 1; i < 0x40; ++i)
+    {
+        unit = GetUnit(i);
+        if (!UNIT_IS_VALID(unit))
+        {
+            continue;
+        }
+        UnlockAchievementByRecruitment(unit->pCharacterData->number);
+    }
+}
+
 void UnlockAchievementByEquip(int itemID)
 {
     UnlockAchievement(equipAchievements[itemID]);
@@ -348,7 +363,9 @@ void UnlockAchievementByChapterTime()
     int time = (GetGameClock() - gPlaySt.time_chapter_started) / 60;
     int chapterId = gPlaySt.chapterIndex;
     if (time <= chapterTimeAchievements[chapterId].chapterTime)
+    {
         UnlockAchievement(chapterTimeAchievements[chapterId].achievementDataID);
+    }
 }
 
 void UnlockAchievementByItemUse(int item)
