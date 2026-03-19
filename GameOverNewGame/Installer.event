@@ -5,39 +5,65 @@
 ORG FreeSpace 
 #endif 
 
-#define StartNewGameOnGameOver 
+// #define StartNewGameOnGameOver // if defined, it'll automatically start a new game after getting a game over 
 
 // Option 1: Game Over event per chapter 
-// Option 2: 
+// Option 2: Event + auto start new game 
 
+// These are configs for automatically starting a new game 
+ALIGN 4 
+InitSupply: 
+WORD 1 // If 0, your convoy carries over on game over -> new game 
+InitChars:
+WORD 1 
+InitTime:
+WORD 1
+InitGold:
+WORD 1
+InitWM: 
+WORD 1 // make this 1 unless you know what you're doing 
 
-
+#define DefaultEvent "SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA SomeEventA"
+#define DefaultEvent128 "DefaultEvent DefaultEvent DefaultEvent DefaultEvent DefaultEvent DefaultEvent DefaultEvent DefaultEvent" 
+#define goEv(chapterID, eventLabel) "PUSH; ORG GameOverEventTable + (chapterID * 4); POIN eventLabel; POP" 
 
 ALIGN 4 
 GameOverEventTable: 
-POIN SomeEventA
-POIN SomeEventA
-POIN SomeEventA
-POIN SomeEventA
-POIN SomeEventA
-POIN SomeEventA
+POIN DefaultEvent128
+
+
+
+goEv(0, SomeEventB) 
+goEv(2, SomeEventB) 
+goEv(1, SomeEventC) 
 
 
 
 ALIGN 4 
 SomeEventA: 
-Text(0x9df)  
+Text(0x9dd)  
 FADI 16  
 ENDA 
 
+ALIGN 4 
+SomeEventB: 
+ENUT 0x86
+Text(0x9de)  
+ENDA 
 
+
+#define HouseText(background,textID) "MUSI; FADI 16; REMOVEPORTRAITS; BACG background; FADU 16; Text(textID); MUNO"
+ALIGN 4 
+SomeEventC: 
+Text(0x9df) 
+// HouseText(2, 0x9df)
+
+// FADI 16  
+NoFade 
+ENDA 
 
 
 PUSH
-// ORG $853d0
-// ALIGN 4
-// WORD $46C04778 $E59FC000 $E12FFF1C
-// POIN GameOver_HookCommon
 
 ORG $9edf78 
 PROC_CALL_ROUTINE(StartNewGameOverWrapper) 
