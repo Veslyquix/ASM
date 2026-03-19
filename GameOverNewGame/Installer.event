@@ -1,8 +1,58 @@
+#include "Extensions/ProcDefinitions.txt" 
+#include "EAstdlib.event" 
+#ifndef FreeSpace 
+#define FreeSpace 0x1F00000 
+ORG FreeSpace 
+#endif 
 
-// Thanks to Mokha for the updated fe-clib! 
+#define StartNewGameOnGameOver 
 
-ORG $1F00000
+// Option 1: Game Over event per chapter 
+// Option 2: 
 
+
+
+
+
+
+
+
+ALIGN 4 
+PreGameOverEvent: 
+Text(0x9df)  
+NoFade 
+ENDA 
+
+PostGameOverEvent: 
+FADU 16 
+Text(0x9df) 
+// FADI 16 
+NoFade 
+ENDA 
+
+
+
+PUSH
+// ORG $853d0
+// ALIGN 4
+// WORD $46C04778 $E59FC000 $E12FFF1C
+// POIN GameOver_HookCommon
+
+ORG $9edf78 
+PROC_CALL_ROUTINE(StartNewGameOverWrapper) 
+PROC_END 
+
+POP
+
+
+
+ALIGN 4 
+StartNewGameOnGameOver_Link:
+#ifdef StartNewGameOnGameOver 
+WORD 1 
+#else 
+WORD 0 
+#endif 
 
 #include "C_Code.lyn.event" 
 
