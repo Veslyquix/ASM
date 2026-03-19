@@ -13,22 +13,23 @@ ORG FreeSpace
 
 
 
-
+ALIGN 4 
+GameOverEventTable: 
+POIN SomeEventA
+POIN SomeEventA
+POIN SomeEventA
+POIN SomeEventA
+POIN SomeEventA
+POIN SomeEventA
 
 
 
 ALIGN 4 
-PreGameOverEvent: 
+SomeEventA: 
 Text(0x9df)  
-NoFade 
+FADI 16  
 ENDA 
 
-PostGameOverEvent: 
-FADU 16 
-Text(0x9df) 
-// FADI 16 
-NoFade 
-ENDA 
 
 
 

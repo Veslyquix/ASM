@@ -4,6 +4,8 @@ extern int StartNewGameOnGameOver_Link;
 const struct ProcCmd VeslyGameOverWrapper[];
 const struct ProcCmd VeslyGameOverProc[];
 const struct ProcCmd VanillaGameOverProcCopy[];
+extern const u16 * GameOverEventTable[];
+
 static void sub_8009C5C_(void)
 {
     InitPlayConfig(0, 0);                           // gPlaySt stuff like difficulty
@@ -13,10 +15,9 @@ static void sub_8009C5C_(void)
     InitUnits();
     gPlaySt.chapterIndex = 0;
     // gPlaySt.chapterIndex = proc->nextChapter;
-    // ReadGameSave(ReadLastGameSaveId()); // added
+    // ReadGameSave(ReadLastGameSaveId()); // added to restart the chapter for debugger
 }
-extern const u16 PreGameOverEvent;
-extern const u16 PostGameOverEvent;
+
 void VeslyStartNewGame(void)
 {
     GmDataInit(); // wipe stuff ?
@@ -61,25 +62,33 @@ void GameOver_HookCommon(ProcPtr proc)
     DeleteEventEngines();
 
     VeslyStartNewGame();
-
-    // CallEvent(&PostGameOverEvent, EV_EXEC_GAMEPLAY);
 }
 struct VeslyGameOver
 {
     PROC_HEADER;
     u8 fadedIn;
 };
-int GameOver_PreEvent(struct VeslyGameOver * proc)
+int GameOver_Event(struct VeslyGameOver * proc)
 {
     proc->fadedIn = false;
-    // EndBMapMain();
-    // DeleteEventEngines();
-    CallEvent(&PreGameOverEvent, EV_EXEC_GAMEPLAY);
+    CallEvent(GameOverEventTable[gPlaySt.chapterIndex], EV_EXEC_GAMEPLAY);
     return 0;
+}
+
+void GameOver_Fade(struct VeslyGameOver * proc)
+{
+
+    if ((PLAY_FLAG_TUTORIAL & gPlaySt.chapterStateBits) || 0 == gPlaySt.config.disableBgm)
+        Sound_FadeOutBGM(4);
+    if (!FadeExists() && !proc->fadedIn)
+    {
+        StartMidFadeToBlack();
+    }
 }
 
 void VeslyEventEngineExists(struct VeslyGameOver * proc)
 {
+    // check if the event engine fades to black. If it does, no need to fade after the event is done
     struct EventEngineProc * evProc = Proc_Find(ProcScr_StdEventEngine);
     int fade = proc->fadedIn;
     if (evProc)
@@ -98,22 +107,8 @@ void VeslyEventEngineExists(struct VeslyGameOver * proc)
     {
         Proc_Break(proc);
     }
-    if (fade != proc->fadedIn)
-    {
-        brk;
-    }
 }
 
-void GameOver_Fade(struct VeslyGameOver * proc)
-{
-
-    if ((PLAY_FLAG_TUTORIAL & gPlaySt.chapterStateBits) || 0 == gPlaySt.config.disableBgm)
-        Sound_FadeOutBGM(4);
-    if (!FadeExists() && !proc->fadedIn)
-    {
-        StartMidFadeToBlack();
-    }
-}
 void WaitForGameOverProc(ProcPtr proc)
 {
     if (Proc_Find(VeslyGameOverProc) || Proc_Find(VanillaGameOverProcCopy))
@@ -131,10 +126,10 @@ const struct ProcCmd VeslyGameOverWrapper[] = {
 const struct ProcCmd VeslyGameOverProc[] = {
     PROC_NAME("VeslyGameOverProc"),
     PROC_YIELD,
-    PROC_CALL(GameOver_PreEvent),
+    PROC_CALL(GameOver_Event),
     PROC_SLEEP(1),
-    // PROC_REPEAT(VeslyEventEngineExists),
-    PROC_WHILE(EventEngineExists),
+    PROC_REPEAT(VeslyEventEngineExists),
+    // PROC_WHILE(EventEngineExists),
     PROC_CALL(GameOver_Fade),
     PROC_REPEAT(WaitForFade),
     PROC_CALL(GameOver_HookCommon),
@@ -143,9 +138,10 @@ const struct ProcCmd VeslyGameOverProc[] = {
 
 const struct ProcCmd VanillaGameOverProcCopy[] = {
     PROC_YIELD,
-    PROC_CALL_2(GameOver_PreEvent),
-    // PROC_REPEAT(VeslyEventEngineExists),
-    PROC_WHILE(EventEngineExists),
+    PROC_CALL(GameOver_Event),
+    PROC_SLEEP(1),
+    PROC_REPEAT(VeslyEventEngineExists),
+    // PROC_WHILE(EventEngineExists),
 
     PROC_CALL(GameOver_Fade),
     PROC_REPEAT(WaitForFade),
