@@ -8,3 +8,9 @@ ORG FreeSpace
 
 #include "C_Code.lyn.event" 
 
+
+#include "../Debugger/Installer.event" 
+#include "QoL_Testing.event" 
+
+
+
