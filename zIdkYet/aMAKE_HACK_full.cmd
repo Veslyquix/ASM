@@ -7,9 +7,9 @@ set "vanilla_rom=%~dp0FE8_clean.gba"
 
 set "main_event=%~dp0Installer.event"
 
-set "target_rom=%~dp0myHack.gba"
-set "target_ups=%~dp0myHack.ups"
-set "target_sym=%~dp0myHack.sym"
+set "target_rom=%~dp0aHack.gba"
+set "target_ups=%~dp0aHack.ups"
+set "target_sym=%~dp0aHack.sym"
 
 @rem defining tools
 
