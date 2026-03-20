@@ -6,6 +6,7 @@ ORG FreeSpace
 #endif 
 
 // #define StartNewGameOnGameOver // if defined, it'll automatically start a new game after getting a game over 
+#define RestartChapterOnGameOver
 
 // Option 1: Game Over event per chapter 
 // Option 2: Event + auto start new game 
@@ -76,6 +77,12 @@ POP
 ALIGN 4 
 StartNewGameOnGameOver_Link:
 #ifdef StartNewGameOnGameOver 
+WORD 1 
+#else 
+WORD 0 
+#endif 
+RestartChapterOnGameOver_Link:
+#ifdef RestartChapterOnGameOver 
 WORD 1 
 #else 
 WORD 0 

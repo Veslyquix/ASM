@@ -1,8 +1,10 @@
 #include "C_Code.h"
 
 extern int StartNewGameOnGameOver_Link;
+extern int RestartChapterOnGameOver_Link;
 const struct ProcCmd VeslyGameOverWrapper[];
-const struct ProcCmd VeslyGameOverProc[];
+const struct ProcCmd VeslyGameOverNewGameProc[];
+const struct ProcCmd VeslyGameOverRestartChProc[];
 const struct ProcCmd VanillaGameOverProcCopy[];
 extern const u16 * GameOverEventTable[];
 extern int InitWM;
@@ -93,14 +95,22 @@ void StartNewGameOverWrapper(ProcPtr proc)
 
 void StartNewGameOverProc(ProcPtr proc)
 {
-
-    if (StartNewGameOnGameOver_Link)
+    if (RestartChapterOnGameOver_Link)
     {
-        Proc_Start(VeslyGameOverProc, (void *)3);
+
+        Proc_Start(VeslyGameOverRestartChProc, (void *)3);
     }
+
     else
     {
-        Proc_Start(VanillaGameOverProcCopy, (void *)3);
+        if (StartNewGameOnGameOver_Link)
+        {
+            Proc_Start(VeslyGameOverNewGameProc, (void *)3);
+        }
+        else
+        {
+            Proc_Start(VanillaGameOverProcCopy, (void *)3);
+        }
     }
 }
 
@@ -112,6 +122,16 @@ void GameOver_HookCommon(ProcPtr proc)
     DeleteEventEngines();
 
     VeslyStartNewGame();
+}
+void GameOver_RestartCh(ProcPtr parent)
+{
+    EndAllMus();
+    DeleteEventEngines();
+    struct GameCtrlProc * proc = Proc_Find(gProcScr_GameControl);
+
+    proc->unk_2E = 20; // ?
+    Proc_Goto(proc, LGAMECTRL_EXEC_BM);
+    ReadGameSave(ReadLastGameSaveId());
 }
 struct VeslyGameOver
 {
@@ -169,7 +189,8 @@ void VeslyEventEngineExists(struct VeslyGameOver * proc)
 
 void WaitForGameOverProc(ProcPtr proc)
 {
-    if (Proc_Find(VeslyGameOverProc) || Proc_Find(VanillaGameOverProcCopy))
+    if (Proc_Find(VeslyGameOverRestartChProc) || Proc_Find(VanillaGameOverProcCopy) ||
+        Proc_Find(VeslyGameOverNewGameProc))
     {
         return;
     }
@@ -181,8 +202,22 @@ const struct ProcCmd VeslyGameOverWrapper[] = {
 
 };
 
-const struct ProcCmd VeslyGameOverProc[] = {
-    PROC_NAME("VeslyGameOverProc"),
+const struct ProcCmd VeslyGameOverRestartChProc[] = {
+    PROC_NAME("VeslyGameOverRestartChProc"),
+    PROC_YIELD,
+    PROC_CALL(GameOverInit),
+    PROC_CALL(GameOver_RestartCh),
+    PROC_CALL(GameOver_Event),
+    PROC_SLEEP(1),
+    PROC_REPEAT(VeslyEventEngineExists),
+    PROC_CALL(GameOver_Fade),
+    PROC_REPEAT(WaitForFade),
+    PROC_CALL(EndBMapMain), // this has to be after the event, otherwise the event breaks
+    PROC_END,
+};
+
+const struct ProcCmd VeslyGameOverNewGameProc[] = {
+    PROC_NAME("VeslyGameOverNewGameProcProc"),
     PROC_YIELD,
     PROC_CALL(GameOverInit),
     PROC_CALL(GameOver_HookCommon),
