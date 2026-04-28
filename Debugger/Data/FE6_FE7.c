@@ -2414,7 +2414,9 @@ u8 PageIdler(struct MenuProc * menu, struct MenuItemProc * command)
         SwapToPreviousUnit(proc);
         gActiveUnitMoveOrigin.x = proc->unit->xPos;
         gActiveUnitMoveOrigin.y = proc->unit->yPos;
-        EndAllMenus(); // needed in fe6 for some reason
+#ifdef FE6
+        EndAllMenus(); // needed in fe6 for some reason, but breaks in fe7
+#endif
         Proc_Goto(proc, RestartLabel);
         return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
     }
@@ -2423,7 +2425,9 @@ u8 PageIdler(struct MenuProc * menu, struct MenuItemProc * command)
         SwapToNextUnit(proc);
         gActiveUnitMoveOrigin.x = proc->unit->xPos;
         gActiveUnitMoveOrigin.y = proc->unit->yPos;
-        EndAllMenus(); // needed in fe6 for some reason
+#ifdef FE6
+        EndAllMenus(); // needed in fe6 for some reason, but breaks in fe7
+#endif
         Proc_Goto(proc, RestartLabel);
         return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
     }
@@ -2449,7 +2453,9 @@ u8 PageIdler(struct MenuProc * menu, struct MenuItemProc * command)
         proc->page = page;
         procIdler->page = page;
         Proc_Goto(proc, RestartLabel);
-        EndAllMenus(); // needed in fe6 for some reason
+#ifdef FE6
+        EndAllMenus(); // needed in fe6 for some reason, but breaks in fe7
+#endif
         return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6A;
     }
     return MENU_ITEM_NONE;
