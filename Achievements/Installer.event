@@ -659,11 +659,7 @@ ALIGN 4
 gNotificationsData: // these show up when a flag is turned on 
 // NotificationEntryTextID(0x505, 1) // textID "Sword", flagID 
 // NotificationEntryTextID(0x3D, 1) // textID, flagID 
-NotificationEntry(text0, 0xC) // text label, flagID 
-NotificationEntry(text1, 0xD) // text label, flagID 
-// NotificationEntry(text2, 0) // text label, flagID 
-// NotificationEntry(text3, 0) // text label, flagID 
-
+// NotificationEntry(text0, 0) // text label, flagID 
 // NotificationEntry(text1, 0xA, TEXT_COLOR_SYSTEM_WHITE, TEXT_COLOR_SYSTEM_GREEN) 
 // NotificationEntry(text2, 0x65) 
 
@@ -672,24 +668,17 @@ NotificationEntry(text1, 0xD) // text label, flagID
 WORD 0 0 // Terminator 
 
 // don't exceed 6 lines 
-text0: 
-txt("Cute Single Girls!\\
-Amanda23, 3 miles away\\
-hey whats up??"); BYTE 0 
+// text0: 
+txt("Achievement Completed:\\
+Scuffed."); BYTE 0 
 
 text1: 
-txt("W A R N I N G\\
-YOUR PC MAY BE INFECTED\\
-System detected (4) Malicious Viruses\\
-The data on your computer is NOT SAFE\\
- \\
-CLEAN NOW!"); BYTE 0 
+txt("New Game+ Unlock:\\
+Silver Sword."); BYTE 0 
 
 
 
-
-
-// text0:
+text0:
 // txt("11\22\33\4444")
 txt("Because I could not stop for Death\He kindly stopped for me\The Carriage held but just Ourselves\And Immortality."); BYTE 0 
 
