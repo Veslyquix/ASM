@@ -320,7 +320,11 @@ EditStateDesc:
     txt("Level up\the unit."); 
 
 WExpText:
+#ifdef POKEMBLEM 
+    txt(" Moves"); 
+#else 
     txt(" WExp"); 
+#endif 
 WExpDesc:
     txt("Edit WExp\for the unit."); 
 
@@ -465,5 +469,15 @@ BlankString:
 STRING " " ; ; ; BYTE 0 0 
 #endif 
 
+
+
+
+ALIGN 4 
+POKEMBLEM_EXISTS:
+#ifdef POKEMBLEM 
+WORD 1 
+#else 
+WORD 0 
+#endif 
 
 

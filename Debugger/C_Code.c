@@ -1164,19 +1164,27 @@ void EditWExpInit(DebuggerProc * proc)
     }
     RedrawUnitWExpMenu(proc);
 }
-
+extern int POKEMBLEM_EXISTS;
 void DebuggerDisplayWeaponExp(int num, int x, int y, int wtype, int wexp)
 {
     int progress, progressMax, color;
 
     // int wexp = gStatScreen.unit->ranks[wtype];
 
-    // Display weapon type icon
+    if (POKEMBLEM_EXISTS)
+    {
 
-    DrawIcon(
-        gBG0TilemapBuffer + TILEMAP_INDEX(x, y),
-        0x70 + wtype, // TODO: icon id definitions
-        TILEREF(0, 5));
+        DrawIcon(gBG0TilemapBuffer + TILEMAP_INDEX(x, y), GetItemIconId(wexp), TILEREF(0, 4));
+    }
+
+    else
+    {
+        // Display weapon type icon
+        DrawIcon(
+            gBG0TilemapBuffer + TILEMAP_INDEX(x, y),
+            0x70 + wtype, // TODO: icon id definitions
+            TILEREF(0, 5));
+    }
 
     x += 4;
 
@@ -1202,6 +1210,18 @@ void RedrawUnitWExpMenu(DebuggerProc * proc)
     // ResetText();
     int c = 0;
     struct Text * th = gStatScreen.text;
+
+    if (POKEMBLEM_EXISTS)
+    {
+        for (int i = 0; i < 5; ++i)
+        {
+            // x = Text_GetCursor(&th[i]);
+            // x++;
+            // Text_SetCursor(&th[i], x);
+            ClearText(&th[i]);
+            Text_DrawString(&th[i], GetItemName(proc->tmp[i]));
+        }
+    }
 
     c = 0;
     int x = (NUMBER_X - WExpWidth) + 2;
@@ -1770,12 +1790,21 @@ void RedrawItemMenu(DebuggerProc * proc)
     {
         itemData[i] = GetItemData(proc->tmp[i] & 0xFF);
     }
+    char * str;
     for (int i = 0; i < NumberOfItems; ++i)
     {
         ClearText(&th[i]);
         if (proc->tmp[i])
         {
-            Text_DrawString(&th[i], GetStringFromIndexSafe(itemData[i]->nameTextId));
+            // Text_DrawString(&th[i], GetStringFromIndexSafe(itemData[i]->nameTextId));
+            if (GetItemDescId(proc->tmp[i] & 0xFFFF) < 0x4000) // safety check to try and avoid crashing
+            {
+                str = GetItemName(proc->tmp[i] & 0xFFFF);
+                if (str && *str)
+                {
+                    Text_DrawString(&th[i], str); // fix for durability based item names
+                }
+            }
         }
     }
 
