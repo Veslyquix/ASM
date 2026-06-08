@@ -21,6 +21,7 @@
 .endm
 
 .if FE8 == true 
+SET_DATA sChapterDataTable, 0x803462C
 SET_DATA sPortrait_data, 0x8005524
 SET_DATA sUnit_icon_wait_table, 0x8027bb0
 SET_DATA sUnit_icon_move_table, 0x8079584

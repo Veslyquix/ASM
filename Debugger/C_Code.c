@@ -2224,8 +2224,41 @@ static const s8 chStateHexOrDecimal[] = { 0, 0, 0, 1, 1, 0, 1, -1 };
 static const int chStateMax[] = { 999999, 7, 4, 0x4E, 0x4E, 999, 0x12C, 0 };
 static const int chStateMin[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
+// Because users repoint these tables, use pointers to them instead of the vanilla address of tables
+extern struct ROMChapterData const * const sChapterDataTable;
+inline static struct ROMChapterData const * GetRomChData(int id)
+{
+    return sChapterDataTable + id;
+}
+int CountMaxCh(void)
+{
+    const struct ROMChapterData * data;
+    int i = 0;
+    int tmp;
+    for (; i < 255; ++i)
+    {
+        data = GetRomChData(i);
+        tmp = (int)data->internalName;
+        if (!tmp || (tmp == (-1)))
+        {
+            i--;
+            break;
+        }
+    }
+    return i;
+}
+
 int GetChStateMax(int id)
 {
+    switch (id)
+    {
+        case 3:
+        case 4:
+        {
+            return CountMaxCh();
+        }
+        default:
+    }
     return chStateMax[id];
 }
 int GetChStateMin(int id)
