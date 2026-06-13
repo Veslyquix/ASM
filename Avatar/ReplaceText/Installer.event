@@ -1,16 +1,16 @@
 
 ALIGN 4 
-ControlCodesStartWithBracket: // Only replace text starting with [ 
+ControlCodesStartWithBracket: // Only replace text starting with < 
 // there will be lag if you make this false 
 // but then you could replace vanilla text
 WORD 1 // True 
 // WORD 0 // False 
 
 // Also adds these codes to make conditional dialogue easier: 
-// [ifFlagXXX][endif] // replace XXX with flag e.g. 0B0 is casual mode 
-// [ifAliveXX][endif] // replace XX for 01 for Eirika 
-// [ifDeadXX][endif]
-// [ifMissingXX][endif]
+// <ifFlagXXX><endif> // replace XXX with flag e.g. 0B0 is casual mode 
+// <ifAliveXX><endif> // replace XX for 01 for Eirika 
+// <ifDeadXX><endif>
+// <ifMissingXX><endif>
 
 #ifndef TheyPronounFlag 
     #define TheyPronounFlag 0x114
@@ -32,7 +32,7 @@ ALIGN 4
 ReplaceTextList:
 // required flag, required chapter, pad, text to find, replacement text 
 // SHORT 0; 			BYTE 0xFF 		0; 	POIN TextA 			TextB 
-/* [they] / [They] 
+/* <they> / <They> 
 E.g. 
 They have the toy. 
 He has the toy.
@@ -46,7 +46,7 @@ SHORT HePronounFlag;   BYTE 0xFF 0; POIN code_They text_He
 SHORT ShePronounFlag;  BYTE 0xFF 0; POIN code_They text_She 
 
 
-/* [have] / [Have]
+/* <have> / <Have>
 they have 
 he has 
 she has 
@@ -59,7 +59,7 @@ SHORT HePronounFlag;   BYTE 0xFF 0; POIN code_Have text_Has
 SHORT ShePronounFlag;  BYTE 0xFF 0; POIN code_Have text_Has 
 
 
-/* [them] / [Them]
+/* <them> / <Them>
 The toy belongs to him. 
 The toy belongs to her. 
 The toy belongs to them. 
@@ -72,7 +72,7 @@ SHORT HePronounFlag;   BYTE 0xFF 0; POIN code_Them text_Him
 SHORT ShePronounFlag;  BYTE 0xFF 0; POIN code_Them text_Her 
 
 
-/* [their] / [Their] 
+/* <their> / <Their> 
 His toy is red.
 Her toy is red.
 Their toy is red. 
@@ -85,7 +85,7 @@ SHORT HePronounFlag;   BYTE 0xFF 0; POIN code_Their text_His
 SHORT ShePronounFlag;  BYTE 0xFF 0; POIN code_Their text_Her 
 
 
-/* [theirs] / [Theirs]
+/* <theirs> / <Theirs>
 The toy is his.
 The toy is hers. 
 The toy is theirs. 
@@ -110,9 +110,9 @@ WORD 0 0 0// terminator
 
 
 code_they:
-tx("[they]")
+tx("<they>")
 code_They: 
-tx("[They]")
+tx("<They>")
 
 
 text_they:
@@ -132,7 +132,7 @@ tx("She");
 code_have:
 tx("have") 
 code_Have:
-tx("[Have]")
+tx("<Have>")
 text_have:
 tx("have")
 text_has:
@@ -145,9 +145,9 @@ tx("Has")
 
 
 code_them:
-tx("[them]")
+tx("<them>")
 code_Them:
-tx("[Them]")
+tx("<Them>")
 text_them:
 tx("them")
 text_him:
@@ -163,9 +163,9 @@ tx("Him")
 
 
 code_their:
-tx("[their]")
+tx("<their>")
 code_Their:
-tx("[Their]")
+tx("<Their>")
 text_their:
 tx("their")
 text_his:
@@ -181,9 +181,9 @@ tx("His")
 
 
 code_theirs:
-tx("[theirs]")
+tx("<theirs>")
 code_Theirs:
-tx("[Theirs]") 
+tx("<Theirs>") 
 text_theirs:
 tx("theirs")
 // text_his:

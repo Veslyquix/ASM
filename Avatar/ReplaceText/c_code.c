@@ -447,7 +447,7 @@ void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800
             continue;
         }
 
-        if (ControlCodesStartWithBracket && b[i] != 0x5B) // control codes to start with `[`
+        if (ControlCodesStartWithBracket && b[i] != 0x3C) // control codes to start with `<`
         {
             continue;
         }
