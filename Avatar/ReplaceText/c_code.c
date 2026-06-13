@@ -265,14 +265,14 @@ void RemoveRange(char * buffer, int start, int end, int usedLength[1])
 }
 static int IsIfTag(const char * b, int i)
 {
-    return (b[i] == '[' && b[i + 1] == 'i' && b[i + 2] == 'f');
+    return (b[i] == '<' && b[i + 1] == 'i' && b[i + 2] == 'f');
 }
 
 static int IsEndIf(const char * b, int i)
 {
     return (
-        b[i] == '[' && b[i + 1] == 'e' && b[i + 2] == 'n' && b[i + 3] == 'd' && b[i + 4] == 'i' && b[i + 5] == 'f' &&
-        b[i + 6] == ']');
+        b[i] == '<' && b[i + 1] == 'e' && b[i + 2] == 'n' && b[i + 3] == 'd' && b[i + 4] == 'i' && b[i + 5] == 'f' &&
+        b[i + 6] == '>');
 }
 extern struct Unit * GetUnitFromCharId(int id);
 static int IsUnitAlive(int id)
@@ -355,13 +355,13 @@ static int TryHandleConditional(char * b, int i, int usedLength[1])
     }
 
     // find closing bracket of opening tag
-    while (b[tagEnd] && b[tagEnd] != ']')
+    while (b[tagEnd] && b[tagEnd] != '>')
         ++tagEnd;
 
     if (!b[tagEnd])
         return 0;
 
-    tagEnd++; // include ']'
+    tagEnd++; // include '>'
 
     // Remove the [ifXXXX] tag itself
     RemoveRange(b, i, tagEnd, usedLength);
