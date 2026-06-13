@@ -2,4 +2,11 @@
 // Thanks to Mokha for the updated fe-clib! 
 
 #include "C_Code.lyn.event" 
-
+// this seems to work fine with skillsys but it'll probably run out of icon space before 100 items 
+#ifndef POKEMBLEM 
+ALIGN 4 
+RandomizeFoundItemsFlag_Link:
+WORD 0 
+RandomizeItem:
+SHORT $4770 
+#endif 

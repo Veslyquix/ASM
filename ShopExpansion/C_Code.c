@@ -1,34 +1,75 @@
 #include "C_Code.h"
+extern u16 shopItemsRam[];
+u16 const gSomeDefaultShopInventory[] = {
+    ITEM_SWORD_IRON, ITEM_LANCE_IRON, ITEM_AXE_IRON, ITEM_BOW_IRON,
+    ITEM_ANIMA_FIRE, ITEM_STAFF_HEAL, ITEM_NONE,     ITEM_NONE,
+};
+extern int RandomizeFoundItemsFlag_Link;
+extern int RandomizeItem(int item);
 void StartShopScreen(struct Unit * unit, const u16 * inventory, u8 shopType, ProcPtr parent)
 {
     struct ProcShop * proc;
     const u16 * shopItems;
     int i;
+    for (i = 0; i <= 100; i++)
+    {
+        shopItemsRam[i] = 0;
+    }
 
     EndPlayerPhaseSideWindows();
 
-    if (parent)
+    if (parent != 0)
+    {
         proc = Proc_StartBlocking(gProcScr_Shop, parent);
+    }
     else
+    {
         proc = Proc_Start(gProcScr_Shop, PROC_TREE_3);
+    }
 
     proc->shopType = shopType;
     proc->unit = unit;
 
-    shopItems = gDefaultShopInventory;
+    shopItems = gSomeDefaultShopInventory;
     if (inventory != 0)
+    {
         shopItems = inventory;
+    }
 
-    for (i = 0; i <= SHOP_ITEMS_MAX_AMT; i++)
-        proc->shopItems[i] = MakeNewItem(*shopItems++);
+    int rand = CheckFlag(RandomizeFoundItemsFlag_Link);
+    if (rand)
+    {
+        for (i = 0; i <= 100; i++)
+        {
+            u16 itemId = *shopItems++;
+            // asm("mov r11, r11");
+            itemId = RandomizeItem(itemId);
+            if (!(itemId & 0xFF00) && (itemId))
+            {
+                itemId |= 0x100;
+            } // 1 durability
+            shopItemsRam[i] = itemId;
+        }
+    }
+    else
+    {
+        for (i = 0; i <= 100; i++)
+        {
+            u16 itemId = *shopItems++;
+
+            shopItemsRam[i] = MakeNewItem(itemId);
+        }
+    }
 
     UpdateShopItemCounts(proc);
+
+    return;
 }
 
 void UpdateShopItemCounts(struct ProcShop * proc)
 {
     int i;
-    for (i = 0; proc->shopItems[i] != 0; i++)
+    for (i = 0; shopItemsRam[i] != 0; i++)
         ;
 
     proc->shopItemCount = i;
@@ -46,7 +87,7 @@ void ShopDrawBuyItemLine(struct ProcShop * proc, int itemIndex)
 
     ClearText(&gShopItemTexts[index]);
 
-    item = proc->shopItems[itemIndex];
+    item = shopItemsRam[itemIndex];
 
     if (item != 0)
         DrawShopItemPriceLine(
@@ -65,7 +106,7 @@ void ShopDrawSellItemLine(struct ProcShop * proc, int itemIndex)
 
     ClearText(&gShopItemTexts[index]);
 
-    item = proc->shopItems[itemIndex];
+    item = shopItemsRam[itemIndex];
 
     if (item != 0)
         DrawShopItemLine(
@@ -103,7 +144,7 @@ void Shop_Loop_BuyKeyHandler(struct ProcShop * proc)
     {
         a = (proc->head_loc * 16);
         b = ((proc->hand_loc * 16) - 72);
-        StartItemHelpBox(56, a - b, proc->shopItems[proc->head_loc]);
+        StartItemHelpBox(56, a - b, shopItemsRam[proc->head_loc]);
     }
     DisplayShopUiArrows();
 
@@ -125,11 +166,11 @@ void Shop_Loop_BuyKeyHandler(struct ProcShop * proc)
         proc->helpTextActive = 1;
         a = (proc->head_loc * 16);
         b = ((proc->hand_loc * 16) - 72);
-        StartItemHelpBox(56, a - b, proc->shopItems[proc->head_loc]);
+        StartItemHelpBox(56, a - b, shopItemsRam[proc->head_loc]);
         return;
     }
 
-    price = GetItemPurchasePrice(proc->unit, proc->shopItems[proc->head_loc]);
+    price = GetItemPurchasePrice(proc->unit, shopItemsRam[proc->head_loc]);
 
     if (gKeyStatusPtr->newKeys & A_BUTTON)
     {
@@ -186,14 +227,14 @@ void Shop_TryAddItemToInventory(struct ProcShop * proc)
         return;
     }
 
-    UnitAddItem(proc->unit, proc->shopItems[proc->head_loc]);
+    UnitAddItem(proc->unit, shopItemsRam[proc->head_loc]);
     HandleShopBuyAction(proc);
 
     Proc_Goto(proc, PL_SHOP_BUY_DONE);
 }
 void Shop_AddItemToConvoy(struct ProcShop * proc)
 {
-    AddItemToConvoy(proc->shopItems[proc->head_loc]);
+    AddItemToConvoy(shopItemsRam[proc->head_loc]);
     HandleShopBuyAction(proc);
 }
 void Shop_Loop_UnkKeyHandler(struct ProcShop * proc)
@@ -227,7 +268,7 @@ void Shop_Loop_UnkKeyHandler(struct ProcShop * proc)
     {
         a = (proc->head_loc * 16);
         b = ((proc->hand_loc * 16) - 0x48);
-        StartItemHelpBox(56, a - b, proc->shopItems[proc->head_loc]);
+        StartItemHelpBox(56, a - b, shopItemsRam[proc->head_loc]);
     }
 
     DisplayShopUiArrows();
@@ -250,7 +291,7 @@ void Shop_Loop_UnkKeyHandler(struct ProcShop * proc)
         proc->helpTextActive = TRUE;
         a = (proc->head_loc * 16);
         b = ((proc->hand_loc * 16) - 0x48);
-        StartItemHelpBox(56, a - b, proc->shopItems[proc->head_loc]);
+        StartItemHelpBox(56, a - b, shopItemsRam[proc->head_loc]);
         return;
     }
 
@@ -279,7 +320,7 @@ void DrawShopSoldItems(struct ProcShop * proc)
     for (i = proc->hand_idx; i < proc->hand_idx + SHOP_TEXT_LINES; i++)
     {
         index = DivRem(i, SHOP_TEXT_LINES + 1);
-        item = proc->shopItems[i];
+        item = shopItemsRam[i];
 
         if (item == 0)
             break;
@@ -296,7 +337,7 @@ void HandleShopBuyAction(struct ProcShop * proc)
 
     gActionData.unitActionType = UNIT_ACTION_SHOPPED;
 
-    SetPartyGoldAmount(GetPartyGoldAmount() - GetItemPurchasePrice(proc->unit, proc->shopItems[proc->head_loc]));
+    SetPartyGoldAmount(GetPartyGoldAmount() - GetItemPurchasePrice(proc->unit, shopItemsRam[proc->head_loc]));
 
     UpdateShopItemCounts(proc);
     DrawShopSoldItems(proc);
