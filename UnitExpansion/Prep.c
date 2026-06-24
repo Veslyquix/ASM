@@ -470,7 +470,24 @@ void sub_809B520(struct ProcPrepUnit * proc)
 }
 
 extern void MS_SaveGame(unsigned slot);
+extern struct TextHandle gPrepUnitTexts[];
+void PrepUnit_DrawLeftUnitName(struct Unit * unit)
+{
+    TileMap_FillRect(TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 3), 6, 1, 0);
+    PutFaceChibi(GetUnitPortraitId(unit), TILEMAP_LOCATED(gBG0TilemapBuffer, 1, 1), 0x270, 2, 0);
+    Text_Clear(&gPrepUnitTexts[0x13]);
+    DrawTextInline(
+        &gPrepUnitTexts[0x13], TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 1), TEXT_COLOR_NORMAL,
+        GetStringTextCenteredPos(0x38, GetStringFromIndex(unit->pClassData->nameTextId)), 0,
+        GetStringFromIndex(unit->pClassData->nameTextId));
 
+    DrawSpecialUiStr(TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 3), 3, 0x24, 0x25);
+    DrawSpecialUiChar(TILEMAP_LOCATED(gBG0TilemapBuffer, 9, 3), 3, 0x1D);
+
+    DrawDecNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 3), 2, unit->level);
+    DrawDecNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, 11, 3), 2, unit->exp);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
 /*
 void NewProcPrepUnit_OnGameStart(struct ProcPrepUnit *proc)
 {
