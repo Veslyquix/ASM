@@ -21,7 +21,7 @@ int PrepMenu_CtrlLoop_PressStartUsability(void)
     // proc = Proc_Find(ProcScr_PrepMenu);
     // if (proc) {
     //	if (proc->proc_parent) {
-    //
+    //	asm("mov r11, r11");
     //	}
     //	if (proc->on_PressStart) {
     //		if (proc->on_PressStart(proc->proc_parent)) {
@@ -116,15 +116,15 @@ void WriteSramFast(const u8 *src, u8 *dest, u32 size)
 
         if ((void*)dest > (void*)0xE00691C) {
                 if ((void*)dest < (void*) 0xE0070BC)
-
+                asm("mov r11, r11");
         }
         if ((void*)dest > (void*)0xE0070BC) {
                 if ((void*)dest < (void*) 0xE00785C)
-
+                asm("mov r11, r11");
         }
         if ((void*)dest > (void*)0xE00785C) {
                 if ((void*)dest < (void*) 0xE007FFC)
-
+                asm("mov r11, r11");
         }
 
     REG_WAITCNT = (REG_WAITCNT & ~3) | 3;
@@ -166,11 +166,10 @@ void SavePCBox(int targetSlot)
         RelocateUnitsPastThreshold(index);
     }
     PackUnitsIntoBox(targetSlot);
-    // WriteAndVerifySramFast((void*)&bunit[0], (void*)PC_GetSaveAddressBySlot(slot), sizeof(*bunit[0])*BoxCapacity); //
-    // src, dst, size
+    // WriteAndVerifySramFast((void*)&bunit[0], (void*)PC_GetSaveAddressBySlot(targetSlot),
+    // sizeof(bunit[0])*BoxCapacity); // src, dst, size
     WriteAndVerifySramFast(
-        (void *)&bunit[0], (void *)PC_GetSaveAddressBySlot(targetSlot),
-        sizeof(bunit[0]) * BoxCapacity); // src, dst, size
+        (void *)&bunit[0], (void *)PC_GetSaveAddressBySlot(targetSlot), PCBoxSizeLookup[0]); // src, dst, size
 
     struct SaveBlockInfo sbm;
     sbm.magic32 = SAVEMAGIC32;
@@ -181,14 +180,35 @@ void SavePCBox(int targetSlot)
     UnpackUnitsFromBox(targetSlot);
 }
 
+extern void MS_SaveGame(unsigned slot);
+extern struct StatScreenSt gStatScreen;
+static int GetPrepListIndexByUnit(struct Unit * unit);
+
+void CallDeploySelectedUnits(void)
+{
+    DeploySelectedUnits();
+#ifdef POKEMBLEM_VERSION
+    /*
+    // 2026 - fixing DeploySelectedUnits to be 62 units in ram to sort instead of PartySizeThreshold fixed stuff I guess
+    // so I don't need we need to forcibly save anymore when leaving prep
+        SavePCBox(gPlaySt.gameSaveSlot); // so box units don't need to exist on suspend
+        // ClearPCBoxUnitsBuffer();
+        MS_SaveGame(gPlaySt.gameSaveSlot);
+        */
+    // Can duplicate a pkmn you're catching by capturing one, then going to a pc center,
+    // not saving but entering prep, then restarting the ch
+#endif
+}
+
 void CopyPCBox(int sourceSlot, int targetSlot)
 {
     UnpackUnitsFromBox(sourceSlot);
     ClearAllBoxUnits(targetSlot);
     PackUnitsIntoBox(targetSlot);
+    // WriteAndVerifySramFast((void*)&bunit[0], (void*)PC_GetSaveAddressBySlot(targetSlot),
+    // sizeof(bunit[0])*BoxCapacity); // src, dst, size
     WriteAndVerifySramFast(
-        (void *)&bunit[0], (void *)PC_GetSaveAddressBySlot(targetSlot),
-        sizeof(bunit[0]) * BoxCapacity); // src, dst, size
+        (void *)&bunit[0], (void *)PC_GetSaveAddressBySlot(targetSlot), PCBoxSizeLookup[0]); // src, dst, size
 
     struct SaveBlockInfo sbm;
     sbm.magic32 = SAVEMAGIC32;
@@ -230,7 +250,7 @@ void PrepAutoCapDeployUnits(struct ProcAtMenu * proc)
         }
     }
 
-    //
+    // asm("mov r11, r11");
     if (proc->unit_count < proc->max_counter)
         proc->max_counter = proc->unit_count;
 
@@ -248,9 +268,28 @@ void PrepAtMenu_OnInit(struct ProcAtMenu * proc)
     }
 
     // ReorderPlayerUnitsBasedOnDeployment(); // removes gaps
+    // int slot = gPlaySt.gameSaveSlot;
+    // UnpackUnitsFromBox(slot);
+    // ClearAllBoxUnits(slot);
+    // DeploySelectedUnits();
+    // PackUnitsIntoBox(slot);
+    // WriteAndVerifySramFast((void*)&bunit[0], (void*)PC_GetSaveAddressBySlot(slot), PCBoxSizeLookup[0]); // src, dst,
+    // size
+    //
+    // struct SaveBlockInfo sbm;
+    // sbm.magic32 = SAVEMAGIC32;
+    // sbm.kind   = SAVEBLOCK_KIND_GAME;
+    // WriteSaveBlockInfo(&sbm, slot);
+    //
+    // UnpackUnitsFromBox(slot);
+
     ClearPCBoxUnitsBuffer();
     UnpackUnitsFromBox(gPlaySt.gameSaveSlot);
-    // RelocateUnitsPastThreshold(index);
+    // RelocateUnitsPastThreshold(gPlaySt.gameSaveSlot);
+    DeploySelectedUnits();
+    SavePCBox(gPlaySt.gameSaveSlot);
+    // ClearPCBoxUnitsBuffer();
+    // UnpackUnitsFromBox(gPlaySt.gameSaveSlot);
 
     PrepSetLatestCharId(0);
     proc->xDiff = 0;
@@ -299,21 +338,13 @@ void MakePrepUnitList()
     int i;
     int cur = CountAndUndeployTempUnits();
     struct Unit * unit;
-    // struct BoxUnit * bunit2;
-    for (i = 1; i < 62; i++)
+    for (i = 1; i < 64; i++)
     {
         unit = GetUnit(i);
 
         if (!UNIT_IS_VALID(unit))
             continue;
 
-#ifndef POKEMBLEM_VERSION
-        // bunit2 = GetCharBoxSlotFromBox(unit->pCharacterData->number); // avoid duplicate char IDs
-        // if (bunit2)
-        // {
-        // continue;
-        // }
-#endif
         if (IsUnitInCurrentRoster(unit))
         {
             NewRegisterPrepUnitList(cur, unit);
@@ -351,7 +382,7 @@ int CountTotalUnitsInUnitStructRam(void)
 {
     int cur = 0;
     struct Unit * unit;
-    for (int i = 0; i < 62; i++)
+    for (int i = 0; i < 63; i++)
     {
         unit = &gUnitArrayBlue[i];
 
@@ -363,82 +394,57 @@ int CountTotalUnitsInUnitStructRam(void)
     return cur;
 }
 
-int CountTotalUsableUnitsInUnitStructRam(void)
-{
-    int cur = 0;
-    struct Unit * unit;
-    for (int i = 0; i < 62; i++)
-    {
-        unit = &gUnitArrayBlue[i];
-
-        if (UNIT_IS_VALID(unit))
-        {
-            if (IsUnitInCurrentRoster(unit))
-            {
-                cur++;
-            }
-        }
-    }
-    return cur;
-}
-
 int CountUnusableUnitsUpToIndex(int index)
 {
     int cur = 0;
     struct Unit * unit;
-    for (int i = 0; i <= index; i++)
+    for (int i = 0; i < 64; i++)
     {
         unit = &gUnitArrayBlue[i];
+
         if (UNIT_IS_VALID(unit))
         {
-            if (IsUnitInCurrentRoster(unit))
+            if (!IsUnitInCurrentRoster(unit))
             {
-                continue;
+                // NewRegisterPrepUnitList(cur, unit);
+                cur++;
+            }
+            else
+            {
+                // cur++;
+                if (i >= index)
+                {
+                    break; // keep counting until we find a valid unit so we know how many units to skip over
+                }
             }
         }
-        cur++; // not valid or empty slot
-        // count until we find a valid unit so we know how many units to skip over
     }
     return cur;
 }
-// 80d1c0c
+
 struct Unit * GetUnitFromPrepList(int index) // called in 6 other functions
 {
     // return gPrepUnitList.units[index];
     struct Unit * unit;
-    int c = CountTotalUsableUnitsInUnitStructRam();
-    int success = false;
-    int offset = 0;
+    int c = CountTotalUnitsInUnitStructRam();
 
     if (index < c)
     {
-        success = true;
-        offset = CountUnusableUnitsUpToIndex(index);
+        int offset = CountUnusableUnitsUpToIndex(index);
         unit = &gUnitArrayBlue[index + offset];
-        if (!unit->pCharacterData)
-        {
-            success = false;
-            // asm("mov r11, r11");
-        }
     }
-    if (!success)
+    else
     {
-
         index = index - c;
-        if (index < 0)
-        {
-            index = 0;
-        }
-        offset = CountUnusableStoredUnitsUpToIndex(index);
+        int offset = CountUnusableStoredUnitsUpToIndex(index);
         unit = &PCBoxUnitsBuffer[index + offset];
         if ((u32 *)&PCBoxUnitsBuffer[index + offset] > (u32 *)0x2028E54)
         {
-            unit = &PCBoxUnitsBuffer[111]; // prevent overflow
+            unit = &PCBoxUnitsBuffer[113]; // prevent overflow
             // I think this happens because it ignores empty unit struct ram. If it's not empty, then indexes >113 are
             // valid
         }
     }
-
     return unit;
 }
 
@@ -449,7 +455,7 @@ void NewRegisterPrepUnitList(int index, struct Unit * unit)
 
 void ProcPrepUnit_OnInit(struct ProcPrepUnit * proc)
 {
-    // struct ProcAtMenu * parent;
+    struct ProcAtMenu * parent;
     MakePrepUnitList();
     proc->list_num_cur = UnitGetIndexInPrepList(PrepGetLatestCharId());
     proc->max_counter = ((struct ProcAtMenu *)(proc->proc_parent))->max_counter;
@@ -464,12 +470,15 @@ void sub_809B520(struct ProcPrepUnit * proc)
     int list_num;
     MakePrepUnitList();
 
-    list_num = GetLatestUnitIndexInPrepListByUId();
+    list_num = GetPrepListIndexByUnit(gStatScreen.unit);
+
+    if (list_num < 0)
+        list_num = GetLatestUnitIndexInPrepListByUId();
+
     proc->list_num_pre = list_num;
     proc->list_num_cur = list_num;
 }
 
-extern void MS_SaveGame(unsigned slot);
 extern struct TextHandle gPrepUnitTexts[];
 void PrepUnit_DrawLeftUnitName(struct Unit * unit)
 {
@@ -478,8 +487,8 @@ void PrepUnit_DrawLeftUnitName(struct Unit * unit)
     Text_Clear(&gPrepUnitTexts[0x13]);
     DrawTextInline(
         &gPrepUnitTexts[0x13], TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 1), TEXT_COLOR_NORMAL,
-        GetStringTextCenteredPos(0x38, GetStringFromIndex(unit->pCharacterData->nameTextId)), 0,
-        GetStringFromIndex(unit->pCharacterData->nameTextId));
+        GetStringTextCenteredPos(0x38, GetStringFromIndex(unit->pClassData->nameTextId)), 0,
+        GetStringFromIndex(unit->pClassData->nameTextId));
 
     DrawSpecialUiStr(TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 3), 3, 0x24, 0x25);
     DrawSpecialUiChar(TILEMAP_LOCATED(gBG0TilemapBuffer, 9, 3), 3, 0x1D);
@@ -488,6 +497,262 @@ void PrepUnit_DrawLeftUnitName(struct Unit * unit)
     DrawDecNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, 11, 3), 2, unit->exp);
     BG_EnableSyncByMask(BG0_SYNC_BIT);
 }
+
+static bool IsUnitInPCBoxBuffer(struct Unit * unit)
+{
+    return ((u32)unit >= (u32)&PCBoxUnitsBuffer[0]) && ((u32)unit < (u32)&PCBoxUnitsBuffer[BoxBufferCapacity]);
+}
+
+static int GetPrepListIndexByUnit(struct Unit * unit)
+{
+    int i;
+    int count = PrepGetUnitAmount();
+
+    for (i = 0; i < count; i++)
+    {
+        if (GetUnitFromPrepList(i) == unit)
+            return i;
+    }
+
+    return -1;
+}
+struct StatScreenInfo
+{
+    /* 00 */ u8 unk00;
+    /* 01 */ u8 unitId;
+    /* 02 */ u16 config;
+};
+
+// extern int IsUnitStatusScreenForbidden(struct Unit * unit);
+extern struct StatScreenInfo sStatScreenInfo;
+int IsStatusScreenDisabled(struct Unit * unit)
+{
+    if (!UNIT_IS_VALID(unit))
+        return true;
+
+    if ((sStatScreenInfo.config & STATSCREEN_CONFIG_NONDEAD) && (unit->state & US_DEAD))
+        return true;
+
+    if ((sStatScreenInfo.config & STATSCREEN_CONFIG_NONBENCHED) && (unit->state & US_NOT_DEPLOYED))
+        return true;
+
+    if ((sStatScreenInfo.config & STATSCREEN_CONFIG_NONUNK9) && (unit->state & US_BIT9))
+        return true;
+
+    if ((sStatScreenInfo.config & STATSCREEN_CONFIG_NONROOFED) && (unit->state & US_UNDER_A_ROOF))
+        return true;
+
+    if ((sStatScreenInfo.config & STATSCREEN_CONFIG_NONUNK16) && (unit->state & US_BIT16))
+        return true;
+
+    if ((sStatScreenInfo.config & STATSCREEN_CONFIG_NONSUPPLY) && (UNIT_CATTRIBUTES(unit) & CA_SUPPLY))
+        return true;
+
+    if (!CanShowUnitStatScreen(unit))
+        return true;
+
+    return false;
+}
+// extern struct ProcCmd const ProcScr_PrepUnitScreen[];
+struct Unit * FindNextUnit(struct Unit * u, int direction)
+{
+    struct ProcAtMenu * proc = Proc_Find(ProcScr_AtMenu);
+    struct Unit * unit;
+
+    if (!proc)
+    {
+        int i = u->index;
+
+        while (TRUE)
+        {
+            i = (i + direction) & 0x3F;
+            unit = GetUnit(i);
+            if (IsStatusScreenDisabled(unit))
+                continue;
+
+            return unit;
+        }
+    }
+
+    {
+        int unit_count = PrepGetUnitAmount();
+        int i;
+        int attempts;
+
+        if (unit_count <= 1)
+            return u;
+
+        i = proc->hand_pos;
+
+        attempts = GetPrepListIndexByUnit(u);
+        if (attempts >= 0)
+            i = attempts;
+
+        for (attempts = 0; attempts < unit_count; attempts++)
+        {
+            i += direction;
+            if (i < 0)
+                i = unit_count - 1;
+            else if (i >= unit_count)
+                i = 0;
+
+            unit = GetUnitFromPrepList(i);
+
+            if (IsStatusScreenDisabled(unit))
+                continue;
+
+            proc->hand_pos = i;
+            return unit;
+        }
+
+        return u;
+    }
+}
+
+extern void StartPageSlide(int direction, int page, struct Proc * proc);
+extern void StartUnitSlide(struct Unit * unit, int direction, struct Proc * proc);
+extern void UnitSlide_InitFadeOut(struct Proc * proc);
+extern void UnitSlide_FadeOutLoop(struct Proc * proc);
+extern void UnitSlide_InitFadeIn(struct Proc * proc);
+extern void UnitSlide_FadeInLoop(struct Proc * proc);
+extern void ClearSlide(struct Proc * proc);
+extern void StatScreen_InitDisplay(void);
+extern void StatScreen_Display(void);
+extern void StartStatScreenHelp(int page, struct Proc * proc);
+extern struct StatScreenSt gStatScreen;
+
+extern struct ProcCmd gProcScr_SSUnitSlide[];
+
+struct StatScreenEffectProc
+{
+    PROC_HEADER;
+
+    /* 2C */ int timer;
+    /* 30 */ int timerMax;
+    /* 34 */ int newItem;
+    /* 38 */ int key;
+};
+
+void UnitSlide_SetNewPrepUnit(struct StatScreenEffectProc * proc)
+{
+    gStatScreen.unit = (struct Unit *)proc->newItem;
+    StatScreen_Display();
+}
+extern void StartGlowBlendCtrl(void);
+extern void EndGlowBlendCtrl(struct StatScreenEffectProc * proc);
+static const struct ProcCmd ProcScr_PrepUnitSlide[] = {
+    PROC_CALL(EndGlowBlendCtrl),
+    PROC_SLEEP(0),
+    PROC_CALL(UnitSlide_InitFadeOut),
+    PROC_REPEAT(UnitSlide_FadeOutLoop),
+
+    PROC_CALL(UnitSlide_SetNewPrepUnit),
+    PROC_CALL(UnitSlide_InitFadeIn),
+    PROC_REPEAT(UnitSlide_FadeInLoop),
+    PROC_SLEEP(0),
+    PROC_CALL(StartGlowBlendCtrl),
+    PROC_CALL(ClearSlide),
+
+    PROC_END,
+};
+
+void StartPrepUnitSlide(struct Unit * unit, int direction, struct Proc * parent)
+{
+    struct StatScreenEffectProc * proc;
+
+    if (Proc_Find(gProcScr_SSUnitSlide) || Proc_Find(ProcScr_PrepUnitSlide))
+        return;
+
+    PlaySoundEffect(0x65);
+
+    proc = (void *)Proc_StartBlocking(ProcScr_PrepUnitSlide, parent);
+
+    proc->timer = 0;
+    proc->timerMax = 12;
+    proc->newItem = (int)unit;
+    proc->key = direction;
+
+    gStatScreen.help = NULL;
+    gStatScreen.inTransition = TRUE;
+
+    // EndGlowBlendCtrl((void *)parent);
+}
+
+static void ChangeStatScreenUnit(struct Unit * unit, int direction, struct Proc * proc)
+{
+    if (IsUnitInPCBoxBuffer(gStatScreen.unit) || IsUnitInPCBoxBuffer(unit))
+    {
+        StartPrepUnitSlide(unit, direction, proc);
+        return;
+    }
+
+    StartUnitSlide(unit, direction, proc);
+}
+
+void StatScreen_OnIdle(struct Proc * proc)
+{
+    struct Unit * unit;
+
+    if (gKeyStatusPtr->newKeys & B_BUTTON)
+    {
+        gLCDControlBuffer.dispcnt.bg0_on = TRUE;
+        gLCDControlBuffer.dispcnt.bg1_on = FALSE;
+        gLCDControlBuffer.dispcnt.bg2_on = TRUE;
+        gLCDControlBuffer.dispcnt.bg3_on = TRUE;
+        gLCDControlBuffer.dispcnt.obj_on = TRUE;
+
+        SetSpecialColorEffectsParameters(3, 0, 0, 0x10);
+
+        SetBlendTargetA(0, 0, 0, 0, 0);
+        SetBlendBackdropA(1);
+
+        // TODO: ResetBackdropColor macro?
+        gPaletteBuffer[0] = 0;
+        EnablePaletteSync();
+
+        Proc_Break(proc);
+
+        PlaySoundEffect(0x6B);
+    }
+
+    else if (gKeyStatusPtr->repeatedKeys & DPAD_LEFT)
+    {
+        gStatScreen.page = (gStatScreen.page + gStatScreen.pageAmt - 1) % gStatScreen.pageAmt;
+        StartPageSlide(DPAD_LEFT, gStatScreen.page, proc);
+        return;
+    }
+
+    else if (gKeyStatusPtr->repeatedKeys & DPAD_RIGHT)
+    {
+        gStatScreen.page = (gStatScreen.page + gStatScreen.pageAmt + 1) % gStatScreen.pageAmt;
+        StartPageSlide(DPAD_RIGHT, gStatScreen.page, proc);
+    }
+
+    else if (gKeyStatusPtr->repeatedKeys & DPAD_UP)
+    {
+        unit = FindNextUnit(gStatScreen.unit, -1);
+        ChangeStatScreenUnit(unit, -1, proc);
+    }
+
+    else if (gKeyStatusPtr->repeatedKeys & DPAD_DOWN)
+    {
+        unit = FindNextUnit(gStatScreen.unit, +1);
+        ChangeStatScreenUnit(unit, +1, proc);
+    }
+
+    else if ((gKeyStatusPtr->repeatedKeys & A_BUTTON) && (gStatScreen.unit->rescue))
+    {
+        unit = GetUnit(gStatScreen.unit->rescue);
+        ChangeStatScreenUnit(unit, (gStatScreen.unit->state & US_RESCUING) ? +1 : -1, proc);
+    }
+
+    else if (gKeyStatusPtr->newKeys & R_BUTTON)
+    {
+        Proc_Goto(proc, 0); // TODO: label name
+        StartStatScreenHelp(gStatScreen.page, proc);
+    }
+}
+
 /*
 void NewProcPrepUnit_OnGameStart(struct ProcPrepUnit *proc)
 {
@@ -498,17 +763,12 @@ void NewProcPrepUnit_OnGameStart(struct ProcPrepUnit *proc)
 
 
 
-        //PackUnitsIntoBox(gPlaySt.gameSaveSlot); // so box units don't need to exist on suspend
-        //ClearPCBoxUnitsBuffer();
-        //MS_SaveGame(gPlaySt.gameSaveSlot);
+        PackUnitsIntoBox(gPlaySt.gameSaveSlot); // so box units don't need to exist on suspend
+        ClearPCBoxUnitsBuffer();
+        MS_SaveGame(gPlaySt.gameSaveSlot);
 
 }
 */
-
-void CallDeploySelectedUnits(void)
-{
-    DeploySelectedUnits();
-}
 
 /*
 s8 PrepUnit_HandlePressA(struct ProcPrepUnit *proc)
@@ -566,23 +826,22 @@ s8 PrepUnit_HandlePressA(struct ProcPrepUnit *proc)
     }
 }
 */
-
-extern struct TextHandle gPrepUnitTexts[];
 /*
 // this uses two text handles for all 14 or whatever
-void PrepUnit_DrawUnitListNames(struct ProcPrepUnit *proc, int line)
+void PrepUnit_DrawUnitListNames(struct ProcPrepUnit * proc, int line)
 {
     int i, color, itext, ilist, _line;
     u32 val;
     struct Unit * unit;
 
-    //It use 14 TextHandles to store 6 line of 12 Units;
+    // It use 14 TextHandles to store 6 line of 12 Units;
 
     i = 0;
     val = line * 2;
     _line = line % 7;
 
-    for (; i < 2; i++) {
+    for (; i < 2; i++)
+    {
         itext = val + i;
 
         if (itext >= PrepGetUnitAmount())
@@ -601,17 +860,13 @@ void PrepUnit_DrawUnitListNames(struct ProcPrepUnit *proc, int line)
         Text_Clear(&gPrepUnitTexts[ilist]);
 
         DrawTextInline(
-            &gPrepUnitTexts[ilist],
-            TILEMAP_LOCATED( gBG2TilemapBuffer, 0x10 + i * 7, val % 0x20),
-            color,
-            0, 0,
-            GetStringFromIndex(unit->pClassData->nameTextId) );
+            &gPrepUnitTexts[ilist], TILEMAP_LOCATED(gBG2TilemapBuffer, 0x10 + i * 7, val % 0x20), color, 0, 0,
+            GetStringFromIndex(unit->pClassData->nameTextId));
     }
 
     BG_EnableSyncByMask(BG2_SYNC_BIT);
 }
 */
-
 /*
 void PrepUpdateMenuTsaScroll(int val)
 {
@@ -701,27 +956,7 @@ void PrepUnit_InitGfx()
 }
 
 
-void PrepUnit_DrawLeftUnitName(struct Unit *unit)
-{
-    TileMap_FillRect(TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 3), 6, 1, 0);
-    PutFaceChibi(GetUnitPortraitId(unit), TILEMAP_LOCATED(gBG0TilemapBuffer, 1, 1), 0x270, 2, 0);
-    Text_Clear(&gPrepUnitTexts[0x13]);
-    DrawTextInline(
-        &gPrepUnitTexts[0x13],
-        TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 1),
-        TEXT_COLOR_NORMAL,
-        GetStringTextCenteredPos(0x38, GetStringFromIndex(unit->pClassData->nameTextId)),
-        0,
-        GetStringFromIndex(unit->pClassData->nameTextId)
-    );
 
-    DrawSpecialUiStr(TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 3), 3, 0x24, 0x25);
-    DrawSpecialUiChar(TILEMAP_LOCATED(gBG0TilemapBuffer, 9, 3), 3, 0x1D);
-
-    DrawDecNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, 8, 3), 2, unit->level);
-    DrawDecNumber(TILEMAP_LOCATED(gBG0TilemapBuffer, 11, 3), 2, unit->exp);
-    BG_EnableSyncByMask(BG0_SYNC_BIT);
-}
 
 
 void PrepUnit_DrawUnitItems(struct Unit *unit)
@@ -1026,7 +1261,7 @@ void ProcPrepUnit_Idle(struct ProcPrepUnit * proc)
 
         if (B_BUTTON & gKeyStatusPtr->newKeys)
         {
-            DeploySelectedUnits();
+            CallDeploySelectedUnits();
             PlaySoundEffect(0x6B);
             Proc_Goto(proc, PROC_LABEL_PREPUNIT_PRESS_B);
             return;

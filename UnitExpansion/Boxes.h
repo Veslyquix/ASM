@@ -60,7 +60,7 @@ struct __attribute__((packed)) BoxUnit {
 #endif 
 
 struct BoxUnit* GetCharBoxSlotFromBox(int index); 
-int GetCharIDFromBox(int index); 
+struct BoxUnit * GetCharIDFromBox(int slot, int index);
 extern struct Unit unit[62]; // gGenericBuffer 0x2020188
 extern struct BoxUnit bunit[100]; 
 
