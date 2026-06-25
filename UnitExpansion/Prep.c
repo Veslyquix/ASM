@@ -478,8 +478,8 @@ void PrepUnit_DrawLeftUnitName(struct Unit * unit)
     Text_Clear(&gPrepUnitTexts[0x13]);
     DrawTextInline(
         &gPrepUnitTexts[0x13], TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 1), TEXT_COLOR_NORMAL,
-        GetStringTextCenteredPos(0x38, GetStringFromIndex(unit->pClassData->nameTextId)), 0,
-        GetStringFromIndex(unit->pClassData->nameTextId));
+        GetStringTextCenteredPos(0x38, GetStringFromIndex(unit->pCharacterData->nameTextId)), 0,
+        GetStringFromIndex(unit->pCharacterData->nameTextId));
 
     DrawSpecialUiStr(TILEMAP_LOCATED(gBG0TilemapBuffer, 5, 3), 3, 0x24, 0x25);
     DrawSpecialUiChar(TILEMAP_LOCATED(gBG0TilemapBuffer, 9, 3), 3, 0x1D);
