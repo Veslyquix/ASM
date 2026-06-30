@@ -218,6 +218,11 @@ void CopyPCBox(int sourceSlot, int targetSlot)
     UnpackUnitsFromBox(targetSlot);
 }
 
+inline int InlinePrepGetUnitAmount()
+{
+    return gPrepUnitList.max_num;
+}
+
 void PrepAutoCapDeployUnits(struct ProcAtMenu * proc)
 {
     int i;
@@ -226,7 +231,6 @@ void PrepAutoCapDeployUnits(struct ProcAtMenu * proc)
     proc->cur_counter = 0;
     proc->unit_count = 0;
 
-    // for (i = 0; i < PrepGetUnitAmount(); proc->unit_count++, i++) {
     for (i = 0; i < 150; i++)
     {
         unit = GetUnitFromPrepList(i);
@@ -254,7 +258,7 @@ void PrepAutoCapDeployUnits(struct ProcAtMenu * proc)
     if (proc->unit_count < proc->max_counter)
         proc->max_counter = proc->unit_count;
 
-    // int unitAmount = PrepGetUnitAmount();
+    // int unitAmount = InlinePrepGetUnitAmount();
     // if (unitAmount < proc->max_counter)
     //     proc->max_counter = unitAmount;
 }
@@ -332,6 +336,20 @@ void PrepUnit_InitSMS(struct ProcPrepUnit * proc)
     PrepUpdateSMS();
 }
 
+static inline s8 InlineIsUnitInCurrentRoster(struct Unit * unit)
+{
+    if ((US_DEAD | US_BIT16) & unit->state)
+        return 0;
+
+    if (0x200 & UNIT_CATTRIBUTES(unit))
+    {
+        unit->state = 8;
+        return 0;
+    }
+
+    return 1;
+}
+
 // latest unit is in proc+0x2C
 void MakePrepUnitList()
 {
@@ -345,7 +363,7 @@ void MakePrepUnitList()
         if (!UNIT_IS_VALID(unit))
             continue;
 
-        if (IsUnitInCurrentRoster(unit))
+        if (InlineIsUnitInCurrentRoster(unit))
         {
             NewRegisterPrepUnitList(cur, unit);
             cur++;
@@ -367,7 +385,7 @@ int CountUnitsInUnitStructRam(void) {
         unit = &gUnitArrayBlue[i];
 
         if (UNIT_IS_VALID(unit)) {
-                        if (IsUnitInCurrentRoster(unit)) {
+                        if (InlineIsUnitInCurrentRoster(unit)) {
                                 NewRegisterPrepUnitList(cur, unit);
                                 cur++;
                         }
@@ -377,6 +395,7 @@ int CountUnitsInUnitStructRam(void) {
         return cur;
 }
 */
+#define ALIVE_UNIT(unit) (UNIT_IS_VALID(unit) && ((unit)->state & US_DEAD) == 0)
 
 int CountTotalUnitsInUnitStructRam(void)
 {
@@ -386,7 +405,9 @@ int CountTotalUnitsInUnitStructRam(void)
     {
         unit = &gUnitArrayBlue[i];
 
-        if (UNIT_IS_VALID(unit))
+        // if (UNIT_IS_VALID(unit))
+        // if (ALIVE_UNIT(unit))
+        if (UNIT_IS_VALID(unit) && InlineIsUnitInCurrentRoster(unit))
         {
             cur++;
         }
@@ -394,6 +415,7 @@ int CountTotalUnitsInUnitStructRam(void)
     return cur;
 }
 
+int IsStatusScreenDisabled(struct Unit * unit);
 int CountUnusableUnitsUpToIndex(int index)
 {
     int cur = 0;
@@ -402,9 +424,10 @@ int CountUnusableUnitsUpToIndex(int index)
     {
         unit = &gUnitArrayBlue[i];
 
+        // if (ALIVE_UNIT(unit))
         if (UNIT_IS_VALID(unit))
         {
-            if (!IsUnitInCurrentRoster(unit))
+            if (!InlineIsUnitInCurrentRoster(unit)) // checks for dead
             {
                 // NewRegisterPrepUnitList(cur, unit);
                 cur++;
@@ -446,16 +469,26 @@ struct Unit * GetUnitFromPrepList(int index) // called in 6 other functions
         }
     }
     return unit;
+    // return gPrepUnitList.units[index];
 }
 
 void NewRegisterPrepUnitList(int index, struct Unit * unit)
 {
     gPrepUnitList.units[index] = unit;
 }
+extern u8 ** gBmMapUnit;
+extern int gSMS16xGfxIndexCounter;
+extern int gSMS32xGfxIndexCounter;
+
+void UpdateShownUnitsInPrep()
+{
+    ResetUnitSprites();
+    ForceSyncUnitSpriteSheet();
+}
 
 void ProcPrepUnit_OnInit(struct ProcPrepUnit * proc)
 {
-    struct ProcAtMenu * parent;
+    // struct ProcAtMenu * parent;
     MakePrepUnitList();
     proc->list_num_cur = UnitGetIndexInPrepList(PrepGetLatestCharId());
     proc->max_counter = ((struct ProcAtMenu *)(proc->proc_parent))->max_counter;
@@ -465,6 +498,7 @@ void ProcPrepUnit_OnInit(struct ProcPrepUnit * proc)
     proc->button_blank = 0;
 }
 
+// when pressing B in stat screen in prep, return to that unit
 void sub_809B520(struct ProcPrepUnit * proc)
 {
     int list_num;
@@ -477,6 +511,23 @@ void sub_809B520(struct ProcPrepUnit * proc)
 
     proc->list_num_pre = list_num;
     proc->list_num_cur = list_num;
+}
+
+struct PrepItemScreenProc
+{
+    /* 00 */ PROC_HEADER;
+    /* 29 */ u8 unk_29 : 1;
+    /* 2A */ u8 hoverUnitIdx;
+};
+extern void sub_809A08C(struct PrepItemScreenProc * proc);
+extern void PrepItemScreen_SetupGfx(struct PrepItemScreenProc * proc);
+// when pressing B in stat screen in prep, return to that unit
+void PrepItemScreen_ResumeFromStatScreen(struct PrepItemScreenProc * proc)
+{
+    PrepItemScreen_SetupGfx(proc);
+    proc->hoverUnitIdx = GetPrepListIndexByUnit(gStatScreen.unit); // GetLatestUnitIndexInPrepListByUId();
+    sub_809A08C(proc);
+    return;
 }
 
 extern struct TextHandle gPrepUnitTexts[];
@@ -506,7 +557,7 @@ static bool IsUnitInPCBoxBuffer(struct Unit * unit)
 static int GetPrepListIndexByUnit(struct Unit * unit)
 {
     int i;
-    int count = PrepGetUnitAmount();
+    int count = InlinePrepGetUnitAmount();
 
     for (i = 0; i < count; i++)
     {
@@ -561,12 +612,13 @@ struct Unit * FindNextUnit(struct Unit * u, int direction)
 
     if (!proc)
     {
+        int faction = UNIT_FACTION(u);
         int i = u->index;
 
         while (TRUE)
         {
             i = (i + direction) & 0x3F;
-            unit = GetUnit(i);
+            unit = GetUnit(faction + i);
             if (IsStatusScreenDisabled(unit))
                 continue;
 
@@ -575,7 +627,7 @@ struct Unit * FindNextUnit(struct Unit * u, int direction)
     }
 
     {
-        int unit_count = PrepGetUnitAmount();
+        int unit_count = InlinePrepGetUnitAmount();
         int i;
         int attempts;
 
@@ -623,19 +675,32 @@ extern struct StatScreenSt gStatScreen;
 
 extern struct ProcCmd gProcScr_SSUnitSlide[];
 
+// this is not the normal struct, be careful
 struct StatScreenEffectProc
 {
     PROC_HEADER;
 
-    /* 2C */ int timer;
+    /* 2C */ int timer1;
     /* 30 */ int timerMax;
-    /* 34 */ int newItem;
-    /* 38 */ int key;
+    /* 34 */ struct Unit * unit;
+    /* 38 */ int direction;
+    /* 3C */ int yDispInit;
+    /* 40 */ int yDispFinal;
+
+    /* 44 */ u8 pad44[0x4A - 0x44];
+
+    /* 4A */ short newItem; // page or unit depending on slide
+    /* 4C */ short timer;
+    /* 4E */ short blendDirection;
+
+    /* 50 */ u8 pad50[0x52 - 0x50];
+
+    /* 52 */ u16 key;
 };
 
 void UnitSlide_SetNewPrepUnit(struct StatScreenEffectProc * proc)
 {
-    gStatScreen.unit = (struct Unit *)proc->newItem;
+    gStatScreen.unit = proc->unit;
     StatScreen_Display();
 }
 extern void StartGlowBlendCtrl(void);
@@ -667,10 +732,10 @@ void StartPrepUnitSlide(struct Unit * unit, int direction, struct Proc * parent)
 
     proc = (void *)Proc_StartBlocking(ProcScr_PrepUnitSlide, parent);
 
-    proc->timer = 0;
+    proc->timer1 = 0;
     proc->timerMax = 12;
-    proc->newItem = (int)unit;
-    proc->key = direction;
+    proc->unit = unit;
+    proc->direction = direction;
 
     gStatScreen.help = NULL;
     gStatScreen.inTransition = TRUE;
@@ -678,7 +743,17 @@ void StartPrepUnitSlide(struct Unit * unit, int direction, struct Proc * parent)
     // EndGlowBlendCtrl((void *)parent);
 }
 
-static void ChangeStatScreenUnit(struct Unit * unit, int direction, struct Proc * proc)
+void StartNonPrepUnitSlide(struct Unit * unit, int direction, struct Proc * parent)
+{
+    struct StatScreenEffectProc * proc = (void *)Proc_StartBlocking(gProcScr_SSUnitSlide, parent);
+
+    proc->newItem = unit->index;
+    proc->direction = direction;
+
+    PlaySoundEffect(0xC8);
+}
+
+void StartUnitSlide(struct Unit * unit, int direction, struct Proc * proc)
 {
     if (IsUnitInPCBoxBuffer(gStatScreen.unit) || IsUnitInPCBoxBuffer(unit))
     {
@@ -686,71 +761,7 @@ static void ChangeStatScreenUnit(struct Unit * unit, int direction, struct Proc 
         return;
     }
 
-    StartUnitSlide(unit, direction, proc);
-}
-
-void StatScreen_OnIdle(struct Proc * proc)
-{
-    struct Unit * unit;
-
-    if (gKeyStatusPtr->newKeys & B_BUTTON)
-    {
-        gLCDControlBuffer.dispcnt.bg0_on = TRUE;
-        gLCDControlBuffer.dispcnt.bg1_on = FALSE;
-        gLCDControlBuffer.dispcnt.bg2_on = TRUE;
-        gLCDControlBuffer.dispcnt.bg3_on = TRUE;
-        gLCDControlBuffer.dispcnt.obj_on = TRUE;
-
-        SetSpecialColorEffectsParameters(3, 0, 0, 0x10);
-
-        SetBlendTargetA(0, 0, 0, 0, 0);
-        SetBlendBackdropA(1);
-
-        // TODO: ResetBackdropColor macro?
-        gPaletteBuffer[0] = 0;
-        EnablePaletteSync();
-
-        Proc_Break(proc);
-
-        PlaySoundEffect(0x6B);
-    }
-
-    else if (gKeyStatusPtr->repeatedKeys & DPAD_LEFT)
-    {
-        gStatScreen.page = (gStatScreen.page + gStatScreen.pageAmt - 1) % gStatScreen.pageAmt;
-        StartPageSlide(DPAD_LEFT, gStatScreen.page, proc);
-        return;
-    }
-
-    else if (gKeyStatusPtr->repeatedKeys & DPAD_RIGHT)
-    {
-        gStatScreen.page = (gStatScreen.page + gStatScreen.pageAmt + 1) % gStatScreen.pageAmt;
-        StartPageSlide(DPAD_RIGHT, gStatScreen.page, proc);
-    }
-
-    else if (gKeyStatusPtr->repeatedKeys & DPAD_UP)
-    {
-        unit = FindNextUnit(gStatScreen.unit, -1);
-        ChangeStatScreenUnit(unit, -1, proc);
-    }
-
-    else if (gKeyStatusPtr->repeatedKeys & DPAD_DOWN)
-    {
-        unit = FindNextUnit(gStatScreen.unit, +1);
-        ChangeStatScreenUnit(unit, +1, proc);
-    }
-
-    else if ((gKeyStatusPtr->repeatedKeys & A_BUTTON) && (gStatScreen.unit->rescue))
-    {
-        unit = GetUnit(gStatScreen.unit->rescue);
-        ChangeStatScreenUnit(unit, (gStatScreen.unit->state & US_RESCUING) ? +1 : -1, proc);
-    }
-
-    else if (gKeyStatusPtr->newKeys & R_BUTTON)
-    {
-        Proc_Goto(proc, 0); // TODO: label name
-        StartStatScreenHelp(gStatScreen.page, proc);
-    }
+    StartNonPrepUnitSlide(unit, direction, proc);
 }
 
 /*
@@ -844,7 +855,7 @@ void PrepUnit_DrawUnitListNames(struct ProcPrepUnit * proc, int line)
     {
         itext = val + i;
 
-        if (itext >= PrepGetUnitAmount())
+        if (itext >= InlinePrepGetUnitAmount())
             continue;
 
         unit = GetUnitFromPrepList(itext);
@@ -878,7 +889,7 @@ void PrepUpdateMenuTsaScroll(int val)
 void PrepUnit_DrawSMSAndObjs(struct ProcPrepUnit *proc)
 {
     int i;
-    for (i = 0; i < PrepGetUnitAmount(); i++) {
+    for (i = 0; i < InlinePrepGetUnitAmount(); i++) {
         u32 yOff = ((i >> 1) << 4) - proc->yDiff_cur;
         if((yOff + 0xF) < 0x60 )
             PutUnitSprite(0, (i & 1) * 56 + 0x70, yOff + 0x18,
@@ -1093,7 +1104,7 @@ s8 ShouldPrepUnitMenuScroll(struct ProcPrepUnit *proc)
         return 1;
 
     val2 = val1 + 5;
-    val3 = (PrepGetUnitAmount() - 1) >> 1;
+    val3 = (InlinePrepGetUnitAmount() - 1) >> 1;
     if (val2 < val3 && proc->list_num_cur / 2 >= val2)
         return 1;
 
@@ -1105,7 +1116,7 @@ void sub_809ADC8(struct ProcPrepUnit *proc)
     if (ShouldPrepUnitMenuScroll(proc)) {
         int lst = proc->list_num_cur / 2;
         int dif = proc->yDiff_cur / 16;
-        int amt = (PrepGetUnitAmount() - 1) >> 1;
+        int amt = (InlinePrepGetUnitAmount() - 1) >> 1;
 
         if (lst <= dif) {
             if (lst == 0)
@@ -1128,7 +1139,7 @@ void sub_809AE10(struct ProcPrepUnit *proc)
 {
     int msk = 0;
     int dif = proc->yDiff_cur / 16;
-    int amt = (PrepGetUnitAmount() - 1) >> 1;
+    int amt = (InlinePrepGetUnitAmount() - 1) >> 1;
 
     if (dif > 0)
         msk = 1;
@@ -1177,7 +1188,7 @@ void ProcPrepUnit_InitScreen(struct ProcPrepUnit *proc)
         0x7, 0x800);
 
     PrepStartSideBarScroll(proc, 0xE0, 0x20, 0x200, 2);
-    sub_80976CC(0xA, proc->yDiff_cur, (PrepGetUnitAmount() - 1) / 2 + 1, 6);
+    sub_80976CC(0xA, proc->yDiff_cur, (InlinePrepGetUnitAmount() - 1) / 2 + 1, 6);
     StartHelpPromptSprite(0x20, 0x8F, 9, proc);
     PrepUnit_DrawUnitItems(GetUnitFromPrepList(proc->list_num_cur));
     PrepUnit_DrawLeftUnitName(GetUnitFromPrepList(proc->list_num_cur));
@@ -1275,7 +1286,7 @@ void ProcPrepUnit_Idle(struct ProcPrepUnit * proc)
 
         if (DPAD_RIGHT & key_pre)
         {
-            if (!(1 & proc->list_num_cur) && proc->list_num_cur < (PrepGetUnitAmount() - 1))
+            if (!(1 & proc->list_num_cur) && proc->list_num_cur < (InlinePrepGetUnitAmount() - 1))
                 proc->list_num_cur++;
         }
 
@@ -1287,7 +1298,7 @@ void ProcPrepUnit_Idle(struct ProcPrepUnit * proc)
 
         if (DPAD_DOWN & key_pre)
         {
-            if ((proc->list_num_cur + 2) <= (PrepGetUnitAmount() - 1))
+            if ((proc->list_num_cur + 2) <= (InlinePrepGetUnitAmount() - 1))
                 proc->list_num_cur += 2;
         }
 
@@ -1327,6 +1338,7 @@ void ProcPrepUnit_Idle(struct ProcPrepUnit * proc)
 
     if (0 == proc->yDiff_cur % 0x10)
     {
+        UpdateShownUnitsInPrep();
         PrepUpdateMenuTsaScroll(proc->yDiff_cur / 16 - 1);
         PrepUpdateMenuTsaScroll(proc->yDiff_cur / 16 + 6);
         sub_809AE10(proc);
@@ -1334,7 +1346,7 @@ void ProcPrepUnit_Idle(struct ProcPrepUnit * proc)
     }
 
     BG_SetPosition(BG_2, 0, proc->yDiff_cur - 0x18);
-    sub_80976CC(0xA, proc->yDiff_cur, (PrepGetUnitAmount() - 1) / 2 + 1, 6);
+    sub_80976CC(0xA, proc->yDiff_cur, (InlinePrepGetUnitAmount() - 1) / 2 + 1, 6);
 }
 
 /*

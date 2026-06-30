@@ -22,7 +22,32 @@ int SendItemsToConvoy(struct Unit * unit)
     }
     return true;
 }
+#ifdef POKEMBLEM_VERSION
+extern int BoxesFullFlag_Link;
+extern void SetFlag(int);
+extern void ClearFlag(int);
+extern s8 CheckFlag(int);
+int AreBoxesFull(void)
+{
+    return CheckFlag(BoxesFullFlag_Link);
+}
+int SetBoxAsFull(void)
+{
+    SetFlag(BoxesFullFlag_Link);
+    return true;
+}
+int SetBoxAsNotFull(void)
+{
+    ClearFlag(BoxesFullFlag_Link);
+    return false;
+}
+#else
+int AreBoxesFull(void)
+{
+    return false;
+}
 
+#endif
 /*
 int IsBoxFull(int slot) {
         (*ReadSramFast)((void*)PC_GetSaveAddressBySlot(slot), (void*)&unit[0], PCBoxSizeLookup[0]);
@@ -130,6 +155,9 @@ void ClearAllBoxUnits(int slot)
 {
     memset((void *)&bunit[0], 0, PCBoxSizeLookup[0]);
     WriteAndVerifySramFast((void *)&bunit[0], (void *)PC_GetSaveAddressBySlot(slot), PCBoxSizeLookup[0]);
+#ifdef POKEMBLEM_VERSION
+    SetBoxAsNotFull();
+#endif
 
     // struct BoxUnit* boxRam;
     // void* baseRam = PC_GetSaveAddressBySlot(slot);
@@ -185,32 +213,35 @@ void RelocateUnitsPastThreshold(int startingOffset)
 {
 
 #ifdef POKEMBLEM_VERSION
+    if (AreBoxesFull())
+        return;
+
     // if protag is not in the first 50 units, don't let it go in box
-    struct Unit someUnit;
-    someUnit.pCharacterData = 0;
+    // struct Unit someUnit;
+    // someUnit.pCharacterData = 0;
     struct Unit * protag = GetUnitStructFromEventParameter(ProtagID_Link);
     if (protag && protag->pCharacterData)
     {
-        memcpy((void *)&someUnit, (void *)protag, 0x48);
+        // memcpy((void *)&someUnit, (void *)protag, 0x48);
         ClearUnit(protag);
     }
 #endif
 
     memcpy(
         (void *)&PCBoxUnitsBuffer[startingOffset], (void *)&gUnitArrayBlue[PartySizeThreshold],
-        0x48 * (62 - PartySizeThreshold));
-    memset(&gUnitArrayBlue[PartySizeThreshold], 0, 0x48 * (62 - PartySizeThreshold)); // This broke things
+        0x48 * (PartySizeThreshold));
+    memset(&gUnitArrayBlue[PartySizeThreshold], 0, 0x48 * (PartySizeThreshold));
     // InitUnits(); // do not write 0 to their deployment ID!
     InitUnitDeploymentIDs();
 
 #ifdef POKEMBLEM_VERSION
-    if (someUnit.pCharacterData)
-    {
-        int deploymentID = GetFreeDeploymentID();
-        struct Unit * newUnit = &gUnitArrayBlue[deploymentID];
-        memcpy((void *)newUnit, (void *)&someUnit, 0x48);
-        newUnit->index = deploymentID; // copy unit into a free slot in unit struct ram
-    }
+    // if (someUnit.pCharacterData)
+    // {
+    // int deploymentID = GetFreeDeploymentID();
+    // struct Unit * newUnit = &gUnitArrayBlue[deploymentID];
+    // memcpy((void *)newUnit, (void *)&someUnit, 0x48);
+    // newUnit->index = deploymentID; // copy unit into a free slot in unit struct ram
+    // }
 #endif
 }
 
@@ -219,6 +250,269 @@ void ClearPCBoxUnitsBuffer(void)
     memset((void *)&PCBoxUnitsBuffer[0], 0, BoxBufferCapacity * 0x48);
 }
 
+int AreSameBoxStoredUnit(struct Unit * a, struct Unit * b)
+{
+    if (!a->pCharacterData || !b->pCharacterData)
+        return false;
+
+#ifndef POKEMBLEM_VERSION
+    return a->pCharacterData->number == b->pCharacterData->number;
+#else
+    if (a->pClassData != b->pClassData)
+        return false;
+
+    // if ((a->maxHP != b->maxHP) || (a->unk3A != b->unk3A) || (a->pow != b->pow) || (a->skl != b->skl) ||
+    // (a->spd != b->spd) || (a->def != b->def) || (a->res != b->res) || (a->lck != b->lck) ||
+    // (a->level != b->level) || (a->exp != b->exp))
+    // return false;
+
+    // for (int i = 0; i < 5; i++)
+    // {
+    // if (a->ranks[i] != b->ranks[i])
+    // return false;
+    // }
+
+    return true;
+#endif
+}
+
+#ifdef POKEMBLEM_VERSION
+#define BOX_UNIT_NEW_INDEX_RANK 5
+#define REGULAR_UNIT_RAM_COUNT 0x3F
+
+static u8 * GetBoxUnitNewIndexTable(void)
+{
+    return ((u8 *)&bunit[0]) + (sizeof(struct BoxUnit) * BoxCapacity);
+}
+
+static int GetBoxUnitSlot(struct BoxUnit * boxUnit)
+{
+    if (!boxUnit)
+        return -1;
+
+    return boxUnit - &bunit[0];
+}
+
+static u8 GetBoxUnitSavedIndex(struct BoxUnit * boxUnit)
+{
+    int slot = GetBoxUnitSlot(boxUnit);
+
+    if ((slot < 0) || (slot >= BoxCapacity))
+        return 0;
+
+    return GetBoxUnitNewIndexTable()[slot];
+}
+
+static void SetBoxUnitSavedIndex(struct BoxUnit * boxUnit, u8 newIndex)
+{
+    int slot = GetBoxUnitSlot(boxUnit);
+
+    if ((slot < 0) || (slot >= BoxCapacity))
+        return;
+
+    GetBoxUnitNewIndexTable()[slot] = newIndex;
+}
+
+static int IsBoxUnitFilled(struct BoxUnit * boxUnit)
+{
+    return boxUnit && boxUnit->classID && (boxUnit->classID != 0xFF);
+}
+
+static int IsUnitFilled(struct Unit * unit)
+{
+    return unit && unit->pCharacterData;
+}
+
+static int IsIndexUsedByBoxUnits(int newIndex, struct BoxUnit * ignore)
+{
+    if (!newIndex)
+        return false;
+
+    for (int i = 0; i < BoxCapacity; i++)
+    {
+        struct BoxUnit * boxUnit = &bunit[i];
+
+        if ((boxUnit != ignore) && IsBoxUnitFilled(boxUnit) && (GetBoxUnitSavedIndex(boxUnit) == newIndex))
+            return true;
+    }
+
+    return false;
+}
+
+static int IsIndexUsedByTempUnits(int newIndex, struct Unit * ignore)
+{
+    if (!newIndex)
+        return false;
+
+    for (int i = 0; i < BoxBufferCapacity; i++)
+    {
+        struct Unit * unit = GetTempUnit(i);
+
+        if ((unit != ignore) && IsUnitFilled(unit) && (unit->ranks[BOX_UNIT_NEW_INDEX_RANK] == newIndex))
+            return true;
+    }
+
+    return false;
+}
+
+static int IsIndexUsedByRegularUnits(int newIndex, struct Unit * ignore)
+{
+    if (!newIndex)
+        return false;
+
+    for (int i = 0; i < REGULAR_UNIT_RAM_COUNT; i++)
+    {
+        struct Unit * unit = &gUnitArrayBlue[i];
+
+        if ((unit != ignore) && IsUnitFilled(unit) && (unit->ranks[BOX_UNIT_NEW_INDEX_RANK] == newIndex))
+            return true;
+    }
+
+    return false;
+}
+
+static u8 GetFreeBoxUnitIndex(void)
+{
+    for (int i = 1; i < 0x100; i++)
+    {
+        if (!IsIndexUsedByBoxUnits(i, NULL) && !IsIndexUsedByTempUnits(i, NULL) && !IsIndexUsedByRegularUnits(i, NULL))
+        {
+            return i;
+        }
+    }
+
+    return 0;
+}
+
+static u8 EnsureUnitBoxIndex(struct Unit * unit)
+{
+    if (!IsUnitFilled(unit))
+        return 0;
+
+    if (!unit->ranks[BOX_UNIT_NEW_INDEX_RANK])
+        unit->ranks[BOX_UNIT_NEW_INDEX_RANK] = GetFreeBoxUnitIndex();
+
+    return unit->ranks[BOX_UNIT_NEW_INDEX_RANK];
+}
+
+static u8 EnsureBoxUnitIndex(struct BoxUnit * boxUnit)
+{
+    if (!IsBoxUnitFilled(boxUnit))
+        return 0;
+
+    if (!GetBoxUnitSavedIndex(boxUnit))
+        SetBoxUnitSavedIndex(boxUnit, GetFreeBoxUnitIndex());
+
+    return GetBoxUnitSavedIndex(boxUnit);
+}
+
+static void EnsureRegularUnitBoxIndexes(void)
+{
+    for (int i = 0; i < REGULAR_UNIT_RAM_COUNT; i++)
+        EnsureUnitBoxIndex(&gUnitArrayBlue[i]);
+}
+
+static struct Unit * GetFreeRegularUnitAddrPastThreshold(void)
+{
+    for (int i = PartySizeThreshold; i < REGULAR_UNIT_RAM_COUNT; i++)
+    {
+        struct Unit * unit = &gUnitArrayBlue[i];
+
+        if (!unit->pCharacterData)
+            return unit;
+    }
+
+    return NULL;
+}
+
+static int MoveTempUnitToRegularRamPastThreshold(struct Unit * unit)
+{
+    struct Unit * newUnit = GetFreeRegularUnitAddrPastThreshold();
+
+    if (!newUnit)
+        return false;
+
+    memcpy((void *)newUnit, (void *)unit, 0x48);
+    newUnit->index = newUnit - &gUnitArrayBlue[0];
+    ClearUnit(unit);
+
+    return true;
+}
+
+static struct BoxUnit * GetBoxUnitFromNewIndex(int newIndex)
+{
+    if (!newIndex)
+        return NULL;
+
+    for (int i = 0; i < BoxCapacity; i++)
+    {
+        struct BoxUnit * boxUnit = &bunit[i];
+
+        if (IsBoxUnitFilled(boxUnit) && (GetBoxUnitSavedIndex(boxUnit) == newIndex))
+            return boxUnit;
+    }
+
+    return NULL;
+}
+
+static struct Unit * GetTempUnitFromNewIndex(int newIndex)
+{
+    if (!newIndex)
+        return NULL;
+
+    for (int i = 0; i < BoxBufferCapacity; i++)
+    {
+        struct Unit * unit = GetTempUnit(i);
+
+        if (IsUnitFilled(unit) && (unit->ranks[BOX_UNIT_NEW_INDEX_RANK] == newIndex))
+            return unit;
+    }
+
+    return NULL;
+}
+#endif
+
+#ifdef POKEMBLEM_VERSION
+struct BoxUnit * GetCharIDFromBox(int slot, int index)
+{
+    struct BoxUnit * boxUnitSaved = (void *)&bunit[0];
+    for (int i = 0; i < BoxCapacity; i++)
+    {
+        // if (boxUnitSaved[i].classID && boxUnitSaved[i].classID != 0xFF)
+        // {
+        if (boxUnitSaved[i].classID == index)
+        {
+            return &boxUnitSaved[i];
+        }
+        // }
+    }
+    return NULL;
+}
+#endif
+
+int IsUnitInTempBox(struct Unit * unit)
+{
+    // for (int i = 0; i < BoxBufferCapacity; i++)
+    // {
+    // struct Unit * unitTemp = GetTempUnit(i);
+
+    // if (AreSameBoxStoredUnit(unitTemp, unit))
+    // {
+    // return true;
+    // }
+    // }
+    for (int i = 0; i < 62; ++i)
+    {
+        struct Unit * unitTemp = GetUnit(i);
+
+        if (AreSameBoxStoredUnit(unitTemp, unit))
+        {
+            return true;
+        }
+    }
+
+    return false;
+}
 // save an ID for each pokemon
 // if ID exists, erase it from SRAM
 
@@ -276,6 +570,7 @@ void DeploySelectedUnits()
                 newUnit->pCharacterData = &gCharacterData[GetFreeUnitID(&unit[0])];
             }
 #endif
+
             ClearUnit(unitTemp);
         }
     }
@@ -286,14 +581,19 @@ void DeploySelectedUnits()
     { // move units that were undeployed back into unit struct ram until it's full. Then into PC box
         if ((unit[i].pCharacterData))
         {
-            if (c < PartySizeThreshold)
+            if ((c <= PartySizeThreshold) || AreBoxesFull()) // yes <= !!!! 2026
             {
-                deploymentID = GetFreeDeploymentID();
-                newUnit = &gUnitArrayBlue[deploymentID];
-                memcpy((void *)newUnit, (void *)&unit[i], 0x48);
-                newUnit->index = deploymentID; // copy unit into a free slot in unit struct ram
 #ifdef POKEMBLEM_VERSION
-                if (newUnit->pCharacterData->number == 0xFF)
+                if (c >= REGULAR_UNIT_RAM_COUNT)
+                    break;
+#endif
+
+                // deploymentID = GetFreeDeploymentID();
+                newUnit = &gUnitArrayBlue[c];
+                memcpy((void *)newUnit, (void *)&unit[i], 0x48);
+                newUnit->index = c; // copy unit into a free slot in unit struct ram
+#ifdef POKEMBLEM_VERSION
+                if (newUnit->pCharacterData->number == 0xFF) //????
                 {
                     newUnit->pCharacterData = &gCharacterData[GetFreeUnitID(&unit[0])];
                 }
@@ -303,7 +603,21 @@ void DeploySelectedUnits()
             }
             else
             {
-                memcpy(GetFreeTempUnitAddr(), (void *)&unit[i], 0x48); // copy unit into a free slot in pc
+                // asm("mov r11, r11");
+                // extra sanity check for clearing units?
+                // if (IsUnitInTempBox(&unit[i]))
+                // {
+                // asm("mov r11, r11");
+                // ClearUnit(&unit[i]);
+                // continue;
+                // }
+
+                unitTemp = GetFreeTempUnitAddr();
+                if (!unitTemp)
+                    break;
+
+                memcpy(unitTemp, (void *)&unit[i], 0x48); // copy unit into a free slot in pc
+
                 ClearUnit(&unit[i]);
             }
         }
@@ -319,6 +633,7 @@ int UnpackUnitsFromBox(int slot)
     int i, cur = 0;
     struct Unit * unit2;
     struct BoxUnit * bunit2;
+    int newIndex;
 
     // src, dst, size
     //(*ReadSramFast)((void*)PC_GetSaveAddressBySlot(slot), (void*)&bunit[0], sizeof(*bunit)*BoxCapacity); // use the
@@ -327,6 +642,10 @@ int UnpackUnitsFromBox(int slot)
         (void *)PC_GetSaveAddressBySlot(slot), (void *)&bunit[0],
         PCBoxSizeLookup[0]); // use the generic buffer instead of reading directly from SRAM
 
+#ifdef POKEMBLEM_VERSION
+    EnsureRegularUnitBoxIndexes();
+#endif
+
     for (i = 0; i < BoxCapacity; i++)
     {
         bunit2 = GetTakenBoxSlot(slot, i);
@@ -334,6 +653,21 @@ int UnpackUnitsFromBox(int slot)
         {
             break;
         }
+
+#ifdef POKEMBLEM_VERSION
+        newIndex = EnsureBoxUnitIndex(bunit2);
+
+        if (IsIndexUsedByRegularUnits(newIndex, NULL))
+            continue;
+
+        unit2 = GetTempUnitFromNewIndex(newIndex);
+        if (unit2)
+        {
+            UnpackUnitFromBox(bunit2, unit2);
+            continue;
+        }
+#endif
+
         unit2 = GetFreeTempUnitAddr();
         if (!unit2)
         {
@@ -341,7 +675,7 @@ int UnpackUnitsFromBox(int slot)
         }
         cur++;
 
-        UnpackUnitFromBox((struct BoxUnit *)&bunit[i], unit2);
+        UnpackUnitFromBox(bunit2, unit2); // maybe instead of bunit[i]?
     }
     return cur;
 }
@@ -351,17 +685,20 @@ void PackUnitsIntoBox(int slot)
     ClearAllBoxUnits(slot);
     int i;
     struct Unit * unit2;
-#ifndef POKEMBLEM_VERSION
     struct BoxUnit * bunit2;
-#endif
+    int newIndex;
     // struct BoxUnit* bunitStart = GetFreeBoxSlot(slot);
 
+#ifdef POKEMBLEM_VERSION
+    EnsureRegularUnitBoxIndexes();
+#endif
+
+#ifdef POKEMBLEM_VERSION
+    for (i = 0; i < BoxBufferCapacity; i++)
+#else
     for (i = 0; i < BoxCapacity; i++)
+#endif
     {
-        // bunit2 = GetFreeBoxSlot(slot);
-        // if (!bunit2) {
-        //	break;
-        // }
         unit2 = GetTakenTempUnitAddr();
         if (!unit2)
         {
@@ -377,6 +714,33 @@ void PackUnitsIntoBox(int slot)
             ClearUnit(unit2);
             return;
         }
+#else
+        newIndex = EnsureUnitBoxIndex(unit2);
+
+        if (IsIndexUsedByRegularUnits(newIndex, NULL))
+        {
+            ClearUnit(unit2);
+            continue;
+        }
+
+        bunit2 = GetBoxUnitFromNewIndex(newIndex);
+        if (!bunit2)
+            bunit2 = GetFreeBoxSlot(slot);
+
+        if (!bunit2)
+        {
+            SetBoxAsFull();
+
+            if (MoveTempUnitToRegularRamPastThreshold(unit2))
+                continue;
+
+            break;
+        }
+
+        PackUnitIntoBox((void *)bunit2, unit2);
+        ClearUnit(unit2);
+        continue;
+
 #endif
 
         PackUnitIntoBox((void *)&bunit[i], unit2);
@@ -384,6 +748,13 @@ void PackUnitsIntoBox(int slot)
 
         ClearUnit(unit2);
     }
+
+#ifdef POKEMBLEM_VERSION
+    if (GetFreeBoxSlot(slot))
+        SetBoxAsNotFull();
+    else
+        SetBoxAsFull();
+#endif
 
     return;
 }
@@ -395,6 +766,7 @@ struct BoxUnit * PackUnitIntoBox(struct BoxUnit * boxRam, struct Unit * unit)
     if (SendItemsToConvoy(unit))
     { // if convoy is full, do not deposit unit into pc box
         boxRam->classID = unit->pClassData->number;
+        SetBoxUnitSavedIndex(boxRam, EnsureUnitBoxIndex(unit));
         boxRam->hp = unit->maxHP < 127 ? unit->maxHP : 127;
         boxRam->mag = unit->unk3A < 64 ? unit->unk3A : 63;
         boxRam->str = unit->pow < 64 ? unit->pow : 63;
@@ -449,6 +821,7 @@ struct Unit * UnpackUnitFromBox(struct BoxUnit * boxRam, struct Unit * unit)
         {
             unit->ranks[i] = 0;
         }
+        unit->ranks[BOX_UNIT_NEW_INDEX_RANK] = EnsureBoxUnitIndex(boxRam);
         unit->statusIndex = 0;
         unit->statusDuration = 0;
         unit->torchDuration = 0;
@@ -536,7 +909,19 @@ int CountTempUnits(void)
     }
     return cur;
 }
+static inline s8 InlineIsUnitInCurrentRoster(struct Unit * unit)
+{
+    if ((US_DEAD | US_BIT16) & unit->state)
+        return 0;
 
+    if (0x200 & UNIT_CATTRIBUTES(unit))
+    {
+        unit->state = 8;
+        return 0;
+    }
+
+    return 1;
+}
 extern s8 IsUnitInCurrentRoster(struct Unit * unit);
 int CountAndUndeployTempUnits(void)
 {
@@ -547,7 +932,7 @@ int CountAndUndeployTempUnits(void)
         struct Unit * unit = GetTempUnit(i);
         if (unit->pCharacterData)
         {
-            if (IsUnitInCurrentRoster(unit))
+            if (InlineIsUnitInCurrentRoster(unit))
             {
                 NewRegisterPrepUnitList(cur, unit);
                 cur++;
@@ -560,7 +945,7 @@ int CountAndUndeployTempUnits(void)
     }
     return cur;
 }
-
+#define ALIVE_UNIT(unit) (UNIT_IS_VALID(unit) && ((unit)->state & US_DEAD) == 0)
 int CountUnusableStoredUnitsUpToIndex(int index)
 {
     int cur = 0;
@@ -568,9 +953,10 @@ int CountUnusableStoredUnitsUpToIndex(int index)
     for (i = 0; i < BoxCapacity; ++i)
     {
         struct Unit * unit = GetTempUnit(i);
-        if (unit->pCharacterData)
+        // if (unit->pCharacterData)
+        if (UNIT_IS_VALID(unit))
         {
-            if (!IsUnitInCurrentRoster(unit))
+            if (!InlineIsUnitInCurrentRoster(unit))
             {
                 cur++;
             }
