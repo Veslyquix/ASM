@@ -372,6 +372,18 @@ void UnlockGameIfNeeded(void)
     }
 }
 
+extern struct ProcCmd * get_pProc_FromMiscActionProc[]; // 9A3604 (if value is 0x807A72D, then it is vanilla)
+
+int TryCall_pProc_FromMiscActionProc(DebuggerProc * proc)
+{
+    if (!(int)*get_pProc_FromMiscActionProc)
+    {
+        return 1; // no address, so it's not a ProcCmd pointer
+    }
+    Proc_StartBlocking(*get_pProc_FromMiscActionProc, proc);
+    return 0;
+}
+
 const struct ProcCmd DebuggerProcCmd[] = {
     PROC_NAME("DebuggerProcName"),
     PROC_YIELD,
@@ -444,7 +456,9 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_WHILE(BattleEventEngineExists),
     PROC_CALL(DeleteBattleAnimInfoThing),
     PROC_SLEEP(0x1),
-    PROC_CALL(MapAnimProc_DisplayExpBar),
+    PROC_CALL(MapAnimProc_DisplayExpBar), // MapAnim_DisplayExpBar
+    PROC_YIELD,
+    PROC_CALL_2(TryCall_pProc_FromMiscActionProc), // to learn skills/moves from level up command
     PROC_YIELD,
     PROC_CALL(MapAnim_MoveCameraOntoSubject),
     PROC_SLEEP(0x2),
@@ -617,7 +631,6 @@ void Debugger_PrepItemList_Init(struct PrepItemListProc * proc)
 
 void Debugger_PrepItemList_OnEnd(struct PrepItemListProc * proc)
 {
-
     EndAllProcChildren(proc);
     EndFaceById(0);
     EndMuralBackground_();
@@ -994,7 +1007,6 @@ void SaveStats(DebuggerProc * proc)
 
 void SaveItems(DebuggerProc * proc)
 {
-
     struct Unit * unit = proc->unit;
     for (int i = 0; i < NumberOfItems; ++i)
     {
@@ -1007,7 +1019,6 @@ void SaveItems(DebuggerProc * proc)
 extern struct KeyStatusBuffer sKeyStatusBuffer;
 void EditStatsIdle(DebuggerProc * proc)
 {
-
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
     u16 keys = gKeyStatusPtr->repeatedKeys;
@@ -1269,7 +1280,6 @@ void SaveWExp(DebuggerProc * proc)
 void ClearTilesetRow(DebuggerProc * proc);
 void EditWExpIdle(DebuggerProc * proc)
 {
-
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
     u16 keys = gKeyStatusPtr->repeatedKeys;
@@ -1470,7 +1480,6 @@ void SaveSupports(DebuggerProc * proc)
 
 void EditSupportsIdle(DebuggerProc * proc)
 {
-
     // DisplayVertUiHand(CursorLocationTable[proc->digit].x,
     // CursorLocationTable[proc->digit].y); // 6 is the tile of the downwards hand
     u16 keys = gKeyStatusPtr->repeatedKeys;
@@ -2112,7 +2121,6 @@ void LomaChapter(int id)
 extern void WfxInit(void);
 void SaveChState(DebuggerProc * proc)
 {
-
     gPlaySt.partyGoldAmount = proc->gold;
     gPlaySt.chapterTurnNumber = proc->tmp[5];
     if (gPlaySt.chapterWeatherId != proc->tmp[1])
@@ -2592,7 +2600,6 @@ void UnitBeginActionInit(struct Unit * unit);
 extern void ClearUnit(struct Unit * unit); // 17508 17394
 void SaveMisc(DebuggerProc * proc)
 {
-
     struct Unit * unit = proc->unit;
 
     unit->pCharacterData = GetCharacterData(proc->tmp[0]);
@@ -3078,7 +3085,6 @@ void EditMiscIdle(DebuggerProc * proc)
 extern struct Unit * LoadUnit(const struct UnitDefinition * uDef); // 17788 17598
 static void InitUnitDef(struct UnitDefinition * uDef, struct Unit * unit, const struct CharacterData * data)
 {
-
     uDef->charIndex = data->number;
     // uDef->classIndex = data->defaultClass;
     uDef->classIndex = 0;
@@ -3111,7 +3117,6 @@ static void InitUnitDef(struct UnitDefinition * uDef, struct Unit * unit, const 
 
 static void ReinitUnitDef(struct UnitDefinition * uDef, struct Unit * unit)
 {
-
     uDef->charIndex = unit->pCharacterData->number;
     uDef->classIndex = unit->pCharacterData->defaultClass;
     uDef->leaderCharIndex = unit->supports[UNIT_SUPPORT_MAX_COUNT - 1];
@@ -4016,7 +4021,6 @@ int ArenaAction(DebuggerProc * proc)
 extern const struct ProcCmd sProcScr_BattleAnimSimpleLock[];
 int LevelupAction(DebuggerProc * proc)
 {
-
     gActiveUnit->exp = 99;
     InitBattleUnit(&gBattleActor, gActiveUnit);
     // if (UNIT_FACTION(&gBattleActor.unit) != FACTION_BLUE)
@@ -5009,7 +5013,6 @@ struct ProcCmd const gProcScr_TerrainWindowMaker[] = {
 };
 void InitPlayerPhaseTerrainWindow()
 {
-
     gLCDControlBuffer.dispcnt.win0_on = 0;
     gLCDControlBuffer.dispcnt.win1_on = 0;
     gLCDControlBuffer.dispcnt.objWin_on = 0;
@@ -5090,7 +5093,6 @@ struct ProcCmd const ProcScr_HelpBoxIntroString[] = {
 
 void ClearHelpBoxText2(void)
 { //
-
     SetTextFont(&gHelpBoxSt.font);
 
     SpriteText_DrawBackground(&gHelpBoxSt.text[0]);
@@ -5619,7 +5621,6 @@ void DebuggerStartSMS(int id)
 
 void RedrawGfxFromIDs(int id)
 {
-
     int time = GetGameClock();
     switch ((time & 0x1FF) >> 7)
     {
@@ -5655,7 +5656,6 @@ void RedrawGfxFromIDs(int id)
 struct MuProc * StartUiMu(struct Unit * unit, int x, int y);
 void DebuggerStartMMS(int id, struct Unit * unit)
 {
-
     MU_EndAll(); // EndAllMus();
 
     if (CanDisplayMMS(id) && (GetClassData(id) != 0))
