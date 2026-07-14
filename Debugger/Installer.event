@@ -224,6 +224,9 @@ MenuCommand1(GfxViewerText,GfxViewerDesc, NormalText, MenuAlwaysEnabled, Debugge
 #ifdef VeslyBuildfile 
 MenuCommand1(EditSkillsText,EditSkillsDesc, NormalText, $04F449,DebuggerMenuItemDraw, DebugSkillsNow) // This is external - it is located in skillsystems folders 
 #endif 
+#ifdef POKEMBLEM 
+MenuCommand1(EditSkillsText,EditSkillsDesc, NormalText, $04F449,DebuggerMenuItemDraw, DebugSkillsNow) // This is external - it is located in skillsystems folders 
+#endif 
 #endif 
 MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 #ifdef DEBUG_SKILL_EDIT_INCLUDED 
@@ -233,8 +236,10 @@ WORD 0 0 0 0 0 0 0 0 0 // terminator
 
 
 #ifndef VeslyBuildfile 
+#ifndef POKEMBLEM
 SkillDebugCommand_OnSelect:
 SHORT $4770 // bx lr 
+#endif 
 #endif 
 
 

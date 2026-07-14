@@ -378,6 +378,7 @@ int TryCall_pProc_FromMiscActionProc(DebuggerProc * proc)
 {
     if (!(int)*get_pProc_FromMiscActionProc)
     {
+        UpdateActorFromBattle();
         return 1; // no address, so it's not a ProcCmd pointer
     }
     Proc_StartBlocking(*get_pProc_FromMiscActionProc, proc);
@@ -462,7 +463,7 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_YIELD,
     PROC_CALL(MapAnim_MoveCameraOntoSubject),
     PROC_SLEEP(0x2),
-    PROC_CALL(UpdateActorFromBattle),
+    // PROC_CALL(UpdateActorFromBattle),
     PROC_CALL(MapAnim_Cleanup),
     PROC_GOTO(RestartLabel),
 
