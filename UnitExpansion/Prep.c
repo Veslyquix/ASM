@@ -335,7 +335,41 @@ void PrepUnit_InitSMS(struct ProcPrepUnit * proc)
     PrepAutoCapDeployUnits(proc->proc_parent);
     PrepUpdateSMS();
 }
+extern void EndMuralBackground_(void);
+void ProcPrepItemUse_OnEnd(void)
+{
+    EndMuralBackground_();
+    EndFaceById(0);
+    EndFaceById(1);
+    EndFaceById(2);
+    EndFaceById(3);
+}
+extern void ResetSMSSync(void);
+void PrepUpdateSMS()
+{
+    CpuFastFill(0, (void *)(0x06011000), 0x2000); // Clear sms vram
+    // CpuFastFill(0, (void *)(0x06016000), 0x2000); // Clear sms vram
+    ResetUnitSpriteHover();
+    ResetSMSSync();
+    return; // do nothing
+    // int i, state;
+    // struct Unit * unit;
 
+    // ResetUnitSprites();
+
+    // for (i = 0; i < PrepGetUnitAmount(); i++) {
+    // unit = GetUnitFromPrepList(i);
+
+    // if (!(unit->state & 8))
+    // unit->state &= ~2;
+    // else
+    // unit->state |= 0xA;
+
+    // UseUnitSprite(GetUnitSMSId(unit));
+    // }
+
+    // ForceSyncUnitSpriteSheet();
+}
 static inline s8 InlineIsUnitInCurrentRoster(struct Unit * unit)
 {
     if ((US_DEAD | US_BIT16) & unit->state)
@@ -440,6 +474,10 @@ int CountUnusableUnitsUpToIndex(int index)
                     break; // keep counting until we find a valid unit so we know how many units to skip over
                 }
             }
+        }
+        else
+        {
+            cur++;
         }
     }
     return cur;
@@ -1272,7 +1310,7 @@ void ProcPrepUnit_Idle(struct ProcPrepUnit * proc)
 
         if (B_BUTTON & gKeyStatusPtr->newKeys)
         {
-            CallDeploySelectedUnits();
+            // CallDeploySelectedUnits();
             PlaySoundEffect(0x6B);
             Proc_Goto(proc, PROC_LABEL_PREPUNIT_PRESS_B);
             return;
