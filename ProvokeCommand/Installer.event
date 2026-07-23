@@ -7,7 +7,7 @@
 
 ALIGN 4 
 ProvokeBitflag: // Unit state bitflag to use 
-WORD 1<<31 
+WORD 1<<29 
 
 #ifndef FEBUILDER_EXTRA_ORG 
 MESSAGE "don't use INSERT EA for this, copy into patches folder"
