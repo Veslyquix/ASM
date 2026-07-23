@@ -147,9 +147,11 @@ u8 ProvokeUsability(const struct MenuItemDef * def, int number)
     return MENU_NOTSHOWN;
 }
 
+extern EventScr EventScr_ShowProvokeEmoticon[];
 u8 ProvokeEffect(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     gActiveUnit->state |= ProvokeBitflag | US_HAS_MOVED;
     gActionData.unitActionType = UNIT_ACTION_WAIT;
+    CallEvent((u16 *)EventScr_ShowProvokeEmoticon, EV_EXEC_GAMEPLAY);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
