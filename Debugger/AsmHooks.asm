@@ -6,7 +6,35 @@
   .short 0xf800
 .endm
 
+@.if FE6 == true 
+@@.global strlen 
+@.type strlen, %function 
+@strlen: 
+@@mov r11, r11 
+@mov r2, #0 
+@loop_strlen:
+@ldrb r1, [r0, r2]
+@add r2, #1  
+@cmp r1, #0 
+@bne loop_strlen 
+@sub r2, #1 
+@mov r0, r2 
+@bx lr 
 
+.global CallEndEvent_FE6
+.type CallEndEvent_FE6, %function 
+CallEndEvent_FE6:
+push {lr} 
+mov r0, #0xE 
+ldr r3, =0x0202AA48 
+ldsb r0, [r3, r0] 
+blh 0x802BBA0 
+ldr r0, [r0, #0x18] 
+blh 0x800D978
+pop {r3} 
+bx r3 
+.ltorg 
+@.endif 
 
 .global CallDebuggerProc
 .type CallDebuggerProc, %function 

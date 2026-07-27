@@ -397,6 +397,59 @@ static int TryHandleConditional(char * b, int i, int usedLength[1])
 }
 
 extern int ControlCodesStartWithBracket;
+static int ShouldCheckReplaceAt(const char * b, int i)
+{
+    u8 ch = b[i];
+
+    if (i > 0)
+    {
+        u8 prev = b[i - 1];
+
+        if (prev < 0x20) // not multibyte & some control code
+        {
+            return 1;
+        }
+    }
+
+#ifdef FE6
+    u8 next = b[i + 1];
+
+    if (ch == 0x83)
+    {
+        return next == 0x43; // FE6 "<"
+    }
+
+    if (i > 1)
+    {
+        u8 prev0 = b[i - 2];
+        u8 prev1 = b[i - 1];
+
+        if (prev0 == 0x81 && prev1 == 0x80)
+        {
+            return 1; // FE6 space
+        }
+
+        if (prev0 == 0x82 && (prev1 == 0xB6 || prev1 == 0xB8))
+        {
+            return 1; // FE6 alternate space entries
+        }
+
+        if (prev0 == 0x83 && prev1 == 0x47)
+        {
+            return 1; // after FE6 ">"
+        }
+    }
+    return false;
+#else
+    if (i > 0 && (b[i - 1] == ' ' || b[i - 1] == '>'))
+    {
+        return 1;
+    }
+
+    return ch == '<' || ch == '>';
+#endif
+}
+
 void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800384C
 {
     int length[1] = { 0 };
@@ -447,7 +500,7 @@ void CallARM_DecompText(const char * a, char * b) // 2ba4 // fe7 8004364 fe6 800
             continue;
         }
 
-        if (ControlCodesStartWithBracket && b[i] != 0x3C) // control codes to start with `<`
+        if (i && ControlCodesStartWithBracket && !ShouldCheckReplaceAt(b, i))
         {
             continue;
         }
