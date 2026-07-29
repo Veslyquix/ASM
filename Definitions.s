@@ -283,6 +283,7 @@ SET_FUNC VBlankIntrWait, 0x809dd31
 
 SET_FUNC ApplyBanimUniquePalette, 0x804AFD5
 SET_DATA gBanimUniquePaletteDisabled, 0x203cdd0
+SET_DATA gEkrDistanceType, 0x203cd14
 SET_DATA gpEkrBattleUnitLeft, 0x203CD7C
 SET_DATA gpEkrBattleUnitRight, 0x203CD80
 
@@ -320,6 +321,8 @@ SET_DATA gActiveFont, 0x2028D70
 SET_FUNC MainUpdateEkrBattle, 0x804b329 
 SET_FUNC ApplyBanimUniquePalette, 0x8053FB1
 SET_DATA gBanimUniquePaletteDisabled, 0x203E0E8
+
+SET_DATA gEkrDistanceType, 0x203E02C
 SET_DATA gpEkrBattleUnitLeft, 0x203E094
 SET_DATA gpEkrBattleUnitRight, 0x203E098
 SET_DATA gBanimUniquePal, 0x203E01C @ should be gEkrInitialHitSide + 0x10 approx 

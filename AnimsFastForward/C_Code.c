@@ -36,9 +36,13 @@ int ShouldReverseShowAnim(void)
     }
     return false;
 }
-
 int ShouldSpeedupAnims(void)
 {
+    if (gEkrDistanceType == EKR_DISTANCE_PROMOTION)
+    {
+        return false;
+    }
+
     u16 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;
     if (TimedHitsDifficultyRam_Link)
     {
