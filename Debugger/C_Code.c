@@ -5619,8 +5619,29 @@ void DebuggerStartSMS(int id)
     // SMS_80266F0(GetClassData(id)->SMSId, 16);
     // }
 }
-
-void RedrawGfxFromIDs(int id)
+struct MuProc * StartUiMu(struct Unit * unit, int x, int y);
+// void MU_SetFacing(struct MuProc *, int dir);
+void DebuggerUpdateMMS(int id, struct Unit * unit)
+{
+    MU_EndAll(); // EndAllMus();
+    // int facing = (GetGameClock() % 512) > 256;
+    int facing = 0;
+    if (CanDisplayMMS(id) && (GetClassData(id) != 0))
+    {
+        const struct ClassData * classData = unit->pClassData;
+        unit->pClassData = GetClassData(id);
+        struct MUProc * muProc1 = MU_CreateForUI(unit, 48, 144); // StartUiMu
+        MU_SetFacing(muProc1, 0 + facing);
+        struct MUProc * muProc2 = MU_CreateForUI(unit, 88, 144); // StartUiMu
+        MU_SetFacing(muProc2, 1 + facing);
+        struct MUProc * muProc3 = MU_CreateForUI(unit, 128, 144); // StartUiMu
+        MU_SetFacing(muProc3, 2 + facing);
+        struct MUProc * muProc4 = MU_CreateForUI(unit, 168, 144); // StartUiMu
+        MU_SetFacing(muProc4, 3 + facing);
+        unit->pClassData = classData;
+    }
+}
+void RedrawGfxFromIDs(int id, DebuggerProc * proc)
 {
     int time = GetGameClock();
     switch ((time & 0x1FF) >> 7)
@@ -5645,6 +5666,11 @@ void RedrawGfxFromIDs(int id)
         }
     }
 
+    // if (((time % 256) == 0) && CanDisplayMMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
+    // {
+    // DebuggerUpdateMMS(id, proc->unit);
+    // }
+
     // sub_8027DB4(int layer, int x, int y, u16 oam2base, int classId, int id);
     if (CanDisplaySMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
     {
@@ -5654,19 +5680,6 @@ void RedrawGfxFromIDs(int id)
     // UseUnitSprite(12);
 }
 
-struct MuProc * StartUiMu(struct Unit * unit, int x, int y);
-void DebuggerStartMMS(int id, struct Unit * unit)
-{
-    MU_EndAll(); // EndAllMus();
-
-    if (CanDisplayMMS(id) && (GetClassData(id) != 0))
-    {
-        const struct ClassData * classData = unit->pClassData;
-        unit->pClassData = GetClassData(id);
-        MU_CreateForUI(unit, 48, 144); // StartUiMu
-        unit->pClassData = classData;
-    }
-}
 void DebuggerStartBG(int id)
 {
     SetBackgroundTileDataOffset(BG_3, 0x8000); // restore to default just in case it's after 256 cols
@@ -5705,7 +5718,7 @@ void DebuggerStartCG(int id)
     }
 }
 
-void DrawGfxFromIDs(int type, int id, struct Unit * unit)
+void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
 {
     switch (type)
     {
@@ -5721,7 +5734,10 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit)
         }
         case 2:
         {
-            DebuggerStartMMS(id, unit);
+
+            proc->tmp[1] = id + 1;
+            DebuggerStartSMS(id);
+            DebuggerUpdateMMS(id, unit);
             break;
         }
         case 3:
@@ -5754,7 +5770,7 @@ void GfxViewerLoop(DebuggerProc * proc)
     {
         proc->tmp[proc->id]++;
         RedrawGfxViewerMenu(proc);
-        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit);
+        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
     }
     if (keys & DPAD_LEFT)
     {
@@ -5764,9 +5780,9 @@ void GfxViewerLoop(DebuggerProc * proc)
             proc->tmp[proc->id] = 0; // I have no idea what the final valid mug/sms/mms/bg/cg will be lol
         }
         RedrawGfxViewerMenu(proc);
-        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit);
+        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
     }
-    RedrawGfxFromIDs(proc->tmp[1]); // redraw SMS each frame
+    RedrawGfxFromIDs(proc->tmp[1], proc); // redraw SMS each frame
 
     if (keys & DPAD_UP)
     {
