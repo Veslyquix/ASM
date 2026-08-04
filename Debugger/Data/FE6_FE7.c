@@ -1311,9 +1311,14 @@ void SaveMisc(DebuggerProc * proc)
         unit->movBonus = 15 - UNIT_MOV_BASE(unit);
     }
     unit->statusIndex = proc->tmp[6] & 0xF;
-    if (unit->statusIndex)
+    unit->statusDuration = proc->tmp[8];
+    if (unit->statusIndex && !unit->statusDuration)
     {
         unit->statusDuration = 5;
+    }
+    if (!unit->statusIndex)
+    {
+        unit->statusDuration = 0;
     }
     if (proc->tmp[7] != (unit->index & 0xC0))
     {
@@ -1351,6 +1356,7 @@ void EditMiscInit(DebuggerProc * proc)
     proc->tmp[4] = unit->conBonus;
     proc->tmp[5] = unit->movBonus;
     proc->tmp[6] = unit->statusIndex;
+    proc->tmp[8] = unit->statusDuration;
     proc->tmp[7] = (unit->index & 0xC0) >> 6;
 
     int x = NUMBER_X - MiscNameWidth - 2;
