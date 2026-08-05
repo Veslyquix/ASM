@@ -1,6 +1,7 @@
 
 
 #include "C_Code.h" // headers
+#define FE8
 #define PUREFUNC __attribute__((pure))
 #define brk asm("mov r11, r11");
 int Mod(int a, int b) PUREFUNC;
@@ -33,12 +34,13 @@ typedef struct
     s8 digit;
     u8 godMode;
     u8 autoplay;
+    u16 bgmOverride;
     u8 page;
     s8 mainID; // by the main debugger menu
     u16 lastFlag;
     int gold;
     struct Unit * unit;
-    s16 tmp[tmpSize];
+    s16 tmp[tmpSize]; // 0x64 out of 0x6c max
 } DebuggerProc;
 
 typedef struct
@@ -146,6 +148,7 @@ void CopyProcVariables(DebuggerProc * dst, DebuggerProc * src)
     dst->lastFlag = src->lastFlag;
     dst->gold = src->gold;
     dst->autoplay = src->autoplay;
+    dst->bgmOverride = src->bgmOverride;
     for (int i = 0; i < tmpSize; ++i)
     {
         dst->tmp[i] = src->tmp[i];
@@ -302,6 +305,8 @@ void EditAiInit(DebuggerProc * proc);
 void EditAiIdle(DebuggerProc * proc);
 void EditTrapInit(DebuggerProc * proc);
 void EditTrapIdle(DebuggerProc * proc);
+void EditBgmInit(DebuggerProc * proc);
+void EditBgmIdle(DebuggerProc * proc);
 void RedrawItemMenu(DebuggerProc * proc);
 void LoadUnitsIdle(DebuggerProc * proc);
 void RedrawLoadMenu(DebuggerProc * proc);
@@ -348,6 +353,7 @@ u8 CanActiveUnitPromote(void);
 #define GfxViewerLabel 20
 #define LoopLabel 21
 #define EditAiLabel 22
+#define EditBgmLabel 23
 #define EndLabel 99
 
 #define ActionID_Promo 1
@@ -461,6 +467,11 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_LABEL(EditAiLabel),
     PROC_CALL(EditAiInit),
     PROC_REPEAT(EditAiIdle),
+    PROC_GOTO(EndLabel),
+
+    PROC_LABEL(EditBgmLabel),
+    PROC_CALL(EditBgmInit),
+    PROC_REPEAT(EditBgmIdle),
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(LoadUnitsLabel), // Units
@@ -3770,6 +3781,327 @@ void EditAiIdle(DebuggerProc * proc)
     }
 }
 
+#define NumberOfBgmOptions 1
+#define BgmNameWidth 16
+#define BgmMenuXOffset 2
+#define DebugBgmMax 0x5FF
+
+enum BgmMenuOption
+{
+    BgmMenuOption_Track,
+    BgmAppliedTrackTmp = NumberOfBgmOptions,
+};
+
+static char * sBgmMenuLabels[] = {
+    "Track",
+};
+
+static int GetSoundRoomIndexFromTrack(int id)
+{
+    int i = 0;
+
+    if ((id > 0) && (gSoundRoomTable[id - 1].bgmId == id))
+    {
+        return id - 1;
+    }
+
+    while (gSoundRoomTable[i].bgmId >= 0)
+    {
+        if (gSoundRoomTable[i].bgmId == id)
+        {
+            return i;
+        }
+        i++;
+    }
+
+    return -1;
+}
+
+static char * GetBgmMenuLabel(DebuggerProc * proc)
+{
+    int id = GetSoundRoomIndexFromTrack(proc->tmp[BgmMenuOption_Track]);
+
+    if (proc->tmp[BgmMenuOption_Track] == 0)
+    {
+        return "Map Song";
+    }
+
+    if (id >= 0)
+    {
+        return GetStringFromIndexSafe(gSoundRoomTable[id].nameTextId);
+    }
+
+    return sBgmMenuLabels[BgmMenuOption_Track];
+}
+
+static int GetDebuggerBgmOverride(void)
+{
+    DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
+
+    if (!procIdler)
+    {
+        return 0;
+    }
+
+    return procIdler->bgmOverride;
+}
+
+static void SetDebuggerBgmOverride(DebuggerProc * proc, int track)
+{
+    DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
+
+    proc->bgmOverride = track;
+
+    if (procIdler)
+    {
+        procIdler->bgmOverride = track;
+    }
+}
+
+extern int GetBGMTrack();
+
+void sub_80328B0(void)
+{
+    int override = GetDebuggerBgmOverride();
+    int bgmIdx = GetBGMTrack();
+    int curBgm = GetCurrentBgmSong();
+
+    if ((curBgm != bgmIdx) && (override != curBgm))
+    {
+        StartBgmExt(bgmIdx, 6, NULL); // 80038AC, 800322C
+    }
+
+    return;
+}
+struct PhaseIntroSubProc
+{
+    PROC_HEADER;
+    /* 29 */ u8 _pad_29[0x4C - 0x29];
+    /* 4C */ s16 timer;
+    /* 4E */ s16 stat_index;
+};
+void PhaseIntroInitText(struct PhaseIntroSubProc * proc)
+{
+    int override = GetDebuggerBgmOverride();
+    int bgmIdx = GetBGMTrack();
+    int curBgm = GetCurrentBgmSong();
+    if ((curBgm != bgmIdx) && (override != curBgm))
+    {                        // 80034DC, 8002F68
+        Sound_FadeOutBGM(4); // 80035EC, 8003064
+    }
+
+#ifdef FE8
+    PlaySoundEffect(0x73); // 803DD98, 8036D08
+#endif
+#ifdef FE7
+    PlaySoundEffect(0x393); // 803DD98, 8036D08
+#endif
+#ifdef FE6
+    PlaySoundEffect(0x73); // 73 as well apparently
+#endif
+
+    proc->timer = 15;
+}
+
+void StartMapSongBgm(void)
+{
+    int override = GetDebuggerBgmOverride();
+    if (override)
+    {
+        StartBgm(override, 0);
+    }
+    else
+    {
+        // 8015F84, 80163E4
+        StartBgm(GetBGMTrack(), 0); // 8003890, 8003210
+    }
+    return;
+}
+
+static void StartDebuggerBgm(int track)
+{
+    if (track == 0)
+    {
+        StartMapSongBgm();
+        return;
+    }
+
+    StartBgm(track, 0);
+}
+
+static void PlayBgmFromMenu(DebuggerProc * proc)
+{
+    SetDebuggerBgmOverride(proc, proc->tmp[BgmMenuOption_Track]);
+    StartDebuggerBgm(proc->bgmOverride);
+    proc->tmp[BgmAppliedTrackTmp] = proc->tmp[BgmMenuOption_Track];
+}
+
+void RedrawBgmMenu(DebuggerProc * proc)
+{
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < NumberOfBgmOptions; ++i)
+    {
+        ClearText(&th[i]);
+    }
+
+    for (int i = 0; i < NumberOfBgmOptions; ++i)
+    {
+        int color = (proc->tmp[i] == proc->tmp[BgmAppliedTrackTmp]) ? TEXT_COLOR_SYSTEM_GREEN : TEXT_COLOR_SYSTEM_WHITE;
+        Text_SetColor(&th[i], color);
+        Text_DrawString(&th[i], GetBgmMenuLabel(proc));
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - BgmNameWidth + BgmMenuXOffset, Y_HAND + i * 2));
+        PutNumberHex(
+            gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 4 + BgmMenuXOffset, Y_HAND + i * 2), TEXT_COLOR_SYSTEM_GOLD,
+            proc->tmp[i]);
+    }
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
+
+void EditBgmInit(DebuggerProc * proc)
+{
+    SomeMenuInit(proc);
+
+    proc->id = 0;
+    proc->digit = 0;
+    proc->editing = false;
+    proc->bgmOverride = GetDebuggerBgmOverride();
+    proc->tmp[BgmMenuOption_Track] = proc->bgmOverride ? proc->bgmOverride : GetCurrentBgmSong();
+    proc->tmp[BgmAppliedTrackTmp] = proc->tmp[BgmMenuOption_Track];
+
+    int x = NUMBER_X - BgmNameWidth - 1 + BgmMenuXOffset;
+    int y = Y_HAND - 1;
+    int w = BgmNameWidth + (START_X - NUMBER_X) + 7;
+    int h = NumberOfBgmOptions * 2 + 2;
+
+    DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < NumberOfBgmOptions; ++i)
+    {
+        InitText(&th[i], 22);
+    }
+
+    StartGreenText(proc);
+    RedrawBgmMenu(proc);
+}
+
+void EditBgmIdle(DebuggerProc * proc)
+{
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    u16 newKeys = gKeyStatusPtr->newKeys;
+
+    if (keys & B_BUTTON)
+    {
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+        return;
+    }
+
+    if (newKeys & A_BUTTON)
+    {
+        PlayBgmFromMenu(proc);
+        ConfirmPressSFX();
+        RedrawBgmMenu(proc);
+        return;
+    }
+
+    if (proc->editing)
+    {
+        int type = 1;
+        int max_digits = GetMaxDigits(DebugBgmMax, type);
+        int val = 0;
+
+        DisplayVertUiHand(
+            CursorLocationTable[proc->digit].x + ((4 + BgmMenuXOffset) * 8), (Y_HAND + (proc->id * 2)) * 8);
+
+        if (keys & DPAD_RIGHT)
+        {
+            if (proc->digit > 0)
+            {
+                proc->digit--;
+            }
+            else
+            {
+                proc->digit = max_digits - 1;
+                proc->editing = false;
+            }
+            RedrawBgmMenu(proc);
+        }
+        if (keys & DPAD_LEFT)
+        {
+            if (proc->digit < (max_digits - 1))
+            {
+                proc->digit++;
+            }
+            else
+            {
+                proc->digit = 0;
+                proc->editing = false;
+            }
+            RedrawBgmMenu(proc);
+        }
+
+        if (keys & DPAD_UP)
+        {
+            if (proc->tmp[proc->id] == DebugBgmMax)
+            {
+                proc->tmp[proc->id] = 0;
+            }
+            else
+            {
+                proc->tmp[proc->id] += pDigitTable[type][proc->digit];
+                if (proc->tmp[proc->id] > DebugBgmMax)
+                {
+                    proc->tmp[proc->id] = DebugBgmMax;
+                }
+            }
+            RedrawBgmMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+            if (proc->tmp[proc->id] == 0)
+            {
+                proc->tmp[proc->id] = DebugBgmMax;
+            }
+            else
+            {
+                val = proc->tmp[proc->id] - pDigitTable[type][proc->digit];
+                if (val < 0)
+                {
+                    proc->tmp[proc->id] = 0;
+                }
+                else
+                {
+                    proc->tmp[proc->id] = val;
+                }
+            }
+            RedrawBgmMenu(proc);
+        }
+    }
+    else
+    {
+        DisplayUiHand(
+            CursorLocationTable[0].x - ((BgmNameWidth + 2 - BgmMenuXOffset) * 8), (Y_HAND + (proc->id * 2)) * 8);
+
+        if (keys & DPAD_RIGHT)
+        {
+            proc->digit = GetMostSignificantDigit(proc->tmp[proc->id], 1);
+            proc->editing = true;
+        }
+        if (keys & DPAD_LEFT)
+        {
+            proc->digit = 0;
+            proc->editing = true;
+        }
+    }
+}
+
 #define NumberOfTrapOptions 9
 #define TrapNameWidth 10
 #define DebugTrapTypeMax 0xFF
@@ -5523,6 +5855,14 @@ u8 EditAiNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 EditBgmNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, EditBgmLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 u8 LoadUnitsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
@@ -5666,6 +6006,7 @@ u8 CallEndEventNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 extern const struct MenuItemDef gDebuggerMenuItems[];
 extern const struct MenuItemDef gDebuggerMenuItemsPage2[];
 extern const struct MenuItemDef gDebuggerMenuItemsPage3[];
+extern const struct MenuItemDef gDebuggerMenuItemsPage4[];
 extern char * gDebuggerMenuText[];
 
 extern const struct MenuItemDef * ggDebuggerMenuItems[];
@@ -5993,6 +6334,15 @@ const struct MenuDef gDebuggerMenuDefPage3 = { { 1, 0, 10, 0 }, // { s8 x, y, w,
                                                MenuCancelSelectResumePlayerPhase,
                                                MenuAutoHelpBoxSelect,
                                                DebuggerHelpBox };
+const struct MenuDef gDebuggerMenuDefPage4 = { { 1, 0, 10, 0 }, // { s8 x, y, w, h; };
+                                               0,
+                                               gDebuggerMenuItemsPage4,
+                                               0,
+                                               0,
+                                               0,
+                                               MenuCancelSelectResumePlayerPhase,
+                                               MenuAutoHelpBoxSelect,
+                                               DebuggerHelpBox };
 
 void UnitBeginActionInit(struct Unit * unit)
 {
@@ -6101,6 +6451,7 @@ void InitProc(DebuggerProc * proc)
     proc->actionID = 0;
     proc->godMode = 0;
     proc->autoplay = 0;
+    proc->bgmOverride = 0;
     proc->lastFlag = 1;
     proc->tileID = 1;
     proc->id = 0;
@@ -6210,6 +6561,11 @@ void RestartDebuggerMenu(DebuggerProc * proc)
         case 2:
         {
             menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage3, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15);
+            break;
+        }
+        case 3:
+        {
+            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage4, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15);
             break;
         }
         default:

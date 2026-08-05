@@ -11,7 +11,6 @@
 
 
 
-
 #ifdef _FE6_ 
     #inctbl "fe6TR" "Data/fe6_tr.tbl"
     #ifndef txt
@@ -73,8 +72,6 @@ ALIGN 4 ; PUSH; ORG CURRENTOFFSET+1; mod_label: ; POP ; SHORT $2900 $d101 $2000 
 #endif 
 
 #ifdef _FE8_ 
-    #include "Data/FE8_AsmHooks.lyn.event" 
-    #include "Data/FE8.lyn.event" 
     PUSH 
     ORG 0x1ca0c
     callHackNew(CallDebuggerProc)
@@ -84,8 +81,6 @@ ALIGN 4 ; PUSH; ORG CURRENTOFFSET+1; mod_label: ; POP ; SHORT $2900 $d101 $2000 
 #endif 
 
 #ifdef _FE7_ 
-    #include "Data/FE7_AsmHooks.lyn.event" 
-    #include "Data/FE7.lyn.event" 
     PUSH 
     ORG 0x1c304
     callHackNew(CallDebuggerProc_FE7)
@@ -95,8 +90,6 @@ ALIGN 4 ; PUSH; ORG CURRENTOFFSET+1; mod_label: ; POP ; SHORT $2900 $d101 $2000 
 #endif 
 
 #ifdef _FE6_ 
-    #include "Data/FE6_AsmHooks.lyn.event" 
-    #include "Data/FE6.lyn.event" 
     PUSH 
     ORG 0x1b190
     callHackNew(CallDebuggerProc_FE6)
@@ -167,13 +160,13 @@ FILL(256 * 4)
 ALIGN 4 
 NumberOfPages:
 #ifdef _FE8_ 
-WORD 3
+WORD 4
 #else 
 WORD 2 
 #endif 
 
 ggDebuggerMenuItems:
-POIN gDebuggerMenuItems gDebuggerMenuItemsPage2 gDebuggerMenuItemsPage3 
+POIN gDebuggerMenuItems gDebuggerMenuItemsPage2 gDebuggerMenuItemsPage3 gDebuggerMenuItemsPage4
 WORD 0 
 
 ALIGN 4 
@@ -236,6 +229,14 @@ MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemD
 #endif 
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
 
+ALIGN 4 
+gDebuggerMenuItemsPage4: // must be immediately after gDebuggerMenuItemsPage3
+#ifdef _FE8_
+MenuCommand1(EditBgmText,EditBgmDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditBgmNow)
+#endif
+MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
+WORD 0 0 0 0 0 0 0 0 0 // terminator 
+
 
 #ifndef VeslyBuildfile 
 #ifndef POKEMBLEM
@@ -279,6 +280,11 @@ EditTrapText:
     txt(" Traps");
 EditTrapDesc:
     txt("Edit trap slots\and trap data.");
+
+EditBgmText:
+    txt(" BGM");
+EditBgmDesc:
+    txt("Change the current\music track.");
 
 EditStatsText:
     txt(" Stats");
@@ -496,5 +502,30 @@ WORD 1
 #else 
 WORD 0 
 #endif 
+
+
+
+#ifdef _FE6_ 
+#ifndef GetBGMTrack 
+    #define GetBGMTrack 0x801637D
+#endif 
+    #include "Data/FE6_AsmHooks.lyn.event" 
+    #include "Data/FE6.lyn.event" 
+#endif 
+#ifdef _FE7_
+#ifndef GetBGMTrack 
+    #define GetBGMTrack 0x8015E9D 
+#endif 
+    #include "Data/FE7_AsmHooks.lyn.event" 
+    #include "Data/FE7.lyn.event" 
+#endif 
+#ifdef _FE8_
+#ifndef GetBGMTrack 
+    #define GetBGMTrack 0x8015fc9 // GetCurrentMapMusicIndex 
+#endif 
+    #include "Data/FE8_AsmHooks.lyn.event" 
+    #include "Data/FE8.lyn.event"  
+#endif 
+
 
 
