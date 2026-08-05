@@ -197,6 +197,7 @@ gDebuggerMenuItemsPage2: // must be immediately after gDebuggerMenuItems
 MenuCommand1(GodmodeText,GodmodeDesc, NormalText, MenuAlwaysEnabled, GodmodeDrawText, StartGodmodeNow)
 MenuCommand1(ControlAiText,ControlAiDesc, NormalText, MenuAlwaysEnabled, ControlAiDrawText, ControlAiNow)
 MenuCommand1(EditMapText,EditMapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditMapNow)
+MenuCommand1(EditTrapText,EditTrapDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditTrapNow)
 MenuCommand1(ChStateText,ChStateDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, ChStateNow)
 MenuCommand1(ClearChText,ClearChDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, CallEndEventNow)
 MenuCommand1(LoadUnitsText,LoadUnitsDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, LoadUnitsNow)
@@ -273,6 +274,11 @@ EditMapText:
     txt(" Edit Map");
 EditMapDesc:
     txt("Edit tiles on the\map with the tileset.");
+
+EditTrapText:
+    txt(" Traps");
+EditTrapDesc:
+    txt("Edit trap slots\and trap data.");
 
 EditStatsText:
     txt(" Stats");

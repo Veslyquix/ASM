@@ -285,6 +285,7 @@ int PlayerPhase_PrepareActionBasic(DebuggerProc * proc);
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc * proc);
 void EditMapIdle(DebuggerProc * proc);
 void StartPlayerPhaseTerrainWindow();
+void FixAndHandlePlayerCursorMovement(void);
 void ChooseTileInit(DebuggerProc * proc);
 void ChooseTileIdle(DebuggerProc * proc);
 void RenderTilesetRowOnBg2(DebuggerProc * proc);
@@ -299,6 +300,8 @@ void EditMiscInit(DebuggerProc * proc);
 void EditMiscIdle(DebuggerProc * proc);
 void EditAiInit(DebuggerProc * proc);
 void EditAiIdle(DebuggerProc * proc);
+void EditTrapInit(DebuggerProc * proc);
+void EditTrapIdle(DebuggerProc * proc);
 void RedrawItemMenu(DebuggerProc * proc);
 void LoadUnitsIdle(DebuggerProc * proc);
 void RedrawLoadMenu(DebuggerProc * proc);
@@ -433,6 +436,11 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_LABEL(EditMapLabel), // Map
     PROC_CALL(EditMapInit),
     PROC_REPEAT(EditMapIdle),
+    PROC_GOTO(EndLabel),
+
+    PROC_LABEL(EditTrapLabel),
+    PROC_CALL(EditTrapInit),
+    PROC_REPEAT(EditTrapIdle),
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(EditStatsLabel), // Stats
@@ -3762,6 +3770,567 @@ void EditAiIdle(DebuggerProc * proc)
     }
 }
 
+#define NumberOfTrapOptions 9
+#define TrapNameWidth 10
+#define DebugTrapTypeMax 0xFF
+#define TrapCoordExistingTmp NumberOfTrapOptions
+#define TrapCoordLastBTmp (TrapCoordExistingTmp + 1)
+
+enum TrapEditMode
+{
+    TrapEditMode_None,
+    TrapEditMode_Digit,
+    TrapEditMode_Coords,
+};
+
+enum TrapMenuOption
+{
+    TrapMenuOption_Slot,
+    TrapMenuOption_X,
+    TrapMenuOption_Y,
+    TrapMenuOption_Type,
+    TrapMenuOption_Extra,
+    TrapMenuOption_Data0,
+    TrapMenuOption_Data1,
+    TrapMenuOption_Data2,
+    TrapMenuOption_Data3,
+};
+
+static char * sTrapMenuLabels[] = {
+    "Slot", "X", "Y", "Type", "Extra", "Data 0", "Data 1", "Data 2", "Data 3",
+};
+
+static char * sTrapTypeNames[] = {
+    "None",   "Ballista",   "Obstacle", "Mapchange",  "Firetile",   "Gas",     "Mapchange2", "Lightarrow",    "Trap 8",
+    "Trap 9", "Torchlight", "Mine",     "Gorgon Egg", "Light Rune", "Trap 14", "Fire Thief", "Mine Assassin",
+};
+
+static char * GetTrapTypeName(int id)
+{
+    if ((id < 0) || (id >= (int)ARRAY_COUNT(sTrapTypeNames)))
+    {
+        return "Unknown";
+    }
+    return sTrapTypeNames[id];
+}
+
+static int GetTrapOptionType(int id)
+{
+    switch (id)
+    {
+        case TrapMenuOption_X:
+        case TrapMenuOption_Y:
+            return 0;
+
+        default:
+            return 1;
+    }
+}
+
+static int GetTrapMax(int id)
+{
+    switch (id)
+    {
+        case TrapMenuOption_Slot:
+            return TRAP_MAX_COUNT - 1;
+
+        case TrapMenuOption_X:
+            return gBmMapSize.x > 0 ? gBmMapSize.x - 1 : 0;
+
+        case TrapMenuOption_Y:
+            return gBmMapSize.y > 0 ? gBmMapSize.y - 1 : 0;
+
+        case TrapMenuOption_Type:
+            return DebugTrapTypeMax;
+
+        default:
+            return 0xFF;
+    }
+}
+
+static int IsTrapEmpty(struct Trap * trap)
+{
+    return !trap->type;
+    // !trap->xPos && !trap->yPos && !trap->type && !trap->extra && !trap->data[0] && !trap->data[1] &&
+    // !trap->data[2] && !trap->data[3];
+}
+
+static void DrawTrapMenuFrame(void)
+{
+    int x = NUMBER_X - TrapNameWidth - 1;
+    int y = Y_HAND - 2;
+    int w = TrapNameWidth + (START_X - NUMBER_X) + 9;
+    int h = (NumberOfTrapOptions * 2) + 2;
+
+    DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
+    BG_EnableSyncByMask(BG1_SYNC_BIT);
+}
+
+static void ClearTrapMenu(void)
+{
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_Fill(gBG1TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+}
+
+static void LoadTrapMenuFromSlot(DebuggerProc * proc)
+{
+    struct Trap * trap = GetTrap(proc->tmp[TrapMenuOption_Slot]);
+
+    proc->tmp[TrapMenuOption_X] = trap->xPos;
+    proc->tmp[TrapMenuOption_Y] = trap->yPos;
+    proc->tmp[TrapMenuOption_Type] = trap->type;
+    proc->tmp[TrapMenuOption_Extra] = trap->extra;
+    proc->tmp[TrapMenuOption_Data0] = trap->data[0] & 0xFF;
+    proc->tmp[TrapMenuOption_Data1] = trap->data[1] & 0xFF;
+    proc->tmp[TrapMenuOption_Data2] = trap->data[2] & 0xFF;
+    proc->tmp[TrapMenuOption_Data3] = trap->data[3] & 0xFF;
+}
+
+static void SaveTrap(DebuggerProc * proc)
+{
+    struct Trap * trap = GetTrap(proc->tmp[TrapMenuOption_Slot]);
+
+    trap->xPos = proc->tmp[TrapMenuOption_X];
+    trap->yPos = proc->tmp[TrapMenuOption_Y];
+    trap->type = proc->tmp[TrapMenuOption_Type];
+    trap->extra = proc->tmp[TrapMenuOption_Extra];
+    trap->data[0] = proc->tmp[TrapMenuOption_Data0];
+    trap->data[1] = proc->tmp[TrapMenuOption_Data1];
+    trap->data[2] = proc->tmp[TrapMenuOption_Data2];
+    trap->data[3] = proc->tmp[TrapMenuOption_Data3];
+}
+
+static void RefreshTrapsAndTerrain(void)
+{
+    ApplyEnabledMapChanges();
+    RefreshTerrainBmMap();
+    RefreshAllLightRunes();
+    UpdateRoofedUnits();
+    RefreshUnitSprites();
+    RenderBmMap();
+}
+
+static void SetTrapEditorCursorCamera(DebuggerProc * proc)
+{
+    if (proc->tmp[TrapMenuOption_Type])
+    {
+        int x = proc->tmp[TrapMenuOption_X];
+        int y = proc->tmp[TrapMenuOption_Y];
+
+        if (!IsCoordinateValid(x, y))
+        {
+            return;
+        }
+
+        SetCursorMapPosition(x, y);
+        // gBmSt.camera.x = GetCameraCenteredX(x * 16);
+        // gBmSt.camera.y = GetCameraCenteredY(y * 16);
+        EnsureCameraOntoPositionIfValid(proc, x, y);
+        RenderBmMap();
+    }
+}
+
+static void PutTrapEditorMapCursor(DebuggerProc * proc)
+{
+    if (proc->tmp[TrapMenuOption_Type])
+    {
+        PutMapCursor(gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y, 0);
+    }
+}
+
+static void WriteTrapDataFromMenu(struct Trap * trap, DebuggerProc * proc, int x, int y)
+{
+    trap->xPos = x;
+    trap->yPos = y;
+    trap->type = proc->tmp[TrapMenuOption_Type];
+    trap->extra = proc->tmp[TrapMenuOption_Extra];
+    trap->data[0] = proc->tmp[TrapMenuOption_Data0];
+    trap->data[1] = proc->tmp[TrapMenuOption_Data1];
+    trap->data[2] = proc->tmp[TrapMenuOption_Data2];
+    trap->data[3] = proc->tmp[TrapMenuOption_Data3];
+}
+
+static int GetFirstFreeTrapSlot(void)
+{
+    for (int i = 0; i < TRAP_MAX_COUNT; ++i)
+    {
+        if (GetTrap(i)->type == TRAP_NONE)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+static int AddTrapFromMenuAtCursor(DebuggerProc * proc)
+{
+    int slot = GetFirstFreeTrapSlot();
+
+    if (slot < 0)
+    {
+        return FALSE;
+    }
+
+    struct Trap * trap = GetTrap(slot);
+
+    WriteTrapDataFromMenu(trap, proc, gBmSt.playerCursor.x, gBmSt.playerCursor.y);
+    proc->tmp[TrapMenuOption_Slot] = slot;
+    RefreshTrapsAndTerrain();
+
+    return TRUE;
+}
+
+static int CopyTrapAtCursorIntoNewSlot(DebuggerProc * proc)
+{
+    struct Trap * src = GetTrapAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y);
+
+    if (!src)
+    {
+        return FALSE;
+    }
+
+    int slot = GetFirstFreeTrapSlot();
+
+    if (slot < 0)
+    {
+        return FALSE;
+    }
+
+    struct Trap * dst = GetTrap(slot);
+    *dst = *src;
+    proc->tmp[TrapMenuOption_Slot] = slot;
+    LoadTrapMenuFromSlot(proc);
+    RefreshTrapsAndTerrain();
+
+    return TRUE;
+}
+
+void RedrawTrapMenu(DebuggerProc * proc);
+
+static void StartTrapCoordPick(DebuggerProc * proc)
+{
+    proc->editing = TrapEditMode_Coords;
+    proc->tmp[TrapCoordExistingTmp] = !IsTrapEmpty(GetTrap(proc->tmp[TrapMenuOption_Slot]));
+    proc->tmp[TrapCoordLastBTmp] = FALSE;
+
+    if (proc->tmp[TrapCoordExistingTmp])
+    {
+        SaveTrap(proc);
+        RefreshTrapsAndTerrain();
+    }
+
+    SetTrapEditorCursorCamera(proc);
+    ClearTrapMenu();
+}
+
+static void EndTrapCoordPick(DebuggerProc * proc)
+{
+    proc->editing = TrapEditMode_None;
+    proc->tmp[TrapCoordLastBTmp] = FALSE;
+    SetCursorMapPosition(proc->tmp[TrapMenuOption_X], proc->tmp[TrapMenuOption_Y]);
+
+    DrawTrapMenuFrame();
+    RedrawTrapMenu(proc);
+}
+
+static void TrapCoordPickIdle(DebuggerProc * proc)
+{
+    FixAndHandlePlayerCursorMovement();
+
+    if (gKeyStatusPtr->repeatedKeys & (DPAD_LEFT | DPAD_RIGHT | DPAD_UP | DPAD_DOWN))
+    {
+        proc->tmp[TrapCoordLastBTmp] = FALSE;
+    }
+
+    if (gKeyStatusPtr->newKeys & B_BUTTON)
+    {
+        if (proc->tmp[TrapCoordLastBTmp] || !CopyTrapAtCursorIntoNewSlot(proc))
+        {
+            EndTrapCoordPick(proc);
+            BackPressSFX();
+        }
+        else
+        {
+            proc->tmp[TrapCoordExistingTmp] = FALSE;
+            proc->tmp[TrapCoordLastBTmp] = TRUE;
+            ConfirmPressSFX();
+        }
+
+        return;
+    }
+
+    if (gKeyStatusPtr->newKeys & A_BUTTON)
+    {
+        proc->tmp[TrapCoordLastBTmp] = FALSE;
+        proc->tmp[TrapMenuOption_X] = gBmSt.playerCursor.x;
+        proc->tmp[TrapMenuOption_Y] = gBmSt.playerCursor.y;
+
+        if (proc->tmp[TrapCoordExistingTmp])
+        {
+            SaveTrap(proc);
+            RefreshTrapsAndTerrain();
+        }
+        else
+        {
+            AddTrapFromMenuAtCursor(proc);
+        }
+
+        ConfirmPressSFX();
+        return;
+    }
+
+    PutMapCursor(
+        gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y,
+        IsUnitSpriteHoverEnabledAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y) ? 3 : 0);
+}
+
+static void ExitTrapEditor(DebuggerProc * proc)
+{
+    if ((int)proc->unit != (-1))
+    {
+        Proc_Goto(proc, RestartLabel);
+    }
+    else
+    {
+        ClearSomeGfx(proc);
+        Proc_Goto(proc, EndLabel);
+    }
+}
+
+void EditTrapInit(DebuggerProc * proc)
+{
+    SomeMenuInit(proc);
+
+    proc->id = 0;
+    proc->digit = 0;
+    proc->editing = TrapEditMode_None;
+
+    struct Trap * trap = GetTrapAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y);
+    proc->tmp[TrapMenuOption_Slot] = trap ? TRAP_INDEX(trap) : 0;
+
+    LoadTrapMenuFromSlot(proc);
+    SetTrapEditorCursorCamera(proc);
+
+    DrawTrapMenuFrame();
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < NumberOfTrapOptions * 2; ++i)
+    {
+        InitText(&th[i], TrapNameWidth);
+    }
+
+    RedrawTrapMenu(proc);
+}
+
+void RedrawTrapMenu(DebuggerProc * proc)
+{
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < NumberOfTrapOptions * 2; ++i)
+    {
+        ClearText(&th[i]);
+    }
+
+    for (int i = 0; i < NumberOfTrapOptions; ++i)
+    {
+        Text_DrawString(&th[i], sTrapMenuLabels[i]);
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - TrapNameWidth, (Y_HAND - 1) + (i * 2)));
+
+        if (GetTrapOptionType(i))
+        {
+            PutNumberHex(
+                gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 6, (Y_HAND - 1) + (i * 2)), TEXT_COLOR_SYSTEM_GOLD,
+                proc->tmp[i]);
+        }
+        else
+        {
+            PutNumber(
+                gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 6, (Y_HAND - 1) + (i * 2)), TEXT_COLOR_SYSTEM_GOLD,
+                proc->tmp[i]);
+        }
+
+        if (i == TrapMenuOption_Type)
+        {
+            Text_DrawString(&th[i + NumberOfTrapOptions], GetTrapTypeName(proc->tmp[i]));
+            PutText(
+                &th[i + NumberOfTrapOptions], gBG0TilemapBuffer + TILEMAP_INDEX(START_X - 6, (Y_HAND - 1) + (i * 2)));
+        }
+    }
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
+
+void EditTrapIdle(DebuggerProc * proc)
+{
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    u16 newKeys = gKeyStatusPtr->newKeys;
+
+    if (proc->editing == TrapEditMode_Coords)
+    {
+        TrapCoordPickIdle(proc);
+        return;
+    }
+
+    if (keys & B_BUTTON)
+    {
+        ExitTrapEditor(proc);
+        BackPressSFX();
+        return;
+    };
+    if (newKeys & A_BUTTON)
+    {
+        StartTrapCoordPick(proc);
+        ConfirmPressSFX();
+        return;
+    }
+    if ((newKeys & START_BUTTON) || (newKeys & A_BUTTON))
+    {
+        SaveTrap(proc);
+        RefreshTrapsAndTerrain();
+        ExitTrapEditor(proc);
+        ConfirmPressSFX();
+        return;
+    };
+
+    if (proc->editing)
+    {
+        int type = GetTrapOptionType(proc->id);
+        int max = GetTrapMax(proc->id);
+        int min = 0;
+        int max_digits = GetMaxDigits(max, type);
+        int val = 0;
+
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x + (6 * 8), ((Y_HAND - 1) + (proc->id * 2)) * 8);
+
+        if (keys & DPAD_RIGHT)
+        {
+            if (proc->digit > 0)
+            {
+                proc->digit--;
+            }
+            else
+            {
+                proc->digit = max_digits - 1;
+                proc->editing = TrapEditMode_None;
+            }
+            RedrawTrapMenu(proc);
+        }
+        if (keys & DPAD_LEFT)
+        {
+            if (proc->digit < (max_digits - 1))
+            {
+                proc->digit++;
+            }
+            else
+            {
+                proc->digit = 0;
+                proc->editing = TrapEditMode_None;
+            }
+            RedrawTrapMenu(proc);
+        }
+
+        if (keys & DPAD_UP)
+        {
+            if (proc->tmp[proc->id] == max)
+            {
+                proc->tmp[proc->id] = min;
+            }
+            else
+            {
+                proc->tmp[proc->id] += pDigitTable[type][proc->digit];
+                if (proc->tmp[proc->id] > max)
+                {
+                    proc->tmp[proc->id] = max;
+                }
+            }
+            if (proc->id == TrapMenuOption_Slot)
+            {
+                LoadTrapMenuFromSlot(proc);
+                SetTrapEditorCursorCamera(proc);
+            }
+            if ((proc->id == TrapMenuOption_X) || (proc->id == TrapMenuOption_Y))
+            {
+                SaveTrap(proc);
+                RefreshTrapsAndTerrain();
+                SetTrapEditorCursorCamera(proc);
+            }
+            RedrawTrapMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+            if (proc->tmp[proc->id] == min)
+            {
+                proc->tmp[proc->id] = max;
+            }
+            else
+            {
+                val = proc->tmp[proc->id] - pDigitTable[type][proc->digit];
+                if (val < min)
+                {
+                    proc->tmp[proc->id] = min;
+                }
+                else
+                {
+                    proc->tmp[proc->id] = val;
+                }
+            }
+            if (proc->id == TrapMenuOption_Slot)
+            {
+                LoadTrapMenuFromSlot(proc);
+                SetTrapEditorCursorCamera(proc);
+            }
+            if ((proc->id == TrapMenuOption_X) || (proc->id == TrapMenuOption_Y))
+            {
+                SaveTrap(proc);
+                RefreshTrapsAndTerrain();
+                SetTrapEditorCursorCamera(proc);
+            }
+            RedrawTrapMenu(proc);
+        }
+    }
+    else
+    {
+        DisplayUiHand(CursorLocationTable[0].x - ((TrapNameWidth + 2) * 8), ((Y_HAND - 1) + (proc->id * 2)) * 8);
+        if (keys & DPAD_RIGHT)
+        {
+            proc->digit = GetMostSignificantDigit(proc->tmp[proc->id], GetTrapOptionType(proc->id));
+            proc->editing = TrapEditMode_Digit;
+        }
+        if (keys & DPAD_LEFT)
+        {
+            proc->digit = 0;
+            proc->editing = TrapEditMode_Digit;
+        }
+
+        if (keys & DPAD_UP)
+        {
+            proc->id--;
+            if (proc->id < 0)
+            {
+                proc->id = NumberOfTrapOptions - 1;
+            }
+            RedrawTrapMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+            proc->id++;
+            if (proc->id >= NumberOfTrapOptions)
+            {
+                proc->id = 0;
+            }
+            RedrawTrapMenu(proc);
+        }
+    }
+
+    PutTrapEditorMapCursor(proc);
+}
+
 #define NumberOfLoad 6
 #define LoadNameWidth 12
 
@@ -4916,6 +5485,14 @@ u8 EditMapNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 EditTrapNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, EditTrapLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 u8 EditStatsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
@@ -5419,6 +5996,10 @@ const struct MenuDef gDebuggerMenuDefPage3 = { { 1, 0, 10, 0 }, // { s8 x, y, w,
 
 void UnitBeginActionInit(struct Unit * unit)
 {
+    if (!unit)
+    {
+        return;
+    }
     gActiveUnit = unit;
     gActiveUnitId = unit->index;
     InitBattleUnit(&gBattleActor, unit);
@@ -5458,13 +6039,31 @@ void StartDebuggerProc(ProcPtr playerPhaseProc)
         return;
     }
     struct Unit * unit = GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
-    if (!unit)
+    struct Trap * trap = GetTrapAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y);
+
+    if (!unit && !trap)
     {
         return;
     }
-    gActiveUnitMoveOrigin.x = unit->xPos;
-    gActiveUnitMoveOrigin.y = unit->yPos;
-    UnitBeginActionInit(unit);
+
+    if (unit)
+    {
+        gActiveUnitMoveOrigin.x = unit->xPos;
+        gActiveUnitMoveOrigin.y = unit->yPos;
+        UnitBeginActionInit(unit);
+    }
+    else
+    {
+        gActiveUnit = NULL;
+        gActiveUnitId = 0;
+        gActiveUnitMoveOrigin.x = gBmSt.playerCursor.x;
+        gActiveUnitMoveOrigin.y = gBmSt.playerCursor.y;
+    }
+    if (!unit && trap)
+    {
+        unit = (struct Unit *)(-1);
+    }
+
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
     if (!procIdler)
     {
@@ -5551,8 +6150,10 @@ void BmMain_StartPhase(ProcPtr proc)
 void RestartDebuggerMenu(DebuggerProc * proc)
 {
     struct Unit * unit = proc->unit; // GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
+
     if (!unit)
     {
+
         Proc_Goto(proc, EndLabel);
         return;
     }
@@ -5568,6 +6169,12 @@ void RestartDebuggerMenu(DebuggerProc * proc)
     for (int i = 0; i < tmpSize; ++i)
     {
         proc->tmp[i] = 0;
+    }
+    if ((int)unit == (-1))
+    {
+
+        Proc_Goto(proc, EditTrapLabel);
+        return;
     }
 
     gPlaySt.xCursor = gBmSt.playerCursor.x;
