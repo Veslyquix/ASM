@@ -3096,7 +3096,8 @@ void EditMiscIdle(DebuggerProc * proc)
 }
 
 #define NumberOfAiOptions 8
-#define AiNameWidth 13
+#define AiNameWidth 14
+#define AiApplyMaskTmp (AiMenuOption_ApplyScope + 1)
 
 enum AiMenuOption
 {
@@ -3113,8 +3114,12 @@ enum AiMenuOption
 enum AiApplyScope
 {
     AiApplyScope_Unit,
-    AiApplyScope_Allegiance,
+    AiApplyScope_EveryoneExceptBosses,
+    AiApplyScope_Bosses,
+    AiApplyScope_Everyone,
     AiApplyScope_Group,
+    AiApplyScope_Character,
+    AiApplyScope_Class,
 };
 
 typedef struct
@@ -3132,8 +3137,23 @@ typedef union
     AiConfig config;
 } AiConfigWord;
 
+static int GetAiApplyBit(int id)
+{
+    return 1 << id;
+}
+
+static int IsAiOptionEnabled(DebuggerProc * proc, int id)
+{
+    return proc->tmp[AiApplyMaskTmp] & GetAiApplyBit(id);
+}
+
+static void ToggleAiOption(DebuggerProc * proc, int id)
+{
+    proc->tmp[AiApplyMaskTmp] ^= GetAiApplyBit(id);
+}
+
 static char * sAiMenuLabels[] = {
-    "AI1", "AI2", "Recovery", "Target Pri", "Group", "Boss AI", "Unused", "Apply To",
+    "AI1", "AI2", "Recovery", "Target Pref.", "Group", "Boss AI", "Unused", "Apply To",
 };
 
 static char * sAi1Names[] = {
@@ -3183,7 +3203,7 @@ static char * GetAi2Name(int id)
 }
 
 static char * sAiRecoveryNames[] = {
-    "Flee<50%, Return100%", "Flee<30%, Return80%", "Flee<10%, Return50%", "Flee<80%, Return100%", "No Recovery AI",
+    "Flee<=50%, Return100%", "Flee<=30%, Return80%", "Flee<=10%, Return50%", "Flee<=80%, Return100%", "No Recovery AI",
 };
 static char * GetAiRecoveryName(int id)
 {
@@ -3223,9 +3243,7 @@ static char * GetAiGroupName(int id)
 }
 
 static char * sAiApplyScopeNames[] = {
-    "This unit",
-    "Everyone",
-    "Same Group",
+    "Unit", "Everyone Except Bosses", "Only Bosses", "Everyone", "Group", "Matching Character ID", "Matching Class ID",
 };
 static char * GetAiApplyScopeName(int id)
 {
@@ -3236,38 +3254,116 @@ static char * GetAiApplyScopeName(int id)
     return sAiApplyScopeNames[id];
 }
 
-static int GetAiConfigFromMenu(DebuggerProc * proc)
-{
-    AiConfigWord ai = { 0 };
+#define AiScriptScanLimit 0x100
 
-    ai.config.recoveryMode = proc->tmp[AiMenuOption_Recovery];
-    ai.config.targetPriority = proc->tmp[AiMenuOption_TargetPriority];
-    ai.config.group = proc->tmp[AiMenuOption_Group];
-    ai.config.bossAi = proc->tmp[AiMenuOption_BossStay];
-    ai.config.unused = proc->tmp[AiMenuOption_Unused];
+static int IsReadableAiScriptPointer(struct AiScr * script)
+{
+    int addr = (int)script;
+
+    if ((addr >= 0x02000000) && (addr < 0x02040000))
+    {
+        return true;
+    }
+    if ((addr >= 0x03000000) && (addr < 0x03008000))
+    {
+        return true;
+    }
+    if ((addr >= 0x08000000) && (addr < 0x0A000000))
+    {
+        return true;
+    }
+
+    return false;
+}
+
+static int IsNullAiScript(struct AiScr * script)
+{
+    return !script->cmd && !script->unk_01 && !script->unk_02 && !script->unk_03 && !script->unk_04 &&
+        !script->unk_08 && !script->unk_0C;
+}
+
+static int GetAiScriptTableMax(struct AiScr ** table, struct AiScr * nextTableFirstScript, struct AiScr ** nextTable)
+{
+    for (int i = 0; i < AiScriptScanLimit; ++i)
+    {
+        struct AiScr * script = table[i];
+
+        if (!script)
+        {
+            return i ? i - 1 : 0;
+        }
+
+        if (i && ((script == nextTableFirstScript) || (script == (struct AiScr *)nextTable)))
+        {
+            return i - 1;
+        }
+
+        if (!IsReadableAiScriptPointer(script) || IsNullAiScript(script))
+        {
+            return i ? i - 1 : 0;
+        }
+    }
+
+    return AiScriptScanLimit - 1;
+}
+
+static int GetAi1Max(void)
+{
+    return GetAiScriptTableMax(gpAi1Table[0], gpAi2Table[0][0], gpAi2Table[0]);
+}
+
+static int GetAi2Max(void)
+{
+    return GetAiScriptTableMax(gpAi2Table[0], gpAi1Table[0][0], gpAi1Table[0]);
+}
+
+static int GetAiConfigFromMenu(struct Unit * unit, DebuggerProc * proc)
+{
+    AiConfigWord ai = { unit->ai3And4 };
+
+    if (IsAiOptionEnabled(proc, AiMenuOption_Recovery))
+    {
+        ai.config.recoveryMode = proc->tmp[AiMenuOption_Recovery];
+    }
+    if (IsAiOptionEnabled(proc, AiMenuOption_TargetPriority))
+    {
+        ai.config.targetPriority = proc->tmp[AiMenuOption_TargetPriority];
+    }
+    if (IsAiOptionEnabled(proc, AiMenuOption_Group))
+    {
+        ai.config.group = proc->tmp[AiMenuOption_Group];
+    }
+    if (IsAiOptionEnabled(proc, AiMenuOption_BossStay))
+    {
+        ai.config.bossAi = proc->tmp[AiMenuOption_BossStay];
+    }
+    if (IsAiOptionEnabled(proc, AiMenuOption_Unused))
+    {
+        ai.config.unused = proc->tmp[AiMenuOption_Unused];
+    }
 
     return ai.raw;
 }
 
 static void ApplyAiToUnit(struct Unit * unit, DebuggerProc * proc)
 {
-    int aiConfig = GetAiConfigFromMenu(proc);
-    if (unit->ai1 != proc->tmp[AiMenuOption_Ai1])
+    int aiConfig = GetAiConfigFromMenu(unit, proc);
+    if (IsAiOptionEnabled(proc, AiMenuOption_Ai1) && (unit->ai1 != proc->tmp[AiMenuOption_Ai1]))
     {
         unit->ai1data = 0;
+        unit->ai1 = proc->tmp[AiMenuOption_Ai1];
     }
-    if (unit->ai2 != proc->tmp[AiMenuOption_Ai2])
+    if (IsAiOptionEnabled(proc, AiMenuOption_Ai2) && (unit->ai2 != proc->tmp[AiMenuOption_Ai2]))
     {
         unit->ai2data = 0;
+        unit->ai2 = proc->tmp[AiMenuOption_Ai2];
     }
 
     if (unit->ai3And4 != aiConfig)
     {
         unit->_u46 = 0;
+        unit->ai3And4 = aiConfig;
     }
-    unit->ai1 = proc->tmp[AiMenuOption_Ai1];
-    unit->ai2 = proc->tmp[AiMenuOption_Ai2];
-    unit->ai3And4 = aiConfig;
 }
 
 static int GetUnitAiGroup(struct Unit * unit)
@@ -3277,45 +3373,57 @@ static int GetUnitAiGroup(struct Unit * unit)
     return ai.config.group;
 }
 
+static int IsAiBossUnit(struct Unit * unit)
+{
+    return UNIT_CATTRIBUTES(unit) & CA_BOSS;
+}
+
+static int ShouldApplyAiToUnit(struct Unit * unit, DebuggerProc * proc, int group, int charId, int classId)
+{
+    switch (proc->tmp[AiMenuOption_ApplyScope])
+    {
+        case AiApplyScope_EveryoneExceptBosses:
+            return !IsAiBossUnit(unit);
+
+        case AiApplyScope_Bosses:
+            return IsAiBossUnit(unit);
+
+        case AiApplyScope_Everyone:
+            return true;
+
+        case AiApplyScope_Group:
+            return group && (GetUnitAiGroup(unit) == group);
+
+        case AiApplyScope_Character:
+            return UNIT_CHAR_ID(unit) == charId;
+
+        case AiApplyScope_Class:
+            return UNIT_CLASS_ID(unit) == classId;
+
+        default:
+            return false;
+    }
+}
+
 void SaveAi(DebuggerProc * proc)
 {
-    int faction = UNIT_FACTION(proc->unit);
-    int group = proc->tmp[AiMenuOption_Group];
+    struct Unit * unit = proc->unit;
+    int group = GetUnitAiGroup(unit);
+    int charId = UNIT_CHAR_ID(unit);
+    int classId = UNIT_CLASS_ID(unit);
 
     if (proc->tmp[AiMenuOption_ApplyScope] == AiApplyScope_Unit)
     {
-        ApplyAiToUnit(proc->unit, proc);
+        ApplyAiToUnit(unit, proc);
         return;
     }
 
-    if (proc->tmp[AiMenuOption_ApplyScope] == AiApplyScope_Group)
+    for (int i = UNIT_FACTION(unit) + 1; i < UNIT_FACTION(unit) + 0x40; ++i)
     {
-        if (!group)
+        struct Unit * unit2 = GetUnit(i);
+        if (UNIT_IS_VALID(unit2) && ShouldApplyAiToUnit(unit2, proc, group, charId, classId))
         {
-            return;
-        }
-
-        for (int i = 1; i < 0xC0; ++i)
-        {
-            struct Unit * unit = GetUnit(i);
-            if (!UNIT_IS_VALID(unit))
-            {
-                continue;
-            }
-            if ((UNIT_FACTION(unit) == faction) && (GetUnitAiGroup(unit) == group))
-            {
-                ApplyAiToUnit(unit, proc);
-            }
-        }
-        return;
-    }
-
-    for (int i = 1; i < 0xC0; ++i)
-    {
-        struct Unit * unit = GetUnit(i);
-        if (UNIT_IS_VALID(unit) && (UNIT_FACTION(unit) == faction))
-        {
-            ApplyAiToUnit(unit, proc);
+            ApplyAiToUnit(unit2, proc);
         }
     }
 }
@@ -3340,6 +3448,7 @@ void EditAiInit(DebuggerProc * proc)
     proc->tmp[AiMenuOption_BossStay] = ai.config.bossAi;
     proc->tmp[AiMenuOption_Unused] = ai.config.unused;
     proc->tmp[AiMenuOption_ApplyScope] = AiApplyScope_Unit;
+    proc->tmp[AiApplyMaskTmp] = 0;
 
     int x = NUMBER_X - AiNameWidth - 1;
     int y = Y_HAND - 1;
@@ -3355,6 +3464,7 @@ void EditAiInit(DebuggerProc * proc)
         InitText(&th[i], AiNameWidth);
     }
 
+    StartGreenText(proc);
     RedrawAiMenu(proc);
 }
 
@@ -3405,6 +3515,9 @@ void RedrawAiMenu(DebuggerProc * proc)
 
     for (int i = 0; i < NumberOfAiOptions; ++i)
     {
+        int color = (i != AiMenuOption_ApplyScope) && IsAiOptionEnabled(proc, i) ? TEXT_COLOR_SYSTEM_GREEN
+                                                                                 : TEXT_COLOR_SYSTEM_WHITE;
+        Text_SetColor(&th[i], color);
         Text_DrawString(&th[i], sAiMenuLabels[i]);
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - AiNameWidth, Y_HAND + i * 2));
 
@@ -3413,15 +3526,28 @@ void RedrawAiMenu(DebuggerProc * proc)
             PutNumberHex(
                 gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 8, Y_HAND + i * 2), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
         }
-        else if ((i != AiMenuOption_ApplyScope) && (i != AiMenuOption_BossStay))
+        else if (i != AiMenuOption_ApplyScope)
         {
             PutNumber(
                 gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 8, Y_HAND + i * 2), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+        }
+        if (i == AiMenuOption_BossStay)
+        {
+            if (proc->tmp[i])
+            {
+                PutNumberHex(
+                    gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 8, Y_HAND + i * 2), TEXT_COLOR_SYSTEM_GOLD, 32);
+            }
+            else
+            {
+                PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 8, Y_HAND + i * 2), TEXT_COLOR_SYSTEM_GOLD, 0);
+            }
         }
 
         char * detail = GetAiOptionDetail(proc, i);
         if (detail[0])
         {
+            Text_SetColor(&th[i + NumberOfAiOptions], color);
             Text_DrawString(&th[i + NumberOfAiOptions], detail);
             PutText(&th[i + NumberOfAiOptions], gBG0TilemapBuffer + TILEMAP_INDEX(START_X - 7, Y_HAND + i * 2));
         }
@@ -3440,10 +3566,10 @@ int GetAiMax(int id)
     switch (id)
     {
         case AiMenuOption_Ai1:
-            return ARRAY_COUNT(sAi1Names) - 1;
+            return GetAi1Max();
 
         case AiMenuOption_Ai2:
-            return ARRAY_COUNT(sAi2Names) - 1;
+            return GetAi2Max();
 
         case AiMenuOption_Recovery:
             return 7;
@@ -3459,7 +3585,7 @@ int GetAiMax(int id)
             return 3;
 
         case AiMenuOption_ApplyScope:
-            return 2;
+            return ARRAY_COUNT(sAiApplyScopeNames) - 1;
 
         default:
             return 0;
@@ -3469,17 +3595,34 @@ int GetAiMax(int id)
 void EditAiIdle(DebuggerProc * proc)
 {
     u16 keys = gKeyStatusPtr->repeatedKeys;
+    u16 newKeys = gKeyStatusPtr->newKeys;
     if (keys & B_BUTTON)
     {
         Proc_Goto(proc, RestartLabel);
         BackPressSFX();
     };
-    if ((keys & START_BUTTON) || (keys & A_BUTTON))
+    if (newKeys & START_BUTTON)
     {
         SaveAi(proc);
         Proc_Goto(proc, RestartLabel);
-        BackPressSFX();
+        ConfirmPressSFX();
     };
+    if (newKeys & A_BUTTON)
+    {
+        if (proc->id == AiMenuOption_ApplyScope)
+        {
+            SaveAi(proc);
+            Proc_Goto(proc, RestartLabel);
+            ConfirmPressSFX();
+            return;
+        }
+        else
+        {
+            ToggleAiOption(proc, proc->id);
+            ConfirmPressSFX();
+            RedrawAiMenu(proc);
+        }
+    }
 
     if (proc->editing)
     {
@@ -3557,9 +3700,11 @@ void EditAiIdle(DebuggerProc * proc)
     else
     {
         DisplayUiHand(CursorLocationTable[0].x - ((AiNameWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+
         if (proc->id == AiMenuOption_ApplyScope)
         {
             int val = proc->tmp[proc->id];
+            int max = GetAiMax(proc->id);
             if (keys & DPAD_RIGHT)
             {
                 val++;
@@ -3570,9 +3715,9 @@ void EditAiIdle(DebuggerProc * proc)
             }
             if (val < 0)
             {
-                val = 2;
+                val = max;
             }
-            if (val > 2)
+            if (val > max)
             {
                 val = 0;
             }
@@ -3603,7 +3748,7 @@ void EditAiIdle(DebuggerProc * proc)
             {
                 proc->id = NumberOfAiOptions - 1;
             }
-            RedrawAiMenu(proc);
+            // RedrawAiMenu(proc);
         }
         if (keys & DPAD_DOWN)
         {
@@ -3612,7 +3757,7 @@ void EditAiIdle(DebuggerProc * proc)
             {
                 proc->id = 0;
             }
-            RedrawAiMenu(proc);
+            // RedrawAiMenu(proc);
         }
     }
 }
@@ -5045,7 +5190,7 @@ int ControlAiDrawText(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler);
     if (gPlaySt.config.debugControlRed)
     {
-        Text_DrawString(&menuItem->text, " AI is off");
+        Text_DrawString(&menuItem->text, " Enemy Ctrl on");
     }
     else
     {
@@ -5243,7 +5388,7 @@ u8 MenuCancelSelectResumePlayerPhase(struct MenuProc * menu, struct MenuItemProc
 }
 
 u8 DebuggerHelpBox(struct MenuProc * menu, struct MenuItemProc * item);
-const struct MenuDef gDebuggerMenuDef = { { 1, 0, 9, 0 }, // { s8 x, y, w, h; };
+const struct MenuDef gDebuggerMenuDef = { { 1, 0, 10, 0 }, // { s8 x, y, w, h; };
                                           0,
                                           gDebuggerMenuItems,
                                           0,
@@ -5253,7 +5398,7 @@ const struct MenuDef gDebuggerMenuDef = { { 1, 0, 9, 0 }, // { s8 x, y, w, h; };
                                           MenuAutoHelpBoxSelect,
                                           DebuggerHelpBox };
 
-const struct MenuDef gDebuggerMenuDefPage2 = { { 1, 0, 9, 0 }, // { s8 x, y, w, h; };
+const struct MenuDef gDebuggerMenuDefPage2 = { { 1, 0, 10, 0 }, // { s8 x, y, w, h; };
                                                0,
                                                gDebuggerMenuItemsPage2,
                                                0,
@@ -5262,7 +5407,7 @@ const struct MenuDef gDebuggerMenuDefPage2 = { { 1, 0, 9, 0 }, // { s8 x, y, w, 
                                                MenuCancelSelectResumePlayerPhase,
                                                MenuAutoHelpBoxSelect,
                                                DebuggerHelpBox };
-const struct MenuDef gDebuggerMenuDefPage3 = { { 1, 0, 9, 0 }, // { s8 x, y, w, h; };
+const struct MenuDef gDebuggerMenuDefPage3 = { { 1, 0, 10, 0 }, // { s8 x, y, w, h; };
                                                0,
                                                gDebuggerMenuItemsPage3,
                                                0,

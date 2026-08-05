@@ -295,7 +295,7 @@ GodmodeDesc:
     txt("Make your units\win every battle."); 
 
 ControlAiText:
-    txt(" AI is on"); 
+    txt(" Enemy Ctrl off"); 
 ControlAiDesc:
     txt("Control just players\or control everyone."); 
 
