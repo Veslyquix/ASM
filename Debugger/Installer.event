@@ -220,6 +220,7 @@ MenuCommand1(ListMenuText,ListMenuDesc, NormalText, MenuAlwaysEnabled, DebuggerM
 MenuCommand1(PromoteCommandText, PromoteDesc, NormalText, CanActiveUnitPromoteMenu, DebuggerMenuItemDraw, StartPromotionNow)
 MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
 MenuCommand1(AiControlRemainingUnitsText,AiControlRemainingUnitsDesc, NormalText, MenuAlwaysEnabled, AiControlRemainingUnitsDrawText, AiControlRemainingUnitsNow) 
+MenuCommand1(EditAiText,EditAiDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditAiNow)
 MenuCommand1(GfxViewerText,GfxViewerDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, GfxViewerNow) 
 #ifdef VeslyBuildfile 
 MenuCommand1(EditSkillsText,EditSkillsDesc, NormalText, $04F449,DebuggerMenuItemDraw, DebugSkillsNow) // This is external - it is located in skillsystems folders 
@@ -352,6 +353,11 @@ AiControlRemainingUnitsText:
     txt(" Autoplay off"); 
 AiControlRemainingUnitsDesc:
     txt("Open the list\of everyone's items."); 
+
+EditAiText:
+    txt(" AI");
+EditAiDesc:
+    txt("Edit unit's AI.");
     
    
     GfxViewerText:

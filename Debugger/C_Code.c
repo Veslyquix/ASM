@@ -297,6 +297,8 @@ void EditItemsInit(DebuggerProc * proc);
 void EditItemsIdle(DebuggerProc * proc);
 void EditMiscInit(DebuggerProc * proc);
 void EditMiscIdle(DebuggerProc * proc);
+void EditAiInit(DebuggerProc * proc);
+void EditAiIdle(DebuggerProc * proc);
 void RedrawItemMenu(DebuggerProc * proc);
 void LoadUnitsIdle(DebuggerProc * proc);
 void RedrawLoadMenu(DebuggerProc * proc);
@@ -342,6 +344,7 @@ u8 CanActiveUnitPromote(void);
 #define ListLabel 19
 #define GfxViewerLabel 20
 #define LoopLabel 21
+#define EditAiLabel 22
 #define EndLabel 99
 
 #define ActionID_Promo 1
@@ -445,6 +448,11 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_LABEL(EditMiscLabel), // Class etc
     PROC_CALL(EditMiscInit),
     PROC_REPEAT(EditMiscIdle),
+    PROC_GOTO(EndLabel),
+
+    PROC_LABEL(EditAiLabel),
+    PROC_CALL(EditAiInit),
+    PROC_REPEAT(EditAiIdle),
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(LoadUnitsLabel), // Units
@@ -3087,6 +3095,528 @@ void EditMiscIdle(DebuggerProc * proc)
     }
 }
 
+#define NumberOfAiOptions 8
+#define AiNameWidth 13
+
+enum AiMenuOption
+{
+    AiMenuOption_Ai1,
+    AiMenuOption_Ai2,
+    AiMenuOption_Recovery,
+    AiMenuOption_TargetPriority,
+    AiMenuOption_Group,
+    AiMenuOption_BossStay,
+    AiMenuOption_Unused,
+    AiMenuOption_ApplyScope,
+};
+
+enum AiApplyScope
+{
+    AiApplyScope_Unit,
+    AiApplyScope_Allegiance,
+    AiApplyScope_Group,
+};
+
+typedef struct
+{
+    u16 recoveryMode : 3;
+    u16 targetPriority : 5;
+    u16 group : 5;
+    u16 bossAi : 1;
+    u16 unused : 2;
+} AiConfig;
+
+typedef union
+{
+    u16 raw;
+    AiConfig config;
+} AiConfigWord;
+
+static char * sAiMenuLabels[] = {
+    "AI1", "AI2", "Recovery", "Target Pri", "Group", "Boss AI", "Unused", "Apply To",
+};
+
+static char * sAi1Names[] = {
+    "ActionInRange", "ActionRange80",     "ActionRange50",  "ActionStand",        "ActionStand80", "ActionStand50",
+    "DoNothing",     "AttNotNatasha",     "AttNotCivilian", "AttNotNoOne",        "AttOnlyNoOne",  "ActionInRange",
+    "ActHalfRange",  "ActCommanderRange", "Heal <50%",      "Alternate Heal/Att", "Steal",         "WaitForDoor",
+    "AttNotNoOne",   "AttNotNoOne",       "Summon",
+};
+
+static char * GetAi1Name(int id)
+{
+    if ((id < 0) || (id >= (int)ARRAY_COUNT(sAi1Names)))
+    {
+        return "Unknown";
+    }
+    return sAi1Names[id];
+}
+
+static char * sAi2Names[] = {
+    "MoveToEnemy",
+    "MoveEnemyXcept1",
+    "MoveEnemyXcept2",
+    "DoNotPursue",
+    "PillagePursue",
+    "PillageEscape",
+    "IfRangex2, Pursue",
+    "IfRangex2, PursueX",
+    "Unknown85A85D0",
+    "Random",
+    "PursueEirika",
+    "PursueEphraim",
+    "Escape",
+    "TargetThroneGate",
+    "AttackSnagsWalls",
+    "PursueEvenIfBlocked",
+    "GuardEscortLocation",
+    "PillageAfter1",
+    "MoveEnemyAfter1",
+};
+static char * GetAi2Name(int id)
+{
+    if ((id < 0) || (id >= (int)ARRAY_COUNT(sAi2Names)))
+    {
+        return "Unknown";
+    }
+    return sAi2Names[id];
+}
+
+static char * sAiRecoveryNames[] = {
+    "Flee<50%, Return100%", "Flee<30%, Return80%", "Flee<10%, Return50%", "Flee<80%, Return100%", "No Recovery AI",
+};
+static char * GetAiRecoveryName(int id)
+{
+    if ((id < 0) || (id >= (int)ARRAY_COUNT(sAiRecoveryNames)))
+    {
+        return "Invalid";
+    }
+    return sAiRecoveryNames[id];
+}
+
+static char * sAiTargetNames[] = {
+    "Position", "Damage", "Jaffar", "Defense", "Dmg/Hitrate", "Archers", "Defense2", "Defense3",
+};
+static char * GetAiTargetName(int id)
+{
+    if ((id < 0) || (id >= (int)ARRAY_COUNT(sAiTargetNames)))
+    {
+        return "Invalid";
+    }
+    return sAiTargetNames[id];
+}
+
+static char * sAiGroupNames[] = {
+    "None",         "One",         "Two",          "Three",       "Four",        "Five",       "Six",
+    "Seven",        "Eight",       "Nine",         "Ten",         "Eleven",      "Twelve",     "Thirteen",
+    "Fourteen",     "Fifteen",     "Sixteen",      "Seventeen",   "Eighteen",    "Nineteen",   "Twenty",
+    "Twenty one",   "Twenty two",  "Twenty three", "Twenty four", "Twenty five", "Twenty six", "Twenty seven",
+    "Twenty eight", "Twenty nine", "Thirty",       "Thirty one",
+};
+static char * GetAiGroupName(int id)
+{
+    if ((id < 0) || (id >= (int)ARRAY_COUNT(sAiGroupNames)))
+    {
+        return "Invalid";
+    }
+    return sAiGroupNames[id];
+}
+
+static char * sAiApplyScopeNames[] = {
+    "This unit",
+    "Everyone",
+    "Same Group",
+};
+static char * GetAiApplyScopeName(int id)
+{
+    if ((id < 0) || (id >= (int)ARRAY_COUNT(sAiApplyScopeNames)))
+    {
+        return "Invalid";
+    }
+    return sAiApplyScopeNames[id];
+}
+
+static int GetAiConfigFromMenu(DebuggerProc * proc)
+{
+    AiConfigWord ai = { 0 };
+
+    ai.config.recoveryMode = proc->tmp[AiMenuOption_Recovery];
+    ai.config.targetPriority = proc->tmp[AiMenuOption_TargetPriority];
+    ai.config.group = proc->tmp[AiMenuOption_Group];
+    ai.config.bossAi = proc->tmp[AiMenuOption_BossStay];
+    ai.config.unused = proc->tmp[AiMenuOption_Unused];
+
+    return ai.raw;
+}
+
+static void ApplyAiToUnit(struct Unit * unit, DebuggerProc * proc)
+{
+    int aiConfig = GetAiConfigFromMenu(proc);
+    if (unit->ai1 != proc->tmp[AiMenuOption_Ai1])
+    {
+        unit->ai1data = 0;
+    }
+    if (unit->ai2 != proc->tmp[AiMenuOption_Ai2])
+    {
+        unit->ai2data = 0;
+    }
+
+    if (unit->ai3And4 != aiConfig)
+    {
+        unit->_u46 = 0;
+    }
+    unit->ai1 = proc->tmp[AiMenuOption_Ai1];
+    unit->ai2 = proc->tmp[AiMenuOption_Ai2];
+    unit->ai3And4 = aiConfig;
+}
+
+static int GetUnitAiGroup(struct Unit * unit)
+{
+    AiConfigWord ai = { unit->ai3And4 };
+
+    return ai.config.group;
+}
+
+void SaveAi(DebuggerProc * proc)
+{
+    int faction = UNIT_FACTION(proc->unit);
+    int group = proc->tmp[AiMenuOption_Group];
+
+    if (proc->tmp[AiMenuOption_ApplyScope] == AiApplyScope_Unit)
+    {
+        ApplyAiToUnit(proc->unit, proc);
+        return;
+    }
+
+    if (proc->tmp[AiMenuOption_ApplyScope] == AiApplyScope_Group)
+    {
+        if (!group)
+        {
+            return;
+        }
+
+        for (int i = 1; i < 0xC0; ++i)
+        {
+            struct Unit * unit = GetUnit(i);
+            if (!UNIT_IS_VALID(unit))
+            {
+                continue;
+            }
+            if ((UNIT_FACTION(unit) == faction) && (GetUnitAiGroup(unit) == group))
+            {
+                ApplyAiToUnit(unit, proc);
+            }
+        }
+        return;
+    }
+
+    for (int i = 1; i < 0xC0; ++i)
+    {
+        struct Unit * unit = GetUnit(i);
+        if (UNIT_IS_VALID(unit) && (UNIT_FACTION(unit) == faction))
+        {
+            ApplyAiToUnit(unit, proc);
+        }
+    }
+}
+
+void RedrawAiMenu(DebuggerProc * proc);
+void EditAiInit(DebuggerProc * proc)
+{
+    SomeMenuInit(proc);
+    struct Unit * unit = proc->unit;
+
+    proc->id = 0;
+    proc->digit = 0;
+    proc->editing = false;
+
+    proc->tmp[AiMenuOption_Ai1] = unit->ai1;
+    proc->tmp[AiMenuOption_Ai2] = unit->ai2;
+
+    AiConfigWord ai = { unit->ai3And4 };
+    proc->tmp[AiMenuOption_Recovery] = ai.config.recoveryMode;
+    proc->tmp[AiMenuOption_TargetPriority] = ai.config.targetPriority;
+    proc->tmp[AiMenuOption_Group] = ai.config.group;
+    proc->tmp[AiMenuOption_BossStay] = ai.config.bossAi;
+    proc->tmp[AiMenuOption_Unused] = ai.config.unused;
+    proc->tmp[AiMenuOption_ApplyScope] = AiApplyScope_Unit;
+
+    int x = NUMBER_X - AiNameWidth - 1;
+    int y = Y_HAND - 1;
+    int w = AiNameWidth + (START_X - NUMBER_X) + 11;
+    int h = NumberOfAiOptions * 2 + 2;
+
+    DrawUiFrame(BG_GetMapBuffer(1), x, y, w, h, TILEREF(0, 0), 0);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < NumberOfAiOptions * 2; ++i)
+    {
+        InitText(&th[i], AiNameWidth);
+    }
+
+    RedrawAiMenu(proc);
+}
+
+static char * GetAiOptionDetail(DebuggerProc * proc, int id)
+{
+    switch (id)
+    {
+        case AiMenuOption_Ai1:
+            return GetAi1Name(proc->tmp[id]);
+
+        case AiMenuOption_Ai2:
+            return GetAi2Name(proc->tmp[id]);
+
+        case AiMenuOption_Recovery:
+            return GetAiRecoveryName(proc->tmp[id]);
+
+        case AiMenuOption_TargetPriority:
+            return GetAiTargetName(proc->tmp[id]);
+
+        case AiMenuOption_Group:
+            return GetAiGroupName(proc->tmp[id]);
+
+        case AiMenuOption_Unused:
+            return "N/A";
+
+        case AiMenuOption_BossStay:
+            return proc->tmp[id] ? "Stationary" : "Can move";
+
+        case AiMenuOption_ApplyScope:
+            return GetAiApplyScopeName(proc->tmp[id]);
+
+        default:
+            return "";
+    }
+}
+
+void RedrawAiMenu(DebuggerProc * proc)
+{
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i < NumberOfAiOptions * 2; ++i)
+    {
+        ClearText(&th[i]);
+    }
+
+    for (int i = 0; i < NumberOfAiOptions; ++i)
+    {
+        Text_DrawString(&th[i], sAiMenuLabels[i]);
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - AiNameWidth, Y_HAND + i * 2));
+
+        if ((i == AiMenuOption_Ai1) || (i == AiMenuOption_Ai2))
+        {
+            PutNumberHex(
+                gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 8, Y_HAND + i * 2), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+        }
+        else if ((i != AiMenuOption_ApplyScope) && (i != AiMenuOption_BossStay))
+        {
+            PutNumber(
+                gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 8, Y_HAND + i * 2), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+        }
+
+        char * detail = GetAiOptionDetail(proc, i);
+        if (detail[0])
+        {
+            Text_DrawString(&th[i + NumberOfAiOptions], detail);
+            PutText(&th[i + NumberOfAiOptions], gBG0TilemapBuffer + TILEMAP_INDEX(START_X - 7, Y_HAND + i * 2));
+        }
+    }
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
+
+int GetAiMin(int id)
+{
+    return 0;
+}
+
+int GetAiMax(int id)
+{
+    switch (id)
+    {
+        case AiMenuOption_Ai1:
+            return ARRAY_COUNT(sAi1Names) - 1;
+
+        case AiMenuOption_Ai2:
+            return ARRAY_COUNT(sAi2Names) - 1;
+
+        case AiMenuOption_Recovery:
+            return 7;
+
+        case AiMenuOption_TargetPriority:
+        case AiMenuOption_Group:
+            return 0x1F;
+
+        case AiMenuOption_BossStay:
+            return 1;
+
+        case AiMenuOption_Unused:
+            return 3;
+
+        case AiMenuOption_ApplyScope:
+            return 2;
+
+        default:
+            return 0;
+    }
+}
+
+void EditAiIdle(DebuggerProc * proc)
+{
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    if (keys & B_BUTTON)
+    {
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+    };
+    if ((keys & START_BUTTON) || (keys & A_BUTTON))
+    {
+        SaveAi(proc);
+        Proc_Goto(proc, RestartLabel);
+        BackPressSFX();
+    };
+
+    if (proc->editing)
+    {
+        DisplayVertUiHand(CursorLocationTable[proc->digit].x + (8 * 8), (Y_HAND + (proc->id * 2)) * 8);
+        int max = GetAiMax(proc->id);
+        int min = GetAiMin(proc->id);
+        int type = (proc->id < AiMenuOption_Recovery);
+        int max_digits = GetMaxDigits(max, type);
+        int val = 0;
+
+        if (keys & DPAD_RIGHT)
+        {
+            if (proc->digit > 0)
+            {
+                proc->digit--;
+            }
+            else
+            {
+                proc->digit = max_digits - 1;
+                proc->editing = false;
+            }
+            RedrawAiMenu(proc);
+        }
+        if (keys & DPAD_LEFT)
+        {
+            if (proc->digit < (max_digits - 1))
+            {
+                proc->digit++;
+            }
+            else
+            {
+                proc->digit = 0;
+                proc->editing = false;
+            }
+            RedrawAiMenu(proc);
+        }
+
+        if (keys & DPAD_UP)
+        {
+            if (proc->tmp[proc->id] == max)
+            {
+                proc->tmp[proc->id] = min;
+            }
+            else
+            {
+                proc->tmp[proc->id] += pDigitTable[type][proc->digit];
+                if (proc->tmp[proc->id] > max)
+                {
+                    proc->tmp[proc->id] = max;
+                }
+            }
+            RedrawAiMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+            if (proc->tmp[proc->id] == min)
+            {
+                proc->tmp[proc->id] = max;
+            }
+            else
+            {
+                val = proc->tmp[proc->id] - pDigitTable[type][proc->digit];
+                if (val < min)
+                {
+                    proc->tmp[proc->id] = min;
+                }
+                else
+                {
+                    proc->tmp[proc->id] = val;
+                }
+            }
+            RedrawAiMenu(proc);
+        }
+    }
+    else
+    {
+        DisplayUiHand(CursorLocationTable[0].x - ((AiNameWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+        if (proc->id == AiMenuOption_ApplyScope)
+        {
+            int val = proc->tmp[proc->id];
+            if (keys & DPAD_RIGHT)
+            {
+                val++;
+            }
+            else if (keys & DPAD_LEFT)
+            {
+                val--;
+            }
+            if (val < 0)
+            {
+                val = 2;
+            }
+            if (val > 2)
+            {
+                val = 0;
+            }
+            if (val != proc->tmp[proc->id])
+            {
+                proc->tmp[proc->id] = val;
+                RedrawAiMenu(proc);
+            }
+        }
+        else
+        {
+            if (keys & DPAD_RIGHT)
+            {
+                proc->digit = (proc->id < AiMenuOption_Recovery) ? 1 : 0;
+                proc->editing = true;
+            }
+            if (keys & DPAD_LEFT)
+            {
+                proc->digit = 0;
+                proc->editing = true;
+            }
+        }
+
+        if (keys & DPAD_UP)
+        {
+            proc->id--;
+            if (proc->id < 0)
+            {
+                proc->id = NumberOfAiOptions - 1;
+            }
+            RedrawAiMenu(proc);
+        }
+        if (keys & DPAD_DOWN)
+        {
+            proc->id++;
+            if (proc->id >= NumberOfAiOptions)
+            {
+                proc->id = 0;
+            }
+            RedrawAiMenu(proc);
+        }
+    }
+}
+
 #define NumberOfLoad 6
 #define LoadNameWidth 12
 
@@ -4260,6 +4790,14 @@ u8 EditMiscNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
     Proc_Goto(proc, EditMiscLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
+u8 EditAiNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    Proc_Goto(proc, EditAiLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
