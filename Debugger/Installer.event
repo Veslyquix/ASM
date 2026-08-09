@@ -50,7 +50,7 @@
 ALIGN 4 
 DebuggerFlagEvent:
 CHECK_EVENTID DebuggerFlag 
-BNE 0 sC s0 
+BNE 0 0xC 0x0 
 TutText(DebuggerOnText)
 ENUF DebuggerFlag 
 #ifdef POKEMBLEM 
