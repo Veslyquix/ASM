@@ -7243,6 +7243,7 @@ struct TalkState * const pTalkState = &sTalkStateCore;
 
 void DebuggerStartFace(int id)
 {
+    pTalkState->activeFaceSlot = 0;
     EndFaceById(0);
     if (id < 0)
     {
