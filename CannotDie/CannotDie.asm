@@ -38,6 +38,11 @@ ldr r2, [r6] @ current round flags
 mov r1, #0x80 @ end battle 
 lsl r1, #16 
 orr r2, r1 
+mov r1, #2 @ miss flag 
+orr r2, r1 
+mov     r1, #0x40
+lsl     r1, #8           @0x4000, attacker skill deactivated
+bic r2, r1 
 str r2, [r6] @ end battle 
 @b Break 
 
