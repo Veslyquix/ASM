@@ -6589,22 +6589,22 @@ void RestartDebuggerMenu(DebuggerProc * proc)
     {
         case 0:
         {
-            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDef, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15);
+            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDef, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x14);
             break;
         }
         case 1:
         {
-            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage2, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15);
+            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage2, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x14);
             break;
         }
         case 2:
         {
-            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage3, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15);
+            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage3, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x14);
             break;
         }
         case 3:
         {
-            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage4, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x15);
+            menu = StartOrphanMenuAdjusted(&gDebuggerMenuDefPage4, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 0x14);
             break;
         }
         default:
@@ -7356,10 +7356,9 @@ void DrawNameGfx(DebuggerProc * proc, int side)
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, y + (i * 2)));
     }
 
-    for (i = 0; i < 2; ++i)
-    {
-        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(x + 9, y + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
-    }
+    PutNumberHex(
+        gBG0TilemapBuffer + TILEMAP_INDEX(x + 9, y + (0)), TEXT_COLOR_SYSTEM_GOLD, unit->pCharacterData->number);
+    PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(x + 9, y + (2)), TEXT_COLOR_SYSTEM_GOLD, unit->pClassData->number);
 
     BG_EnableSyncByMask(BG0_SYNC_BIT);
 }
