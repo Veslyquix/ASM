@@ -273,6 +273,7 @@ void ConfirmPressSFX(void)
 
 extern int NumberOfPages;
 void RestartDebuggerMenu(DebuggerProc * proc);
+void ClearMainMenuGfx(DebuggerProc * proc);
 int RestartNow(DebuggerProc * proc); // goto restart label
 void LoopDebuggerProc(DebuggerProc * proc);
 void PickupUnitIdle(DebuggerProc * proc);
@@ -1292,7 +1293,8 @@ void RedrawUnitWExpMenu(DebuggerProc * proc)
     }
 
     SetBlendTargetA(0, 1, 0, 0, 0); // transparent ui
-    // SetBlendTargetB(0, 0, 0, 0, 1);
+    SetBlendBackdropA(1);
+    SetBlendAlpha(11, 5);
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
 }
 
@@ -5335,6 +5337,8 @@ void ClearTilesetRow(DebuggerProc * proc)
     gLCDControlBuffer.bg2cnt.priority = 2;
     SetBackgroundTileDataOffset(2, 0);
     SetBlendTargetA(0, 1, 0, 0, 0);
+    SetBlendBackdropA(1);
+    SetBlendAlpha(11, 5);
     BG_Fill(gBG2TilemapBuffer, 0);
     BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT | BG2_SYNC_BIT);
 }
@@ -5342,8 +5346,8 @@ void ClearTilesetRow(DebuggerProc * proc)
 // bg0 text, bg1 menu bgs, bg2 blank, bg3 map
 void ChooseTileIdle(DebuggerProc * proc)
 {
-    int x = 7;
-    int y = 9;
+    int x = (gBmSt.camera.x >> 4) + 7;
+    int y = (gBmSt.camera.y >> 4) + 9;
     u16 keys = gKeyStatusPtr->newKeys | gKeyStatusPtr->repeatedKeys;
     if (keys & A_BUTTON)
     {
@@ -5653,6 +5657,7 @@ u8 StartPromotionNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     }
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = ActionID_Promo;
     Proc_Goto(proc, UnitActionLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
@@ -5662,6 +5667,7 @@ u8 StartArenaNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = ActionID_Arena;
     Proc_Goto(proc, UnitActionLabel); // 0xb7
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
@@ -5671,6 +5677,7 @@ u8 LevelupNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = ActionID_Levelup;
     Proc_Goto(proc, UnitActionLabel); // 0xb7
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
@@ -5679,6 +5686,7 @@ u8 ChStateNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, ChStateLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5688,6 +5696,7 @@ u8 StartGodmodeNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = 0;
     Proc_Goto(proc, RestartLabel); // 0xb7
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
@@ -5709,6 +5718,7 @@ u8 ToggleBootNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = 0;
     Proc_Goto(proc, RestartLabel); // 0xb7
     int boot = GetBootType();
@@ -5723,6 +5733,7 @@ u8 ControlAiNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = 0;
     Proc_Goto(proc, RestartLabel); // 0xb7
     // DebuggerProc* procIdler = Proc_Find(DebuggerProcCmdIdler);
@@ -5742,6 +5753,7 @@ u8 PageIncrementNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = 0;
     Proc_Goto(proc, RestartLabel); // 0xb7
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
@@ -5804,6 +5816,8 @@ u8 PickupUnitNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, PickupUnitLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5813,6 +5827,7 @@ u8 EditMapNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, ChooseTileLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5821,6 +5836,7 @@ u8 EditTrapNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EditTrapLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5829,6 +5845,7 @@ u8 EditStatsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EditStatsLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5836,6 +5853,7 @@ u8 EditItemsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EditItemsLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5843,6 +5861,7 @@ u8 EditMiscNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EditMiscLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5851,6 +5870,7 @@ u8 EditAiNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EditAiLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5859,6 +5879,7 @@ u8 EditBgmNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EditBgmLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5867,6 +5888,7 @@ u8 LoadUnitsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, LoadUnitsLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5874,6 +5896,7 @@ u8 EditStateNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, StateLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5881,6 +5904,7 @@ u8 EditWExpNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, WExpLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5888,6 +5912,7 @@ u8 EditSupportNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, SupportLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5895,6 +5920,7 @@ u8 SupplyNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, SupplyLabel);
     // gActionData.unitActionType = UNIT_ACTION_TRADED_1D;
     StartBmSupply(gActiveUnit, NULL);
@@ -5904,6 +5930,7 @@ u8 ListNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, ListLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5912,6 +5939,7 @@ u8 DebugSkillsNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = ActionID_DebugSkills;
     Proc_Goto(proc, UnitActionLabel); // 0xb7
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
@@ -5921,6 +5949,7 @@ u8 AiControlRemainingUnitsNow(struct MenuProc * menu, struct MenuItemProc * menu
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     proc->actionID = 0;
     Proc_Goto(proc, RestartLabel); // 0xb7
     DebuggerProc * procIdler = Proc_Find(DebuggerProcCmdIdler);
@@ -5941,6 +5970,7 @@ u8 GfxViewerNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, GfxViewerLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -5998,6 +6028,7 @@ u8 CallEndEventNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     // SetupUnitFunc();
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EndLabel);
     CallEndEvent();
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
@@ -6137,11 +6168,12 @@ int AiControlRemainingUnitsDrawText(struct MenuProc * menu, struct MenuItemProc 
     PutText(&menuItem->text, BG_GetMapBuffer(menu->frontBg) + TILEMAP_INDEX(menuItem->xTile, menuItem->yTile));
     return 0;
 }
-
+void DebuggerUpdateMouthFrames(DebuggerProc * proc);
 void PageMenuItemDrawSprites(struct MenuProc * menu)
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    DebuggerUpdateMouthFrames(proc);
     int chr = 0x289;
     int x = (menu->menuItems[menu->itemCount - 1]->xTile * 8) + 6 + (8 * 3);
     int y = (menu->menuItems[menu->itemCount - 1]->yTile * 8) + 4;
@@ -6226,6 +6258,7 @@ void SwapToPreviousUnit(DebuggerProc * proc)
     if (unit)
     {
         proc->unit = unit;
+        ClearMainMenuGfx(proc);
     }
 }
 void SwapToNextUnit(DebuggerProc * proc)
@@ -6237,6 +6270,7 @@ void SwapToNextUnit(DebuggerProc * proc)
     if (unit)
     {
         proc->unit = unit;
+        ClearMainMenuGfx(proc);
     }
 }
 
@@ -6301,6 +6335,7 @@ u8 MenuCancelSelectResumePlayerPhase(struct MenuProc * menu, struct MenuItemProc
 {
     DebuggerProc * proc;
     proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
     Proc_Goto(proc, EndLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_CLEAR | MENU_ACT_END | MENU_ACT_SND6B;
 }
@@ -6497,7 +6532,7 @@ void BmMain_StartPhase(ProcPtr proc)
 
     Proc_Break(proc);
 }
-
+void DebuggerStartNameFace(DebuggerProc * proc);
 void RestartDebuggerMenu(DebuggerProc * proc)
 {
     struct Unit * unit = proc->unit; // GetUnit(gBmMapUnit[gBmSt.playerCursor.y][gBmSt.playerCursor.x]);
@@ -6527,7 +6562,9 @@ void RestartDebuggerMenu(DebuggerProc * proc)
         Proc_Goto(proc, EditTrapLabel);
         return;
     }
-
+    SetBlendTargetA(0, 1, 0, 0, 0); // transparent ui
+    SetBlendBackdropA(1);
+    SetBlendAlpha(11, 5);
     gPlaySt.xCursor = gBmSt.playerCursor.x;
     gPlaySt.yCursor = gBmSt.playerCursor.y;
     // MU_EndAll();
@@ -6541,10 +6578,12 @@ void RestartDebuggerMenu(DebuggerProc * proc)
 
     gBmSt.gameStateBits &= ~(BM_FLAG_0 | BM_FLAG_1);
     gBmSt.gameStateBits &= ~BM_FLAG_3;
-    PutMapCursor(
-        gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y,
-        IsUnitSpriteHoverEnabledAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y) ? 3 : 0);
-
+    // PutMapCursor(
+    // gBmSt.playerCursorDisplay.x, gBmSt.playerCursorDisplay.y,
+    // IsUnitSpriteHoverEnabledAt(gBmSt.playerCursor.x, gBmSt.playerCursor.y) ? 3 : 0);
+    SetCursorMapPositionIfValid(gActiveUnitMoveOrigin.x, gActiveUnitMoveOrigin.y);
+    // gActiveUnitMoveOrigin.x
+    DebuggerStartNameFace(proc);
     struct MenuProc * menu = NULL;
     switch (proc->page)
     {
@@ -7070,8 +7109,8 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
     return;
 }
 
-#define GfxViewerOptions 5
-static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "SMS", "MMS", "BG", "CG" };
+#define GfxViewerOptions 4
+static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "Class Sprites", "BG", "CG" };
 
 void RedrawGfxViewerMenu(DebuggerProc * proc)
 {
@@ -7079,7 +7118,7 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
     BG_EnableSyncByMask(BG0_SYNC_BIT);
     // ResetText();
     struct Text * th = gStatScreen.text;
-    int x = NUMBER_X - SupportWidth;
+    int x = NUMBER_X - SupportWidth + 3;
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i * 2)));
@@ -7089,29 +7128,37 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
         // PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)),
         // TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
         PutNumberHex(
-            gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+            gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 7, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
     }
 
     BG_EnableSyncByMask(BG0_SYNC_BIT);
 }
 
-void GfxViewerInit(DebuggerProc * proc)
+void GfxViewerInitMenuGfx(DebuggerProc * proc)
 {
-    SomeMenuInit(proc);
-    // struct Unit * unit = proc->unit;
-    for (int i = 0; i < GfxViewerOptions; ++i)
-    {
-        proc->tmp[i] = 0;
-    }
 
-    int x = NUMBER_X - SupportWidth - 1;
+    int x = NUMBER_X - SupportWidth + 2;
     int y = Y_HAND - 1;
-    int w = SupportWidth + (START_X - NUMBER_X) + 3;
+    int w = SupportWidth + (START_X - NUMBER_X) + 7;
     int h = (GfxViewerOptions * 2) + 2;
 
     DrawUiFrame(
         BG_GetMapBuffer(1),            // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
+}
+
+void GfxViewerInit(DebuggerProc * proc)
+{
+    SomeMenuInit(proc);
+    MU_EndAll();
+    // struct Unit * unit = proc->unit;
+    for (int i = 0; i < GfxViewerOptions; ++i)
+    {
+        proc->tmp[i] = 0;
+    }
+    proc->tmp[4] = 0;
+
+    GfxViewerInitMenuGfx(proc);
 
     // ClearUiFrame(
     //     BG_GetMapBuffer(1), // front BG
@@ -7121,7 +7168,7 @@ void GfxViewerInit(DebuggerProc * proc)
 
     for (int i = 0; i < 15; ++i)
     {
-        InitText(&th[i], SupportWidth);
+        InitText(&th[i], SupportWidth + 4);
         Text_DrawString(&th[i], gfxViewerOpts[i]);
     }
 
@@ -7144,7 +7191,7 @@ struct UnitIconWait
 extern struct UnitIconWait const * const sUnit_icon_wait_table; // 27bb0
 static struct UnitIconWait const * GetSMSData(int id)
 {
-    return sUnit_icon_wait_table + id; // 27bb0
+    return sUnit_icon_wait_table + id - 1; // 27bb0
 }
 
 struct MuInfo
@@ -7156,7 +7203,7 @@ struct MuInfo
 extern struct MuInfo const * const sUnit_icon_move_table; // struct MuInfo
 static struct MuInfo const * GetMMSData(int id)
 {
-    return sUnit_icon_move_table + id; // 27bb0
+    return sUnit_icon_move_table + id - 1; // 27bb0
 }
 extern struct gfx_set const * const sConvoBackgroundData;
 static struct gfx_set const * GetBGData(int id)
@@ -7211,6 +7258,10 @@ int IsImgValidLZ77(const void * data, const u8 * imgData)
 int CanDisplayPortrait(int id)
 {
     const struct FaceData * data = GetMugData(id);
+    if ((int)data->img == 0x8070605) // data immediately after for vanilla
+    {
+        return false;
+    }
     return IsImgValid(data, data->img);
     // hack portraits might be uncompressed, so don't worry about checking for lz77 compression
     // const struct FaceData * data = GetMugData(id);
@@ -7240,27 +7291,145 @@ int CanDisplayCG(int id)
 
 extern struct TalkState sTalkStateCore;
 struct TalkState * const pTalkState = &sTalkStateCore;
+int GetMenuSide(DebuggerProc * proc)
+{ // StartOrphanMenuAdjusted
+    // StartSemiCenteredOrphanMenu(&gUnitActionMenuDef, gBmSt.cursorTarget.x - gBmSt.camera.x, 1, 22)
+    // int result = ((gActiveUnitMoveOrigin.x * 16) - gBmSt.camera.x) >= 120;
+    int result = (gBmSt.cursorTarget.x - gBmSt.camera.x) >= 120;
+    if (result)
+    {
+        return 1;
+    }
+    return 0;
+    // return (gBmSt.cursorTarget.x - gBmSt.camera.x) >= 120;
+}
+void DrawNameGfx(DebuggerProc * proc, int side);
 
-void DebuggerStartFace(int id)
+void DebuggerStartName(DebuggerProc * proc, int side)
 {
-    pTalkState->activeFaceSlot = 0;
+    SomeMenuInit(proc);
+    LoadIconPalettes(4);
+
+    int x = 0 + (15 * side);
+    int y = 0;
+    int w = 12;
+    int h = 6;
+
+    DrawUiFrame(
+        BG_GetMapBuffer(1),            // back BG
+        x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
+
+    struct Text * th = gStatScreen.text;
+
+    for (int i = 0; i <= 2; ++i)
+    {
+        InitText(&th[i], 9);
+    }
+
+    DrawNameGfx(proc, side);
+}
+
+void DrawNameGfx(DebuggerProc * proc, int side)
+{
+    struct Unit * unit = proc->unit;
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    ResetIconGraphics();
+    struct Text * th = gStatScreen.text;
+    int i = 0;
+    int x = 1 + (15 * side);
+    int y = 1;
+    for (i = 0; i <= 2; ++i)
+    {
+        ClearText(&th[i]);
+    }
+
+    i = 0;
+
+    Text_DrawString(&th[i], GetStringFromIndexSafe(GetCharacterData(unit->pCharacterData->number)->nameTextId));
+    i++;
+    Text_DrawString(&th[i], GetStringFromIndexSafe(GetClassData(unit->pClassData->number)->nameTextId));
+    i++;
+
+    for (i = 0; i < 2; ++i)
+    {
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, y + (i * 2)));
+    }
+
+    for (i = 0; i < 2; ++i)
+    {
+        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(x + 9, y + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+    }
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
+
+void DebuggerStartFace(int id, int side)
+{
     EndFaceById(0);
+
+    const struct FaceData * info = GetPortraitData(id);
+    if (info->img == 0 && info->imgCard)
+    {
+        // class card, so handled differently.
+        DrawUiFrame(
+            BG_GetMapBuffer(1),                        // back BG
+            (side * 15), 6, 12, 11, TILEREF(0, 0), 2); // white bg style
+        PutFace80x72_Core(gBG0TilemapBuffer + TILEMAP_INDEX((side * 15) + 1, 7), id, 0x240, 0xB);
+        BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+
+        return;
+    }
+
+    int faceDisp = FACE_DISP_KIND(FACE_96x80_FLIPPED) | FACE_DISP_HLAYER(1);
+    if (side)
+    {
+        faceDisp = FACE_DISP_KIND(FACE_96x80) | FACE_DISP_HLAYER(1);
+    }
+    DrawUiFrame(
+        BG_GetMapBuffer(1),                        // back BG
+        (side * 15), 6, 14, 12, TILEREF(0, 0), 2); // white bg style
+    // gLCDControlBuffer.bg1cnt.priority = 2;
+    BG_EnableSyncByMask(BG1_SYNC_BIT);
+    pTalkState->activeFaceSlot = 0;
+
     if (id < 0)
     {
         id = 0;
     }
     if (CanDisplayPortrait(id))
     {
-        pTalkState->faces[pTalkState->activeFaceSlot] =
-            StartFace(0, id, 48, 16, FACE_DISP_KIND(FACE_96x80) | FACE_DISP_FLIPPED); // blink
+        pTalkState->faces[pTalkState->activeFaceSlot] = StartFace(
+            0, id, 56 + (side * 15 * 8), 7 * 8,
+            faceDisp); // blink
         // SetFaceBlinkControlById(0, 0);
         StartFaceFadeIn(pTalkState->faces[pTalkState->activeFaceSlot]);
 
         // SetTalkFaceLayer(pTalkState->activeFaceSlot, CheckTalkFlag(TALK_FLAG_4));
-        SetTalkFaceLayer(pTalkState->activeFaceSlot, 1);
+        SetTalkFaceLayer(pTalkState->activeFaceSlot, 0);
         // StartFace(0, id, 48, 16, 0);
     }
 } // 859133c T sTalkState
+
+void ClearMainMenuGfx(DebuggerProc * proc)
+{
+    EndFaceById(0);
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_Fill(gBG1TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG1_SYNC_BIT);
+}
+extern struct FaceVramEntry sFaceConfig[4];
+void DebuggerStartNameFace(DebuggerProc * proc)
+{
+    int side = GetMenuSide(proc);
+
+    DebuggerStartName(proc, side);
+    int fid = GetUnitPortraitId(proc->unit);
+    if (fid)
+    {
+        DebuggerStartFace(fid, side);
+    }
+}
 
 void DebuggerStartSMS(int id)
 {
@@ -7280,10 +7449,12 @@ void DebuggerUpdateMMS(int id, struct Unit * unit)
     MU_EndAll(); // EndAllMus();
     // int facing = (GetGameClock() % 512) > 256;
     int facing = 0;
-    if (CanDisplayMMS(id) && (GetClassData(id) != 0))
+    // return;
+    if (id && (GetClassData(id) != 0) && CanDisplayMMS(id))
     {
         const struct ClassData * classData = unit->pClassData;
         unit->pClassData = GetClassData(id);
+
         struct MUProc * muProc1 = MU_CreateForUI(unit, 48, 144); // StartUiMu
         MU_SetFacing(muProc1, 0 + facing);
         struct MUProc * muProc2 = MU_CreateForUI(unit, 88, 144); // StartUiMu
@@ -7295,30 +7466,44 @@ void DebuggerUpdateMMS(int id, struct Unit * unit)
         unit->pClassData = classData;
     }
 }
-void RedrawGfxFromIDs(int id, DebuggerProc * proc)
+extern struct FaceProc * gFaces[];
+void DebuggerUpdateMouthFrames(DebuggerProc * proc)
 {
+    if (!pTalkState->faces[0] || !gFaces[0])
+    {
+        return;
+    }
     int time = GetGameClock();
+    int faceDisp = GetFaceDisplayBitsById(0) & ~(FACE_DISP_SMILE | FACE_DISP_TALK_1 | FACE_DISP_TALK_2);
     switch ((time & 0x1FF) >> 7)
     {
+
         case 0:
+        {
+            SetTalkFaceDisp(0, faceDisp | FACE_DISP_TALK_1);
+            break;
+        }
         case 2:
         {
-            SetTalkFaceMouthMove(0);
+            SetTalkFaceDisp(0, faceDisp | FACE_DISP_TALK_2);
             break;
         }
         case 1:
         {
-            SetTalkFaceNoMouthMove(0);
-            SetTalkFaceDisp(0, 1); // smile
+            SetTalkFaceDisp(0, faceDisp | FACE_DISP_SMILE);
             break;
         }
         case 3:
         {
-            SetTalkFaceNoMouthMove(0);
-            SetTalkFaceDisp(0, 0); // neutral
+            SetTalkFaceDisp(0, faceDisp); // neutral
             break;
         }
     }
+}
+
+void RedrawGfxFromIDs(int id, DebuggerProc * proc)
+{
+    DebuggerUpdateMouthFrames(proc);
 
     // if (((time % 256) == 0) && CanDisplayMMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
     // {
@@ -7326,7 +7511,7 @@ void RedrawGfxFromIDs(int id, DebuggerProc * proc)
     // }
 
     // sub_8027DB4(int layer, int x, int y, u16 oam2base, int classId, int id);
-    if (CanDisplaySMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
+    if (id && (GetClassData(id) != 0) && CanDisplaySMS(GetClassData(id)->SMSId))
     {
         // SMS_SomethingGmapUnit(id, 1, 16);
         PutUnitSpriteForClassId(0, 8, 128, 0xC800, GetClassData(id)->SMSId);
@@ -7372,34 +7557,80 @@ void DebuggerStartCG(int id)
     }
 }
 
+// [202515c+0x30]?!!
+// StartMuInternal
+// 800927C AP_Create
+// APProc_Create
+// 8009760 APProc_OnUpdate
+
+// PutMu
+// 80092bc AP_Update
+// 80092e4 AP_Display
+// 8009568 AP_QueueObjGraphics
+
+// sub_8005FE0 -> Register2dChrMove
+void RegisterDataMove(const void * src, void * dst, int size)
+{
+    struct TileDataTransfer * ptr = &gFrameTmRegister[gFrameTmRegisterConfig.count];
+
+    ptr->src = src;
+    ptr->dest = dst;
+    ptr->size = size;
+    ptr->mode = (size & 0x1F) ? 0 : 1;
+    gFrameTmRegisterConfig.size += size;
+    gFrameTmRegisterConfig.count++;
+    if (gFrameTmRegisterConfig.count > 31)
+    {
+        brk;
+        FlushTiles();
+    }
+}
+
+void RegisterFillTile(const void * src, void * dst, int size)
+{
+    struct TileDataTransfer * ptr = &gFrameTmRegister[gFrameTmRegisterConfig.count];
+
+    ptr->src = src;
+    ptr->dest = dst;
+    ptr->size = size;
+    ptr->mode = 2;
+    gFrameTmRegisterConfig.size += size;
+    gFrameTmRegisterConfig.count++;
+    if (gFrameTmRegisterConfig.count > 31)
+    {
+        brk;
+        FlushTiles();
+    }
+}
 void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
 {
     switch (type)
     {
         case 0:
         {
-            DebuggerStartFace(id);
+            ClearMainMenuGfx(proc);
+            RedrawGfxViewerMenu(proc);
+            GfxViewerInitMenuGfx(proc);
+            DebuggerStartFace(id, 0);
             break;
         }
         case 1:
         {
-            DebuggerStartSMS(id);
+            ClearMainMenuGfx(proc);
+            GfxViewerInitMenuGfx(proc);
+
+            // proc->tmp[4] = GetClassData(id)->SMSId;
+            proc->tmp[4] = 4;
+            DebuggerUpdateMMS(id, unit);
+            DebuggerStartSMS(proc->tmp[4]);
             break;
         }
         case 2:
         {
-
-            proc->tmp[1] = id + 1;
-            DebuggerStartSMS(id);
-            DebuggerUpdateMMS(id, unit);
-            break;
-        }
-        case 3:
-        {
             DebuggerStartBG(id);
             break;
         }
-        case 4:
+        case 3:
         {
             DebuggerStartCG(id);
             break;
@@ -7419,12 +7650,13 @@ void GfxViewerLoop(DebuggerProc * proc)
         BackPressSFX();
     };
 
-    DisplayUiHand(CursorLocationTable[0].x - ((SupportWidth + 2) * 8), (Y_HAND + (proc->id * 2)) * 8);
+    DisplayUiHand(CursorLocationTable[0].x - ((SupportWidth - 1) * 8), (Y_HAND + (proc->id * 2)) * 8);
     if (keys & DPAD_RIGHT)
     {
         proc->tmp[proc->id]++;
-        RedrawGfxViewerMenu(proc);
+
         DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
+        RedrawGfxViewerMenu(proc);
     }
     if (keys & DPAD_LEFT)
     {
@@ -7433,10 +7665,10 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             proc->tmp[proc->id] = 0; // I have no idea what the final valid mug/sms/mms/bg/cg will be lol
         }
-        RedrawGfxViewerMenu(proc);
         DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
+        RedrawGfxViewerMenu(proc);
     }
-    RedrawGfxFromIDs(proc->tmp[1], proc); // redraw SMS each frame
+    RedrawGfxFromIDs(proc->tmp[4], proc); // redraw SMS each frame
 
     if (keys & DPAD_UP)
     {
