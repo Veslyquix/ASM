@@ -7191,7 +7191,7 @@ struct UnitIconWait
 extern struct UnitIconWait const * const sUnit_icon_wait_table; // 27bb0
 static struct UnitIconWait const * GetSMSData(int id)
 {
-    return sUnit_icon_wait_table + id - 1; // 27bb0
+    return sUnit_icon_wait_table + id; // 27bb0
 }
 
 struct MuInfo
@@ -7431,12 +7431,11 @@ void DebuggerStartNameFace(DebuggerProc * proc)
     }
 }
 
-void DebuggerStartSMS(int id)
+void DebuggerStartSMS()
 {
     // sub_8027DB4(int layer, int x, int y, u16 oam2base, int classId, int id);
     ResetUnitSprites();
     RefreshUnitSprites();
-    // brk;
     // if (CanDisplaySMS(GetClassData(id)->SMSId) && (GetClassData(id) != 0))
     // {
     // SMS_80266F0(GetClassData(id)->SMSId, 16);
@@ -7449,6 +7448,7 @@ void DebuggerUpdateMMS(int id, struct Unit * unit)
     MU_EndAll(); // EndAllMus();
     // int facing = (GetGameClock() % 512) > 256;
     int facing = 0;
+
     // return;
     if (id && (GetClassData(id) != 0) && CanDisplayMMS(id))
     {
@@ -7509,12 +7509,12 @@ void RedrawGfxFromIDs(int id, DebuggerProc * proc)
     // {
     // DebuggerUpdateMMS(id, proc->unit);
     // }
-
+    // id += 1;
     // sub_8027DB4(int layer, int x, int y, u16 oam2base, int classId, int id);
     if (id && (GetClassData(id) != 0) && CanDisplaySMS(GetClassData(id)->SMSId))
     {
         // SMS_SomethingGmapUnit(id, 1, 16);
-        PutUnitSpriteForClassId(0, 8, 128, 0xC800, GetClassData(id)->SMSId);
+        PutUnitSpriteForClassId(0, 8, 128, 0xC800, id);
     }
     // UseUnitSprite(12);
 }
@@ -7557,51 +7557,6 @@ void DebuggerStartCG(int id)
     }
 }
 
-// [202515c+0x30]?!!
-// StartMuInternal
-// 800927C AP_Create
-// APProc_Create
-// 8009760 APProc_OnUpdate
-
-// PutMu
-// 80092bc AP_Update
-// 80092e4 AP_Display
-// 8009568 AP_QueueObjGraphics
-
-// sub_8005FE0 -> Register2dChrMove
-void RegisterDataMove(const void * src, void * dst, int size)
-{
-    struct TileDataTransfer * ptr = &gFrameTmRegister[gFrameTmRegisterConfig.count];
-
-    ptr->src = src;
-    ptr->dest = dst;
-    ptr->size = size;
-    ptr->mode = (size & 0x1F) ? 0 : 1;
-    gFrameTmRegisterConfig.size += size;
-    gFrameTmRegisterConfig.count++;
-    if (gFrameTmRegisterConfig.count > 31)
-    {
-        brk;
-        FlushTiles();
-    }
-}
-
-void RegisterFillTile(const void * src, void * dst, int size)
-{
-    struct TileDataTransfer * ptr = &gFrameTmRegister[gFrameTmRegisterConfig.count];
-
-    ptr->src = src;
-    ptr->dest = dst;
-    ptr->size = size;
-    ptr->mode = 2;
-    gFrameTmRegisterConfig.size += size;
-    gFrameTmRegisterConfig.count++;
-    if (gFrameTmRegisterConfig.count > 31)
-    {
-        brk;
-        FlushTiles();
-    }
-}
 void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
 {
     switch (type)
@@ -7618,11 +7573,8 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
         {
             ClearMainMenuGfx(proc);
             GfxViewerInitMenuGfx(proc);
-
-            // proc->tmp[4] = GetClassData(id)->SMSId;
-            proc->tmp[4] = 4;
             DebuggerUpdateMMS(id, unit);
-            DebuggerStartSMS(proc->tmp[4]);
+            DebuggerStartSMS();
             break;
         }
         case 2:
@@ -7668,7 +7620,7 @@ void GfxViewerLoop(DebuggerProc * proc)
         DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
         RedrawGfxViewerMenu(proc);
     }
-    RedrawGfxFromIDs(proc->tmp[4], proc); // redraw SMS each frame
+    RedrawGfxFromIDs(proc->tmp[1], proc); // redraw SMS each frame
 
     if (keys & DPAD_UP)
     {
