@@ -39146,3 +39146,21 @@ fun __umodsi3, __aeabi_uidivmod
 
 dat 0x02000000, gAnims
 dat 0x03000000, gRNSeeds
+
+fun 0x0806E8F1, ResetClassReelSpell
+fun 0x0806E905, EndActiveClassReelSpell
+fun 0x0806E921, EndActiveClassReelBgColorProc
+fun 0x08026629, ApplyUnitSpritePalettes
+dat 0x0201DB00, gUnk_Opinfo_0
+fun 0x08001EA1, SetBlendConfig
+
+fun 0x0805AA29, EndEkrUnitMainMini
+fun 0x0805AA69, InitBanimTerrain
+fun 0x0805AE15, EndBanimTerrain
+fun 0x0805AE41, SetBanimTerrainPos
+dat 0x02004088, gBanimPaletteLeft
+dat 0x02017790, gSpellAnimBgfx
+dat 0x0201A790, gBuf_Banim
+dat 0x020145C8, gUnk_Banim_Ekrbattle_0
+dat 0x02000000, gOpInfoData
+dat 0x0200A2D8, gUnk_4

@@ -326,6 +326,7 @@ void DebuggerListInit(DebuggerProc * proc);
 void DebuggerListIdle(DebuggerProc * proc);
 void GfxViewerInit(DebuggerProc * proc);
 void GfxViewerLoop(DebuggerProc * proc);
+static void EndDebuggerBanimPreview(void);
 void ClearSomeGfx(DebuggerProc * proc);
 u8 CanActiveUnitPromote(void);
 
@@ -7109,16 +7110,23 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
     return;
 }
 
-#define GfxViewerOptions 4
-static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "Class Sprites", "BG", "CG" };
+#define GfxViewerOptions 5
+static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "Class Sprites", "BG", "CG", "Class Anim" };
+#define GfxViewerOption_ClassAnim 4
+
+// shifted right & narrowed vs. the generic support-list geometry (NUMBER_X/START_X/SupportWidth)
+// to leave room on the left for the mms row shown by the Class Sprites option
+#define GfxViewerMenuXShift 4
+#define GfxViewerMenuWidthShrink 2
 
 void RedrawGfxViewerMenu(DebuggerProc * proc)
 {
-    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - 2, Y_HAND), 9, 2 * GfxViewerOptions, 0);
+    TileMap_FillRect(
+        gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - 2 + GfxViewerMenuXShift, Y_HAND), 9, 2 * GfxViewerOptions, 0);
     BG_EnableSyncByMask(BG0_SYNC_BIT);
     // ResetText();
     struct Text * th = gStatScreen.text;
-    int x = NUMBER_X - SupportWidth + 3;
+    int x = NUMBER_X - SupportWidth + 3 + GfxViewerMenuXShift;
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i * 2)));
@@ -7128,7 +7136,9 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
         // PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)),
         // TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
         PutNumberHex(
-            gBG0TilemapBuffer + TILEMAP_INDEX(START_X + 7, Y_HAND + (i * 2)), TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+            gBG0TilemapBuffer +
+                TILEMAP_INDEX(START_X + 7 + GfxViewerMenuXShift - GfxViewerMenuWidthShrink, Y_HAND + (i * 2)),
+            TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
     }
 
     BG_EnableSyncByMask(BG0_SYNC_BIT);
@@ -7137,20 +7147,24 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
 void GfxViewerInitMenuGfx(DebuggerProc * proc)
 {
 
-    int x = NUMBER_X - SupportWidth + 2;
+    int x = NUMBER_X - SupportWidth + 2 + GfxViewerMenuXShift;
     int y = Y_HAND - 1;
-    int w = SupportWidth + (START_X - NUMBER_X) + 7;
+    int w = SupportWidth + (START_X - NUMBER_X) + 7 - GfxViewerMenuWidthShrink;
     int h = (GfxViewerOptions * 2) + 2;
 
+    // drawn on bg2 rather than bg1 - the Class Sprites battle anim preview owns bg1
+    // for its own background effects, which would otherwise stomp this frame
     DrawUiFrame(
-        BG_GetMapBuffer(1),            // back BG
+        BG_GetMapBuffer(2),            // back BG
         x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
+    BG_EnableSyncByMask(BG2_SYNC_BIT);
 }
 
 void GfxViewerInit(DebuggerProc * proc)
 {
     SomeMenuInit(proc);
     MU_EndAll();
+    EndDebuggerBanimPreview();
     // struct Unit * unit = proc->unit;
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
@@ -7556,6 +7570,678 @@ void DebuggerStartCG(int id)
     }
 }
 
+void EndBanimTerrain(struct BanimUnkStructComm * buf);
+void InitBanimTerrain(struct BanimUnkStructComm * buf);
+void SetBanimTerrainPos(struct BanimUnkStructComm * buf, s16 x1, s16 y1, s16 x2, s16 y2);
+enum ClassReelScrOpCode
+{
+    CLASS_REEL_OP_0,
+    CLASS_REEL_OP_1,
+    CLASS_REEL_OP_2,
+    CLASS_REEL_OP_3,
+    CLASS_REEL_OP_4,
+    CLASS_REEL_OP_5,
+    CLASS_REEL_OP_6,
+    CLASS_REEL_OP_7,
+    CLASS_REEL_OP_8,
+};
+
+struct ClassReelAnimScr
+{
+    u16 opCode : 8;
+    u16 extra : 8;
+} __attribute__((packed));
+
+struct ClassReelEnt
+{
+    u32 descTextId;
+    s8 paletteId;
+    u8 classId;
+    u8 unk_06;
+    u8 banimId;
+    u8 magicFx;
+    u8 unk_09;
+    u8 unk_0A;
+    u8 unk_0B;
+    u8 unk_0C;
+    u8 unk_0D; // terrain L
+    u8 unk_0E; // terrain R
+    u8 unk_0F;
+    struct ClassReelAnimScr * script;
+};
+
+struct AnimMagicFxBuffer
+{
+    u16 magicFuncIdx;
+    s16 xOffsetBg;
+    s16 yOffsetBg;
+    u16 xOffsetObj;
+    u16 yOffsetObj;
+    u16 bgChr;
+    u16 bgPalId;
+    u16 objChr;
+    u16 objPalId;
+    u16 bg;
+    u16 * bgTmBuf;
+    void * bgImgBuf;
+    void * bgTsaBuf;
+    void * objImgBuf;
+    void (*resetCallback)(void);
+};
+
+struct OpInfoClassDisplayProc
+{
+    PROC_HEADER;
+    u16 unk_2a;
+    u16 unk_2c;
+    ProcPtr unk_30;
+    struct ClassReelEnt * classReelEnt;
+    struct ClassReelAnimScr * script;
+    ProcPtr unk_3c;
+    u8 unk_40[6];
+    u8 unk_46;
+};
+
+extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe8.s
+
+// clang-format off
+
+#define CR_END()                            { CLASS_REEL_OP_0, 0 }
+#define CR_ANIM_ROUND_HIT_CLOSE()           { CLASS_REEL_OP_1, 0 }
+#define CR_ANIM_ROUND_CRIT_CLOSE()          { CLASS_REEL_OP_2, 0 }
+#define CR_HIT_EFFECT()                     { CLASS_REEL_OP_3, 0 }
+#define CR_ANIM_ROUND_NONCRIT_FAR()         { CLASS_REEL_OP_4, 0 }
+#define CR_WAIT(frames)                     { CLASS_REEL_OP_5, frames }
+#define CR_ANIM_ROUND_TAKING_MISS_CLOSE()   { CLASS_REEL_OP_6, 0 }
+#define CR_HIT_EFFECT_ALT()                 { CLASS_REEL_OP_7, 0 }
+#define CR_WAIT_ROUND_END()                 { CLASS_REEL_OP_8, 0 }
+
+struct ClassReelAnimScr const sCRScr_CloseDoubleHit[] = {
+    CR_WAIT(0x1E),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_WAIT(0x50),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_SniperDoubleHit[] = {
+    CR_WAIT(0x28),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_WAIT(0x64),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_CloseSingleHit[] = {
+    CR_WAIT(0x28),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x5A),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_RangerFarSingleHit[] = {
+    CR_WAIT(0x3C),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x46),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_AssassinCloseSingleHit[] = {
+    CR_WAIT(0x3C),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_AnimaDoubleCast[] = {
+    CR_WAIT(0x28),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_WAIT(0x48),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_PupilFarSingleCast[] = {
+    CR_WAIT(0x28),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_MagicFarSingleCast[] = {
+    CR_WAIT(0x50),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x5A),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_StaffFarSingleCast[] = {
+    CR_WAIT(0x50),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x5A),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_DanceCloseSingle[] = {
+    CR_WAIT(0x50),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x64),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_DragonCloseSingle[] = {
+    CR_WAIT(0x78),
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x28),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_DarkFarSingleCast[] = {
+    CR_WAIT(0x28),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0xAA),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_MogallFarSingleCast[] = {
+    CR_WAIT(0x3C),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0x60),
+    CR_HIT_EFFECT(),
+    CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_GorgonFarSingleCast[] = {
+    CR_WAIT(0x28),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(0xC8),
+    CR_HIT_EFFECT(),
+    CR_END(),
+    CR_END(),
+};
+ 
+
+struct ClassReelEnt const DefaultClassReelData[1] = {
+    [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit },
+};
+
+/*
+struct ClassReelEnt CONST_DATA gClassReelData[65] = {
+    [0x00] = { 0x6F6, 0xFF, CLASS_EIRIKA_LORD, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit },
+    [0x01] = { 0x6FA, 0x3B, CLASS_PALADIN, 0, 0x3A, 0, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_CloseSingleHit },
+    [0x02] = { 0x6FB, 0x02, CLASS_ARMOR_KNIGHT, 0, 0x3F, 0, 0, 0, 0, 0, 0x02, 0x02, 0, sCRScr_CloseSingleHit },
+    [0x03] = { 0x6F9, 0xFF, CLASS_CAVALIER, 0, 0x33, 0, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_CloseDoubleHit },
+    [0x04] = { 0x71C, 0x3F, CLASS_PEGASUS_KNIGHT, 0, 0x65, 0, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_CloseDoubleHit },
+    [0x05] = { 0x71A, 0x44, CLASS_PRIEST, 0, 0x7E, 0x03, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_StaffFarSingleCast },
+    [0x06] = { 0x70E, 0xFF, CLASS_JOURNEYMAN, 0, 0x91, 0, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_CloseDoubleHit },
+    [0x07] = { 0x711, 0x1D, CLASS_FIGHTER, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0, sCRScr_CloseDoubleHit },
+    [0x08] = { 0x6FD, 0x5D, CLASS_THIEF, 0, 0x88, 0, 0, 0, 0, 0, 0x1C, 0x1C, 0, sCRScr_CloseDoubleHit },
+    [0x09] = { 0x703, 0, CLASS_ARCHER, 0, 0x27, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
+    [0x0A] = { 0x709, 0x2E, CLASS_MAGE_F, 0, 0x6B, 0x01, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_AnimaDoubleCast },
+    [0x0B] = { 0x719, 0x36, CLASS_MONK, 0, 0x7C, 0x04, 0, 0, 0, 0, 0, 0, 0, sCRScr_MagicFarSingleCast },
+    [0x0C] = { 0x725, 0xFF, CLASS_REVENANT, 0x01, 0x9F, 0, 0, 0, 0, 0, 0, 0, 0, sCRScr_CloseSingleHit },
+    [0x0D] = { 0x726, 0xFF, CLASS_ENTOUMBED, 0x01, 0xA0, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseSingleHit },
+    [0x0E] = { 0x727, 0xFF, CLASS_BONEWALKER, 0x01, 0xA1, 0, 0, 0, 0, 0, 0x0E, 0x0F, 0, sCRScr_CloseSingleHit },
+    [0x0F] = { 0x730, 0xFF, CLASS_MOGALL, 0x01, 0xB9, 0x07, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_MogallFarSingleCast },
+    [0x10] = { 0x729, 0xFF, CLASS_BAEL, 0x01, 0xAB, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseSingleHit },
+    [0x11] = { 0x700, 0x37, CLASS_MYRMIDON, 0, 0x10, 0, 0, 0, 0, 0, 0x0B, 0x18, 0, sCRScr_CloseDoubleHit },
+    [0x12] = { 0x71E, 0x42, CLASS_CLERIC, 0, 0x7F, 0x03, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_StaffFarSingleCast },
+    [0x13] = { 0x6F5, 0xFF, CLASS_EPHRAIM_LORD, 0, 0, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit },
+    [0x14] = { 0x723, 0xFF, CLASS_PIRATE, 0x01, 0x99, 0, 0, 0, 0, 0, 0x0C, 0x0C, 0, sCRScr_CloseDoubleHit },
+    [0x15] = { 0x713, 0xFF, CLASS_BRIGAND, 0x01, 0x1F, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseDoubleHit },
+    [0x16] = { 0x716, 0xFF, CLASS_SHAMAN, 0x01, 0x74, 0x05, 0, 0, 0, 0, 0x15, 0x15, 0, sCRScr_DarkFarSingleCast },
+    [0x17] = { 0x704, 0x51, CLASS_SNIPER, 0, 0x29, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_SniperDoubleHit },
+    [0x18] = { 0x6FE, 0x30, CLASS_MERCENARY, 0, 0x0A, 0, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_CloseDoubleHit },
+    [0x19] = { 0x721, 0x14, CLASS_DANCER, 0, 0x90, 0, 0, 0, 0, 0, 0x0E, 0x0E, 0, sCRScr_DanceCloseSingle },
+    [0x1A] = { 0x70F, 0xFF, CLASS_PUPIL, 0, 0x94, 0x01, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_PupilFarSingleCast },
+    [0x1B] = { 0x700, 0xFF, CLASS_MYRMIDON_F, 0, 0x12, 0, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_CloseDoubleHit },
+    [0x1C] = { 0x71B, 0xFF, CLASS_RECRUIT, 0, 0x95, 0, 0, 0, 0, 0, 0, 0, 0, sCRScr_CloseDoubleHit },
+    [0x1D] = { 0x733, 0xFF, CLASS_GARGOYLE, 0x01, 0xBC, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
+    [0x1E] = { 0x72F, 0xFF, CLASS_MAELDUIN, 0x01, 0xB5, 0, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_CloseDoubleHit },
+    [0x1F] = { 0x72B, 0xFF, CLASS_CYCLOPS, 0x01, 0xAD, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseDoubleHit },
+    [0x20] = { 0x72C, 0xFF, CLASS_MAUTHEDOOG, 0x01, 0xB0, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
+    [0x21] = { 0x728, 0xFF, CLASS_WIGHT, 0x01, 0xA6, 0, 0, 0, 0, 0, 0x0E, 0x0F, 0, sCRScr_CloseSingleHit },
+    [0x22] = { 0x71F, 0x61, CLASS_TROUBADOUR, 0, 0x85, 0x03, 0, 0, 0, 0, 0, 0x11, 0, sCRScr_StaffFarSingleCast },
+    [0x23] = { 0x714, 0x12, CLASS_BERSERKER, 0, 0x22, 0, 0, 0, 0, 0, 0x10, 0x10, 0, sCRScr_CloseDoubleHit },
+    [0x24] = { 0x710, 0x45, CLASS_ROGUE, 0, 0x8E, 0, 0, 0, 0, 0, 0x1C, 0x1C, 0, sCRScr_CloseSingleHit },
+    [0x25] = { 0x70A, 0x4B, CLASS_SAGE, 0, 0x6C, 0x01, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_AnimaDoubleCast },
+    [0x26] = { 0x715, 0x2C, CLASS_GREAT_KNIGHT, 0, 0x4F, 0, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_CloseSingleHit },
+    [0x27] = { 0x6F8, 0xFF, CLASS_EIRIKA_MASTER_LORD, 0, 0x07, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseSingleHit },
+    [0x28] = { 0x705, 0xFF, CLASS_RANGER, 0x01, 0x2E, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_RangerFarSingleHit },
+    [0x29] = { 0x712, 0xFF, CLASS_WARRIOR, 0x01, 0x1B, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
+    [0x2A] = { 0x702, 0xFF, CLASS_ASSASSIN, 0x01, 0x8A, 0, 0, 0, 0, 0, 0x1D, 0x1D, 0, sCRScr_AssassinCloseSingleHit },
+    [0x2B] = { 0x70B, 0x35, CLASS_MAGE_KNIGHT_F, 0, 0x70, 0x02, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_MagicFarSingleCast },
+    [0x2C] = { 0x6F7, 0xFF, CLASS_EPHRAIM_MASTER_LORD, 0, 0x04, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseSingleHit },
+    [0x2D] = { 0x720, 0xFF, CLASS_VALKYRIE, 0, 0x86, 0x04, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_MagicFarSingleCast },
+    [0x2E] = { 0x717, 0xFF, CLASS_DRUID, 0x01, 0x76, 0x05, 0, 0, 0, 0, 0x15, 0x15, 0, sCRScr_DarkFarSingleCast },
+    [0x2F] = { 0x6FC, 0xFF, CLASS_GENERAL, 0x01, 0x44, 0, 0, 0, 0, 0, 0x02, 0x02, 0, sCRScr_CloseSingleHit },
+    [0x30] = { 0x701, 0xFF, CLASS_SWORDMASTER, 0, 0x14, 0, 0, 0, 0, 0, 0x09, 0x09, 0, sCRScr_CloseSingleHit },
+    [0x31] = { 0x708, 0x68, CLASS_WYVERN_KNIGHT, 0, 0x61, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
+    [0x32] = { 0x70C, 0x0D, CLASS_BISHOP, 0, 0x81, 0x04, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_MagicFarSingleCast },
+    [0x33] = { 0x707, 0x17, CLASS_WYVERN_LORD, 0, 0x5C, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
+    [0x34] = { 0x6FF, 0x6B, CLASS_HERO, 0, 0x0D, 0, 0, 0, 0, 0, 0x17, 0x17, 0, sCRScr_CloseDoubleHit },
+    [0x35] = { 0x71D, 0x1C, CLASS_FALCON_KNIGHT, 0, 0x67, 0, 0, 0, 0, 0, 0x0D, 0x0D, 0, sCRScr_CloseSingleHit },
+    [0x36] = { 0x72A, 0xFF, CLASS_ELDER_BAEL, 0x01, 0xAC, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseSingleHit },
+    [0x37] = { 0x72E, 0xFF, CLASS_TARVOS, 0x01, 0xB2, 0, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_CloseDoubleHit },
+    [0x38] = { 0x734, 0xFF, CLASS_DEATHGOYLE, 0x01, 0xBE, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
+    [0x39] = { 0x72D, 0xFF, CLASS_GWYLLGI, 0x01, 0xB1, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
+    [0x3A] = { 0x732, 0xFF, CLASS_GORGON, 0x01, 0xBB, 0x08, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_GorgonFarSingleCast },
+    [0x3B] = { 0x724, 0xFF, CLASS_NECROMANCER, 0x01, 0x9C, 0x02, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_MagicFarSingleCast },
+    [0x3C] = { 0x718, 0x4F, CLASS_SUMMONER, 0x01, 0x7A, 0x05, 0, 0, 0, 0, 0x15, 0x15, 0, sCRScr_DarkFarSingleCast },
+    [0x3D] = { 0x70D, 0xFF, CLASS_MANAKETE_MYRRH, 0, 0xC4, 0x06, 0, 0, 0, 0, 0x10, 0x10, 0, sCRScr_DragonCloseSingle },
+    [0x3E] = { 0x731, 0xFF, CLASS_ARCH_MOGALL, 0x01, 0xBA, 0x07, 0, 0, 0, 0, 0x06, 0x06, 0, sCRScr_MogallFarSingleCast },
+    [0x3F] = { 0x706, 0x15, CLASS_WYVERN_RIDER, 0, 0x57, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseDoubleHit },
+    [0x40] = { 0x722, 0xFF, CLASS_SOLDIER, 0x01, 0x97, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit }
+};
+*/
+// clang-format on 
+
+
+
+
+extern struct AnimBuffer gOpInfoData;           // dat 0x02000000
+extern struct BanimUnkStructComm gUnk_Opinfo_0; // dat 0x0201DB00 (aka gUnknown_0201DB00)
+extern struct AnimMagicFxBuffer gUnk_4;         // dat 0x0200A2D8
+
+// ClassChgSel_SetBlendWindowConfig 
+static void DebuggerBanimBlendWindowConfig(void)
+{
+    SetBlendConfig(1, 16, 16, 0);
+}
+
+extern u16 gBanimPaletteLeft[];     // dat 0x02004088 - add to fe8.s
+extern u8 gSpellAnimBgfx[];         // dat 0x02017790 - add to fe8.s
+extern u8 gBuf_Banim[];             // dat 0x0201A790 - add to fe8.s
+extern u8 gUnk_Banim_Ekrbattle_0[]; // dat 0x020145C8 - add to fe8.s
+
+void EndEkrUnitMainMini(struct AnimBuffer * pAnimBuf); // 0x0805AA29 
+void ResetClassReelSpell(void);           // 0x0806E8F1 
+void EndActiveClassReelSpell(void);       // 0x0806E905 
+void EndActiveClassReelBgColorProc(void); // 0x0806E921 
+void ApplyUnitSpritePalettes(void); // 0x08026629 
+void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc); // 0x080B3D85 
+void ClassInfoDisplay_LoopScript(struct OpInfoClassDisplayProc * proc); // 0x080B3E19 
+
+
+static bool IsValidLz77DecompressionData(const void * data)
+{
+    (void)data;
+    return true;
+}
+
+
+#define DEBUGGER_BANIM_TERRAIN 0x3F
+// centered horizontally along the bottom of the screen (screen is 240px wide; the platform
+// halves sit 48px either side of the unit, matching the BG_X + 0x60 spacing below)
+#define DEBUGGER_BANIM_X 160
+#define DEBUGGER_BANIM_Y 132
+#define DEBUGGER_BANIM_BG_X 72
+#define DEBUGGER_BANIM_BG_Y 138
+
+static const struct ProcCmd sProc_DebuggerBanimPreview[];
+
+static struct ClassReelAnimScr const sDebuggerBanimScript[] = {
+    { CLASS_REEL_OP_5, 0x28 }, { CLASS_REEL_OP_1, 0 }, { CLASS_REEL_OP_8, 0 },
+    { CLASS_REEL_OP_5, 0x28 }, { CLASS_REEL_OP_3, 0 }, { CLASS_REEL_OP_0, 0 },
+};
+
+// Picks a plausible tome/staff for classes previewed without a matching real
+// weapon equipped, matching vanilla's own per-class defaults: anima->Fire
+// (Elfire once promoted), light->Lightning (Shine), dark->Flux (Luna),
+// staff->Heal (Mend). Whichever the class's actual rank array grants first.
+static int GetDebuggerDefaultSpellItem(const struct ClassData * class)
+{
+    bool promoted = (class->attributes & CA_PROMOTED) != 0;
+
+    if (class->baseRanks[ITYPE_ANIMA])
+        return promoted ? ITEM_ANIMA_ELFIRE : ITEM_ANIMA_FIRE;
+    if (class->baseRanks[ITYPE_LIGHT])
+        return promoted ? ITEM_LIGHT_SHINE : ITEM_LIGHT_LIGHTNING;
+    if (class->baseRanks[ITYPE_DARK])
+        return promoted ? ITEM_DARK_LUNA : ITEM_DARK_FLUX;
+    if (class->baseRanks[ITYPE_STAFF])
+        return promoted ? ITEM_STAFF_MEND : ITEM_STAFF_HEAL;
+
+    return ITEM_NONE;
+}
+
+// gClassReelSpellAnimFuncLut indices (banim-efxop.c): 0 none, 1 fire,
+// 2 thunder, 3 heal, 4 light, 5 flux. Promotion doesn't change which of
+// these plays (Fire and Elfire share the same cast effect), only which item
+// GetDebuggerDefaultSpellItem would hand out.
+static int GetDebuggerDefaultMagicFx(const struct ClassData * class)
+{
+    if (class->baseRanks[ITYPE_ANIMA])
+        return 1;
+    if (class->baseRanks[ITYPE_LIGHT])
+        return 4;
+    if (class->baseRanks[ITYPE_DARK])
+        return 5;
+    if (class->baseRanks[ITYPE_STAFF])
+        return 3;
+
+    return 0;
+}
+
+static int GetDebuggerBanimId(int classId, struct Unit * unit)
+{
+    const struct ClassData * class;
+    const struct BattleAnimDef * animDef;
+    int i;
+    int item;
+    int expectedType;
+
+    class = GetClassData(classId);
+    if (class == NULL || class->pBattleAnimDef == NULL)
+        return 0;
+
+    animDef = class->pBattleAnimDef;
+
+    item = GetUnitEquippedWeapon(unit);
+    expectedType = item != 0 ? (GetItemType(item) + 0x100) : SPECIAL_BANIM_WTYPE;
+
+    for (i = 0; animDef[i].index != 0; ++i)
+    {
+        if (animDef[i].wtype == expectedType)
+            return animDef[i].index - 1;
+    }
+
+    // the active unit's real weapon (if any) doesn't match anything this
+    // class's animDef has - if the class can actually cast, try its default
+    // spell before giving up to the unarmed/special case below
+    item = GetDebuggerDefaultSpellItem(class);
+    if (item != ITEM_NONE)
+    {
+        expectedType = GetItemType(item) + 0x100;
+
+        for (i = 0; animDef[i].index != 0; ++i)
+        {
+            if (animDef[i].wtype == expectedType)
+                return animDef[i].index - 1;
+        }
+    }
+
+    for (i = 0; animDef[i].index != 0; ++i)
+    {
+        if (animDef[i].wtype == SPECIAL_BANIM_WTYPE)
+            return animDef[i].index - 1;
+    }
+
+    return 0;
+}
+
+
+static struct ClassReelEnt * GetDebuggerBanimReelEntry(int classId)
+{
+    int i;
+
+    for (i = 0; i < 65; i++)
+    {
+        if (gClassReelData[i].classId == classId)
+            return &gClassReelData[i];
+    }
+
+    return NULL;
+}
+
+static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classId, struct Unit * unit)
+{
+    const struct ClassData * class = GetClassData(classId);
+
+    out->descTextId = 0;
+    out->paletteId = -1;
+    out->classId = classId;
+    out->unk_06 = 0;
+    out->banimId = GetDebuggerBanimId(classId, unit);
+    out->magicFx = class != NULL ? GetDebuggerDefaultMagicFx(class) : 0;
+    out->unk_09 = 0;
+    out->unk_0A = 0;
+    out->unk_0B = 0;
+    out->unk_0C = 0;
+    out->unk_0D = DEBUGGER_BANIM_TERRAIN;
+    out->unk_0E = DEBUGGER_BANIM_TERRAIN;
+    out->unk_0F = 0;
+    out->script = sDebuggerBanimScript;
+}
+
+static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct Unit* unit)
+{
+    struct BattleAnim * anim;
+    int paletteId;
+
+    if (entry == NULL)
+        return false;
+
+    
+    anim = &banim_data[GetDebuggerBanimId(classId, unit)];
+
+    if (!IsValidLz77DecompressionData(anim->script) || !IsValidLz77DecompressionData(anim->oam_r) ||
+        !IsValidLz77DecompressionData(anim->oam_l) || !IsValidLz77DecompressionData(anim->pal))
+        return false;
+
+    paletteId = entry->paletteId;
+
+    if (paletteId != -1)
+    {
+        if (paletteId < 0)
+            return false;
+
+        if (!IsValidLz77DecompressionData(character_battle_animation_palette_table[paletteId].pal))
+            return false;
+    }
+
+    return true;
+}
+
+static void SetDebuggerBanimLayer(u16 layer)
+{
+    if (gOpInfoData.anim1 != NULL)
+    {
+        gOpInfoData.anim1->oam2Base &= ~OAM2_LAYER(3);
+        gOpInfoData.anim1->oam2Base |= OAM2_LAYER(layer);
+    }
+
+    if (gOpInfoData.anim2 != NULL)
+    {
+        gOpInfoData.anim2->oam2Base &= ~OAM2_LAYER(3);
+        gOpInfoData.anim2->oam2Base |= OAM2_LAYER(layer);
+    }
+}
+
+static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * proc)
+{
+    // classReelEnt is only ever a gClassReelData (rom) pointer or NULL - a
+    // fallback/custom-class entry is never persisted, see StartDebuggerBanimPreview
+    proc->script = proc->classReelEnt != NULL ? proc->classReelEnt->script : NULL;
+
+    if (proc->script == NULL)
+        proc->script = sDebuggerBanimScript;
+}
+
+// entry is only read here, for this one call - persistentEntry is what
+// proc->classReelEnt keeps for later script resets, and is NULL for a
+// fallback/custom-class entry (whose backing storage is the caller's stack).
+static void SetupDebuggerBanimAnim(
+    struct OpInfoClassDisplayProc * proc, struct ClassReelEnt * entry, struct ClassReelEnt * persistentEntry)
+{
+    NewEfxAnimeDrvProc();
+
+    gOpInfoData.charPalId = entry->paletteId;
+    gOpInfoData.xPos = DEBUGGER_BANIM_X;
+    gOpInfoData.yPos = DEBUGGER_BANIM_Y;
+    gOpInfoData.animId = GetDebuggerBanimId(entry->classId, gActiveUnit);
+    gOpInfoData.roundType = ANIM_ROUND_TAKING_HIT_CLOSE;
+    gOpInfoData.genericPalId = entry->unk_06;
+    gOpInfoData.state2 = 1;
+    gOpInfoData.oam2Tile = 0x200;
+    gOpInfoData.oam2Pal = 0xA;
+    gOpInfoData.pImgSheetBuf = gBanimLeftImgSheetBuf;
+    gOpInfoData.unk_24 = gBanimOaml;
+    gOpInfoData.unk_20 = gBanimPaletteLeft;
+    gOpInfoData.unk_28 = gBanimScrLeft;
+    gOpInfoData.unk_30 = &gUnk_4;
+
+    gUnk_4.magicFuncIdx = entry->magicFx;
+    gUnk_4.xOffsetBg = entry->unk_09;
+    gUnk_4.yOffsetBg = entry->unk_0A;
+    gUnk_4.xOffsetObj = entry->unk_0B;
+    gUnk_4.yOffsetObj = entry->unk_0C;
+    gUnk_4.objChr = 0x300;
+    gUnk_4.objPalId = 0xD;
+    gUnk_4.bgChr = 0x1E0;
+    gUnk_4.bgPalId = 0xD;
+    gUnk_4.bg = 1;
+    gUnk_4.bgTmBuf = gBG1TilemapBuffer;
+    gUnk_4.bgImgBuf = gSpellAnimBgfx;
+    gUnk_4.bgTsaBuf = gEkrTsaBuffer;
+    gUnk_4.objImgBuf = gBuf_Banim;
+    gUnk_4.resetCallback = DebuggerBanimBlendWindowConfig;
+
+    ResetClassReelSpell();
+    NewEkrUnitMainMini(&gOpInfoData);
+    SetDebuggerBanimLayer(0);
+
+    gUnk_Opinfo_0.unk00 = DEBUGGER_BANIM_TERRAIN; // terrain_l
+    gUnk_Opinfo_0.unk02 = 0xE;                    // pal_l
+    gUnk_Opinfo_0.unk04 = 0x180;                  // chr_l - 0x380 is OBCHR_MU_380, the default MMS obj tile base -
+                                                  // would overlap the map sprites shown alongside this preview
+    gUnk_Opinfo_0.unk06 = DEBUGGER_BANIM_TERRAIN; // terrain_r
+    gUnk_Opinfo_0.unk08 = 0xF;                    // pal_r
+    gUnk_Opinfo_0.unk0A = 0x1C0;                  // chr_r
+    gUnk_Opinfo_0.unk0C = 0;                      // distance
+    gUnk_Opinfo_0.unk0E = -1;
+    gUnk_Opinfo_0.unk1C = (void *)0x06010000;
+    gUnk_Opinfo_0.unk20 = gUnk_Banim_Ekrbattle_0;
+
+    InitBanimTerrain(&gUnk_Opinfo_0);
+    SetBanimTerrainPos(
+        &gUnk_Opinfo_0, DEBUGGER_BANIM_BG_X, DEBUGGER_BANIM_BG_Y, DEBUGGER_BANIM_BG_X + 0x60, DEBUGGER_BANIM_BG_Y);
+
+    // proc->classReelEnt = entry;
+    proc->classReelEnt = &DefaultClassReelData[0];
+    DebuggerBanimPreview_ResetScript(proc);
+}
+
+static void EndDebuggerBanimPreview(void)
+{
+    Proc_EndEach(sProc_DebuggerBanimPreview);
+}
+
+static void StartDebuggerBanimPreview(int classId, struct Unit * unit)
+{
+    struct OpInfoClassDisplayProc * proc;
+    struct ClassReelEnt * vanillaEntry;
+    struct ClassReelEnt fallbackEntry;
+    struct ClassReelEnt * entry;
+
+    EndDebuggerBanimPreview();
+
+    if (classId == 0 || GetClassData(classId) == NULL)
+        return;
+
+    vanillaEntry = GetDebuggerBanimReelEntry(classId);
+
+    if (vanillaEntry != NULL)
+    {
+        entry = vanillaEntry;
+    }
+    else
+    {
+        brk; 
+        FillDebuggerBanimFallbackEntry(&fallbackEntry, classId, unit);
+        entry = &fallbackEntry;
+    }
+
+    if (!IsDebuggerBanimSafe(entry, classId, unit))
+        return;
+
+    proc = Proc_Start(sProc_DebuggerBanimPreview, PROC_TREE_3);
+    SetupDebuggerBanimAnim(proc, entry, vanillaEntry);
+}
+
+static void DebuggerBanimPreview_ExecScript(struct OpInfoClassDisplayProc * proc)
+{
+    ClassInfoDisplay_ExecScript(proc);
+    SetDebuggerBanimLayer(0);
+}
+
+static void DebuggerBanimPreview_LoopScript(struct OpInfoClassDisplayProc * proc)
+{
+    ClassInfoDisplay_LoopScript(proc);
+    SetDebuggerBanimLayer(0);
+}
+
+static void DebuggerBanimPreview_OnEnd(struct OpInfoClassDisplayProc * proc)
+{
+    (void)proc;
+
+    EndActiveClassReelSpell();
+    EndActiveClassReelBgColorProc();
+
+    // SetupDebuggerBanimAnim (the only way this proc ever starts) always
+    // calls NewEkrUnitMainMini, so this always has a mini anim to end
+    EndEkrUnitMainMini(&gOpInfoData);
+
+    EndBanimTerrain(&gUnk_Opinfo_0);
+    EndEfxAnimeDrvProc();
+    ApplyUnitSpritePalettes();
+}
+
+static const struct ProcCmd sProc_DebuggerBanimPreview[] = {
+    PROC_NAME("DebuggerBanimPreview"),
+    PROC_SET_END_CB(DebuggerBanimPreview_OnEnd),
+    PROC_YIELD,
+    PROC_LABEL(0),
+    PROC_CALL(DebuggerBanimPreview_ExecScript),
+    PROC_REPEAT(DebuggerBanimPreview_LoopScript),
+    PROC_GOTO(0),
+
+    PROC_LABEL(10),
+    PROC_CALL(DebuggerBanimPreview_ResetScript),
+    PROC_GOTO(0),
+
+    PROC_END,
+};
+
+
 void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
 {
     switch (type)
@@ -7586,6 +8272,15 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
             DebuggerStartCG(id);
             break;
         }
+        case 4:
+        {
+            ClearMainMenuGfx(proc);
+            GfxViewerInitMenuGfx(proc);
+            MU_EndAll();
+            BMapDispSuspend(); // matches the BMapDispResume() on the way out in GfxViewerLoop
+            StartDebuggerBanimPreview(id, unit);
+            break;
+        }
     }
 }
 
@@ -7595,13 +8290,15 @@ void GfxViewerLoop(DebuggerProc * proc)
     u16 keys = gKeyStatusPtr->repeatedKeys;
     if ((keys & START_BUTTON) || (keys & A_BUTTON) || keys & B_BUTTON)
     { // press B to not save Supports
+        EndDebuggerBanimPreview();
         BMapDispResume();
         RefreshBMapGraphics();
         Proc_Goto(proc, RestartLabel);
         BackPressSFX();
     };
 
-    DisplayUiHand(CursorLocationTable[0].x - ((SupportWidth - 1) * 8), (Y_HAND + (proc->id * 2)) * 8);
+    DisplayUiHand(
+        CursorLocationTable[0].x - ((SupportWidth - 1) * 8) + (GfxViewerMenuXShift * 8), (Y_HAND + (proc->id * 2)) * 8);
     if (keys & DPAD_RIGHT)
     {
         proc->tmp[proc->id]++;
@@ -7628,6 +8325,10 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             proc->id = GfxViewerOptions - 1;
         }
+        if (proc->id != GfxViewerOption_ClassAnim)
+        {
+            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim
+        }
         RedrawGfxViewerMenu(proc);
     }
     if (keys & DPAD_DOWN)
@@ -7636,6 +8337,10 @@ void GfxViewerLoop(DebuggerProc * proc)
         if (proc->id >= GfxViewerOptions)
         {
             proc->id = 0;
+        }
+        if (proc->id != GfxViewerOption_ClassAnim)
+        {
+            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim
         }
 
         RedrawGfxViewerMenu(proc);
