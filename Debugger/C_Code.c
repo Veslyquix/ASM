@@ -7649,24 +7649,24 @@ extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe
 #define CR_END()                            { CLASS_REEL_OP_0, 0 }
 #define CR_ANIM_ROUND_HIT_CLOSE()           { CLASS_REEL_OP_1, 0 }
 #define CR_ANIM_ROUND_CRIT_CLOSE()          { CLASS_REEL_OP_2, 0 }
-#define CR_HIT_EFFECT()                     { CLASS_REEL_OP_3, 0 }
+#define CR_RETURN_TO_STANDING()             { CLASS_REEL_OP_3, 0 }
 #define CR_ANIM_ROUND_NONCRIT_FAR()         { CLASS_REEL_OP_4, 0 }
 #define CR_WAIT(frames)                     { CLASS_REEL_OP_5, frames }
 #define CR_ANIM_ROUND_TAKING_MISS_CLOSE()   { CLASS_REEL_OP_6, 0 }
-#define CR_HIT_EFFECT_ALT()                 { CLASS_REEL_OP_7, 0 }
+#define CR_RETURN_TO_STANDING_ALT()         { CLASS_REEL_OP_7, 0 }
 #define CR_WAIT_ROUND_END()                 { CLASS_REEL_OP_8, 0 }
 
 struct ClassReelAnimScr const sCRScr_CloseDoubleHit[] = {
     CR_WAIT(0x1E),
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_WAIT(0x28), // normally this would be wait for hp to deplete here
+    CR_RETURN_TO_STANDING(),
     CR_WAIT(0x50),
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7675,12 +7675,12 @@ struct ClassReelAnimScr const sCRScr_SniperDoubleHit[] = {
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_WAIT(0x64),
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7689,7 +7689,7 @@ struct ClassReelAnimScr const sCRScr_CloseSingleHit[] = {
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x5A),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7698,7 +7698,7 @@ struct ClassReelAnimScr const sCRScr_RangerFarSingleHit[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x46),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7707,7 +7707,7 @@ struct ClassReelAnimScr const sCRScr_AssassinCloseSingleHit[] = {
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7716,12 +7716,12 @@ struct ClassReelAnimScr const sCRScr_AnimaDoubleCast[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_WAIT(0x48),
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7730,7 +7730,7 @@ struct ClassReelAnimScr const sCRScr_PupilFarSingleCast[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7739,7 +7739,7 @@ struct ClassReelAnimScr const sCRScr_MagicFarSingleCast[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x5A),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7748,7 +7748,7 @@ struct ClassReelAnimScr const sCRScr_StaffFarSingleCast[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x5A),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7757,7 +7757,7 @@ struct ClassReelAnimScr const sCRScr_DanceCloseSingle[] = {
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x64),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7766,7 +7766,7 @@ struct ClassReelAnimScr const sCRScr_DragonCloseSingle[] = {
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x28),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7775,7 +7775,7 @@ struct ClassReelAnimScr const sCRScr_DarkFarSingleCast[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0xAA),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7784,7 +7784,7 @@ struct ClassReelAnimScr const sCRScr_MogallFarSingleCast[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0x60),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
 };
 
@@ -7793,7 +7793,7 @@ struct ClassReelAnimScr const sCRScr_GorgonFarSingleCast[] = {
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(0xC8),
-    CR_HIT_EFFECT(),
+    CR_RETURN_TO_STANDING(),
     CR_END(),
     CR_END(),
 };
@@ -8012,14 +8012,15 @@ static int GetDebuggerBanimId(int classId, struct Unit * unit)
 static struct ClassReelEnt * GetDebuggerBanimReelEntry(int classId)
 {
     int i;
+    return NULL; 
 
-    for (i = 0; i < 65; i++)
-    {
-        if (gClassReelData[i].classId == classId)
-            return &gClassReelData[i];
-    }
+    // for (i = 0; i < 65; i++)
+    // {
+        // if (gClassReelData[i].classId == classId)
+            // return &gClassReelData[i];
+    // }
 
-    return NULL;
+    // return NULL;
 }
 
 static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classId, struct Unit * unit)
@@ -8185,7 +8186,6 @@ static void StartDebuggerBanimPreview(int classId, struct Unit * unit)
     }
     else
     {
-        brk; 
         FillDebuggerBanimFallbackEntry(&fallbackEntry, classId, unit);
         entry = &fallbackEntry;
     }
