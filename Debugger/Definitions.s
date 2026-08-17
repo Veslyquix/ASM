@@ -21,6 +21,11 @@
 .endm
 
 .if FE8 == true 
+
+SET_FUNC InitMainMiniAnim, 0x805a60D
+SET_FUNC EkrMainMini_AnimUpdateFrameGfx, 0x805A5A9
+SET_FUNC EkrMainMini_AnimMarkRoundEnd, 0x805A581
+
 SET_FUNC PhaseIntroInitText, 0x801ed59 
 SET_DATA get_pProc_FromMiscActionProc, 0x859BAC8
 SET_DATA sChapterDataTable, 0x803462C

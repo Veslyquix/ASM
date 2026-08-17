@@ -289,6 +289,7 @@ int PlayerPhase_PrepareActionBasic(DebuggerProc * proc);
 void PlayerPhase_ApplyUnitMovementWithoutMenu(DebuggerProc * proc);
 void EditMapIdle(DebuggerProc * proc);
 void StartPlayerPhaseTerrainWindow();
+void EndAllMus(void);
 void FixAndHandlePlayerCursorMovement(void);
 void ChooseTileInit(DebuggerProc * proc);
 void ChooseTileIdle(DebuggerProc * proc);
@@ -326,6 +327,8 @@ void DebuggerListInit(DebuggerProc * proc);
 void DebuggerListIdle(DebuggerProc * proc);
 void GfxViewerInit(DebuggerProc * proc);
 void GfxViewerLoop(DebuggerProc * proc);
+void AnimViewerInit(DebuggerProc * proc);
+void AnimViewerLoop(DebuggerProc * proc);
 static void EndDebuggerBanimPreview(void);
 void ClearSomeGfx(DebuggerProc * proc);
 u8 CanActiveUnitPromote(void);
@@ -356,12 +359,17 @@ u8 CanActiveUnitPromote(void);
 #define LoopLabel 21
 #define EditAiLabel 22
 #define EditBgmLabel 23
+#define AnimViewerLabel 24
 #define EndLabel 99
 
 #define ActionID_Promo 1
 #define ActionID_Arena 2
 #define ActionID_Levelup 3
 #define ActionID_DebugSkills 4
+
+#ifndef PLAY_ANIMCONF_ON
+#define PLAY_ANIMCONF_ON 0
+#endif
 
 const struct ProcCmd DebuggerProcCmdIdler[] = {
     PROC_NAME("DebuggerProcIdler"),
@@ -528,6 +536,11 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_LABEL(GfxViewerLabel),
     PROC_CALL(GfxViewerInit),
     PROC_REPEAT(GfxViewerLoop),
+    PROC_GOTO(EndLabel),
+
+    PROC_LABEL(AnimViewerLabel),
+    PROC_CALL(AnimViewerInit),
+    PROC_REPEAT(AnimViewerLoop),
     PROC_GOTO(EndLabel),
 
     PROC_LABEL(EndLabel),
@@ -5976,6 +5989,16 @@ u8 GfxViewerNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
 
+u8 AnimViewerNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
+{
+    DebuggerProc * proc;
+    proc = Proc_Find(DebuggerProcCmd);
+    ClearMainMenuGfx(proc);
+    EndDebuggerBanimPreview();
+    Proc_Goto(proc, AnimViewerLabel);
+    return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
+}
+
 int ShouldStartDebugger(void)
 {
     if (CheckFlag(DebuggerTurnedOff_Flag))
@@ -7110,53 +7133,114 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
     return;
 }
 
-#define GfxViewerOptions 5
-static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "Class Sprites", "BG", "CG", "Class Anim" };
+#define GfxViewerOptions 6
+static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "Class Sprites", "BG",
+                                                          "CG",       "Class Anim",    "Weapon" };
 #define GfxViewerOption_ClassAnim 4
+#define GfxViewerOption_Weapon 5
+#define GfxViewerTmp_MenuHidden 14
+#define GfxViewerText_WeaponName GfxViewerOptions
+#define GfxViewerMaxWeaponItem ITEM_GOLDGEM
+
+static bool HasDebuggerBanimForClass(int classId);
+static int GetDebuggerDefaultPreviewWeapon(int classId);
+static int GetNextDebuggerPreviewWeapon(int item, int direction);
+static const char * GetDebuggerPreviewWeaponName(int item);
+static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon);
 
 // shifted right & narrowed vs. the generic support-list geometry (NUMBER_X/START_X/SupportWidth)
 // to leave room on the left for the mms row shown by the Class Sprites option
 #define GfxViewerMenuXShift 4
 #define GfxViewerMenuWidthShrink 2
 
+static void ClearGfxViewerMenuGfx(void)
+{
+    int x = NUMBER_X - SupportWidth + 2 + GfxViewerMenuXShift;
+    int y = Y_HAND - 1;
+    int w = SupportWidth + (START_X - NUMBER_X) + 7 - GfxViewerMenuWidthShrink;
+    int h = (GfxViewerOptions * 2) + 2;
+
+    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(x, y), w, h, 0);
+    TileMap_FillRect(BG_GetMapBuffer(2) + TILEMAP_INDEX(x, y), w, h, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT | BG2_SYNC_BIT);
+}
+
 void RedrawGfxViewerMenu(DebuggerProc * proc)
 {
-    TileMap_FillRect(
-        gBG0TilemapBuffer + TILEMAP_INDEX(NUMBER_X - 2 + GfxViewerMenuXShift, Y_HAND), 9, 2 * GfxViewerOptions, 0);
+    struct Text * th;
+    int clearX;
+    int clearY;
+    int clearW;
+    int clearH;
+    int labelX;
+    int valueX;
+    bool weaponEnabled;
+
+    if (proc->tmp[GfxViewerTmp_MenuHidden])
+        return;
+
+    clearX = NUMBER_X - SupportWidth + 2 + GfxViewerMenuXShift;
+    clearY = Y_HAND - 1;
+    clearW = SupportWidth + (START_X - NUMBER_X) + 7 - GfxViewerMenuWidthShrink;
+    clearH = (GfxViewerOptions * 2) + 2;
+
+    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(clearX, clearY), clearW, clearH, 0);
     BG_EnableSyncByMask(BG0_SYNC_BIT);
     // ResetText();
-    struct Text * th = gStatScreen.text;
-    int x = NUMBER_X - SupportWidth + 3 + GfxViewerMenuXShift;
+    th = gStatScreen.text;
+    labelX = NUMBER_X - SupportWidth + 3 + GfxViewerMenuXShift;
+    valueX = START_X + 7 + GfxViewerMenuXShift - GfxViewerMenuWidthShrink;
+    weaponEnabled = HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]);
+
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
-        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(x, Y_HAND + (i * 2)));
+        int color = (i == GfxViewerOption_Weapon && !weaponEnabled) ? TEXT_COLOR_SYSTEM_GRAY : TEXT_COLOR_SYSTEM_WHITE;
+
+        ClearText(&th[i]);
+        Text_SetColor(&th[i], color);
+        Text_DrawString(&th[i], gfxViewerOpts[i]);
+        PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(labelX, Y_HAND + (i * 2)));
     }
+
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
+        int color = (i == GfxViewerOption_Weapon && !weaponEnabled) ? TEXT_COLOR_SYSTEM_GRAY : TEXT_COLOR_SYSTEM_GOLD;
+
+        if (i == GfxViewerOption_Weapon)
+            continue;
+
         // PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)),
         // TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
-        PutNumberHex(
-            gBG0TilemapBuffer +
-                TILEMAP_INDEX(START_X + 7 + GfxViewerMenuXShift - GfxViewerMenuWidthShrink, Y_HAND + (i * 2)),
-            TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
+        PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (i * 2)), color, proc->tmp[i]);
     }
+
+    ClearText(&th[GfxViewerText_WeaponName]);
+    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (GfxViewerOption_Weapon * 2)), 14, 1, 0);
+    Text_SetColor(&th[GfxViewerText_WeaponName], weaponEnabled ? TEXT_COLOR_SYSTEM_GOLD : TEXT_COLOR_SYSTEM_GRAY);
+    Text_DrawString(&th[GfxViewerText_WeaponName], GetDebuggerPreviewWeaponName(proc->tmp[GfxViewerOption_Weapon]));
+    PutText(
+        &th[GfxViewerText_WeaponName],
+        gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (GfxViewerOption_Weapon * 2)));
 
     BG_EnableSyncByMask(BG0_SYNC_BIT);
 }
 
 void GfxViewerInitMenuGfx(DebuggerProc * proc)
 {
+    if (proc->tmp[GfxViewerTmp_MenuHidden])
+        return;
 
     int x = NUMBER_X - SupportWidth + 2 + GfxViewerMenuXShift;
     int y = Y_HAND - 1;
     int w = SupportWidth + (START_X - NUMBER_X) + 7 - GfxViewerMenuWidthShrink;
     int h = (GfxViewerOptions * 2) + 2;
 
+    UnpackUiFramePalette(2);
     // drawn on bg2 rather than bg1 - the Class Sprites battle anim preview owns bg1
     // for its own background effects, which would otherwise stomp this frame
     DrawUiFrame(
         BG_GetMapBuffer(2),            // back BG
-        x, y, w, h, TILEREF(0, 0), 0); // style as 0 ?
+        x, y, w, h, TILEREF(0, 1), 0); // style as 0 ?
     BG_EnableSyncByMask(BG2_SYNC_BIT);
 }
 
@@ -7171,6 +7255,7 @@ void GfxViewerInit(DebuggerProc * proc)
         proc->tmp[i] = 0;
     }
     proc->tmp[4] = 0;
+    proc->tmp[GfxViewerTmp_MenuHidden] = FALSE;
 
     GfxViewerInitMenuGfx(proc);
 
@@ -7183,7 +7268,6 @@ void GfxViewerInit(DebuggerProc * proc)
     for (int i = 0; i < 15; ++i)
     {
         InitText(&th[i], SupportWidth + 4);
-        Text_DrawString(&th[i], gfxViewerOpts[i]);
     }
 
     RedrawGfxViewerMenu(proc);
@@ -7656,222 +7740,37 @@ extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe
 #define CR_RETURN_TO_STANDING_ALT()         { CLASS_REEL_OP_7, 0 }
 #define CR_WAIT_ROUND_END()                 { CLASS_REEL_OP_8, 0 }
 
-struct ClassReelAnimScr const sCRScr_CloseDoubleHit[] = {
-    CR_WAIT(0x1E),
+struct ClassReelAnimScr const sCRScr_DefaultHit[] = {
+    CR_WAIT(30),
+    // CR_ANIM_ROUND_TAKING_MISS_CLOSE(),
+    // CR_WAIT_ROUND_END(),
+    // CR_WAIT(10),
+    // CR_RETURN_TO_STANDING(),
+    // CR_WAIT(30),
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28), // normally this would be wait for hp to deplete here
+    CR_WAIT(30), // normally this would be wait for hp to deplete here
     CR_RETURN_TO_STANDING(),
-    CR_WAIT(0x50),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_SniperDoubleHit[] = {
-    CR_WAIT(0x28),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_WAIT(0x64),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_CloseSingleHit[] = {
-    CR_WAIT(0x28),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x5A),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_RangerFarSingleHit[] = {
-    CR_WAIT(0x3C),
+    CR_WAIT(40),
     CR_ANIM_ROUND_NONCRIT_FAR(),
     CR_WAIT_ROUND_END(),
-    CR_WAIT(0x46),
+    CR_WAIT(40),
     CR_RETURN_TO_STANDING(),
+    CR_WAIT(40),
+    CR_ANIM_ROUND_CRIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(45),
+    CR_RETURN_TO_STANDING(),
+    CR_WAIT(40),
     CR_END(),
 };
 
-struct ClassReelAnimScr const sCRScr_AssassinCloseSingleHit[] = {
-    CR_WAIT(0x3C),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
 
-struct ClassReelAnimScr const sCRScr_AnimaDoubleCast[] = {
-    CR_WAIT(0x28),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_WAIT(0x48),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_PupilFarSingleCast[] = {
-    CR_WAIT(0x28),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_MagicFarSingleCast[] = {
-    CR_WAIT(0x50),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x5A),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_StaffFarSingleCast[] = {
-    CR_WAIT(0x50),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x5A),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_DanceCloseSingle[] = {
-    CR_WAIT(0x50),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x64),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_DragonCloseSingle[] = {
-    CR_WAIT(0x78),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x28),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_DarkFarSingleCast[] = {
-    CR_WAIT(0x28),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0xAA),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_MogallFarSingleCast[] = {
-    CR_WAIT(0x3C),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0x60),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-};
-
-struct ClassReelAnimScr const sCRScr_GorgonFarSingleCast[] = {
-    CR_WAIT(0x28),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(0xC8),
-    CR_RETURN_TO_STANDING(),
-    CR_END(),
-    CR_END(),
-};
- 
 
 struct ClassReelEnt const DefaultClassReelData[1] = {
-    [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit },
+    [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, (void*)sCRScr_DefaultHit },
 };
 
-/*
-struct ClassReelEnt CONST_DATA gClassReelData[65] = {
-    [0x00] = { 0x6F6, 0xFF, CLASS_EIRIKA_LORD, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit },
-    [0x01] = { 0x6FA, 0x3B, CLASS_PALADIN, 0, 0x3A, 0, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_CloseSingleHit },
-    [0x02] = { 0x6FB, 0x02, CLASS_ARMOR_KNIGHT, 0, 0x3F, 0, 0, 0, 0, 0, 0x02, 0x02, 0, sCRScr_CloseSingleHit },
-    [0x03] = { 0x6F9, 0xFF, CLASS_CAVALIER, 0, 0x33, 0, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_CloseDoubleHit },
-    [0x04] = { 0x71C, 0x3F, CLASS_PEGASUS_KNIGHT, 0, 0x65, 0, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_CloseDoubleHit },
-    [0x05] = { 0x71A, 0x44, CLASS_PRIEST, 0, 0x7E, 0x03, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_StaffFarSingleCast },
-    [0x06] = { 0x70E, 0xFF, CLASS_JOURNEYMAN, 0, 0x91, 0, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_CloseDoubleHit },
-    [0x07] = { 0x711, 0x1D, CLASS_FIGHTER, 0, 0x18, 0, 0, 0, 0, 0, 0, 0, 0, sCRScr_CloseDoubleHit },
-    [0x08] = { 0x6FD, 0x5D, CLASS_THIEF, 0, 0x88, 0, 0, 0, 0, 0, 0x1C, 0x1C, 0, sCRScr_CloseDoubleHit },
-    [0x09] = { 0x703, 0, CLASS_ARCHER, 0, 0x27, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
-    [0x0A] = { 0x709, 0x2E, CLASS_MAGE_F, 0, 0x6B, 0x01, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_AnimaDoubleCast },
-    [0x0B] = { 0x719, 0x36, CLASS_MONK, 0, 0x7C, 0x04, 0, 0, 0, 0, 0, 0, 0, sCRScr_MagicFarSingleCast },
-    [0x0C] = { 0x725, 0xFF, CLASS_REVENANT, 0x01, 0x9F, 0, 0, 0, 0, 0, 0, 0, 0, sCRScr_CloseSingleHit },
-    [0x0D] = { 0x726, 0xFF, CLASS_ENTOUMBED, 0x01, 0xA0, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseSingleHit },
-    [0x0E] = { 0x727, 0xFF, CLASS_BONEWALKER, 0x01, 0xA1, 0, 0, 0, 0, 0, 0x0E, 0x0F, 0, sCRScr_CloseSingleHit },
-    [0x0F] = { 0x730, 0xFF, CLASS_MOGALL, 0x01, 0xB9, 0x07, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_MogallFarSingleCast },
-    [0x10] = { 0x729, 0xFF, CLASS_BAEL, 0x01, 0xAB, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseSingleHit },
-    [0x11] = { 0x700, 0x37, CLASS_MYRMIDON, 0, 0x10, 0, 0, 0, 0, 0, 0x0B, 0x18, 0, sCRScr_CloseDoubleHit },
-    [0x12] = { 0x71E, 0x42, CLASS_CLERIC, 0, 0x7F, 0x03, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_StaffFarSingleCast },
-    [0x13] = { 0x6F5, 0xFF, CLASS_EPHRAIM_LORD, 0, 0, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit },
-    [0x14] = { 0x723, 0xFF, CLASS_PIRATE, 0x01, 0x99, 0, 0, 0, 0, 0, 0x0C, 0x0C, 0, sCRScr_CloseDoubleHit },
-    [0x15] = { 0x713, 0xFF, CLASS_BRIGAND, 0x01, 0x1F, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseDoubleHit },
-    [0x16] = { 0x716, 0xFF, CLASS_SHAMAN, 0x01, 0x74, 0x05, 0, 0, 0, 0, 0x15, 0x15, 0, sCRScr_DarkFarSingleCast },
-    [0x17] = { 0x704, 0x51, CLASS_SNIPER, 0, 0x29, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_SniperDoubleHit },
-    [0x18] = { 0x6FE, 0x30, CLASS_MERCENARY, 0, 0x0A, 0, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_CloseDoubleHit },
-    [0x19] = { 0x721, 0x14, CLASS_DANCER, 0, 0x90, 0, 0, 0, 0, 0, 0x0E, 0x0E, 0, sCRScr_DanceCloseSingle },
-    [0x1A] = { 0x70F, 0xFF, CLASS_PUPIL, 0, 0x94, 0x01, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_PupilFarSingleCast },
-    [0x1B] = { 0x700, 0xFF, CLASS_MYRMIDON_F, 0, 0x12, 0, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_CloseDoubleHit },
-    [0x1C] = { 0x71B, 0xFF, CLASS_RECRUIT, 0, 0x95, 0, 0, 0, 0, 0, 0, 0, 0, sCRScr_CloseDoubleHit },
-    [0x1D] = { 0x733, 0xFF, CLASS_GARGOYLE, 0x01, 0xBC, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
-    [0x1E] = { 0x72F, 0xFF, CLASS_MAELDUIN, 0x01, 0xB5, 0, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_CloseDoubleHit },
-    [0x1F] = { 0x72B, 0xFF, CLASS_CYCLOPS, 0x01, 0xAD, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseDoubleHit },
-    [0x20] = { 0x72C, 0xFF, CLASS_MAUTHEDOOG, 0x01, 0xB0, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
-    [0x21] = { 0x728, 0xFF, CLASS_WIGHT, 0x01, 0xA6, 0, 0, 0, 0, 0, 0x0E, 0x0F, 0, sCRScr_CloseSingleHit },
-    [0x22] = { 0x71F, 0x61, CLASS_TROUBADOUR, 0, 0x85, 0x03, 0, 0, 0, 0, 0, 0x11, 0, sCRScr_StaffFarSingleCast },
-    [0x23] = { 0x714, 0x12, CLASS_BERSERKER, 0, 0x22, 0, 0, 0, 0, 0, 0x10, 0x10, 0, sCRScr_CloseDoubleHit },
-    [0x24] = { 0x710, 0x45, CLASS_ROGUE, 0, 0x8E, 0, 0, 0, 0, 0, 0x1C, 0x1C, 0, sCRScr_CloseSingleHit },
-    [0x25] = { 0x70A, 0x4B, CLASS_SAGE, 0, 0x6C, 0x01, 0, 0, 0, 0, 0x19, 0x19, 0, sCRScr_AnimaDoubleCast },
-    [0x26] = { 0x715, 0x2C, CLASS_GREAT_KNIGHT, 0, 0x4F, 0, 0, 0, 0, 0, 0x0B, 0x12, 0, sCRScr_CloseSingleHit },
-    [0x27] = { 0x6F8, 0xFF, CLASS_EIRIKA_MASTER_LORD, 0, 0x07, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseSingleHit },
-    [0x28] = { 0x705, 0xFF, CLASS_RANGER, 0x01, 0x2E, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_RangerFarSingleHit },
-    [0x29] = { 0x712, 0xFF, CLASS_WARRIOR, 0x01, 0x1B, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
-    [0x2A] = { 0x702, 0xFF, CLASS_ASSASSIN, 0x01, 0x8A, 0, 0, 0, 0, 0, 0x1D, 0x1D, 0, sCRScr_AssassinCloseSingleHit },
-    [0x2B] = { 0x70B, 0x35, CLASS_MAGE_KNIGHT_F, 0, 0x70, 0x02, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_MagicFarSingleCast },
-    [0x2C] = { 0x6F7, 0xFF, CLASS_EPHRAIM_MASTER_LORD, 0, 0x04, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseSingleHit },
-    [0x2D] = { 0x720, 0xFF, CLASS_VALKYRIE, 0, 0x86, 0x04, 0, 0, 0, 0, 0x11, 0, 0, sCRScr_MagicFarSingleCast },
-    [0x2E] = { 0x717, 0xFF, CLASS_DRUID, 0x01, 0x76, 0x05, 0, 0, 0, 0, 0x15, 0x15, 0, sCRScr_DarkFarSingleCast },
-    [0x2F] = { 0x6FC, 0xFF, CLASS_GENERAL, 0x01, 0x44, 0, 0, 0, 0, 0, 0x02, 0x02, 0, sCRScr_CloseSingleHit },
-    [0x30] = { 0x701, 0xFF, CLASS_SWORDMASTER, 0, 0x14, 0, 0, 0, 0, 0, 0x09, 0x09, 0, sCRScr_CloseSingleHit },
-    [0x31] = { 0x708, 0x68, CLASS_WYVERN_KNIGHT, 0, 0x61, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
-    [0x32] = { 0x70C, 0x0D, CLASS_BISHOP, 0, 0x81, 0x04, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_MagicFarSingleCast },
-    [0x33] = { 0x707, 0x17, CLASS_WYVERN_LORD, 0, 0x5C, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
-    [0x34] = { 0x6FF, 0x6B, CLASS_HERO, 0, 0x0D, 0, 0, 0, 0, 0, 0x17, 0x17, 0, sCRScr_CloseDoubleHit },
-    [0x35] = { 0x71D, 0x1C, CLASS_FALCON_KNIGHT, 0, 0x67, 0, 0, 0, 0, 0, 0x0D, 0x0D, 0, sCRScr_CloseSingleHit },
-    [0x36] = { 0x72A, 0xFF, CLASS_ELDER_BAEL, 0x01, 0xAC, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseSingleHit },
-    [0x37] = { 0x72E, 0xFF, CLASS_TARVOS, 0x01, 0xB2, 0, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_CloseDoubleHit },
-    [0x38] = { 0x734, 0xFF, CLASS_DEATHGOYLE, 0x01, 0xBE, 0, 0, 0, 0, 0, 0x16, 0x16, 0, sCRScr_CloseSingleHit },
-    [0x39] = { 0x72D, 0xFF, CLASS_GWYLLGI, 0x01, 0xB1, 0, 0, 0, 0, 0, 0x13, 0x13, 0, sCRScr_CloseDoubleHit },
-    [0x3A] = { 0x732, 0xFF, CLASS_GORGON, 0x01, 0xBB, 0x08, 0, 0, 0, 0, 0x01, 0x01, 0, sCRScr_GorgonFarSingleCast },
-    [0x3B] = { 0x724, 0xFF, CLASS_NECROMANCER, 0x01, 0x9C, 0x02, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_MagicFarSingleCast },
-    [0x3C] = { 0x718, 0x4F, CLASS_SUMMONER, 0x01, 0x7A, 0x05, 0, 0, 0, 0, 0x15, 0x15, 0, sCRScr_DarkFarSingleCast },
-    [0x3D] = { 0x70D, 0xFF, CLASS_MANAKETE_MYRRH, 0, 0xC4, 0x06, 0, 0, 0, 0, 0x10, 0x10, 0, sCRScr_DragonCloseSingle },
-    [0x3E] = { 0x731, 0xFF, CLASS_ARCH_MOGALL, 0x01, 0xBA, 0x07, 0, 0, 0, 0, 0x06, 0x06, 0, sCRScr_MogallFarSingleCast },
-    [0x3F] = { 0x706, 0x15, CLASS_WYVERN_RIDER, 0, 0x57, 0, 0, 0, 0, 0, 0x04, 0x04, 0, sCRScr_CloseDoubleHit },
-    [0x40] = { 0x722, 0xFF, CLASS_SOLDIER, 0x01, 0x97, 0, 0, 0, 0, 0, 0x14, 0x14, 0, sCRScr_CloseDoubleHit }
-};
-*/
 // clang-format on 
 
 
@@ -7880,6 +7779,7 @@ struct ClassReelEnt CONST_DATA gClassReelData[65] = {
 extern struct AnimBuffer gOpInfoData;           // dat 0x02000000
 extern struct BanimUnkStructComm gUnk_Opinfo_0; // dat 0x0201DB00 (aka gUnknown_0201DB00)
 extern struct AnimMagicFxBuffer gUnk_4;         // dat 0x0200A2D8
+extern s16 gEkrSpellAnimIndex[2];               // dat 0x0203E118
 
 // ClassChgSel_SetBlendWindowConfig 
 static void DebuggerBanimBlendWindowConfig(void)
@@ -7899,6 +7799,19 @@ void EndActiveClassReelBgColorProc(void); // 0x0806E921
 void ApplyUnitSpritePalettes(void); // 0x08026629 
 void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc); // 0x080B3D85 
 void ClassInfoDisplay_LoopScript(struct OpInfoClassDisplayProc * proc); // 0x080B3E19 
+void StartSpellAnimation(struct Anim * anim); // 0x0805B3CD
+void EkrMainMini_AnimMarkRoundEnd(struct Anim * anim); // 0x0805A581
+void EkrMainMini_AnimUpdateFrameGfx(struct Anim * anim); // 0x0805A5A9
+void InitMainMiniAnim(struct AnimBuffer * animBuf); // 0x0805A249
+int Get0201FAC8(void); // 0x08055A29
+void Set0201FAC8(int value); // 0x08055A35
+
+struct DebuggerProcEkrUnitMainMini
+{
+    PROC_HEADER;
+    u8 _pad_29[0x5C - 0x29];
+    struct AnimBuffer * animBuf;
+};
 
 
 static bool IsValidLz77DecompressionData(const void * data)
@@ -7918,10 +7831,7 @@ static bool IsValidLz77DecompressionData(const void * data)
 
 static const struct ProcCmd sProc_DebuggerBanimPreview[];
 
-static struct ClassReelAnimScr const sDebuggerBanimScript[] = {
-    { CLASS_REEL_OP_5, 0x28 }, { CLASS_REEL_OP_1, 0 }, { CLASS_REEL_OP_8, 0 },
-    { CLASS_REEL_OP_5, 0x28 }, { CLASS_REEL_OP_3, 0 }, { CLASS_REEL_OP_0, 0 },
-};
+
 
 // Picks a plausible tome/staff for classes previewed without a matching real
 // weapon equipped, matching vanilla's own per-class defaults: anima->Fire
@@ -7943,31 +7853,107 @@ static int GetDebuggerDefaultSpellItem(const struct ClassData * class)
     return ITEM_NONE;
 }
 
-// gClassReelSpellAnimFuncLut indices (banim-efxop.c): 0 none, 1 fire,
-// 2 thunder, 3 heal, 4 light, 5 flux. Promotion doesn't change which of
-// these plays (Fire and Elfire share the same cast effect), only which item
-// GetDebuggerDefaultSpellItem would hand out.
-static int GetDebuggerDefaultMagicFx(const struct ClassData * class)
+static bool HasDebuggerBanimForClass(int classId)
 {
-    if (class->baseRanks[ITYPE_ANIMA])
-        return 1;
-    if (class->baseRanks[ITYPE_LIGHT])
-        return 4;
-    if (class->baseRanks[ITYPE_DARK])
-        return 5;
-    if (class->baseRanks[ITYPE_STAFF])
-        return 3;
+    const struct ClassData * class = GetClassData(classId);
 
-    return 0;
+    return classId != 0 && class != NULL && class->pBattleAnimDef != NULL;
 }
 
-static int GetDebuggerBanimId(int classId, struct Unit * unit)
+static int GetDebuggerDefaultPreviewWeapon(int classId)
+{
+    const struct ClassData * class = GetClassData(classId);
+
+    if (class == NULL)
+        return ITEM_NONE;
+
+    if (classId == CLASS_MANAKETE || classId == CLASS_MANAKETE_2)
+        return ITEM_DEMONSTONE;
+    if (classId == CLASS_MANAKETE_MYRRH)
+        return ITEM_DIVINESTONE;
+    if (classId == CLASS_DEMON_KING)
+        return ITEM_RAVAGER;
+    if (classId == CLASS_DRACO_ZOMBIE)
+        return ITEM_MONSTER_WRETCHAIR;
+
+    if (class->baseRanks[ITYPE_SWORD])
+        return ITEM_SWORD_IRON;
+    if (class->baseRanks[ITYPE_LANCE])
+        return ITEM_LANCE_IRON;
+    if (class->baseRanks[ITYPE_AXE])
+        return ITEM_AXE_IRON;
+    if (class->baseRanks[ITYPE_BOW])
+        return ITEM_BOW_IRON;
+    if (class->attributes & CA_LOCK_3)
+        return ITEM_MONSTER_ROTTENCLW;
+    if (class->baseRanks[ITYPE_ANIMA] || class->baseRanks[ITYPE_LIGHT] || class->baseRanks[ITYPE_DARK])
+        return GetDebuggerDefaultSpellItem(class);
+    if (class->baseRanks[ITYPE_STAFF])
+        return ITEM_STAFF_HEAL;
+
+    return ITEM_NONE;
+}
+
+static bool IsDebuggerPreviewWeapon(int item)
+{
+    int attributes;
+
+    if (item == ITEM_NONE)
+        return true;
+
+    if (item < 0 || item > GfxViewerMaxWeaponItem)
+        return false;
+
+    attributes = GetItemAttributes(item);
+
+    if (!(attributes & IA_WEAPON))
+        return false;
+
+    if ((attributes & IA_STAFF) || GetItemType(item) == ITYPE_STAFF)
+        return false;
+
+    return true;
+}
+
+static int GetNextDebuggerPreviewWeapon(int item, int direction)
+{
+    int i;
+
+    for (i = 0; i <= GfxViewerMaxWeaponItem; ++i)
+    {
+        item += direction;
+
+        if (item < 0)
+            item = GfxViewerMaxWeaponItem;
+        else if (item > GfxViewerMaxWeaponItem)
+            item = 0;
+
+        if (IsDebuggerPreviewWeapon(item))
+            return item;
+    }
+
+    return ITEM_NONE;
+}
+
+static const char * GetDebuggerPreviewWeaponName(int item)
+{
+    const char * name;
+
+    if (item == ITEM_NONE)
+        return "None";
+
+    name = GetItemName(item);
+    return name != NULL ? name : "???";
+}
+
+static int GetDebuggerBanimId(int classId, struct Unit * unit, int weapon)
 {
     const struct ClassData * class;
     const struct BattleAnimDef * animDef;
     int i;
-    int item;
     int expectedType;
+
+    (void)unit;
 
     class = GetClassData(classId);
     if (class == NULL || class->pBattleAnimDef == NULL)
@@ -7975,28 +7961,12 @@ static int GetDebuggerBanimId(int classId, struct Unit * unit)
 
     animDef = class->pBattleAnimDef;
 
-    item = GetUnitEquippedWeapon(unit);
-    expectedType = item != 0 ? (GetItemType(item) + 0x100) : SPECIAL_BANIM_WTYPE;
+    expectedType = weapon != ITEM_NONE ? (GetItemType(weapon) + 0x100) : SPECIAL_BANIM_WTYPE;
 
     for (i = 0; animDef[i].index != 0; ++i)
     {
         if (animDef[i].wtype == expectedType)
             return animDef[i].index - 1;
-    }
-
-    // the active unit's real weapon (if any) doesn't match anything this
-    // class's animDef has - if the class can actually cast, try its default
-    // spell before giving up to the unarmed/special case below
-    item = GetDebuggerDefaultSpellItem(class);
-    if (item != ITEM_NONE)
-    {
-        expectedType = GetItemType(item) + 0x100;
-
-        for (i = 0; animDef[i].index != 0; ++i)
-        {
-            if (animDef[i].wtype == expectedType)
-                return animDef[i].index - 1;
-        }
     }
 
     for (i = 0; animDef[i].index != 0; ++i)
@@ -8011,9 +7981,9 @@ static int GetDebuggerBanimId(int classId, struct Unit * unit)
 
 static struct ClassReelEnt * GetDebuggerBanimReelEntry(int classId)
 {
-    int i;
+   
     return NULL; 
-
+    // int i;
     // for (i = 0; i < 65; i++)
     // {
         // if (gClassReelData[i].classId == classId)
@@ -8023,16 +7993,20 @@ static struct ClassReelEnt * GetDebuggerBanimReelEntry(int classId)
     // return NULL;
 }
 
-static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classId, struct Unit * unit)
-{
-    const struct ClassData * class = GetClassData(classId);
+static int GetDebuggerSpellAnimId(int classId, int weapon) { 
+    int result = GetSpellAnimId(classId, weapon); 
+    if (result < 0) { result = 0; } 
+    return result; 
+} 
 
+static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classId, struct Unit * unit, int weapon)
+{
     out->descTextId = 0;
     out->paletteId = -1;
     out->classId = classId;
     out->unk_06 = 0;
-    out->banimId = GetDebuggerBanimId(classId, unit);
-    out->magicFx = class != NULL ? GetDebuggerDefaultMagicFx(class) : 0;
+    out->banimId = GetDebuggerBanimId(classId, unit, weapon);
+    out->magicFx = 0;
     out->unk_09 = 0;
     out->unk_0A = 0;
     out->unk_0B = 0;
@@ -8040,10 +8014,10 @@ static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classI
     out->unk_0D = DEBUGGER_BANIM_TERRAIN;
     out->unk_0E = DEBUGGER_BANIM_TERRAIN;
     out->unk_0F = 0;
-    out->script = sDebuggerBanimScript;
+    out->script = (void*)sCRScr_DefaultHit;
 }
 
-static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct Unit* unit)
+static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct Unit* unit, int weapon)
 {
     struct BattleAnim * anim;
     int paletteId;
@@ -8052,7 +8026,7 @@ static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct
         return false;
 
     
-    anim = &banim_data[GetDebuggerBanimId(classId, unit)];
+    anim = &banim_data[GetDebuggerBanimId(classId, unit, weapon)];
 
     if (!IsValidLz77DecompressionData(anim->script) || !IsValidLz77DecompressionData(anim->oam_r) ||
         !IsValidLz77DecompressionData(anim->oam_l) || !IsValidLz77DecompressionData(anim->pal))
@@ -8087,6 +8061,115 @@ static void SetDebuggerBanimLayer(u16 layer)
     }
 }
 
+static void StartDebuggerBanimSpellAnimation(struct Anim * anim)
+{
+    if (anim == NULL)
+        return;
+
+    StartSpellAnimation(anim);
+
+    if (Get0201FAC8())
+        Set0201FAC8(2);
+}
+ 
+static void DebuggerEkrUnitMainMini_UpdateAnim(struct AnimBuffer * animBuf, struct Anim * anim)
+{
+    int animState2;
+
+    if (anim == NULL)
+        return;
+
+    animState2 = anim->state2 & 0xF000;
+    if (animState2 == 0)
+        return;
+
+    if (animState2 & ANIM_BIT2_COMMAND)
+    {
+        while (anim->commandQueueSize != 0)
+        {
+            int command = anim->commandQueue[anim->commandQueueSize - 1];
+
+            switch (command)
+            {
+                case ANIM_CMD_WAIT_01:
+                case ANIM_CMD_WAIT_02:
+                    EkrMainMini_AnimMarkRoundEnd(anim);
+                    break;
+
+                case ANIM_CMD_WAIT_05:
+                    if (GetAISLayerId(anim) == 0)
+                        StartDebuggerBanimSpellAnimation(anim);
+
+                    // fallthrough
+
+                case ANIM_CMD_WAIT_03:
+                case ANIM_CMD_WAIT_04:
+                    anim->pScrCurrent++;
+                    break;
+
+                case ANIM_CMD_WAIT_13:
+                    EkrMainMini_AnimUpdateFrameGfx(anim);
+                    break;
+
+                case 0x0E:
+                    StartDebuggerBanimSpellAnimation(anim);
+                    break;
+
+                case ANIM_CMD_WAIT_18:
+                    EkrMainMini_AnimMarkRoundEnd(anim);
+                    break;
+
+                default:
+                    break;
+            }
+
+            anim->commandQueueSize--;
+        }
+
+        anim->state2 &= 0xE700;
+    }
+
+    if (animState2 & ANIM_BIT2_FRAME)
+    {
+        if (GetAISLayerId(anim) == 0 && animBuf->unk_2C != anim->pImgSheet)
+        {
+            RegisterAISSheetGraphics(anim);
+            animBuf->unk_2C = anim->pImgSheet;
+        }
+
+        anim->state2 &= 0xD700;
+    }
+
+    if (animState2 & ANIM_BIT2_STOP)
+        anim->nextRoundId = -1;
+}
+
+static void DebuggerEkrUnitMainMiniMain(struct DebuggerProcEkrUnitMainMini * proc)
+{
+    struct AnimBuffer * animBuf = proc->animBuf;
+
+    DebuggerEkrUnitMainMini_UpdateAnim(animBuf, animBuf->anim1);
+    DebuggerEkrUnitMainMini_UpdateAnim(animBuf, animBuf->anim2);
+}
+
+static const struct ProcCmd sProc_DebuggerEkrUnitMainMini[] = {
+    PROC_NAME("DebuggerEkrUnitMainMini"),
+    PROC_REPEAT(DebuggerEkrUnitMainMiniMain),
+    PROC_END,
+};
+
+static void NewDebuggerEkrUnitMainMini(struct AnimBuffer * animBuf)
+{
+    struct DebuggerProcEkrUnitMainMini * proc = Proc_Start(sProc_DebuggerEkrUnitMainMini, PROC_TREE_4);
+
+    InitMainMiniAnim(animBuf);
+
+    proc->animBuf = animBuf;
+
+    animBuf->unk_34 = proc;
+    animBuf->unk_00 = 1;
+}
+
 static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * proc)
 {
     // classReelEnt is only ever a gClassReelData (rom) pointer or NULL - a
@@ -8094,21 +8177,21 @@ static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * pro
     proc->script = proc->classReelEnt != NULL ? proc->classReelEnt->script : NULL;
 
     if (proc->script == NULL)
-        proc->script = sDebuggerBanimScript;
+        proc->script = (void*)sCRScr_DefaultHit;
 }
 
 // entry is only read here, for this one call - persistentEntry is what
 // proc->classReelEnt keeps for later script resets, and is NULL for a
 // fallback/custom-class entry (whose backing storage is the caller's stack).
 static void SetupDebuggerBanimAnim(
-    struct OpInfoClassDisplayProc * proc, struct ClassReelEnt * entry, struct ClassReelEnt * persistentEntry)
+    struct OpInfoClassDisplayProc * proc, struct ClassReelEnt * entry, struct ClassReelEnt * persistentEntry, int weapon)
 {
     NewEfxAnimeDrvProc();
 
     gOpInfoData.charPalId = entry->paletteId;
     gOpInfoData.xPos = DEBUGGER_BANIM_X;
     gOpInfoData.yPos = DEBUGGER_BANIM_Y;
-    gOpInfoData.animId = GetDebuggerBanimId(entry->classId, gActiveUnit);
+    gOpInfoData.animId = GetDebuggerBanimId(entry->classId, gActiveUnit, weapon);
     gOpInfoData.roundType = ANIM_ROUND_TAKING_HIT_CLOSE;
     gOpInfoData.genericPalId = entry->unk_06;
     gOpInfoData.state2 = 1;
@@ -8120,7 +8203,7 @@ static void SetupDebuggerBanimAnim(
     gOpInfoData.unk_28 = gBanimScrLeft;
     gOpInfoData.unk_30 = &gUnk_4;
 
-    gUnk_4.magicFuncIdx = entry->magicFx;
+    gUnk_4.magicFuncIdx = 0;
     gUnk_4.xOffsetBg = entry->unk_09;
     gUnk_4.yOffsetBg = entry->unk_0A;
     gUnk_4.xOffsetObj = entry->unk_0B;
@@ -8136,8 +8219,11 @@ static void SetupDebuggerBanimAnim(
     gUnk_4.objImgBuf = gBuf_Banim;
     gUnk_4.resetCallback = DebuggerBanimBlendWindowConfig;
 
+    gEkrSpellAnimIndex[EKR_POS_L] = GetDebuggerSpellAnimId(entry->classId, weapon);
+    gEkrSpellAnimIndex[EKR_POS_R] = gEkrSpellAnimIndex[EKR_POS_L];
+
     ResetClassReelSpell();
-    NewEkrUnitMainMini(&gOpInfoData);
+    NewDebuggerEkrUnitMainMini(&gOpInfoData);
     SetDebuggerBanimLayer(0);
 
     gUnk_Opinfo_0.unk00 = DEBUGGER_BANIM_TERRAIN; // terrain_l
@@ -8157,7 +8243,7 @@ static void SetupDebuggerBanimAnim(
         &gUnk_Opinfo_0, DEBUGGER_BANIM_BG_X, DEBUGGER_BANIM_BG_Y, DEBUGGER_BANIM_BG_X + 0x60, DEBUGGER_BANIM_BG_Y);
 
     // proc->classReelEnt = entry;
-    proc->classReelEnt = &DefaultClassReelData[0];
+    proc->classReelEnt = (void*)&DefaultClassReelData[0];
     DebuggerBanimPreview_ResetScript(proc);
 }
 
@@ -8166,7 +8252,7 @@ static void EndDebuggerBanimPreview(void)
     Proc_EndEach(sProc_DebuggerBanimPreview);
 }
 
-static void StartDebuggerBanimPreview(int classId, struct Unit * unit)
+static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon)
 {
     struct OpInfoClassDisplayProc * proc;
     struct ClassReelEnt * vanillaEntry;
@@ -8186,15 +8272,15 @@ static void StartDebuggerBanimPreview(int classId, struct Unit * unit)
     }
     else
     {
-        FillDebuggerBanimFallbackEntry(&fallbackEntry, classId, unit);
+        FillDebuggerBanimFallbackEntry(&fallbackEntry, classId, unit, weapon);
         entry = &fallbackEntry;
     }
 
-    if (!IsDebuggerBanimSafe(entry, classId, unit))
+    if (!IsDebuggerBanimSafe(entry, classId, unit, weapon))
         return;
 
     proc = Proc_Start(sProc_DebuggerBanimPreview, PROC_TREE_3);
-    SetupDebuggerBanimAnim(proc, entry, vanillaEntry);
+    SetupDebuggerBanimAnim(proc, entry, vanillaEntry, weapon);
 }
 
 static void DebuggerBanimPreview_ExecScript(struct OpInfoClassDisplayProc * proc)
@@ -8241,6 +8327,1016 @@ static const struct ProcCmd sProc_DebuggerBanimPreview[] = {
     PROC_END,
 };
 
+#define AnimViewerOption_Class 0
+#define AnimViewerOption_Item 1
+#define AnimViewerOption_Selected 2
+#define AnimViewerTmp_Restart 3
+#define AnimViewerTmp_Exit 4
+#define AnimViewerTmp_BattleLive 5
+#define AnimViewerTmp_OldAnimType 6
+#define AnimViewerTmp_Redraw 7
+#define AnimViewerTmp_TextChr 8
+#define AnimViewerTmp_UnhideAnims 9
+#define AnimViewerTmp_Rebuild 10
+#define AnimViewerTmp_OldStateBits 11
+#define AnimViewerTmp_HpBarBusy 12
+#define AnimViewerMaxClass CLASS_PUPIL_T1
+#define AnimViewerMaxItem ITEM_GOLDGEM
+#define AnimViewerPreviewHp 61
+#define AnimViewerPreviewDamage 20
+#define AnimViewerPreviewCrit 50
+#define AnimViewerLeftItemChr 7
+#define AnimViewerRightItemChr 22
+
+extern u8 gGenericBuffer[0x2000];
+extern s16 gBanimExpGain[2];
+extern s16 gEfxHpLutOff[2];
+extern struct Font * gActiveFont;
+
+typedef struct
+{
+    /* 00 */ PROC_HEADER;
+    DebuggerProc * debugger;
+} AnimViewerControlProc;
+
+static void AnimViewerControlLoop(AnimViewerControlProc * proc);
+static void ResetAnimViewerBattleHp(void);
+
+static const struct ProcCmd sProc_AnimViewerControl[] = {
+    PROC_NAME("DebuggerAnimViewerControl"),
+    PROC_REPEAT(AnimViewerControlLoop),
+    PROC_END,
+};
+
+static struct Unit * GetAnimViewerActor(void)
+{
+    return (struct Unit *)gGenericBuffer;
+}
+
+static struct Unit * GetAnimViewerTarget(void)
+{
+    return (struct Unit *)(gGenericBuffer + sizeof(struct Unit));
+}
+
+static bool IsAnimViewerClass(int classId)
+{
+    const struct ClassData * class = GetClassData(classId);
+
+    return classId != 0 && class != NULL && class->pBattleAnimDef != NULL;
+}
+
+static int GetNextAnimViewerClass(int classId, int direction)
+{
+    int i;
+
+    for (i = 0; i <= AnimViewerMaxClass; ++i)
+    {
+        classId += direction;
+
+        if (classId <= 0)
+            classId = AnimViewerMaxClass;
+        else if (classId > AnimViewerMaxClass)
+            classId = 1;
+
+        if (IsAnimViewerClass(classId))
+            return classId;
+    }
+
+    return CLASS_EPHRAIM_LORD;
+}
+
+static bool IsAnimViewerItem(int item)
+{
+    int attributes;
+
+    if (item == ITEM_NONE)
+        return true;
+
+    if (item < 0 || item > AnimViewerMaxItem)
+        return false;
+
+    attributes = GetItemAttributes(item);
+
+    return (attributes & IA_REQUIRES_WEXP) != 0;
+}
+
+static bool IsAnimViewerSpecialClassItem(int classId, int item)
+{
+    switch (classId)
+    {
+        case CLASS_MANAKETE:
+        case CLASS_MANAKETE_2:
+            return item == ITEM_DEMONSTONE;
+
+        case CLASS_MANAKETE_MYRRH:
+            return item == ITEM_DIVINESTONE;
+
+        case CLASS_DEMON_KING:
+            return item == ITEM_RAVAGER;
+
+        case CLASS_DRACO_ZOMBIE:
+            return item == ITEM_MONSTER_WRETCHAIR;
+    }
+
+    return false;
+}
+
+static bool DoesAnimViewerClassHaveItemRank(int classId, int item)
+{
+    int type;
+    const struct ClassData * class = GetClassData(classId);
+
+    if (item == ITEM_NONE)
+        return true;
+
+    if (class == NULL)
+        return false;
+
+    if (IsAnimViewerSpecialClassItem(classId, item))
+        return true;
+
+    if ((class->attributes & CA_LOCK_3) && item == GetDebuggerDefaultPreviewWeapon(classId))
+        return true;
+
+    type = GetItemType(item);
+
+    if (type < ITYPE_SWORD || type > ITYPE_DARK)
+        return false;
+
+    return class->baseRanks[type] != 0;
+}
+
+static bool IsAnimViewerItemValidForClass(int classId, int item)
+{
+    u32 animId = 0;
+    s16 spellAnimId;
+    const struct ClassData * class = GetClassData(classId);
+
+    if (class == NULL || class->pBattleAnimDef == NULL)
+        return false;
+
+    if (!IsAnimViewerItem(item))
+        return false;
+
+    if (!DoesAnimViewerClassHaveItemRank(classId, item))
+        return false;
+
+    if (GetBattleAnimationId(NULL, class->pBattleAnimDef, item, &animId) == (u16)-1)
+        return false;
+
+    spellAnimId = GetSpellAnimId(classId, item);
+    UnsetMapStaffAnim(&spellAnimId, 0, item);
+
+    return spellAnimId != -2;
+}
+
+static int GetAnimViewerFallbackItem(int classId)
+{
+    int i;
+    int item = GetDebuggerDefaultPreviewWeapon(classId);
+
+    if (IsAnimViewerItemValidForClass(classId, item))
+        return item;
+
+    for (i = 1; i <= AnimViewerMaxItem; ++i)
+        if (IsAnimViewerItemValidForClass(classId, i))
+            return i;
+
+    if (IsAnimViewerItemValidForClass(classId, ITEM_NONE))
+        return ITEM_NONE;
+
+    return ITEM_NONE;
+}
+
+static int NormalizeAnimViewerItemForClass(int classId, int item)
+{
+    if (IsAnimViewerItemValidForClass(classId, item))
+        return item;
+
+    return GetAnimViewerFallbackItem(classId);
+}
+
+static int GetAnimViewerItemAfterClassChange(int classId, int item)
+{
+    if (item == ITEM_NONE)
+        return GetAnimViewerFallbackItem(classId);
+
+    return NormalizeAnimViewerItemForClass(classId, item);
+}
+
+static int GetNextAnimViewerItem(int classId, int item, int direction)
+{
+    int i;
+
+    for (i = 0; i <= AnimViewerMaxItem; ++i)
+    {
+        item += direction;
+
+        if (item < 0)
+            item = AnimViewerMaxItem;
+        else if (item > AnimViewerMaxItem)
+            item = 0;
+
+        if (IsAnimViewerItemValidForClass(classId, item))
+            return item;
+    }
+
+    return GetAnimViewerFallbackItem(classId);
+}
+
+static const char * GetAnimViewerItemName(int item)
+{
+    if (item == ITEM_NONE)
+        return "None";
+
+    return GetDebuggerPreviewWeaponName(item);
+}
+
+static int GetAnimViewerBattleRange(int item)
+{
+    if (item == ITEM_NONE)
+        return 1;
+
+    if (GetItemMinRange(item) > 1)
+        return GetItemMinRange(item);
+
+    if (GetItemType(item) == ITYPE_BOW)
+        return 2;
+
+    return 1;
+}
+
+static void SaveAnimViewerTextChr(DebuggerProc * proc)
+{
+    if (gActiveFont != NULL)
+        proc->tmp[AnimViewerTmp_TextChr] = gActiveFont->chr_counter;
+}
+
+static void RestoreAnimViewerTextChr(DebuggerProc * proc)
+{
+    // SetTextFont(0);
+    // SetTextFontGlyphs(0);
+    // ResetText(); 
+
+    // if (gActiveFont != NULL)
+        // gActiveFont->chr_counter = proc->tmp[AnimViewerTmp_TextChr];
+}
+
+/**
+ * The viewer keeps a real arena battle alive so the animation loops forever.
+ * Every time the arena rolls into its next round, banim calls ArenaContinueBattle(),
+ * which calls WriteSuspendSave(3) - a full suspend save (several KB of byte-wide
+ * SRAM writes, each chunk verified and retried up to 3 times) in a single frame.
+ * On top of the stall, WriteSuspendSave packs the unit arrays through gGenericBuffer,
+ * which is exactly where GetAnimViewerActor()/GetAnimViewerTarget() live, so every
+ * loop also shredded our two units (and overwrote the player's real suspend save).
+ *
+ * WriteSuspendSave() and the pid-stat SRAM writes both bail out early on
+ * PLAY_FLAG_TUTORIAL, so borrow that flag for as long as the viewer is open.
+ */
+static void SuppressAnimViewerSuspendSave(DebuggerProc * proc)
+{
+    proc->tmp[AnimViewerTmp_OldStateBits] = gPlaySt.chapterStateBits;
+    gPlaySt.chapterStateBits |= PLAY_FLAG_TUTORIAL;
+}
+
+static void RestoreAnimViewerSuspendSave(DebuggerProc * proc)
+{
+    gPlaySt.chapterStateBits = proc->tmp[AnimViewerTmp_OldStateBits];
+}
+
+static void SuppressAnimViewerBattleProgress(void)
+{
+    gBanimExpGain[0] = 0;
+    gBanimExpGain[1] = 0;
+    gBattleActor.expGain = 0;
+    gBattleTarget.expGain = 0;
+    gBattleActor.wexpMultiplier = 0;
+    gBattleTarget.wexpMultiplier = 0;
+    gBattleActor.weaponBroke = FALSE;
+    gBattleTarget.weaponBroke = FALSE;
+}
+
+static void SetupAnimViewerBattleRounds(void)
+{
+    int actorWeapon = gBattleActor.weaponBefore;
+    int targetWeapon = gBattleTarget.weaponBefore;
+
+    gBattleActor.battleHitRate = 100;
+    gBattleActor.battleEffectiveHitRate = 100;
+    gBattleActor.battleCritRate = 0;
+    gBattleActor.battleEffectiveCritRate = 0;
+    gBattleActor.battleSpeed = 0;
+    gBattleTarget.battleSpeed = 0;
+    gBattleTarget.weapon = ITEM_NONE;
+    gBattleTarget.weaponBefore = ITEM_NONE;
+    gBattleTarget.canCounter = FALSE;
+
+    BattleUnwind();
+
+    gBattleActor.weapon = actorWeapon;
+    gBattleActor.weaponBefore = actorWeapon;
+    gBattleActor.unit.items[0] = actorWeapon;
+    gBattleActor.weaponBroke = FALSE;
+    gBattleTarget.weapon = targetWeapon;
+    gBattleTarget.weaponBefore = targetWeapon;
+    gBattleTarget.unit.items[0] = targetWeapon;
+    ResetAnimViewerBattleHp();
+}
+
+static void ApplyAnimViewerPreviewBattleStats(void)
+{
+    gBattleTarget.battleDefense = 0;
+    gBattleActor.battleAttack = AnimViewerPreviewDamage;
+    gBattleActor.battleCritRate = AnimViewerPreviewCrit;
+    gBattleActor.battleEffectiveCritRate = AnimViewerPreviewCrit;
+    gBattleTarget.battleAttack = 0;
+    gBattleTarget.battleCritRate = 0;
+    gBattleTarget.battleEffectiveCritRate = 0;
+    gBattleStats.damage = AnimViewerPreviewDamage;
+
+    SetupAnimViewerBattleRounds();
+
+    gBattleActor.battleAttack = AnimViewerPreviewDamage;
+    gBattleTarget.battleDefense = 0;
+    gBattleActor.battleCritRate = AnimViewerPreviewCrit;
+    gBattleActor.battleEffectiveCritRate = AnimViewerPreviewCrit;
+    gBattleStats.attack = AnimViewerPreviewDamage;
+    gBattleStats.defense = 0;
+    gBattleStats.damage = AnimViewerPreviewDamage;
+    gBattleStats.critRate = AnimViewerPreviewCrit;
+}
+
+static void SetAnimViewerBattleUnitWeapon(struct BattleUnit * bu, int item)
+{
+    int weapon = item != ITEM_NONE ? MakeNewItem(item) : ITEM_NONE;
+
+    bu->unit.items[0] = weapon;
+    bu->weaponSlotIndex = 0;
+    bu->weapon = weapon;
+    bu->weaponBefore = weapon;
+    bu->weaponAttributes = GetItemAttributes(weapon);
+    bu->weaponType = GetItemType(weapon);
+    bu->canCounter = FALSE;
+    bu->weaponBroke = FALSE;
+}
+
+static void RestoreAnimViewerBattleWeapons(int item)
+{
+    struct Unit * actor = GetAnimViewerActor();
+    struct Unit * target = GetAnimViewerTarget();
+    int weapon = item != ITEM_NONE ? MakeNewItem(item) : ITEM_NONE;
+
+    actor->items[0] = weapon;
+    target->items[0] = ITEM_NONE;
+
+    gArenaState.playerWeapon = weapon;
+    gArenaState.opponentWeapon = ITEM_NONE;
+
+    SetAnimViewerBattleUnitWeapon(&gBattleActor, item);
+    SetAnimViewerBattleUnitWeapon(&gBattleTarget, ITEM_NONE);
+}
+
+/**
+ * Everything the battle engine needs pinned so nobody ever actually dies.
+ * Safe to call every frame - it does not touch the on-screen gauge.
+ */
+static void ResetAnimViewerUnitHp(void)
+{
+    struct Unit * actor = GetAnimViewerActor();
+    struct Unit * target = GetAnimViewerTarget();
+
+    actor->maxHP = AnimViewerPreviewHp;
+    actor->curHP = AnimViewerPreviewHp;
+    target->maxHP = AnimViewerPreviewHp;
+    target->curHP = AnimViewerPreviewHp;
+
+    gBattleActor.unit.maxHP = AnimViewerPreviewHp;
+    gBattleActor.unit.curHP = AnimViewerPreviewHp;
+    gBattleActor.hpInitial = AnimViewerPreviewHp;
+    gBattleTarget.unit.maxHP = AnimViewerPreviewHp;
+    gBattleTarget.unit.curHP = AnimViewerPreviewHp;
+    gBattleTarget.hpInitial = AnimViewerPreviewHp;
+
+    gEkrPairMaxHP[0] = AnimViewerPreviewHp;
+    gEkrPairMaxHP[1] = AnimViewerPreviewHp;
+    gActionData.trapType = 0;
+
+    SuppressAnimViewerBattleProgress();
+}
+
+/**
+ * The displayed gauge only. gBanimSomeHp is EkrGauge's "last drawn" cache, so it
+ * gets invalidated rather than set to the new value - writing both the value and
+ * the cache in the same frame is what makes the gauge skip its redraw.
+ */
+static void ResetAnimViewerGaugeHp(void)
+{
+    gEkrGaugeHp[0] = AnimViewerPreviewHp;
+    gEkrGaugeHp[1] = AnimViewerPreviewHp;
+    gBanimSomeHp[0] = -1;
+    gBanimSomeHp[1] = -1;
+}
+
+static void ResetAnimViewerBattleHp(void)
+{
+    ResetAnimViewerUnitHp();
+    ResetAnimViewerGaugeHp();
+}
+
+static void ResetAnimViewerBattleAnimHp(void)
+{
+    int i;
+
+    gEfxHpLutOff[0] = 0;
+    gEfxHpLutOff[1] = 0;
+
+    for (i = 0; i < 22; ++i)
+        gEfxHpLut[i] = AnimViewerPreviewHp;
+}
+
+static void SetAnimViewerAnimsHidden(bool hidden)
+{
+    int i;
+
+    for (i = 0; i < 4; ++i)
+    {
+        if (gAnims[i] == NULL)
+            continue;
+
+        if (hidden)
+            gAnims[i]->state |= ANIM_BIT_HIDDEN;
+        else
+            gAnims[i]->state &= ~ANIM_BIT_HIDDEN;
+    }
+}
+
+static void QueueAnimViewerAnimsHidden(DebuggerProc * proc, int frames)
+{
+    SetAnimViewerAnimsHidden(TRUE);
+
+    if (proc->tmp[AnimViewerTmp_UnhideAnims] < frames)
+        proc->tmp[AnimViewerTmp_UnhideAnims] = frames;
+}
+
+static bool ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
+{
+    int side;
+
+    if (gAnims[0] == NULL || gAnims[2] == NULL)
+        return false;
+
+    QueueAnimViewerAnimsHidden(proc, 2);
+    SetupAnimViewerBattleRounds();
+
+    /**
+     * The vanilla arena round loop rewinds gEfxHpLutOff in InitMainAnims(); we swap
+     * rounds without it, so rewind it here. Otherwise a swap taken mid-drain leaves
+     * the offset pointing past the freshly parsed hits and NewEfxHpBar() reads the
+     * 0xFFFF terminator as its target HP.
+     */
+    ResetAnimViewerBattleAnimHp();
+    ParseBattleHitToBanimCmd();
+    UpdateBanimFrame();
+
+    for (side = 0; side < 2; ++side)
+    {
+        int type = GetBattleAnimRoundType(side);
+        struct Anim * anim1 = gAnims[side * 2];
+        struct Anim * anim2 = gAnims[side * 2 + 1];
+
+        if (type == ANIM_ROUND_INVALID || anim1 == NULL || anim2 == NULL)
+        {
+            gBanimDoneFlag[side] = TRUE;
+            continue;
+        }
+
+        SwitchAISFrameDataFromBARoundType(anim1, type);
+        SwitchAISFrameDataFromBARoundType(anim2, type);
+
+        anim1->state3 = ANIM_BIT3_C01_BLOCKING_IN_BATTLE;
+        anim2->state3 = ANIM_BIT3_C01_BLOCKING_IN_BATTLE;
+
+        anim1->nextRoundId = 1;
+        anim2->nextRoundId = 1;
+
+        AnimScrAdvance(anim1);
+        AnimScrAdvance(anim2);
+
+        gBanimDoneFlag[side] = FALSE;
+    }
+
+    gCtrlC01Blocking = 0;
+
+    ResetAnimViewerBattleHp();
+
+    return true;
+}
+
+static void RefreshAnimViewerBattleUi(void)
+{
+    struct Font * oldFont = gActiveFont;
+    struct Text text;
+    const char * str;
+    int oldChrCounter;
+
+    if (oldFont == NULL)
+        return;
+
+    oldChrCounter = oldFont->chr_counter;
+
+    str = gpEkrBattleUnitLeft->weaponBefore == ITEM_NONE
+        ? gNopStr
+        : GetItemName(gpEkrBattleUnitLeft->weaponBefore);
+
+    oldFont->chr_counter = AnimViewerLeftItemChr;
+    InitText(&text, 8);
+    Text_SetCursor(&text, GetStringTextCenteredPos(0x40, str));
+    LZ77UnCompVram(Img_EfxLeftItemBox, (void *)0x6001A40);
+    Text_DrawString(&text, str);
+
+    str = gpEkrBattleUnitRight->weaponBefore == ITEM_NONE
+        ? gNopStr
+        : GetItemName(gpEkrBattleUnitRight->weaponBefore);
+
+    oldFont->chr_counter = AnimViewerRightItemChr;
+    InitText(&text, 8);
+    Text_SetCursor(&text, GetStringTextCenteredPos(0x3E, str));
+    LZ77UnCompVram(Img_EfxRightItemBox, (void *)0x6001E00);
+    Text_DrawString(&text, str);
+
+    oldFont->chr_counter = oldChrCounter;
+    SetTextFont(oldFont);
+
+    /**
+     * The weapon icon OBJ tiles are only loaded once, by NewEkrGauge() at battle
+     * start, so the icon kept showing whatever the viewer opened with. Reload the
+     * same two chr slots NewEkrGauge uses. GetItemIconId() returns -1 for
+     * ITEM_NONE, which makes LoadIconObjectGraphics blank the slot instead.
+     */
+    LoadIconObjectGraphics(GetItemIconId(gpEkrBattleUnitLeft->weaponBefore), 0x1DC);
+    LoadIconObjectGraphics(GetItemIconId(gpEkrBattleUnitRight->weaponBefore), 0x1DE);
+
+    EndProcEfxWeaponIcon();
+    NewEfxWeaponIcon(0, 0);
+}
+
+static void InitAnimViewerUnit(struct Unit * unit, int charId, int classId, int faction, int item)
+{
+    int i;
+    const struct ClassData * class = GetClassData(classId);
+
+    ClearUnit(unit);
+
+    unit->pCharacterData = GetCharacterData(charId);
+    unit->pClassData = class;
+    unit->level = 20;
+    unit->exp = UNIT_EXP_DISABLED;
+    unit->index = faction | 1;
+    unit->xPos = 5;
+    unit->yPos = 5;
+    unit->maxHP = AnimViewerPreviewHp;
+    unit->curHP = AnimViewerPreviewHp;
+    unit->pow = class->basePow + 15;
+    unit->skl = class->baseSkl + 15;
+    unit->spd = class->baseSpd + 15;
+    unit->def = class->baseDef + 10;
+    unit->res = class->baseRes + 10;
+    unit->lck = 15;
+    unit->items[0] = item != ITEM_NONE ? MakeNewItem(item) : ITEM_NONE;
+
+    for (i = 0; i < 8; ++i)
+        unit->ranks[i] = WPN_EXP_A;
+}
+
+static int GetAnimViewerActorSide(void)
+{
+    if (gpEkrBattleUnitLeft == &gBattleActor)
+        return EKR_POS_L;
+
+    if (gpEkrBattleUnitRight == &gBattleActor)
+        return EKR_POS_R;
+
+    return EKR_POS_R;
+}
+
+static void RefreshAnimViewerBanimCache(void)
+{
+    u32 animId = 0;
+    u16 banimId;
+    int side = GetAnimViewerActorSide();
+    int weapon = gBattleActor.weaponBefore;
+    struct Unit * actor = &gBattleActor.unit;
+
+    banimId = GetBattleAnimationId(actor, actor->pClassData->pBattleAnimDef, weapon, &animId);
+    if (banimId == (u16)-1)
+        return;
+
+    gEkrPairBanimID2[side] = banimId;
+    gEkrPairBanimID[side] = gEkrPairBanimID2[side];
+    gAnimCharaPalIndex[side] = -1;
+    gEkrSpellAnimIndex[side] = GetSpellAnimId(actor->pClassData->number, weapon);
+    UnsetMapStaffAnim(&gEkrSpellAnimIndex[side], side, weapon);
+
+    gEkrPairMaxHP[side] = AnimViewerPreviewHp;
+    gEkrGaugeHp[side] = AnimViewerPreviewHp;
+    gBanimSomeHp[side] = AnimViewerPreviewHp;
+    gEkrPairHit[side] = gBattleActor.battleEffectiveHitRate;
+    gEkrPairDmgPair[side] = AnimViewerPreviewDamage;
+    gEkrPairCritPair[side] = AnimViewerPreviewCrit;
+    gEkrPairBaseCon[side] = actor->pClassData->baseCon;
+    gEkrPairWTABonus[side] = gBattleActor.wTriangleHitBonus;
+    gEkrPairEffectiveAgainst[side] = IsUnitEffectiveAgainst(actor, &gBattleTarget.unit);
+    if (!gEkrPairEffectiveAgainst[side])
+        gEkrPairEffectiveAgainst[side] = IsItemEffectiveAgainst(gBattleActor.weapon, &gBattleTarget.unit);
+}
+
+static void GenerateAnimViewerBattle(DebuggerProc * proc)
+{
+    int item = NormalizeAnimViewerItemForClass(proc->tmp[AnimViewerOption_Class], proc->tmp[AnimViewerOption_Item]);
+    int range = GetAnimViewerBattleRange(item);
+    struct Unit * actor = GetAnimViewerActor();
+    struct Unit * target = GetAnimViewerTarget();
+
+    proc->tmp[AnimViewerOption_Item] = item;
+
+    InitAnimViewerUnit(actor, CHARACTER_EIRIKA, proc->tmp[AnimViewerOption_Class], FACTION_BLUE, item);
+    InitAnimViewerUnit(target, CHARACTER_SETH, CLASS_SOLDIER, FACTION_RED, ITEM_NONE);
+
+    target->pow = 0;
+    target->skl = 0;
+    target->spd = 0;
+    target->def = 100;
+    target->res = 100;
+    target->xPos = actor->xPos + range;
+    target->yPos = actor->yPos;
+
+    gArenaState.playerUnit = actor;
+    gArenaState.opponentUnit = target;
+    gArenaState.result = 0;
+    gArenaState.range = range;
+    gArenaState.playerWeapon = item != ITEM_NONE ? MakeNewItem(item) : ITEM_NONE;
+    gArenaState.opponentWeapon = ITEM_NONE;
+
+    gActionData.trapType = 0;
+    BattleGenerateArena(actor);
+    RestoreAnimViewerBattleWeapons(item);
+    ApplyAnimViewerPreviewBattleStats();
+    RefreshAnimViewerBanimCache();
+    ResetAnimViewerBattleHp();
+}
+
+static void StartAnimViewerBattle(DebuggerProc * proc)
+{
+    bool started;
+
+    GenerateAnimViewerBattle(proc);
+
+    SetBanimLinkArenaFlag(0);
+
+    started = PrepareBattleGraphicsMaybe();
+
+    if (started)
+        BeginAnimsOnBattleAnimations();
+
+    proc->tmp[AnimViewerTmp_Restart] = FALSE;
+    proc->tmp[AnimViewerTmp_Rebuild] = FALSE;
+    proc->tmp[AnimViewerTmp_BattleLive] = started;
+    proc->tmp[AnimViewerTmp_Redraw] = TRUE;
+}
+
+static void UpdateAnimViewerBattle(DebuggerProc * proc)
+{
+    int item = NormalizeAnimViewerItemForClass(proc->tmp[AnimViewerOption_Class], proc->tmp[AnimViewerOption_Item]);
+    int range = GetAnimViewerBattleRange(item);
+    struct Unit * actor = GetAnimViewerActor();
+    struct Unit * target = GetAnimViewerTarget();
+
+    proc->tmp[AnimViewerOption_Item] = item;
+    
+    InitAnimViewerUnit(actor, CHARACTER_EIRIKA, proc->tmp[AnimViewerOption_Class], FACTION_BLUE, item);
+    InitAnimViewerUnit(target, CHARACTER_SETH, CLASS_SOLDIER, FACTION_RED, ITEM_NONE);
+
+    target->pow = 0;
+    target->skl = 0;
+    target->spd = 0;
+    target->def = 100;
+    target->res = 100;
+    target->xPos = actor->xPos + range;
+    target->yPos = actor->yPos;
+
+    gArenaState.playerUnit = actor;
+    gArenaState.opponentUnit = target;
+    gArenaState.result = 0;
+    gArenaState.range = range;
+    gArenaState.playerWeapon = item != ITEM_NONE ? MakeNewItem(item) : ITEM_NONE;
+    gArenaState.opponentWeapon = ITEM_NONE;
+
+    gBattleStats.config = BATTLE_CONFIG_REAL | BATTLE_CONFIG_ARENA;
+    gBattleStats.range = range;
+    gEkrDistanceType = range <= 1 ? EKR_DISTANCE_CLOSE : (range <= 3 ? EKR_DISTANCE_FAR : EKR_DISTANCE_FARFAR);
+
+    InitBattleUnit(&gBattleActor, actor);
+    InitBattleUnit(&gBattleTarget, target);
+
+    gBattleTarget.unit.xPos = gBattleActor.unit.xPos + range;
+    gBattleTarget.unit.yPos = gBattleActor.unit.yPos;
+
+    SetBattleUnitWeapon(&gBattleActor, BU_ISLOT_ARENA_PLAYER);
+    SetBattleUnitWeapon(&gBattleTarget, BU_ISLOT_ARENA_OPPONENT);
+
+    BattleApplyWeaponTriangleEffect(&gBattleActor, &gBattleTarget);
+
+    SetBattleUnitTerrainBonusesAuto(&gBattleActor);
+    SetBattleUnitTerrainBonuses(&gBattleTarget, 8);
+
+    ComputeBattleUnitStats(&gBattleActor, &gBattleTarget);
+    ComputeBattleUnitStats(&gBattleTarget, &gBattleActor);
+    ComputeBattleUnitEffectiveStats(&gBattleActor, &gBattleTarget);
+    ComputeBattleUnitEffectiveStats(&gBattleTarget, &gBattleActor);
+
+    RestoreAnimViewerBattleWeapons(item);
+    ApplyAnimViewerPreviewBattleStats();
+    RefreshAnimViewerBanimCache();
+    ResetAnimViewerBattleHp();
+    RefreshAnimViewerBattleUi();
+    RestoreAnimViewerTextChr(proc);
+    
+    
+    // StartAnimViewerBattle(proc); 
+} 
+
+static void StopAnimViewerBattle(void)
+{
+    if (IsBattleDeamonActive())
+        gEkrBattleEndFlag = 1;
+}
+
+static void StartAnimViewerControl(DebuggerProc * proc)
+{
+    AnimViewerControlProc * control;
+
+    Proc_EndEach(sProc_AnimViewerControl);
+
+    control = Proc_Start(sProc_AnimViewerControl, PROC_TREE_3);
+    control->debugger = proc;
+}
+
+static void FinishAnimViewer(DebuggerProc * proc)
+{
+    gPlaySt.config.animationType = proc->tmp[AnimViewerTmp_OldAnimType];
+    RestoreAnimViewerSuspendSave(proc);
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    Proc_Goto(proc, RestartLabel);
+}
+
+static void DrawAnimViewerMenu(DebuggerProc * proc)
+{
+    struct Text * th = gStatScreen.text;
+    int classId = proc->tmp[AnimViewerOption_Class];
+    int item = proc->tmp[AnimViewerOption_Item];
+    int selected = proc->tmp[AnimViewerOption_Selected];
+
+    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(0, 0), 22, 6, 0);
+
+    ClearText(&th[0]);
+    ClearText(&th[1]);
+    ClearText(&th[2]);
+    ClearText(&th[3]);
+
+    Text_SetColor(&th[0], selected == AnimViewerOption_Class ? TEXT_COLOR_SYSTEM_GOLD : TEXT_COLOR_SYSTEM_WHITE);
+    Text_DrawString(&th[0], "Class");
+    PutText(&th[0], gBG0TilemapBuffer + TILEMAP_INDEX(2, 1));
+
+    Text_SetColor(&th[1], TEXT_COLOR_SYSTEM_BLUE);
+    Text_DrawString(&th[1], GetStringFromIndexSafe(GetClassData(classId)->nameTextId));
+    PutText(&th[1], gBG0TilemapBuffer + TILEMAP_INDEX(9, 1));
+
+    Text_SetColor(&th[2], selected == AnimViewerOption_Item ? TEXT_COLOR_SYSTEM_GOLD : TEXT_COLOR_SYSTEM_WHITE);
+    Text_DrawString(&th[2], "Item");
+    PutText(&th[2], gBG0TilemapBuffer + TILEMAP_INDEX(2, 3));
+
+    Text_SetColor(&th[3], TEXT_COLOR_SYSTEM_BLUE);
+    Text_DrawString(&th[3], GetAnimViewerItemName(item));
+    PutText(&th[3], gBG0TilemapBuffer + TILEMAP_INDEX(9, 3));
+
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+    DisplayVertUiHand(8, (selected == AnimViewerOption_Class ? 1 : 3) * 8 + 16);
+}
+
+void AnimViewerInit(DebuggerProc * proc)
+{
+    int i;
+    int classId = CLASS_EPHRAIM_LORD;
+    MU_EndAll();
+    EndAllMenus();
+    ResetText();
+    ResetTextFont();
+    SetTextFontGlyphs(0);
+    SetTextFont(0);
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+
+    for (i = 0; i < 4; ++i)
+        InitText(&gStatScreen.text[i], 12);
+
+    SaveAnimViewerTextChr(proc);
+
+    if (!IsAnimViewerClass(classId))
+        classId = GetNextAnimViewerClass(classId, +1);
+
+    proc->tmp[AnimViewerOption_Class] = classId;
+    proc->tmp[AnimViewerOption_Item] = GetAnimViewerFallbackItem(classId);
+    proc->tmp[AnimViewerOption_Selected] = AnimViewerOption_Class;
+    proc->tmp[AnimViewerTmp_Restart] = FALSE;
+    proc->tmp[AnimViewerTmp_Exit] = FALSE;
+    proc->tmp[AnimViewerTmp_BattleLive] = FALSE;
+    proc->tmp[AnimViewerTmp_OldAnimType] = gPlaySt.config.animationType;
+    proc->tmp[AnimViewerTmp_Redraw] = TRUE;
+    proc->tmp[AnimViewerTmp_UnhideAnims] = FALSE;
+    proc->tmp[AnimViewerTmp_Rebuild] = FALSE;
+    proc->tmp[AnimViewerTmp_HpBarBusy] = FALSE;
+
+    gPlaySt.config.animationType = PLAY_ANIMCONF_ON;
+    SuppressAnimViewerSuspendSave(proc);
+    BMapDispSuspend();
+
+    StartAnimViewerControl(proc);
+    StartAnimViewerBattle(proc);
+}
+
+static void AnimViewerRestore(DebuggerProc * proc)
+{
+    BMapDispResume();
+    Proc_EndEach(sProc_AnimViewerControl);
+    gPlaySt.config.animationType = proc->tmp[AnimViewerTmp_OldAnimType];
+    RestoreAnimViewerSuspendSave(proc);
+    BG_Fill(gBG0TilemapBuffer, 0);
+    BG_EnableSyncByMask(BG0_SYNC_BIT);
+}
+
+void AnimViewerLoop(DebuggerProc * proc)
+{
+    if (proc->tmp[AnimViewerTmp_Exit] && !IsBattleDeamonActive())
+    {
+        AnimViewerRestore(proc);
+        Proc_Goto(proc, RestartLabel);
+    }
+}
+
+static void AnimViewerControlLoop(AnimViewerControlProc * proc)
+{
+    u16 keys = gKeyStatusPtr->repeatedKeys;
+    u16 newKeys = gKeyStatusPtr->newKeys;
+    bool changed = FALSE;
+    DebuggerProc * debugger = proc->debugger;
+
+    if (debugger == NULL)
+    {
+        Proc_Break(proc);
+        return;
+    }
+
+    if (newKeys & B_BUTTON)
+    {
+        debugger->tmp[AnimViewerTmp_Exit] = TRUE;
+        StopAnimViewerBattle();
+        BackPressSFX();
+    }
+
+    if (debugger->tmp[AnimViewerTmp_Exit] && !IsBattleDeamonActive())
+    {
+        FinishAnimViewer(debugger);
+        Proc_Break(proc);
+        return;
+    }
+
+    if (!debugger->tmp[AnimViewerTmp_Exit])
+    {
+        if (keys & DPAD_UP)
+        {
+            debugger->tmp[AnimViewerOption_Item] = GetNextAnimViewerItem(
+                debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item], -1);
+            changed = TRUE;
+        }
+
+        if (keys & DPAD_DOWN)
+        {
+            debugger->tmp[AnimViewerOption_Item] = GetNextAnimViewerItem(
+                debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item], +1);
+            changed = TRUE;
+        }
+
+        if (keys & DPAD_LEFT)
+        {
+            debugger->tmp[AnimViewerOption_Class] =
+                GetNextAnimViewerClass(debugger->tmp[AnimViewerOption_Class], -1);
+            debugger->tmp[AnimViewerOption_Item] =
+                GetAnimViewerItemAfterClassChange(
+                    debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item]);
+            changed = TRUE;
+        }
+
+        if (keys & DPAD_RIGHT)
+        {
+            debugger->tmp[AnimViewerOption_Class] =
+                GetNextAnimViewerClass(debugger->tmp[AnimViewerOption_Class], +1);
+            debugger->tmp[AnimViewerOption_Item] =
+                GetAnimViewerItemAfterClassChange(
+                    debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item]);
+            changed = TRUE;
+        }
+    }
+
+    if (changed)
+    {
+        debugger->tmp[AnimViewerTmp_Restart] = TRUE;
+        debugger->tmp[AnimViewerTmp_Redraw] = TRUE;
+        debugger->tmp[AnimViewerTmp_Rebuild] = TRUE;
+
+        ConfirmPressSFX();
+    }
+
+    /**
+     * UpdateAnimViewerBattle() is expensive: it regenerates both battle units,
+     * unwinds the battle, redraws the item boxes and (via ForceAnimViewerArenaRoundSwap
+     * -> UpdateBanimFrame) LZ77-decompresses both sides' banim scripts, palettes and
+     * OAM data - roughly 20KB per call. It used to run twice on the frame the
+     * selection changed, and then again on *every* frame until the round swap took,
+     * which never ends while gAnims[0]/gAnims[2] are NULL. Regenerate once per
+     * change and only retry the (cheap, early-outing) round swap after that.
+     */
+    if (debugger->tmp[AnimViewerTmp_Restart] && IsBattleDeamonActive())
+    {
+        if (debugger->tmp[AnimViewerTmp_Rebuild])
+        {
+            QueueAnimViewerAnimsHidden(debugger, 4);
+            UpdateAnimViewerBattle(debugger);
+            debugger->tmp[AnimViewerTmp_Rebuild] = FALSE;
+        }
+
+        if (ForceAnimViewerArenaRoundSwap(debugger))
+            debugger->tmp[AnimViewerTmp_Restart] = FALSE;
+    }
+
+    if (debugger->tmp[AnimViewerTmp_BattleLive] && !IsBattleDeamonActive())
+    {
+        debugger->tmp[AnimViewerTmp_BattleLive] = FALSE;
+
+        if (debugger->tmp[AnimViewerTmp_Exit])
+        {
+            FinishAnimViewer(debugger);
+            Proc_Break(proc);
+            return;
+        }
+
+        StartAnimViewerBattle(debugger);
+    }
+
+    if (!debugger->tmp[AnimViewerTmp_BattleLive] &&
+        debugger->tmp[AnimViewerTmp_Restart] &&
+        !debugger->tmp[AnimViewerTmp_Exit])
+        StartAnimViewerBattle(debugger);
+
+    if (debugger->tmp[AnimViewerTmp_Redraw])
+    {
+        // RestoreAnimViewerTextChr(debugger);
+        debugger->tmp[AnimViewerTmp_Redraw] = FALSE;
+        // DrawAnimViewerMenu(debugger);
+        // RestoreAnimViewerTextChr(debugger);
+    }
+
+    if (debugger->tmp[AnimViewerTmp_UnhideAnims] > 0)
+    {
+        debugger->tmp[AnimViewerTmp_UnhideAnims]--;
+
+        if (debugger->tmp[AnimViewerTmp_UnhideAnims] == 0)
+            SetAnimViewerAnimsHidden(FALSE);
+    }
+
+    /**
+     * Let the gauge actually drain. While the hp-bar effect (or a spell anim) is
+     * running, the displayed HP and the hp LUT are left alone; the frame the drain
+     * finishes, both are refilled to full so the next round starts from 61 again.
+     * Pinning them every frame - as this used to - held the bar at full and, because
+     * gBanimSomeHp is the gauge's "last drawn" cache, suppressed its redraw as well.
+     */
+    if (!CheckEkrHitDone())
+        debugger->tmp[AnimViewerTmp_HpBarBusy] = TRUE;
+    else if (debugger->tmp[AnimViewerTmp_HpBarBusy])
+    {
+        debugger->tmp[AnimViewerTmp_HpBarBusy] = FALSE;
+        ResetAnimViewerBattleAnimHp();
+        ResetAnimViewerGaugeHp();
+    }
+
+    SuppressAnimViewerBattleProgress();
+    ResetAnimViewerUnitHp();
+    RestoreAnimViewerBattleWeapons(debugger->tmp[AnimViewerOption_Item]);
+}
+
 
 void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
 {
@@ -8274,13 +9370,23 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
         }
         case 4:
         {
+            proc->tmp[GfxViewerOption_Weapon] = GetDebuggerDefaultPreviewWeapon(id);
             ClearMainMenuGfx(proc);
             GfxViewerInitMenuGfx(proc);
             MU_EndAll();
             BMapDispSuspend(); // matches the BMapDispResume() on the way out in GfxViewerLoop
-            StartDebuggerBanimPreview(id, unit);
+            StartDebuggerBanimPreview(id, unit, proc->tmp[GfxViewerOption_Weapon]);
             break;
         }
+    }
+}
+
+static void RefreshDebuggerBanimPreviewForGfxViewer(DebuggerProc * proc, struct Unit * unit)
+{
+    if ((proc->id == GfxViewerOption_ClassAnim || proc->id == GfxViewerOption_Weapon) &&
+        HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
+    {
+        StartDebuggerBanimPreview(proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
     }
 }
 
@@ -8288,33 +9394,79 @@ void GfxViewerLoop(DebuggerProc * proc)
 {
     struct Unit * unit = proc->unit;
     u16 keys = gKeyStatusPtr->repeatedKeys;
+    u16 newKeys = gKeyStatusPtr->newKeys;
+    bool menuHidden = proc->tmp[GfxViewerTmp_MenuHidden] != 0;
+
     if ((keys & START_BUTTON) || (keys & A_BUTTON) || keys & B_BUTTON)
     { // press B to not save Supports
+        proc->tmp[GfxViewerTmp_MenuHidden] = FALSE;
         EndDebuggerBanimPreview();
         BMapDispResume();
         RefreshBMapGraphics();
         Proc_Goto(proc, RestartLabel);
         BackPressSFX();
+        return;
     };
 
-    DisplayUiHand(
-        CursorLocationTable[0].x - ((SupportWidth - 1) * 8) + (GfxViewerMenuXShift * 8), (Y_HAND + (proc->id * 2)) * 8);
+    if (newKeys & SELECT_BUTTON)
+    {
+        proc->tmp[GfxViewerTmp_MenuHidden] = !menuHidden;
+        menuHidden = proc->tmp[GfxViewerTmp_MenuHidden] != 0;
+
+        if (menuHidden)
+            ClearGfxViewerMenuGfx();
+        else
+        {
+            GfxViewerInitMenuGfx(proc);
+            RedrawGfxViewerMenu(proc);
+        }
+    }
+
     if (keys & DPAD_RIGHT)
     {
-        proc->tmp[proc->id]++;
+        if (proc->id == GfxViewerOption_Weapon)
+        {
+            if (HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
+            {
+                proc->tmp[GfxViewerOption_Weapon] =
+                    GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], +1);
+                StartDebuggerBanimPreview(
+                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
+            }
+        }
+        else
+        {
+            proc->tmp[proc->id]++;
+            DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
+        }
 
-        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
-        RedrawGfxViewerMenu(proc);
+        if (!menuHidden)
+            RedrawGfxViewerMenu(proc);
     }
     if (keys & DPAD_LEFT)
     {
-        proc->tmp[proc->id]--;
-        if (proc->tmp[proc->id] < 0)
+        if (proc->id == GfxViewerOption_Weapon)
         {
-            proc->tmp[proc->id] = 0; // I have no idea what the final valid mug/sms/mms/bg/cg will be lol
+            if (HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
+            {
+                proc->tmp[GfxViewerOption_Weapon] =
+                    GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], -1);
+                StartDebuggerBanimPreview(
+                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
+            }
         }
-        DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
-        RedrawGfxViewerMenu(proc);
+        else
+        {
+            proc->tmp[proc->id]--;
+            if (proc->tmp[proc->id] < 0)
+            {
+                proc->tmp[proc->id] = 0; // I have no idea what the final valid mug/sms/mms/bg/cg will be lol
+            }
+            DrawGfxFromIDs(proc->id, proc->tmp[proc->id], unit, proc);
+        }
+
+        if (!menuHidden)
+            RedrawGfxViewerMenu(proc);
     }
     RedrawGfxFromIDs(proc->tmp[1], proc); // redraw SMS each frame
 
@@ -8325,10 +9477,11 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             proc->id = GfxViewerOptions - 1;
         }
-        if (proc->id != GfxViewerOption_ClassAnim)
+        if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon)
         {
-            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim
+            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon
         }
+        RefreshDebuggerBanimPreviewForGfxViewer(proc, unit);
         RedrawGfxViewerMenu(proc);
     }
     if (keys & DPAD_DOWN)
@@ -8338,11 +9491,19 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             proc->id = 0;
         }
-        if (proc->id != GfxViewerOption_ClassAnim)
+        if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon)
         {
-            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim
+            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon
         }
 
+        RefreshDebuggerBanimPreviewForGfxViewer(proc, unit);
         RedrawGfxViewerMenu(proc);
+    }
+
+    if (!menuHidden)
+    {
+        DisplayUiHand(
+            CursorLocationTable[0].x - ((SupportWidth - 1) * 8) + (GfxViewerMenuXShift * 8),
+            (Y_HAND + (proc->id * 2)) * 8);
     }
 }
