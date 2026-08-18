@@ -7817,8 +7817,10 @@ extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe
 #define CR_WAIT_ROUND_END() { CLASS_REEL_OP_8, 0 }
 #define CLASS_REEL_WAIT_SPELL 9
 #define CLASS_REEL_CRIT_FAR 10
+#define CLASS_REEL_WAIT_RETURN 11
 #define CR_ANIM_ROUND_CRIT_FAR() { CLASS_REEL_CRIT_FAR, 0 }
 #define CR_WAIT_SPELL() { CLASS_REEL_WAIT_SPELL, 0 }
+#define CR_WAIT_RETURN() { CLASS_REEL_WAIT_RETURN, 0 }
 
 /*
 struct ClassReelAnimScr const sCRScr_MeleeHit[] = {
@@ -7838,20 +7840,37 @@ struct ClassReelAnimScr const sCRScr_MeleeHit[] = {
 */
 
 struct ClassReelAnimScr const sCRScr_MeleeHit[] = {
-    CR_WAIT(40),     CR_ANIM_ROUND_HIT_CLOSE(),  CR_WAIT_ROUND_END(),
-    CR_WAIT(30), // normally this would be wait for hp to deplete here
-    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+    CR_WAIT(0), // so anim doesn't glitch when changing it
+    CR_ANIM_ROUND_HIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(40), // normally this would be wait for hp to deplete here
+    CR_WAIT_SPELL(),
+    CR_RETURN_TO_STANDING(),
+    CR_WAIT_RETURN(),
 
-    CR_WAIT(40),     CR_ANIM_ROUND_CRIT_CLOSE(), CR_WAIT_ROUND_END(), CR_WAIT(45),
-    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),    CR_WAIT(45),         CR_END(),
+    CR_ANIM_ROUND_CRIT_CLOSE(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(45),
+    CR_WAIT_SPELL(),
+    CR_RETURN_TO_STANDING(),
+    CR_WAIT_RETURN(),
+    CR_END(),
 };
 
 struct ClassReelAnimScr const sCRScr_RangedHit[] = {
-    CR_WAIT(30),     CR_ANIM_ROUND_NONCRIT_FAR(), CR_WAIT_ROUND_END(), CR_WAIT(40),
-    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+    CR_ANIM_ROUND_NONCRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(40),
+    CR_WAIT_SPELL(),
+    CR_RETURN_TO_STANDING(),
+    CR_WAIT_RETURN(),
 
-    CR_WAIT(40),     CR_ANIM_ROUND_CRIT_FAR(),    CR_WAIT_ROUND_END(), CR_WAIT(45),
-    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+    CR_ANIM_ROUND_CRIT_FAR(),
+    CR_WAIT_ROUND_END(),
+    CR_WAIT(45),
+    CR_WAIT_SPELL(),
+    CR_RETURN_TO_STANDING(),
+    CR_WAIT_RETURN(),
 
     CR_END(),
 };
@@ -7906,10 +7925,11 @@ void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc)
         case CLASS_REEL_OP_5:
         case CLASS_REEL_OP_8:
         case CLASS_REEL_WAIT_SPELL:
-            // Nothing to kick off here - CLASS_REEL_WAIT_SPELL is a pure wait, same
-            // shape as OP_5 (wait N frames) and OP_8 (wait for round end). The actual
-            // "is it still going" check lives in ClassInfoDisplay_LoopScript, which is
-            // what decides when to advance past this script entry.
+        case CLASS_REEL_WAIT_RETURN:
+            // Nothing to kick off here - CLASS_REEL_WAIT_SPELL/WAIT_RETURN are pure
+            // waits, same shape as OP_5 (wait N frames) and OP_8 (wait for round end).
+            // The actual "is it still going" check lives in ClassInfoDisplay_LoopScript,
+            // which is what decides when to advance past this script entry.
             break;
     }
 
@@ -7979,6 +7999,34 @@ void ClassInfoDisplay_LoopScript(struct OpInfoClassDisplayProc * proc)
 
         case CLASS_REEL_WAIT_SPELL:
             if (!gEfxSpellAnimExists)
+            {
+                proc->script++;
+                Proc_Break(proc);
+            }
+
+            break;
+
+        /**
+         * CR_RETURN_TO_STANDING (OP_3/OP_7, sub_805A990/ApplyMainMiniAnimHitEffect)
+         * does not itself return anything to standing - all it does is set
+         * ANIM_BIT3_HIT_EFFECT_APPLIED on both anims. It is the AIS script baked into
+         * each class's own battle anim data that decides, from there, how many more
+         * frames of "swing back to idle" play before it reaches a STOP instruction -
+         * which is exactly why a fixed CR_WAIT(n) after it needs a different n per
+         * class: n is really "however long that class's own return segment happens to
+         * be", not a property of the reel script.
+         *
+         * sub_805A9A4 (IsMainMiniAnimEnd in the decomp) is the correct, class-agnostic
+         * way to detect that moment: EkrMainMini_AnimUpdateFrameGfx (the vanilla version
+         * of DebuggerEkrUnitMainMini_UpdateAnim's own command interpreter) sets
+         * anim1->nextRoundId = -1 once the AIS interpreter's own STOP-instruction
+         * handling fires, and this just reads that flag back - the same one-field check
+         * CR_WAIT_ROUND_END already uses for the DIFFERENT nextRoundId==-2 milestone
+         * (the hit portion of a round concluding, well before the return-to-standing
+         * segment even starts).
+         */
+        case CLASS_REEL_WAIT_RETURN:
+            if (sub_805A9A4(&gOpInfoData) != 0)
             {
                 proc->script++;
                 Proc_Break(proc);
