@@ -7135,9 +7135,8 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
     return;
 }
 
-#define GfxViewerOptions 6
-static const char gfxViewerOpts[GfxViewerOptions][16] = { "Portrait", "Class Sprites", "BG",
-                                                          "CG",       "Class Anim",    "Weapon" };
+#define GfxViewerOptions 6 // 6
+static const char gfxViewerOpts[6][16] = { "Portrait", "Class Sprites", "BG", "CG", "Class Anim", "Wpn" };
 #define GfxViewerOption_ClassAnim 4
 #define GfxViewerOption_Weapon 5
 #define GfxViewerTmp_MenuHidden 14
@@ -7150,9 +7149,21 @@ static int GetNextDebuggerPreviewWeapon(int item, int direction);
 static const char * GetDebuggerPreviewWeaponName(int item);
 static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon);
 
-// shifted right & narrowed vs. the generic support-list geometry (NUMBER_X/START_X/SupportWidth)
-// to leave room on the left for the mms row shown by the Class Sprites option
-#define GfxViewerMenuXShift 4
+// Was: shifted right & narrowed vs. the generic support-list geometry
+// (NUMBER_X/START_X/SupportWidth) to leave room on the left for the mms row shown by
+// the Class Sprites option. Now: shifted LEFT instead, so the box starts at x=1
+// (NUMBER_X - SupportWidth + 2 + XShift = 17 - 5 + 2 - 13 = 1). Width is untouched -
+// GfxViewerMenuWidthShrink only affects w, not the box's x - so this one constant
+// moves the box, its label column and its value column together; nothing else in
+// ClearGfxViewerMenuGfx/RedrawGfxViewerMenu/GfxViewerInitMenuGfx needs to change.
+// The portrait, the per-frame SMS class badge and the four MMS facing sprites all
+// used to sit clear of the box on the right side (which is now where the box moved
+// away FROM) - see DebuggerStartFace's side argument in DrawGfxFromIDs, the
+// PutUnitSpriteForClassId call in RedrawGfxFromIDs, and the MU_CreateForUI x values in
+// DebuggerUpdateMMS - all shifted to keep clear of the box's new position instead.
+// The battle anim preview (DEBUGGER_BANIM_X/Y in SetupDebuggerBanimAnim) is unrelated
+// to any of these constants and was left alone.
+#define GfxViewerMenuXShift -13
 #define GfxViewerMenuWidthShrink 2
 
 static void ClearGfxViewerMenuGfx(void)
@@ -7222,7 +7233,7 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
     Text_DrawString(&th[GfxViewerText_WeaponName], GetDebuggerPreviewWeaponName(proc->tmp[GfxViewerOption_Weapon]));
     PutText(
         &th[GfxViewerText_WeaponName],
-        gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (GfxViewerOption_Weapon * 2)));
+        gBG0TilemapBuffer + TILEMAP_INDEX(valueX - 6, Y_HAND + (GfxViewerOption_Weapon * 2)));
 
     BG_EnableSyncByMask(BG0_SYNC_BIT);
 }
@@ -7251,6 +7262,8 @@ void GfxViewerInit(DebuggerProc * proc)
     SomeMenuInit(proc);
     MU_EndAll();
     EndDebuggerBanimPreview();
+    // InitTextFont(NULL, (void *)(VRAM + 0x4800), 0x240, 0);
+    // sSpecialCharStList[0].color = 32;
     // struct Unit * unit = proc->unit;
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
@@ -7269,7 +7282,7 @@ void GfxViewerInit(DebuggerProc * proc)
 
     for (int i = 0; i < 15; ++i)
     {
-        InitText(&th[i], SupportWidth + 4);
+        InitText(&th[i], SupportWidth + 4); //+4
     }
 
     RedrawGfxViewerMenu(proc);
@@ -7404,7 +7417,7 @@ int GetMenuSide(DebuggerProc * proc)
     // return (gBmSt.cursorTarget.x - gBmSt.camera.x) >= 120;
 }
 void DrawNameGfx(DebuggerProc * proc, int side);
-
+extern struct Font gDefaultFont;
 void DebuggerStartName(DebuggerProc * proc, int side)
 {
     SomeMenuInit(proc);
@@ -7423,7 +7436,7 @@ void DebuggerStartName(DebuggerProc * proc, int side)
 
     for (int i = 0; i <= 2; ++i)
     {
-        InitText(&th[i], 9);
+        InitText(&th[i], 8);
     }
 
     DrawNameGfx(proc, side);
@@ -7554,13 +7567,13 @@ void DebuggerUpdateMMS(int id, struct Unit * unit)
         const struct ClassData * classData = unit->pClassData;
         unit->pClassData = GetClassData(id);
 
-        struct MUProc * muProc1 = MU_CreateForUI(unit, 48, 144); // StartUiMu
+        struct MUProc * muProc1 = MU_CreateForUI(unit, 80, 144); // StartUiMu - was x=48
         MU_SetFacing(muProc1, 0 + facing);
-        struct MUProc * muProc2 = MU_CreateForUI(unit, 88, 144); // StartUiMu
+        struct MUProc * muProc2 = MU_CreateForUI(unit, 120, 144); // StartUiMu - was x=88
         MU_SetFacing(muProc2, 1 + facing);
-        struct MUProc * muProc3 = MU_CreateForUI(unit, 128, 144); // StartUiMu
+        struct MUProc * muProc3 = MU_CreateForUI(unit, 160, 144); // StartUiMu - was x=128
         MU_SetFacing(muProc3, 2 + facing);
-        struct MUProc * muProc4 = MU_CreateForUI(unit, 168, 144); // StartUiMu
+        struct MUProc * muProc4 = MU_CreateForUI(unit, 200, 144); // StartUiMu - was x=168
         MU_SetFacing(muProc4, 3 + facing);
         unit->pClassData = classData;
     }
@@ -7613,7 +7626,7 @@ void RedrawGfxFromIDs(int id, DebuggerProc * proc)
     if (id && (GetClassData(id) != 0) && CanDisplaySMS(GetClassData(id)->SMSId))
     {
         // SMS_SomethingGmapUnit(id, 1, 16);
-        PutUnitSpriteForClassId(0, 8, 128, 0xC800, id);
+        PutUnitSpriteForClassId(0, 48, 128, 0xC800, id); // was x=8; +120px to match the portrait's side 0->1 move
     }
     // UseUnitSprite(12);
 }
@@ -7742,11 +7755,6 @@ extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe
 
 struct ClassReelAnimScr const sCRScr_DefaultHit[] = {
     CR_WAIT(30),
-    // CR_ANIM_ROUND_TAKING_MISS_CLOSE(),
-    // CR_WAIT_ROUND_END(),
-    // CR_WAIT(10),
-    // CR_RETURN_TO_STANDING(),
-    // CR_WAIT(30),
     CR_ANIM_ROUND_HIT_CLOSE(),
     CR_WAIT_ROUND_END(),
     CR_WAIT(30), // normally this would be wait for hp to deplete here
@@ -7761,9 +7769,64 @@ struct ClassReelAnimScr const sCRScr_DefaultHit[] = {
     CR_WAIT_ROUND_END(),
     CR_WAIT(45),
     CR_RETURN_TO_STANDING(),
-    CR_WAIT(40),
+    CR_WAIT(255),
     CR_END(),
 };
+
+#define CLASS_REEL_WAIT_SPELL 9
+#define CLASS_REEL_CRIT_FAR 10
+
+void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc)
+{
+    switch (proc->script->opCode)
+    {
+        case CLASS_REEL_OP_0:
+            Proc_Goto(proc, 10);
+
+            break;
+
+        case CLASS_REEL_OP_1:
+            gOpInfoData.roundType = ANIM_ROUND_HIT_CLOSE;
+            sub_805A7B4(&gOpInfoData);
+
+            break;
+
+        case CLASS_REEL_OP_2:
+            gOpInfoData.roundType = ANIM_ROUND_CRIT_CLOSE;
+            sub_805A7B4(&gOpInfoData);
+
+            break;
+
+        case CLASS_REEL_OP_3:
+        case CLASS_REEL_OP_7:
+            sub_805A990(&gOpInfoData);
+
+            break;
+
+        case CLASS_REEL_OP_4:
+            gOpInfoData.roundType = ANIM_ROUND_NONCRIT_FAR;
+            sub_805A7B4(&gOpInfoData);
+
+            break;
+
+        case CLASS_REEL_OP_6:
+            gOpInfoData.roundType = ANIM_ROUND_TAKING_MISS_CLOSE;
+            sub_805A7B4(&gOpInfoData);
+
+            break;
+
+        case CLASS_REEL_OP_5:
+        case CLASS_REEL_OP_8:
+            break;
+
+        case CLASS_REEL_WAIT_SPELL:
+            ? ? break;
+    }
+
+    proc->unk_2a = 0;
+
+    return;
+}
 
 struct ClassReelEnt const DefaultClassReelData[1] = {
     [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, (void *)sCRScr_DefaultHit },
@@ -7812,12 +7875,15 @@ static bool IsValidLz77DecompressionData(const void * data)
 }
 
 #define DEBUGGER_BANIM_TERRAIN 0x3F
-// centered horizontally along the bottom of the screen (screen is 240px wide; the platform
-// halves sit 48px either side of the unit, matching the BG_X + 0x60 spacing below)
-#define DEBUGGER_BANIM_X 160
-#define DEBUGGER_BANIM_Y 132
+// #define DEBUGGER_BANIM_X 160
+// #define DEBUGGER_BANIM_Y 132
+// #define DEBUGGER_BANIM_BG_X 72
+// #define DEBUGGER_BANIM_BG_Y 138
+
+#define DEBUGGER_BANIM_X 148
+#define DEBUGGER_BANIM_Y 88
 #define DEBUGGER_BANIM_BG_X 72
-#define DEBUGGER_BANIM_BG_Y 138
+#define DEBUGGER_BANIM_BG_Y 104
 
 static const struct ProcCmd sProc_DebuggerBanimPreview[];
 
@@ -7936,7 +8002,21 @@ static const char * GetDebuggerPreviewWeaponName(int item)
     name = GetItemName(item);
     return name != NULL ? name : "???";
 }
+/*
+static int GetDebuggerDefaultMagicFx(const struct ClassData * class)
+{
+    if (class->baseRanks[ITYPE_ANIMA])
+        return 1;
+    if (class->baseRanks[ITYPE_LIGHT])
+        return 4;
+    if (class->baseRanks[ITYPE_DARK])
+        return 5;
+    if (class->baseRanks[ITYPE_STAFF])
+        return 3;
 
+    return 0;
+}
+*/
 static int GetDebuggerBanimId(int classId, struct Unit * unit, int weapon)
 {
     const struct ClassData * class;
@@ -7999,8 +8079,8 @@ static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classI
     out->paletteId = -1;
     out->classId = classId;
     out->unk_06 = 0;
-    out->banimId = GetDebuggerBanimId(classId, unit, weapon);
-    out->magicFx = 0;
+    out->banimId = GetDebuggerBanimId(classId, unit, weapon); // unused I think
+    out->magicFx = 0;                                         // unused
     out->unk_09 = 0;
     out->unk_0A = 0;
     out->unk_0B = 0;
@@ -8346,27 +8426,19 @@ static const struct ProcCmd sProc_DebuggerBanimPreview[] = {
 #define AnimViewerRightItemChr 22
 
 /**
- * Defined = let the round on screen play all the way out, then let the engine's own
- * round rollover pick up the new class/item. Undefined = cut the round off on the next
- * frame and hot-swap the anims in place (ForceAnimViewerArenaRoundSwap).
+ * Toggle for ForceAnimViewerArenaRoundSwap(): whether a scroll input has to wait for
+ * the round currently on screen to finish (CheckEkrHitDone(): gEkrHpBarCount == 0 &&
+ * gEfxSpellAnimExists == 0) before cutting over to the new class/item, versus swapping
+ * on the very next frame regardless of what is still mid-animation.
  *
- * The difference is not just timing. ekrBattleInRoundIdle's arena branch ends a
- * finished round with
+ * Defined = wait. This is what an earlier pass here already did (deferring the swap
+ * behind CheckEkrHitDone(), with a timeout so a wedged effect layer could not freeze
+ * the viewer forever) before it was replaced with the instant-swap approach + the
+ * ResetAnimViewerRoundEffects()/AnimClearAll() proc-and-field cleanup that followed.
+ * That cleanup runs either way below - this only controls the timing of the swap
+ * relative to the outgoing round's effects, not whether they get cleaned up.
  *
- *     ArenaContinueBattle(); ParseBattleHitToBanimCmd();
- *     AnimClearAll(); UpdateBanimFrame(); InitMainAnims();
- *
- * so waiting means the four battle anims get destroyed and rebuilt from scratch by
- * vanilla code, off the gBanimIdx/gBanimUniquePal values UpdateAnimViewerBattle()
- * already refreshed. The hot-swap path instead reuses the existing anim structs and
- * rewrites their script pointers underneath them, which is where every stale-pointer
- * problem in this viewer has come from. Waiting sidesteps that whole class of bug at
- * the cost of the class change not showing until the current round finishes.
- *
- * Note CheckEkrHitDone() alone is NOT this condition - it only reports that no hp-bar
- * drain or spell effect is currently on screen, which is equally true during the whole
- * wind-up before the hit lands. The real test is the one ekrBattleInRoundIdle uses:
- * both sides' gBanimDoneFlag set AND both main anims back on a passive round type.
+ * Undefine to go back to swapping immediately, to compare.
  */
 #define AnimViewerWaitForRoundFinish
 
@@ -9073,83 +9145,6 @@ static void ResetAnimViewerRoundEffects(void)
     ResetAnimViewerBattleDigits();
     ResetAnimViewerSubstituteAnims();
 }
-void SetBattleStartedFlag(int val)
-{
-    u8 * data = (void *)0x202b6ab;
-    *data = val;
-}
-
-void AnimClearAll(void)
-{
-    // SetBattleStartedFlag(false);
-    // CpuFastFill(0, gOam, 0x600);
-    struct Anim * it;
-
-    for (it = sAnimPool; it < sAnimPool + ANIM_MAX_COUNT; ++it)
-        *it = (struct Anim) { 0 };
-
-    sFirstAnim = NULL;
-}
-#ifdef AnimViewerWaitForRoundFinish
-/**
- * gpProcEkrBattle->timer is not usable for this: it is a single scratch field reused
- * by every phase of gProc_ekrBattle's state machine (ekrBattle_Init's open-animation
- * counter, ekrBattle_1's 8-frame wait, ekrBattle_WaitForPostBattleAct's 30-frame wait,
- * ekrBattleExecExpGain, and ekrBattleTriggerNewRoundStart's own 30-frame wait all share
- * it), so timer==0 does not identify a phase - it is momentarily true at the START of
- * almost every one of them. And for the one phase we actually want, timer is set to 0
- * inside ekrBattleInRoundIdle in the SAME call that runs AnimClearAll(), then
- * incremented on ekrBattleTriggerNewRoundStart's very next tick - so timer==0 is a
- * single-frame pulse, only visible to another proc on the one frame right after the
- * transition already happened. Polling that from a separate proc can miss it outright,
- * which matches what you saw.
- *
- * This instead reproduces the actual precondition ekrBattleInRoundIdle checks before
- * it calls AnimClearAll() (its "val == 2" branch): both sides have reported done via
- * gBanimDoneFlag, AND both main anims are back on a passive round type (CheckRound1 -
- * standing, or taking a hit, not mid-swing). Unlike timer==0, this is a LEVEL, not a
- * pulse: gBanimDoneFlag stays TRUE,TRUE for the entire 30-frame
- * ekrBattleTriggerNewRoundStart wait that follows, only clearing once that phase's own
- * timer runs out - so there is a wide, reliably-pollable window, not a single frame.
- *
- * sProc_AnimViewerControl (this proc) is older than gpProcEkrBattle and never gets
- * recreated while a battle is live - it loops internally via
- * ekrBattleTriggerNewRoundStart -> ekrBattle_2 -> ekrBattle_StartPromotion ->
- * ekrBattleInRoundIdle rather than restarting - and RunProcessRecursive() runs older
- * siblings first. So we see this condition on the exact frame ekrBattleInRoundIdle is
- * about to act on it, every cycle, before it does.
- *
- * CheckEkrHitDone() is folded in too, but for a different reason than matching vanilla
- * (vanilla's own val==2 test does not check it at all): ForceAnimViewerArenaRoundSwap()
- * rewrites gAnims[]'s script pointers and state3 in place rather than going through
- * AnimClearAll(). A hp-bar drain or spell effect proc still running against those same
- * anim pointers when we do that is exactly the kind of stale-state interference this
- * viewer has been chasing, so we hold off until that settles too.
- */
-static bool IsAnimViewerRoundFinished(void)
-{
-    int side;
-
-    if (!CheckEkrHitDone())
-        return false;
-
-    for (side = 0; side < 2; ++side)
-    {
-        struct Anim * anim = gAnims[side * 2];
-
-        if (anim == NULL)
-            continue;
-
-        if (!gBanimDoneFlag[side])
-            return false;
-
-        if (!CheckRound1(anim->currentRoundType))
-            return false;
-    }
-
-    return true;
-}
-#endif
 
 int ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
 {
@@ -9158,6 +9153,17 @@ int ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
 
     if (gAnims[0] == NULL || gAnims[2] == NULL)
         return false;
+
+    // #ifdef AnimViewerWaitForRoundFinish
+    /**
+     * Hold the swap until the round on screen (hp-bar drain, spell effect) has
+     * actually finished, rather than cutting it off mid-animation. Restart stays set
+     * on the debugger proc, so AnimViewerControlLoop retries this every frame - cheap,
+     * since it is just this one check until CheckEkrHitDone() goes true.
+     */
+    // if (!CheckEkrHitDone())
+    // return false;
+    // #endif
 
     /* clear what the round we are cutting short left drawn on screen */
     ResetAnimViewerRoundEffects();
@@ -9392,7 +9398,6 @@ static void StartAnimViewerBattle(DebuggerProc * proc)
     if (started)
         BeginAnimsOnBattleAnimations();
 
-    SetBattleStartedFlag(true);
     proc->tmp[AnimViewerTmp_Restart] = FALSE;
     proc->tmp[AnimViewerTmp_Rebuild] = FALSE;
     proc->tmp[AnimViewerTmp_BattleLive] = started;
@@ -9771,33 +9776,13 @@ static void AnimViewerControlLoop(AnimViewerControlProc * proc)
     {
         if (debugger->tmp[AnimViewerTmp_Rebuild])
         {
-#ifndef AnimViewerWaitForRoundFinish
-            /* the swap below cuts the round off, so blink over the seam */
             QueueAnimViewerAnimsHidden(debugger, 4);
-#endif
             UpdateAnimViewerBattle(debugger);
             debugger->tmp[AnimViewerTmp_Rebuild] = FALSE;
         }
 
-#ifdef AnimViewerWaitForRoundFinish
-        /**
-         * UpdateAnimViewerBattle() above has already put the new class/item into the
-         * battle units and the gBanimIdx/gBanimUniquePal pair, which is everything the
-         * rollover needs. Hold off until the round is genuinely finished and then just
-         * stand down - ekrBattleInRoundIdle does AnimClearAll() + UpdateBanimFrame() +
-         * InitMainAnims() itself on the very next frame, rebuilding all four anims
-         * from scratch rather than us rewriting the live ones.
-         */
-        if (IsAnimViewerRoundFinished())
-        {
-            brk;
-            if (ForceAnimViewerArenaRoundSwap(debugger))
-                debugger->tmp[AnimViewerTmp_Restart] = FALSE;
-        }
-#else
         if (ForceAnimViewerArenaRoundSwap(debugger))
             debugger->tmp[AnimViewerTmp_Restart] = FALSE;
-#endif
     }
 
     if (debugger->tmp[AnimViewerTmp_BattleLive] && !IsBattleDeamonActive())
@@ -9878,7 +9863,7 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
             ClearMainMenuGfx(proc);
             RedrawGfxViewerMenu(proc);
             GfxViewerInitMenuGfx(proc);
-            DebuggerStartFace(id, 0);
+            DebuggerStartFace(id, 1); // was side 0 (left); menu box now owns the left side
             break;
         }
         case 1:

@@ -215,7 +215,6 @@ MenuCommand1(PromoteCommandText, PromoteDesc, NormalText, CanActiveUnitPromoteMe
 MenuCommand1(ArenaText, ArenaDesc,NormalText, CallArenaIsUnitAllowed, DebuggerMenuItemDraw, StartArenaNow)
 MenuCommand1(AiControlRemainingUnitsText,AiControlRemainingUnitsDesc, NormalText, MenuAlwaysEnabled, AiControlRemainingUnitsDrawText, AiControlRemainingUnitsNow) 
 MenuCommand1(EditAiText,EditAiDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditAiNow)
-MenuCommand1(AnimViewerText,AnimViewerDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, AnimViewerNow)
 MenuCommand1(GfxViewerText,GfxViewerDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, GfxViewerNow) 
 #ifdef VeslyBuildfile 
 MenuCommand1(EditSkillsText,EditSkillsDesc, NormalText, $04F449,DebuggerMenuItemDraw, DebugSkillsNow) // This is external - it is located in skillsystems folders 
@@ -234,6 +233,8 @@ ALIGN 4
 gDebuggerMenuItemsPage4: // must be immediately after gDebuggerMenuItemsPage3
 #ifdef _FE8_
 MenuCommand1(EditBgmText,EditBgmDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, EditBgmNow)
+// MenuCommand1(AnimViewerText,AnimViewerDesc, NormalText, MenuAlwaysEnabled, DebuggerMenuItemDraw, AnimViewerNow)
+
 #endif
 MenuCommand1(PageNumText, PageDesc, NormalText, MenuAlwaysEnabled, PageMenuItemDraw, PageIncrementNow) // sprite draw assumes always on the bottom 
 WORD 0 0 0 0 0 0 0 0 0 // terminator 
