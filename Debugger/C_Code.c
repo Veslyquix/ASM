@@ -8346,19 +8346,27 @@ static const struct ProcCmd sProc_DebuggerBanimPreview[] = {
 #define AnimViewerRightItemChr 22
 
 /**
- * Toggle for ForceAnimViewerArenaRoundSwap(): whether a scroll input has to wait for
- * the round currently on screen to finish (CheckEkrHitDone(): gEkrHpBarCount == 0 &&
- * gEfxSpellAnimExists == 0) before cutting over to the new class/item, versus swapping
- * on the very next frame regardless of what is still mid-animation.
+ * Defined = let the round on screen play all the way out, then let the engine's own
+ * round rollover pick up the new class/item. Undefined = cut the round off on the next
+ * frame and hot-swap the anims in place (ForceAnimViewerArenaRoundSwap).
  *
- * Defined = wait. This is what an earlier pass here already did (deferring the swap
- * behind CheckEkrHitDone(), with a timeout so a wedged effect layer could not freeze
- * the viewer forever) before it was replaced with the instant-swap approach + the
- * ResetAnimViewerRoundEffects()/AnimClearAll() proc-and-field cleanup that followed.
- * That cleanup runs either way below - this only controls the timing of the swap
- * relative to the outgoing round's effects, not whether they get cleaned up.
+ * The difference is not just timing. ekrBattleInRoundIdle's arena branch ends a
+ * finished round with
  *
- * Undefine to go back to swapping immediately, to compare.
+ *     ArenaContinueBattle(); ParseBattleHitToBanimCmd();
+ *     AnimClearAll(); UpdateBanimFrame(); InitMainAnims();
+ *
+ * so waiting means the four battle anims get destroyed and rebuilt from scratch by
+ * vanilla code, off the gBanimIdx/gBanimUniquePal values UpdateAnimViewerBattle()
+ * already refreshed. The hot-swap path instead reuses the existing anim structs and
+ * rewrites their script pointers underneath them, which is where every stale-pointer
+ * problem in this viewer has come from. Waiting sidesteps that whole class of bug at
+ * the cost of the class change not showing until the current round finishes.
+ *
+ * Note CheckEkrHitDone() alone is NOT this condition - it only reports that no hp-bar
+ * drain or spell effect is currently on screen, which is equally true during the whole
+ * wind-up before the hit lands. The real test is the one ekrBattleInRoundIdle uses:
+ * both sides' gBanimDoneFlag set AND both main anims back on a passive round type.
  */
 #define AnimViewerWaitForRoundFinish
 
@@ -9065,6 +9073,83 @@ static void ResetAnimViewerRoundEffects(void)
     ResetAnimViewerBattleDigits();
     ResetAnimViewerSubstituteAnims();
 }
+void SetBattleStartedFlag(int val)
+{
+    u8 * data = (void *)0x202b6ab;
+    *data = val;
+}
+
+void AnimClearAll(void)
+{
+    // SetBattleStartedFlag(false);
+    // CpuFastFill(0, gOam, 0x600);
+    struct Anim * it;
+
+    for (it = sAnimPool; it < sAnimPool + ANIM_MAX_COUNT; ++it)
+        *it = (struct Anim) { 0 };
+
+    sFirstAnim = NULL;
+}
+#ifdef AnimViewerWaitForRoundFinish
+/**
+ * gpProcEkrBattle->timer is not usable for this: it is a single scratch field reused
+ * by every phase of gProc_ekrBattle's state machine (ekrBattle_Init's open-animation
+ * counter, ekrBattle_1's 8-frame wait, ekrBattle_WaitForPostBattleAct's 30-frame wait,
+ * ekrBattleExecExpGain, and ekrBattleTriggerNewRoundStart's own 30-frame wait all share
+ * it), so timer==0 does not identify a phase - it is momentarily true at the START of
+ * almost every one of them. And for the one phase we actually want, timer is set to 0
+ * inside ekrBattleInRoundIdle in the SAME call that runs AnimClearAll(), then
+ * incremented on ekrBattleTriggerNewRoundStart's very next tick - so timer==0 is a
+ * single-frame pulse, only visible to another proc on the one frame right after the
+ * transition already happened. Polling that from a separate proc can miss it outright,
+ * which matches what you saw.
+ *
+ * This instead reproduces the actual precondition ekrBattleInRoundIdle checks before
+ * it calls AnimClearAll() (its "val == 2" branch): both sides have reported done via
+ * gBanimDoneFlag, AND both main anims are back on a passive round type (CheckRound1 -
+ * standing, or taking a hit, not mid-swing). Unlike timer==0, this is a LEVEL, not a
+ * pulse: gBanimDoneFlag stays TRUE,TRUE for the entire 30-frame
+ * ekrBattleTriggerNewRoundStart wait that follows, only clearing once that phase's own
+ * timer runs out - so there is a wide, reliably-pollable window, not a single frame.
+ *
+ * sProc_AnimViewerControl (this proc) is older than gpProcEkrBattle and never gets
+ * recreated while a battle is live - it loops internally via
+ * ekrBattleTriggerNewRoundStart -> ekrBattle_2 -> ekrBattle_StartPromotion ->
+ * ekrBattleInRoundIdle rather than restarting - and RunProcessRecursive() runs older
+ * siblings first. So we see this condition on the exact frame ekrBattleInRoundIdle is
+ * about to act on it, every cycle, before it does.
+ *
+ * CheckEkrHitDone() is folded in too, but for a different reason than matching vanilla
+ * (vanilla's own val==2 test does not check it at all): ForceAnimViewerArenaRoundSwap()
+ * rewrites gAnims[]'s script pointers and state3 in place rather than going through
+ * AnimClearAll(). A hp-bar drain or spell effect proc still running against those same
+ * anim pointers when we do that is exactly the kind of stale-state interference this
+ * viewer has been chasing, so we hold off until that settles too.
+ */
+static bool IsAnimViewerRoundFinished(void)
+{
+    int side;
+
+    if (!CheckEkrHitDone())
+        return false;
+
+    for (side = 0; side < 2; ++side)
+    {
+        struct Anim * anim = gAnims[side * 2];
+
+        if (anim == NULL)
+            continue;
+
+        if (!gBanimDoneFlag[side])
+            return false;
+
+        if (!CheckRound1(anim->currentRoundType))
+            return false;
+    }
+
+    return true;
+}
+#endif
 
 int ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
 {
@@ -9073,18 +9158,6 @@ int ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
 
     if (gAnims[0] == NULL || gAnims[2] == NULL)
         return false;
-
-    // #ifdef AnimViewerWaitForRoundFinish
-    /**
-     * Hold the swap until the round on screen (hp-bar drain, spell effect) has
-     * actually finished, rather than cutting it off mid-animation. Restart stays set
-     * on the debugger proc, so AnimViewerControlLoop retries this every frame - cheap,
-     * since it is just this one check until CheckEkrHitDone() goes true.
-     */
-    // if (!CheckEkrHitDone())
-    // return false;
-    // #endif
-    brk;
 
     /* clear what the round we are cutting short left drawn on screen */
     ResetAnimViewerRoundEffects();
@@ -9319,6 +9392,7 @@ static void StartAnimViewerBattle(DebuggerProc * proc)
     if (started)
         BeginAnimsOnBattleAnimations();
 
+    SetBattleStartedFlag(true);
     proc->tmp[AnimViewerTmp_Restart] = FALSE;
     proc->tmp[AnimViewerTmp_Rebuild] = FALSE;
     proc->tmp[AnimViewerTmp_BattleLive] = started;
@@ -9697,13 +9771,33 @@ static void AnimViewerControlLoop(AnimViewerControlProc * proc)
     {
         if (debugger->tmp[AnimViewerTmp_Rebuild])
         {
+#ifndef AnimViewerWaitForRoundFinish
+            /* the swap below cuts the round off, so blink over the seam */
             QueueAnimViewerAnimsHidden(debugger, 4);
+#endif
             UpdateAnimViewerBattle(debugger);
             debugger->tmp[AnimViewerTmp_Rebuild] = FALSE;
         }
 
+#ifdef AnimViewerWaitForRoundFinish
+        /**
+         * UpdateAnimViewerBattle() above has already put the new class/item into the
+         * battle units and the gBanimIdx/gBanimUniquePal pair, which is everything the
+         * rollover needs. Hold off until the round is genuinely finished and then just
+         * stand down - ekrBattleInRoundIdle does AnimClearAll() + UpdateBanimFrame() +
+         * InitMainAnims() itself on the very next frame, rebuilding all four anims
+         * from scratch rather than us rewriting the live ones.
+         */
+        if (IsAnimViewerRoundFinished())
+        {
+            brk;
+            if (ForceAnimViewerArenaRoundSwap(debugger))
+                debugger->tmp[AnimViewerTmp_Restart] = FALSE;
+        }
+#else
         if (ForceAnimViewerArenaRoundSwap(debugger))
             debugger->tmp[AnimViewerTmp_Restart] = FALSE;
+#endif
     }
 
     if (debugger->tmp[AnimViewerTmp_BattleLive] && !IsBattleDeamonActive())
