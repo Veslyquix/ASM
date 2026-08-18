@@ -406,7 +406,8 @@ int TryCall_pProc_FromMiscActionProc(DebuggerProc * proc)
     Proc_StartBlocking(*get_pProc_FromMiscActionProc, proc);
     return 0;
 }
-
+static void RestoreAnimViewerBMapGraphics(DebuggerProc * proc);
+void ApplyUnitSpritePalettes(void); // 0x08026629
 const struct ProcCmd DebuggerProcCmd[] = {
     PROC_NAME("DebuggerProcName"),
     PROC_YIELD,
@@ -541,7 +542,8 @@ const struct ProcCmd DebuggerProcCmd[] = {
     PROC_LABEL(AnimViewerLabel),
     PROC_CALL(AnimViewerInit),
     PROC_REPEAT(AnimViewerLoop),
-    PROC_GOTO(EndLabel),
+    PROC_CALL(RestoreAnimViewerBMapGraphics),
+    PROC_GOTO(RestartLabel),
 
     PROC_LABEL(EndLabel),
     PROC_CALL_2(ClearActiveUnitStuff),
@@ -7728,17 +7730,15 @@ struct OpInfoClassDisplayProc
 
 extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe8.s
 
-// clang-format off
-
-#define CR_END()                            { CLASS_REEL_OP_0, 0 }
-#define CR_ANIM_ROUND_HIT_CLOSE()           { CLASS_REEL_OP_1, 0 }
-#define CR_ANIM_ROUND_CRIT_CLOSE()          { CLASS_REEL_OP_2, 0 }
-#define CR_RETURN_TO_STANDING()             { CLASS_REEL_OP_3, 0 }
-#define CR_ANIM_ROUND_NONCRIT_FAR()         { CLASS_REEL_OP_4, 0 }
-#define CR_WAIT(frames)                     { CLASS_REEL_OP_5, frames }
-#define CR_ANIM_ROUND_TAKING_MISS_CLOSE()   { CLASS_REEL_OP_6, 0 }
-#define CR_RETURN_TO_STANDING_ALT()         { CLASS_REEL_OP_7, 0 }
-#define CR_WAIT_ROUND_END()                 { CLASS_REEL_OP_8, 0 }
+#define CR_END() { CLASS_REEL_OP_0, 0 }
+#define CR_ANIM_ROUND_HIT_CLOSE() { CLASS_REEL_OP_1, 0 }
+#define CR_ANIM_ROUND_CRIT_CLOSE() { CLASS_REEL_OP_2, 0 }
+#define CR_RETURN_TO_STANDING() { CLASS_REEL_OP_3, 0 }
+#define CR_ANIM_ROUND_NONCRIT_FAR() { CLASS_REEL_OP_4, 0 }
+#define CR_WAIT(frames) { CLASS_REEL_OP_5, frames }
+#define CR_ANIM_ROUND_TAKING_MISS_CLOSE() { CLASS_REEL_OP_6, 0 }
+#define CR_RETURN_TO_STANDING_ALT() { CLASS_REEL_OP_7, 0 }
+#define CR_WAIT_ROUND_END() { CLASS_REEL_OP_8, 0 }
 
 struct ClassReelAnimScr const sCRScr_DefaultHit[] = {
     CR_WAIT(30),
@@ -7765,23 +7765,16 @@ struct ClassReelAnimScr const sCRScr_DefaultHit[] = {
     CR_END(),
 };
 
-
-
 struct ClassReelEnt const DefaultClassReelData[1] = {
-    [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, (void*)sCRScr_DefaultHit },
+    [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, (void *)sCRScr_DefaultHit },
 };
-
-// clang-format on 
-
-
-
 
 extern struct AnimBuffer gOpInfoData;           // dat 0x02000000
 extern struct BanimUnkStructComm gUnk_Opinfo_0; // dat 0x0201DB00 (aka gUnknown_0201DB00)
 extern struct AnimMagicFxBuffer gUnk_4;         // dat 0x0200A2D8
 extern s16 gEkrSpellAnimIndex[2];               // dat 0x0203E118
 
-// ClassChgSel_SetBlendWindowConfig 
+// ClassChgSel_SetBlendWindowConfig
 static void DebuggerBanimBlendWindowConfig(void)
 {
     SetBlendConfig(1, 16, 16, 0);
@@ -7792,19 +7785,18 @@ extern u8 gSpellAnimBgfx[];         // dat 0x02017790 - add to fe8.s
 extern u8 gBuf_Banim[];             // dat 0x0201A790 - add to fe8.s
 extern u8 gUnk_Banim_Ekrbattle_0[]; // dat 0x020145C8 - add to fe8.s
 
-void EndEkrUnitMainMini(struct AnimBuffer * pAnimBuf); // 0x0805AA29 
-void ResetClassReelSpell(void);           // 0x0806E8F1 
-void EndActiveClassReelSpell(void);       // 0x0806E905 
-void EndActiveClassReelBgColorProc(void); // 0x0806E921 
-void ApplyUnitSpritePalettes(void); // 0x08026629 
-void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc); // 0x080B3D85 
-void ClassInfoDisplay_LoopScript(struct OpInfoClassDisplayProc * proc); // 0x080B3E19 
-void StartSpellAnimation(struct Anim * anim); // 0x0805B3CD
-void EkrMainMini_AnimMarkRoundEnd(struct Anim * anim); // 0x0805A581
-void EkrMainMini_AnimUpdateFrameGfx(struct Anim * anim); // 0x0805A5A9
-void InitMainMiniAnim(struct AnimBuffer * animBuf); // 0x0805A249
-int Get0201FAC8(void); // 0x08055A29
-void Set0201FAC8(int value); // 0x08055A35
+void EndEkrUnitMainMini(struct AnimBuffer * pAnimBuf);                  // 0x0805AA29
+void ResetClassReelSpell(void);                                         // 0x0806E8F1
+void EndActiveClassReelSpell(void);                                     // 0x0806E905
+void EndActiveClassReelBgColorProc(void);                               // 0x0806E921
+void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc); // 0x080B3D85
+void ClassInfoDisplay_LoopScript(struct OpInfoClassDisplayProc * proc); // 0x080B3E19
+void StartSpellAnimation(struct Anim * anim);                           // 0x0805B3CD
+void EkrMainMini_AnimMarkRoundEnd(struct Anim * anim);                  // 0x0805A581
+void EkrMainMini_AnimUpdateFrameGfx(struct Anim * anim);                // 0x0805A5A9
+void InitMainMiniAnim(struct AnimBuffer * animBuf);                     // 0x0805A249
+int Get0201FAC8(void);                                                  // 0x08055A29
+void Set0201FAC8(int value);                                            // 0x08055A35
 
 struct DebuggerProcEkrUnitMainMini
 {
@@ -7813,13 +7805,11 @@ struct DebuggerProcEkrUnitMainMini
     struct AnimBuffer * animBuf;
 };
 
-
 static bool IsValidLz77DecompressionData(const void * data)
 {
     (void)data;
     return true;
 }
-
 
 #define DEBUGGER_BANIM_TERRAIN 0x3F
 // centered horizontally along the bottom of the screen (screen is 240px wide; the platform
@@ -7830,8 +7820,6 @@ static bool IsValidLz77DecompressionData(const void * data)
 #define DEBUGGER_BANIM_BG_Y 138
 
 static const struct ProcCmd sProc_DebuggerBanimPreview[];
-
-
 
 // Picks a plausible tome/staff for classes previewed without a matching real
 // weapon equipped, matching vanilla's own per-class defaults: anima->Fire
@@ -7875,6 +7863,9 @@ static int GetDebuggerDefaultPreviewWeapon(int classId)
         return ITEM_RAVAGER;
     if (classId == CLASS_DRACO_ZOMBIE)
         return ITEM_MONSTER_WRETCHAIR;
+    /* mogalls carry an A rank in dark, but CA_LOCK_3 below would hand them a claw */
+    if (classId == CLASS_MOGALL || classId == CLASS_ARCH_MOGALL)
+        return ITEM_DARK_FLUX;
 
     if (class->baseRanks[ITYPE_SWORD])
         return ITEM_SWORD_IRON;
@@ -7978,26 +7969,29 @@ static int GetDebuggerBanimId(int classId, struct Unit * unit, int weapon)
     return 0;
 }
 
-
 static struct ClassReelEnt * GetDebuggerBanimReelEntry(int classId)
 {
-   
-    return NULL; 
+
+    return NULL;
     // int i;
     // for (i = 0; i < 65; i++)
     // {
-        // if (gClassReelData[i].classId == classId)
-            // return &gClassReelData[i];
+    // if (gClassReelData[i].classId == classId)
+    // return &gClassReelData[i];
     // }
 
     // return NULL;
 }
 
-static int GetDebuggerSpellAnimId(int classId, int weapon) { 
-    int result = GetSpellAnimId(classId, weapon); 
-    if (result < 0) { result = 0; } 
-    return result; 
-} 
+static int GetDebuggerSpellAnimId(int classId, int weapon)
+{
+    int result = GetSpellAnimId(classId, weapon);
+    if (result < 0)
+    {
+        result = 0;
+    }
+    return result;
+}
 
 static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classId, struct Unit * unit, int weapon)
 {
@@ -8014,10 +8008,10 @@ static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classI
     out->unk_0D = DEBUGGER_BANIM_TERRAIN;
     out->unk_0E = DEBUGGER_BANIM_TERRAIN;
     out->unk_0F = 0;
-    out->script = (void*)sCRScr_DefaultHit;
+    out->script = (void *)sCRScr_DefaultHit;
 }
 
-static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct Unit* unit, int weapon)
+static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct Unit * unit, int weapon)
 {
     struct BattleAnim * anim;
     int paletteId;
@@ -8025,7 +8019,6 @@ static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct
     if (entry == NULL)
         return false;
 
-    
     anim = &banim_data[GetDebuggerBanimId(classId, unit, weapon)];
 
     if (!IsValidLz77DecompressionData(anim->script) || !IsValidLz77DecompressionData(anim->oam_r) ||
@@ -8071,7 +8064,7 @@ static void StartDebuggerBanimSpellAnimation(struct Anim * anim)
     if (Get0201FAC8())
         Set0201FAC8(2);
 }
- 
+
 static void DebuggerEkrUnitMainMini_UpdateAnim(struct AnimBuffer * animBuf, struct Anim * anim)
 {
     int animState2;
@@ -8177,14 +8170,15 @@ static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * pro
     proc->script = proc->classReelEnt != NULL ? proc->classReelEnt->script : NULL;
 
     if (proc->script == NULL)
-        proc->script = (void*)sCRScr_DefaultHit;
+        proc->script = (void *)sCRScr_DefaultHit;
 }
 
 // entry is only read here, for this one call - persistentEntry is what
 // proc->classReelEnt keeps for later script resets, and is NULL for a
 // fallback/custom-class entry (whose backing storage is the caller's stack).
 static void SetupDebuggerBanimAnim(
-    struct OpInfoClassDisplayProc * proc, struct ClassReelEnt * entry, struct ClassReelEnt * persistentEntry, int weapon)
+    struct OpInfoClassDisplayProc * proc, struct ClassReelEnt * entry, struct ClassReelEnt * persistentEntry,
+    int weapon)
 {
     NewEfxAnimeDrvProc();
 
@@ -8243,7 +8237,7 @@ static void SetupDebuggerBanimAnim(
         &gUnk_Opinfo_0, DEBUGGER_BANIM_BG_X, DEBUGGER_BANIM_BG_Y, DEBUGGER_BANIM_BG_X + 0x60, DEBUGGER_BANIM_BG_Y);
 
     // proc->classReelEnt = entry;
-    proc->classReelEnt = (void*)&DefaultClassReelData[0];
+    proc->classReelEnt = (void *)&DefaultClassReelData[0];
     DebuggerBanimPreview_ResetScript(proc);
 }
 
@@ -8340,6 +8334,9 @@ static const struct ProcCmd sProc_DebuggerBanimPreview[] = {
 #define AnimViewerTmp_Rebuild 10
 #define AnimViewerTmp_OldStateBits 11
 #define AnimViewerTmp_HpBarBusy 12
+#define AnimViewerTmp_RetryTimer 13
+#define AnimViewerTmp_Restored 14
+#define AnimViewerRetryFrames 30
 #define AnimViewerMaxClass CLASS_PUPIL_T1
 #define AnimViewerMaxItem ITEM_GOLDGEM
 #define AnimViewerPreviewHp 61
@@ -8348,7 +8345,34 @@ static const struct ProcCmd sProc_DebuggerBanimPreview[] = {
 #define AnimViewerLeftItemChr 7
 #define AnimViewerRightItemChr 22
 
+/**
+ * Toggle for ForceAnimViewerArenaRoundSwap(): whether a scroll input has to wait for
+ * the round currently on screen to finish (CheckEkrHitDone(): gEkrHpBarCount == 0 &&
+ * gEfxSpellAnimExists == 0) before cutting over to the new class/item, versus swapping
+ * on the very next frame regardless of what is still mid-animation.
+ *
+ * Defined = wait. This is what an earlier pass here already did (deferring the swap
+ * behind CheckEkrHitDone(), with a timeout so a wedged effect layer could not freeze
+ * the viewer forever) before it was replaced with the instant-swap approach + the
+ * ResetAnimViewerRoundEffects()/AnimClearAll() proc-and-field cleanup that followed.
+ * That cleanup runs either way below - this only controls the timing of the swap
+ * relative to the outgoing round's effects, not whether they get cleaned up.
+ *
+ * Undefine to go back to swapping immediately, to compare.
+ */
+#define AnimViewerWaitForRoundFinish
+
 extern u8 gGenericBuffer[0x2000];
+extern struct Proc sProcArray[];
+/**
+ * animedrv.c's own anim pool/list head, not otherwise exposed. AnimClearAll() below
+ * is a real hook (its name matches the ROM symbol at 0x08004EB8, so lyn wires this
+ * definition in for the WHOLE game, not just the AnimViewer) and needs direct access.
+ */
+extern struct Anim sAnimPool[ANIM_MAX_COUNT];
+extern struct Anim * sFirstAnim;
+/* gUnknown_02000010 is gEkrbattle_0 in the decomp - see ResetAnimViewerSubstituteAnims */
+#define gEkrSubstituteAnims ((struct Anim **)gUnknown_02000010)
 extern s16 gBanimExpGain[2];
 extern s16 gEfxHpLutOff[2];
 extern struct Font * gActiveFont;
@@ -8436,6 +8460,10 @@ static bool IsAnimViewerSpecialClassItem(int classId, int item)
 
         case CLASS_DRACO_ZOMBIE:
             return item == ITEM_MONSTER_WRETCHAIR;
+
+        case CLASS_MOGALL:
+        case CLASS_ARCH_MOGALL:
+            return item == ITEM_DARK_FLUX;
     }
 
     return false;
@@ -8576,10 +8604,10 @@ static void RestoreAnimViewerTextChr(DebuggerProc * proc)
 {
     // SetTextFont(0);
     // SetTextFontGlyphs(0);
-    // ResetText(); 
+    // ResetText();
 
     // if (gActiveFont != NULL)
-        // gActiveFont->chr_counter = proc->tmp[AnimViewerTmp_TextChr];
+    // gActiveFont->chr_counter = proc->tmp[AnimViewerTmp_TextChr];
 }
 
 /**
@@ -8624,8 +8652,22 @@ static void SetupAnimViewerBattleRounds(void)
 
     gBattleActor.battleHitRate = 100;
     gBattleActor.battleEffectiveHitRate = 100;
-    gBattleActor.battleCritRate = 0;
-    gBattleActor.battleEffectiveCritRate = 0;
+
+    /**
+     * BattleUnwind() rolls the crit for each hit off battleEffectiveCritRate
+     * (BattleUpdateBattleStats copies it into gBattleStats.critRate), so the rate has
+     * to be live *here* - setting it after the unwind only changes the number the UI
+     * prints. This used to zero it and never put it back, so once a class change had
+     * gone through ForceAnimViewerArenaRoundSwap the actor sat at 0% crit for good.
+     *
+     * The silencer rate stays off: a killer weapon rolling a silencer instead of a
+     * crit deals BATTLE_MAX_DAMAGE, which would drop the target to 0 and kick off the
+     * death animation. A plain crit is 3x20 = 60 against 61 HP, so it always survives.
+     */
+    gBattleActor.battleCritRate = AnimViewerPreviewCrit;
+    gBattleActor.battleEffectiveCritRate = AnimViewerPreviewCrit;
+    gBattleActor.battleSilencerRate = 0;
+    gBattleTarget.battleSilencerRate = 0;
     gBattleActor.battleSpeed = 0;
     gBattleTarget.battleSpeed = 0;
     gBattleTarget.weapon = ITEM_NONE;
@@ -8779,12 +8821,273 @@ static void QueueAnimViewerAnimsHidden(DebuggerProc * proc, int frames)
         proc->tmp[AnimViewerTmp_UnhideAnims] = frames;
 }
 
-static bool ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
+#define AnimViewerProcCount 64
+
+static bool AnimViewerProcNameIs(const char * name, const char * prefix)
 {
+    while (*prefix != 0)
+        if (*name++ != *prefix++)
+            return false;
+
+    return true;
+}
+
+/**
+ * Read a proc's name back out of its own script rather than off Proc::proc_name.
+ * Proc_Start() never resets proc_name, and 135 of the 260 proc scripts in the ROM
+ * carry no PROC_NAME at all, so those procs inherit whatever name the previous tenant
+ * of their slot left behind. A script with no PROC_NAME is not one we can identify.
+ */
+static const char * GetAnimViewerProcScriptName(const struct ProcCmd * script)
+{
+    int i;
+
+    for (i = 0; i < 8; ++i)
+    {
+        if (script[i].opcode == 0x00) /* PROC_END */
+            break;
+
+        if (script[i].opcode == 0x01) /* PROC_NAME */
+            return script[i].dataPtr;
+    }
+
+    return NULL;
+}
+
+/**
+ * Clear the floating damage/heal digits left over from the round we are cutting short.
+ *
+ * They are two procs: efxDamageMojiEffectOBJ, which is just a 50-frame timer, and the
+ * ekrsubAnimeEmulator it parks at +0x60, which is what actually pushes the sprites.
+ * The emulator is type 2, so it never breaks on its own - the owner is the only thing
+ * that ends it. End both, which is exactly what the battle-numbers hack's own kill
+ * routine does when a fresh hit effect starts.
+ *
+ * The emulator draws through a stack-local struct Anim rather than a pool slot, so
+ * there is nothing to clean up in sAnimPool for these.
+ *
+ * Identify the emulators by root tree rather than by owner so this holds whoever
+ * started them: the digit ones are rooted on tree 3, while the mini unit sprites
+ * (tree 4) and the level-up effects (tree 5) are not ours to touch. Root procs keep
+ * the tree index in proc_parent instead of a pointer.
+ *
+ * Deliberately narrow. Sweeping every "efx" proc also caught efxMantBatabata (the
+ * cape flutter, C47) and efxChillAnime, and those call SetAnimStateHidden() on the
+ * main anims when they start and are the only things that ever call
+ * SetAnimStateUnHidden() again - killing them mid-flight is what left the battle
+ * animation invisible after a class change.
+ */
+static void ResetAnimViewerBattleDigits(void)
+{
+    int i;
+
+    for (i = 0; i < AnimViewerProcCount; ++i)
+    {
+        struct Proc * it = &sProcArray[i];
+        const char * name;
+
+        /* DeleteProcessRecursive() nulls proc_script, so this skips free slots */
+        if (it->proc_script == NULL)
+            continue;
+
+        name = GetAnimViewerProcScriptName(it->proc_script);
+
+        if (name == NULL)
+            continue;
+
+        if (AnimViewerProcNameIs(name, "efxDamageMojiEffectOBJ") ||
+            (AnimViewerProcNameIs(name, "ekrsubAnimeEmulator") && (int)it->proc_parent == 3))
+            Proc_End(it);
+    }
+}
+
+/**
+ * Put the two sides back where a round is supposed to start them.
+ *
+ * Far attacks and spells drag the sprites around: efxFarAttack walks gEkrBgXOffset
+ * and rewrites all four anim x positions every frame, and a swapped round inherits
+ * wherever it left them. Worse, changing weapon can change gEkrDistanceType (a bow is
+ * EKR_DISTANCE_FAR, a sword is EKR_DISTANCE_CLOSE), and the base positions are keyed
+ * off that - so switching off an archer left both sides standing at bow range.
+ *
+ * A natural arena round does not have this problem because InitMainAnims() recreates
+ * the anims through InitLeftAnim()/InitRightAnim(), which is where these values come
+ * from. We reuse the anims instead, so redo just the position half here. gEkrBgXOffset
+ * is read rather than reset, exactly as InitLeftAnim() does, so the sprites stay in
+ * step with however the background is currently scrolled.
+ */
+static void ResetAnimViewerAnimPositions(void)
+{
+    int i;
+
+    gEkrXPosBase[EKR_POS_L] = -BanimLeftDefaultPos[gEkrDistanceType];
+    gEkrYPosBase[EKR_POS_L] = 0;
+    gEkrXPosReal[EKR_POS_L] = gEkrXPosBase[EKR_POS_L] + BanimTypesPosLeft[gEkrDistanceType];
+    gEkrYPosReal[EKR_POS_L] = 0x58;
+
+    gEkrXPosBase[EKR_POS_R] = 0;
+    gEkrYPosBase[EKR_POS_R] = 0;
+    gEkrXPosReal[EKR_POS_R] = BanimTypesPosRight[gEkrDistanceType];
+    gEkrYPosReal[EKR_POS_R] = 0x58;
+
+    for (i = 0; i < 4; ++i)
+    {
+        if (gAnims[i] == NULL)
+            continue;
+
+        gAnims[i]->xPosition = gEkrXPosReal[i / 2] - gEkrBgXOffset;
+        gAnims[i]->yPosition = gEkrYPosReal[i / 2];
+    }
+}
+
+/**
+ * Retire the substitute battle sprites.
+ *
+ * efxMantBatabata (the cape flutter, banim command C47) and efxChillAnime both swap a
+ * unit's battle sprite for one of their own: they AnimCreate() a replacement, stash it
+ * in gEkrbattle_0[side] and call SetAnimStateHidden() on the real anims, then delete it
+ * and unhide again when they finish. EfxMantBatabata_Loop1 gets there by waiting on
+ * ANIM_BIT3_HIT_EFFECT_APPLIED - which we clear when we rewind the round - so a swapped
+ * round leaves it blocked on a flag that is never coming. The replacement stays in the
+ * pool drawing a full copy of the sprite, and the next round's flutter allocates
+ * another on top. That is the stack of duplicate OAM entries for the target.
+ *
+ * End the owner before deleting the anim, so nothing is left to call AnimDelete() on a
+ * slot we already freed, then unhide the real sprites - those two procs are the only
+ * things that ever call SetAnimStateUnHidden(), so if we do not do it here the battle
+ * animation stays invisible.
+ */
+static void ResetAnimViewerSubstituteAnims(void)
+{
+    int i;
+
+    for (i = 0; i < AnimViewerProcCount; ++i)
+    {
+        struct Proc * it = &sProcArray[i];
+        const char * name;
+
+        if (it->proc_script == NULL)
+            continue;
+
+        name = GetAnimViewerProcScriptName(it->proc_script);
+
+        if (name == NULL)
+            continue;
+
+        if (AnimViewerProcNameIs(name, "efxMantBatabata") || AnimViewerProcNameIs(name, "efxChillAnime"))
+            Proc_End(it);
+    }
+
+    for (i = 0; i < 2; ++i)
+    {
+        if (gEkrSubstituteAnims[i] == NULL)
+            continue;
+
+        AnimDelete(gEkrSubstituteAnims[i]);
+        gEkrSubstituteAnims[i] = NULL;
+    }
+
+    SetAnimViewerAnimsHidden(FALSE);
+}
+
+// 02028f78 b sAnimPool	/home/runner/work/fireemblem8u/fireemblem8u/src/animedrv.c:14
+// 02029d88 b sFirstAnim	/home/runner/work/fireemblem8u/fireemblem8u/src/animedrv.c:15
+/**
+ * This is a full replacement of the vanilla ROM function (see the sAnimPool/sFirstAnim
+ * extern comment above) - every AnimClearAll() call in the whole game goes through
+ * this, not just the AnimViewer's.
+ *
+ * Vanilla only zeroes state/pPrev/pNext, which is enough to unlink every slot and mark
+ * it disabled, but leaves everything else - notably pImgSheet and pSpriteData - holding
+ * whatever the slot's previous occupant left there. AnimCreate() does not fill those
+ * two in either (it only sets state/pScrCurrent/pScrStart/timer/oam2Base/
+ * drawLayerPriority/state2/state3/oamBase/commandQueueSize and NULLs pImgSheetBuf/
+ * pSpriteDataPool/pUnk40/pUnk44); pSpriteData specifically is only ever written when a
+ * C0D "start round" script command runs (banim-main.c) or by
+ * SwitchAISFrameDataFromBARoundType(). Between AnimCreate() and that first script step,
+ * AnimDisplayPrivate() - which runs unconditionally for every enabled, unhidden anim,
+ * every frame - reads anim->pSpriteData directly to find the OAM records to draw:
+ *
+ *     const struct AnimSpriteData* oamData = anim->pSpriteData;
+ *     if (!oamData) return;
+ *
+ * so a slot whose pSpriteData is still a stale pointer from an unrelated previous
+ * anim (a different unit, a digit display, a spell effect) draws THAT data for
+ * however many frames it takes for the round-init script to reach it - a real piece
+ * of the wrong sprite, not a rendering glitch. Zeroing it here makes that window draw
+ * nothing (oamData == NULL, no-op) instead of garbage.
+ *
+ * A real battle rarely exposes this: AnimClearAll() runs once, then exactly four anims
+ * get created and scripted in the same breath, so the stale-pointer window is razor
+ * thin. The AnimViewer's rapid restart/scroll churn - many more AnimClearAll() calls
+ * per minute than a real battle ever sees, hitting a 50-slot pool that used to hold
+ * digit displays, substitute cape/chill anims, and both units - makes it common
+ * instead of theoretical.
+ */
+/*
+void AnimClearAll(void)
+{
+   brk;
+   CpuFastFill(0, gOam, 0x600);
+   struct Anim * it;
+
+   for (it = sAnimPool; it < sAnimPool + ANIM_MAX_COUNT; ++it)
+       *it = (struct Anim) { 0 };
+
+   sFirstAnim = NULL;
+}
+*/
+/**
+ * AnimClearAll() (called from BeginAnimsOnBattle_Arena, i.e. every StartAnimViewerBattle)
+ * zeroes every anim pool slot's state and unlinks it from the draw list, with no idea
+ * which procs are holding raw struct Anim* pointers into that pool. It is meant to run
+ * only between battles, when nothing else is alive to hold such a pointer - but our
+ * "battle" auto-restarts on its own the moment a round finishes (ekrBattleInRoundIdle
+ * -> ... -> ekrBattle_PostDragonStatusEffect sets gEkrBattleEndFlag, which tears the
+ * deamon down and StartAnimViewerBattle fires again), with no scrolling required.
+ *
+ * If efxMantBatabata or efxChillAnime (see ResetAnimViewerSubstituteAnims) is still
+ * mid-flight at that exact moment - EfxMantBatabata_Loop2 only breaks once
+ * CheckEkrHitDone() is true, which is a separate gate from whatever let the round
+ * itself report done - AnimClearAll() wipes its substitute anim's slot out from under
+ * it without ending the owning proc. That proc keeps running afterward, writing into
+ * (and eventually AnimDelete()-ing) whatever the next round's InitLeftAnim/InitRightAnim
+ * happens to allocate into that same low-index slot - which, since AnimCreate() always
+ * scans from the start of the pool, is exactly the range gAnims[0..3] draw from. That
+ * silent corruption of a live main-anim slot is what shows up as a duplicated sprite.
+ *
+ * The digit sweep is included too for the same reason, even though its slot exposure
+ * is smaller (see ResetAnimViewerBattleDigits) - both need to run before ANY AnimClearAll,
+ * not only the ones the user's own scrolling triggers.
+ */
+static void ResetAnimViewerRoundEffects(void)
+{
+    ResetAnimViewerBattleDigits();
+    ResetAnimViewerSubstituteAnims();
+}
+
+int ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
+{
+    // brk;
     int side;
 
     if (gAnims[0] == NULL || gAnims[2] == NULL)
         return false;
+
+    // #ifdef AnimViewerWaitForRoundFinish
+    /**
+     * Hold the swap until the round on screen (hp-bar drain, spell effect) has
+     * actually finished, rather than cutting it off mid-animation. Restart stays set
+     * on the debugger proc, so AnimViewerControlLoop retries this every frame - cheap,
+     * since it is just this one check until CheckEkrHitDone() goes true.
+     */
+    // if (!CheckEkrHitDone())
+    // return false;
+    // #endif
+    brk;
+
+    /* clear what the round we are cutting short left drawn on screen */
+    ResetAnimViewerRoundEffects();
 
     QueueAnimViewerAnimsHidden(proc, 2);
     SetupAnimViewerBattleRounds();
@@ -8798,6 +9101,7 @@ static bool ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
     ResetAnimViewerBattleAnimHp();
     ParseBattleHitToBanimCmd();
     UpdateBanimFrame();
+    ResetAnimViewerAnimPositions();
 
     for (side = 0; side < 2; ++side)
     {
@@ -8830,6 +9134,13 @@ static bool ForceAnimViewerArenaRoundSwap(DebuggerProc * proc)
 
     ResetAnimViewerBattleHp();
 
+    /**
+     * The teardown above already put the gauge back to full, and the LUT we just
+     * parsed is the one the new round has to drain. Drop the latch so the falling
+     * edge further down the control loop does not fire this frame and flatten it.
+     */
+    proc->tmp[AnimViewerTmp_HpBarBusy] = FALSE;
+
     return true;
 }
 
@@ -8845,9 +9156,7 @@ static void RefreshAnimViewerBattleUi(void)
 
     oldChrCounter = oldFont->chr_counter;
 
-    str = gpEkrBattleUnitLeft->weaponBefore == ITEM_NONE
-        ? gNopStr
-        : GetItemName(gpEkrBattleUnitLeft->weaponBefore);
+    str = gpEkrBattleUnitLeft->weaponBefore == ITEM_NONE ? gNopStr : GetItemName(gpEkrBattleUnitLeft->weaponBefore);
 
     oldFont->chr_counter = AnimViewerLeftItemChr;
     InitText(&text, 8);
@@ -8855,9 +9164,7 @@ static void RefreshAnimViewerBattleUi(void)
     LZ77UnCompVram(Img_EfxLeftItemBox, (void *)0x6001A40);
     Text_DrawString(&text, str);
 
-    str = gpEkrBattleUnitRight->weaponBefore == ITEM_NONE
-        ? gNopStr
-        : GetItemName(gpEkrBattleUnitRight->weaponBefore);
+    str = gpEkrBattleUnitRight->weaponBefore == ITEM_NONE ? gNopStr : GetItemName(gpEkrBattleUnitRight->weaponBefore);
 
     oldFont->chr_counter = AnimViewerRightItemChr;
     InitText(&text, 8);
@@ -8960,8 +9267,8 @@ static void GenerateAnimViewerBattle(DebuggerProc * proc)
 
     proc->tmp[AnimViewerOption_Item] = item;
 
-    InitAnimViewerUnit(actor, CHARACTER_EIRIKA, proc->tmp[AnimViewerOption_Class], FACTION_BLUE, item);
-    InitAnimViewerUnit(target, CHARACTER_SETH, CLASS_SOLDIER, FACTION_RED, ITEM_NONE);
+    InitAnimViewerUnit(actor, 0xFC, proc->tmp[AnimViewerOption_Class], FACTION_BLUE, item);
+    InitAnimViewerUnit(target, 0xFD, CLASS_SOLDIER, FACTION_RED, ITEM_NONE);
 
     target->pow = 0;
     target->skl = 0;
@@ -8992,7 +9299,20 @@ static void StartAnimViewerBattle(DebuggerProc * proc)
 
     GenerateAnimViewerBattle(proc);
 
+    /**
+     * The imminent AnimClearAll() (inside BeginAnimsOnBattleAnimations, below) is about
+     * to wipe the whole anim pool. This restart is not only reached via scrolling - a
+     * round that is left to finish on its own gets here too - so the same stray-proc
+     * sweep ForceAnimViewerArenaRoundSwap() uses has to run here as well, or whichever
+     * one of those procs is still mid-flight at the moment gets orphaned. See
+     * ResetAnimViewerRoundEffects() for why that is not just a proc leak but a corrupted
+     * sprite.
+     */
+    ResetAnimViewerRoundEffects();
+
     SetBanimLinkArenaFlag(0);
+
+    gEkrBattleEndFlag = 0;
 
     started = PrepareBattleGraphicsMaybe();
 
@@ -9007,15 +9327,16 @@ static void StartAnimViewerBattle(DebuggerProc * proc)
 
 static void UpdateAnimViewerBattle(DebuggerProc * proc)
 {
+
     int item = NormalizeAnimViewerItemForClass(proc->tmp[AnimViewerOption_Class], proc->tmp[AnimViewerOption_Item]);
     int range = GetAnimViewerBattleRange(item);
     struct Unit * actor = GetAnimViewerActor();
     struct Unit * target = GetAnimViewerTarget();
 
     proc->tmp[AnimViewerOption_Item] = item;
-    
-    InitAnimViewerUnit(actor, CHARACTER_EIRIKA, proc->tmp[AnimViewerOption_Class], FACTION_BLUE, item);
-    InitAnimViewerUnit(target, CHARACTER_SETH, CLASS_SOLDIER, FACTION_RED, ITEM_NONE);
+
+    InitAnimViewerUnit(actor, 0xFD, proc->tmp[AnimViewerOption_Class], FACTION_BLUE, item);
+    InitAnimViewerUnit(target, 0xFC, CLASS_SOLDIER, FACTION_RED, ITEM_NONE);
 
     target->pow = 0;
     target->skl = 0;
@@ -9061,15 +9382,8 @@ static void UpdateAnimViewerBattle(DebuggerProc * proc)
     ResetAnimViewerBattleHp();
     RefreshAnimViewerBattleUi();
     RestoreAnimViewerTextChr(proc);
-    
-    
-    // StartAnimViewerBattle(proc); 
-} 
 
-static void StopAnimViewerBattle(void)
-{
-    if (IsBattleDeamonActive())
-        gEkrBattleEndFlag = 1;
+    // StartAnimViewerBattle(proc);
 }
 
 static void StartAnimViewerControl(DebuggerProc * proc)
@@ -9082,16 +9396,119 @@ static void StartAnimViewerControl(DebuggerProc * proc)
     control->debugger = proc;
 }
 
-static void FinishAnimViewer(DebuggerProc * proc)
+/**
+ * Rebuild the map display the battle animation tore down.
+ *
+ * A banim that ends normally gets put back by ekrBattleEnding_4..7 - InitBmBgLayers(),
+ * the unit sprite reload, UnpackChapterMapPalette() and RefreshBMapDisplay_FromBattle().
+ * We exit through the arena path instead (ExecBattleAnimArenaExit -> ekrTogiEnd), which
+ * only ends the deamon and the gauge, because a real arena fight returns to the arena
+ * screen rather than to the map. So none of that restoration ever ran and we came back
+ * to a map with battle-anim tiles and palettes still loaded.
+ *
+ * BMapDispResume_FromBattleDelayed() is deliberately not used - it calls StartMu() on
+ * gBattleActor, which here is a throwaway unit sitting in gGenericBuffer.
+ */
+static void RestoreAnimViewerBMapGraphics(DebuggerProc * proc)
 {
-    gPlaySt.config.animationType = proc->tmp[AnimViewerTmp_OldAnimType];
-    RestoreAnimViewerSuspendSave(proc);
-    BG_Fill(gBG0TilemapBuffer, 0);
-    BG_EnableSyncByMask(BG0_SYNC_BIT);
-    Proc_Goto(proc, RestartLabel);
+    RefreshBMapDisplay_FromBattle();
+
+    ResetUnitSprites();
+
+    /**
+     * ClearSomeGfx() is the debugger's own screen restore, and it is what the rest of
+     * this menu already uses. It matters here for two things RefreshBMapGraphics()
+     * alone does not cover: it wipes all four tilemap buffers - EkrDispUP leaves BG0
+     * filled with tile 0x80, which is the row of leftover garbage across the top of
+     * the menu - and its SetupBackgrounds(0) call puts every BG's tile and map data
+     * offset, screen size and scroll back to the map defaults. It resumes the map
+     * display and redraws it too, so nothing before it needs to.
+     */
+    ClearSomeGfx(proc);
+
+    UnpackChapterMapPalette();
+    LoadObjUIGfx();
+    RefreshUnitSprites();
+    ForceSyncUnitSpriteSheet();
+    ApplyUnitSpritePalettes();
 }
 
-static void DrawAnimViewerMenu(DebuggerProc * proc)
+/**
+ * End the procs the arena exit path does not know about.
+ *
+ * We fake an arena battle so the animation loops, but real arena battles return to
+ * the arena shop screen, not the map - so the arena teardown (ExecBattleAnimArenaExit
+ * -> NewEkrTogiEndPROC -> ekrTogiEnd_End) only ends the battle deamon and the gauge.
+ * Three things it never touches, all confirmed by their single caller in the decomp:
+ *
+ * - gProc_ekrDispUP (the hit/dmg/crit number boxes): started unconditionally by every
+ *   ekrTogiInit_Init(), i.e. every StartAnimViewerBattle() call. Its only End call
+ *   sits in EkrNamewinAppearMain(), which belongs to the non-arena battle-intro proc
+ *   chain we never run - so nothing in our flow ever ends it, and a new one starts on
+ *   top of the old one every single round. This is not a maybe: it leaks every round,
+ *   guaranteed, so more than one can be alive by the time you exit.
+ *
+ * - ProcScr_efxHPBarColorChange: started once per StartAnimViewerBattle() call, in
+ *   ekrBattleSetFlashingEffect(). Its only End call sits in ekrBattle_PostPopup(),
+ *   deep in the natural post-round sequence (exp bar, popup, dragon status) that a
+ *   round only reaches if it is left to finish on its own - exiting mid-round skips
+ *   straight past it.
+ *
+ * ProcScr_efxWeaponIcon (started in the same place) has the same problem, but its own
+ * EndProcEfxWeaponIcon() is already null-safe and self-nulling, and RefreshAnimViewer-
+ * BattleUi() already calls it on every scroll - so it is used directly below instead
+ * of being swept, to keep gpProcEfxWeaponIcon correctly NULL rather than dangling.
+ *
+ * gProc_ekrDispUP and ProcScr_efxHPBarColorChange have no such self-nulling exported
+ * End function, and their cached owner pointers (gpProcEkrDispUP, the latter is not
+ * even exported) are not guaranteed live - EkrEfxStatusClear() nulls the HP-bar one
+ * only at the START of the next StartAnimViewerBattle(), not when the popup ends it,
+ * so there is a real window after a natural completion where the cached pointer is
+ * stale. Proc_EndEach() sidesteps that: it matches by script identity against the
+ * actual live proc table, so it is correct whether zero, one, or (for the dispUP
+ * case) several are running, and it never touches a pointer that might be reused.
+ */
+static void EndAnimViewerStrayBattleProcs(void)
+{
+    Proc_EndEach(gProc_ekrDispUP);
+    Proc_EndEach(ProcScr_efxHPBarColorChange);
+    EndProcEfxWeaponIcon();
+}
+
+/**
+ * Shared teardown. Both exit paths reach this - AnimViewerLoop() runs first because the
+ * debugger proc is older than the control proc, but FinishAnimViewer() still fires on
+ * the same frame - so it guards itself rather than doing all this twice.
+ */
+static void RestoreAnimViewerState(DebuggerProc * proc)
+{
+    if (proc->tmp[AnimViewerTmp_Restored])
+        return;
+
+    proc->tmp[AnimViewerTmp_Restored] = TRUE;
+
+    gPlaySt.config.animationType = proc->tmp[AnimViewerTmp_OldAnimType];
+    RestoreAnimViewerSuspendSave(proc);
+
+    EndAnimViewerStrayBattleProcs();
+
+    /* display state the banim owned: main update routine, vblank handler, core gfx,
+   windows and the blend config */
+
+    // RestoreAnimViewerBMapGraphics(proc);
+}
+
+static void FinishAnimViewer(DebuggerProc * proc)
+{
+    if (IsBattleDeamonActive())
+        gEkrBattleEndFlag = 1;
+
+    // RestoreAnimViewerState(proc);
+    proc->tmp[AnimViewerTmp_Exit] = TRUE;
+    // Proc_Break(proc);
+}
+
+void DrawAnimViewerMenu(DebuggerProc * proc)
 {
     struct Text * th = gStatScreen.text;
     int classId = proc->tmp[AnimViewerOption_Class];
@@ -9158,6 +9575,8 @@ void AnimViewerInit(DebuggerProc * proc)
     proc->tmp[AnimViewerTmp_UnhideAnims] = FALSE;
     proc->tmp[AnimViewerTmp_Rebuild] = FALSE;
     proc->tmp[AnimViewerTmp_HpBarBusy] = FALSE;
+    proc->tmp[AnimViewerTmp_RetryTimer] = AnimViewerRetryFrames;
+    proc->tmp[AnimViewerTmp_Restored] = FALSE;
 
     gPlaySt.config.animationType = PLAY_ANIMCONF_ON;
     SuppressAnimViewerSuspendSave(proc);
@@ -9169,20 +9588,17 @@ void AnimViewerInit(DebuggerProc * proc)
 
 static void AnimViewerRestore(DebuggerProc * proc)
 {
-    BMapDispResume();
     Proc_EndEach(sProc_AnimViewerControl);
-    gPlaySt.config.animationType = proc->tmp[AnimViewerTmp_OldAnimType];
-    RestoreAnimViewerSuspendSave(proc);
-    BG_Fill(gBG0TilemapBuffer, 0);
-    BG_EnableSyncByMask(BG0_SYNC_BIT);
+    RestoreAnimViewerState(proc);
 }
 
 void AnimViewerLoop(DebuggerProc * proc)
 {
     if (proc->tmp[AnimViewerTmp_Exit] && !IsBattleDeamonActive())
     {
+
         AnimViewerRestore(proc);
-        Proc_Goto(proc, RestartLabel);
+        Proc_Break(proc);
     }
 }
 
@@ -9201,15 +9617,28 @@ static void AnimViewerControlLoop(AnimViewerControlProc * proc)
 
     if (newKeys & B_BUTTON)
     {
-        debugger->tmp[AnimViewerTmp_Exit] = TRUE;
-        StopAnimViewerBattle();
+        FinishAnimViewer(debugger);
         BackPressSFX();
     }
+
+    /**
+     * ekrBattleInRoundIdle() is the only thing in the whole banim engine that reads
+     * the key status, and all it does with it is "B held -> proc->speedup = true".
+     * In an arena battle that means ArenaSetResult(4) and the battle ends as soon as
+     * both sides' round flags land - then the full end sequence runs (fade out, exp
+     * bar, popup, dragon status) before the deamon dies and we can start over, which
+     * is the long dead patch. B held over from the menu we were opened from was
+     * enough to kill the very first round.
+     *
+     * We consume B ourselves as "leave the viewer", so take it away from the engine.
+     * This proc is older than gProc_ekrBattle and Proc_Run walks oldest-first, so the
+     * mask lands before ekrBattleInRoundIdle reads it in the same frame.
+     */
+    gKeyStatusPtr->heldKeys &= ~B_BUTTON;
 
     if (debugger->tmp[AnimViewerTmp_Exit] && !IsBattleDeamonActive())
     {
         FinishAnimViewer(debugger);
-        Proc_Break(proc);
         return;
     }
 
@@ -9217,35 +9646,31 @@ static void AnimViewerControlLoop(AnimViewerControlProc * proc)
     {
         if (keys & DPAD_UP)
         {
-            debugger->tmp[AnimViewerOption_Item] = GetNextAnimViewerItem(
-                debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item], -1);
+            debugger->tmp[AnimViewerOption_Item] =
+                GetNextAnimViewerItem(debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item], -1);
             changed = TRUE;
         }
 
         if (keys & DPAD_DOWN)
         {
-            debugger->tmp[AnimViewerOption_Item] = GetNextAnimViewerItem(
-                debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item], +1);
+            debugger->tmp[AnimViewerOption_Item] =
+                GetNextAnimViewerItem(debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item], +1);
             changed = TRUE;
         }
 
         if (keys & DPAD_LEFT)
         {
-            debugger->tmp[AnimViewerOption_Class] =
-                GetNextAnimViewerClass(debugger->tmp[AnimViewerOption_Class], -1);
-            debugger->tmp[AnimViewerOption_Item] =
-                GetAnimViewerItemAfterClassChange(
-                    debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item]);
+            debugger->tmp[AnimViewerOption_Class] = GetNextAnimViewerClass(debugger->tmp[AnimViewerOption_Class], -1);
+            debugger->tmp[AnimViewerOption_Item] = GetAnimViewerItemAfterClassChange(
+                debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item]);
             changed = TRUE;
         }
 
         if (keys & DPAD_RIGHT)
         {
-            debugger->tmp[AnimViewerOption_Class] =
-                GetNextAnimViewerClass(debugger->tmp[AnimViewerOption_Class], +1);
-            debugger->tmp[AnimViewerOption_Item] =
-                GetAnimViewerItemAfterClassChange(
-                    debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item]);
+            debugger->tmp[AnimViewerOption_Class] = GetNextAnimViewerClass(debugger->tmp[AnimViewerOption_Class], +1);
+            debugger->tmp[AnimViewerOption_Item] = GetAnimViewerItemAfterClassChange(
+                debugger->tmp[AnimViewerOption_Class], debugger->tmp[AnimViewerOption_Item]);
             changed = TRUE;
         }
     }
@@ -9288,17 +9713,30 @@ static void AnimViewerControlLoop(AnimViewerControlProc * proc)
         if (debugger->tmp[AnimViewerTmp_Exit])
         {
             FinishAnimViewer(debugger);
-            Proc_Break(proc);
             return;
         }
 
-        StartAnimViewerBattle(debugger);
+        debugger->tmp[AnimViewerTmp_RetryTimer] = 0;
     }
 
-    if (!debugger->tmp[AnimViewerTmp_BattleLive] &&
-        debugger->tmp[AnimViewerTmp_Restart] &&
-        !debugger->tmp[AnimViewerTmp_Exit])
-        StartAnimViewerBattle(debugger);
+    /**
+     * PrepareBattleGraphicsMaybe() can refuse a combination outright (unreachable
+     * banim id, a terrain with no floor effect, a Myrrh/status pairing...), and then
+     * BeginAnimsOnBattleAnimations() never runs. That left BattleLive and Restart both
+     * clear with nothing to kick it again, so the viewer just sat there until you
+     * happened to press a direction. Retry on a timer instead, and back off so a
+     * combination that can never start does not rebuild the battle every frame.
+     */
+    if (!debugger->tmp[AnimViewerTmp_BattleLive] && !debugger->tmp[AnimViewerTmp_Exit])
+    {
+        if (debugger->tmp[AnimViewerTmp_Restart] || debugger->tmp[AnimViewerTmp_RetryTimer] <= 0)
+        {
+            debugger->tmp[AnimViewerTmp_RetryTimer] = AnimViewerRetryFrames;
+            StartAnimViewerBattle(debugger);
+        }
+        else
+            debugger->tmp[AnimViewerTmp_RetryTimer]--;
+    }
 
     if (debugger->tmp[AnimViewerTmp_Redraw])
     {
@@ -9336,7 +9774,6 @@ static void AnimViewerControlLoop(AnimViewerControlProc * proc)
     ResetAnimViewerUnitHp();
     RestoreAnimViewerBattleWeapons(debugger->tmp[AnimViewerOption_Item]);
 }
-
 
 void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
 {
@@ -9428,8 +9865,7 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             if (HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
             {
-                proc->tmp[GfxViewerOption_Weapon] =
-                    GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], +1);
+                proc->tmp[GfxViewerOption_Weapon] = GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], +1);
                 StartDebuggerBanimPreview(
                     proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
             }
@@ -9449,8 +9885,7 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             if (HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
             {
-                proc->tmp[GfxViewerOption_Weapon] =
-                    GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], -1);
+                proc->tmp[GfxViewerOption_Weapon] = GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], -1);
                 StartDebuggerBanimPreview(
                     proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
             }
