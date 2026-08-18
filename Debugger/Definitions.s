@@ -21,7 +21,7 @@
 .endm
 
 .if FE8 == true 
-
+SET_DATA character_battle_animation_palette_table_pointer, 0x8059bfc 
 SET_FUNC InitMainMiniAnim, 0x805a60D
 SET_FUNC EkrMainMini_AnimUpdateFrameGfx, 0x805A5A9
 SET_FUNC EkrMainMini_AnimMarkRoundEnd, 0x805A581

@@ -7136,10 +7136,11 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
     return;
 }
 
-#define GfxViewerOptions 6 // 6
-static const char gfxViewerOpts[6][16] = { "Portrait", "Class Sprites", "BG", "CG", "Anim", "Wpn" };
+#define GfxViewerOptions 7 // 7
+static const char gfxViewerOpts[7][16] = { "Portrait", "Class Sprites", "BG", "CG", "Anim", "Wpn", "Pal" };
 #define GfxViewerOption_ClassAnim 4
 #define GfxViewerOption_Weapon 5
+#define GfxViewerOption_Pal 6
 #define GfxViewerTmp_MenuHidden 14
 #define GfxViewerText_WeaponName GfxViewerOptions
 #define GfxViewerText_ClassName (GfxViewerOptions + 1)
@@ -7149,7 +7150,11 @@ static bool HasDebuggerBanimForClass(int classId);
 static int GetDebuggerDefaultPreviewWeapon(int classId);
 static int GetNextDebuggerPreviewWeapon(int item, int direction);
 static const char * GetDebuggerPreviewWeaponName(int item);
-static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon);
+static int GetNextDebuggerClassPaletteCycle(int classId, int current, int direction);
+static int ResolveDebuggerClassPaletteOverride(DebuggerProc * proc);
+// palOverride is an index into character_battle_animation_palette_table (see the "Pal"
+// option, GetNthDebuggerClassPaletteIndex below), or -1 to use entry->paletteId as normal.
+static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon, int palOverride);
 
 // Was: shifted right & narrowed vs. the generic support-list geometry
 // (NUMBER_X/START_X/SupportWidth) to leave room on the left for the mms row shown by
@@ -7209,7 +7214,9 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
     SetTextFont(&gHelpBoxSt.font);
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
-        int color = (i == GfxViewerOption_Weapon && !weaponEnabled) ? TEXT_COLOR_SYSTEM_GRAY : TEXT_COLOR_SYSTEM_WHITE;
+        int color = ((i == GfxViewerOption_Weapon || i == GfxViewerOption_Pal) && !weaponEnabled)
+            ? TEXT_COLOR_SYSTEM_GRAY
+            : TEXT_COLOR_SYSTEM_WHITE;
 
         ClearText(&th[i]);
         Text_SetColor(&th[i], color);
@@ -7221,12 +7228,33 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
     {
         int color = (i == GfxViewerOption_Weapon && !weaponEnabled) ? TEXT_COLOR_SYSTEM_GRAY : TEXT_COLOR_SYSTEM_GOLD;
 
-        if ((i == GfxViewerOption_Weapon) || (i == GfxViewerOption_ClassAnim))
+        if ((i == GfxViewerOption_Weapon) || (i == GfxViewerOption_ClassAnim) || (i == GfxViewerOption_Pal))
             continue;
 
         // PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)),
         // TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
         PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (i * 2)), color, proc->tmp[i]);
+    }
+
+    /**
+     * Unlike the generic rows above, proc->tmp[GfxViewerOption_Pal] is a cycle
+     * position (-1 = no override, else 0-based into however many gAnimCharaPalConfig
+     * entries this class has - see GetNthDebuggerClassPaletteIndex), not the value to
+     * display. What the user asked to see here is the RESOLVED
+     * character_battle_animation_palette_table index that cycle position maps to, so
+     * it is looked up fresh rather than printed directly. -1 (no override, or nothing
+     * registered for this class at all) draws nothing, leaving the row blank - the
+     * TileMap_FillRect() at the top of this function already cleared it.
+     */
+    {
+        int resolvedPal = ResolveDebuggerClassPaletteOverride(proc);
+
+        if (resolvedPal >= 0)
+        {
+            int palColor = weaponEnabled ? TEXT_COLOR_SYSTEM_GOLD : TEXT_COLOR_SYSTEM_GRAY;
+            PutNumberHex(
+                gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (GfxViewerOption_Pal * 2)), palColor, resolvedPal);
+        }
     }
     SetTextFont(&gHelpBoxSt.font);
     ClearText(&th[GfxViewerText_ClassName]);
@@ -7291,6 +7319,7 @@ void GfxViewerInit(DebuggerProc * proc)
 
     proc->tmp[GfxViewerOption_Weapon] = GetUnitEquippedWeapon(proc->unit);
     proc->tmp[GfxViewerOption_ClassAnim] = proc->unit->pClassData->number;
+    proc->tmp[GfxViewerOption_Pal] = -1;
 
     GfxViewerInitMenuGfx(proc);
 
@@ -8046,6 +8075,178 @@ static bool HasDebuggerBanimForClass(int classId)
     return classId != 0 && class != NULL && class->pBattleAnimDef != NULL;
 }
 
+/**
+ * "Pal" cycles through the unique battle-anim palettes that have been registered FOR
+ * this class, not through character_battle_animation_palette_table directly - that
+ * table is just a flat list of standalone palette sets (one entry per character who
+ * has custom colors, see banim_pal_chara.c), with no class association of its own.
+ *
+ * The association lives in gAnimCharaPalConfig/gAnimCharaPalIt (256 characters x 7
+ * slots each): gAnimCharaPalConfig[charId][slot] holds a class id, and when it matches
+ * a unit's current class, gAnimCharaPalIt[charId][slot]-1 is the palette table index to
+ * use instead of that class's normal faction-colored palette - see UpdateBanimFrame()
+ * (banim-ekrmain.c) and RestartMainMiniAnim() (banim-ekrmainmini.c), which both index
+ * character_battle_animation_palette_table this exact way (chara_pal/charPalId).
+ *
+ * These scan all 256*7 = 1792 slots. That's fine here - both only run on a keypress,
+ * not per frame - but would be worth caching if this pattern shows up somewhere hotter.
+ */
+/**
+ * Definitions.s: 0x8059bfc - NOT the table's own (potentially stale) ROM address. It is
+ * the address of a literal-pool slot inside vanilla code, the exact spot vanilla's own
+ * table-access functions (RestartMainMiniAnim, UpdateBanimFrame) read the table's
+ * address from to find it - so a repointing tool is guaranteed to keep this correct
+ * even after moving/resizing the table, since that is the one place it HAS to patch for
+ * vanilla itself to keep working. A direct extern on the table's symbol (character_
+ * battle_animation_palette_table, declared in FE-Clib's banim_data.h) would not survive
+ * that: it is only as current as whatever address fe8.s happened to record.
+ */
+extern struct BattleAnimCharaPal * character_battle_animation_palette_table_pointer;
+
+/**
+ * character_battle_animation_palette_table's entry count, read dynamically rather than
+ * hardcoded, for the same repointing reason as the pointer above - a fixed count would
+ * silently go stale (too low) if the table were ever resized to hold more entries.
+ *
+ * The table is a packed data block (header -> pointer table, packed_data_block.h), and
+ * its header - a DataBlockHead, { u32 number; u32 size; }, 8 bytes - sits immediately
+ * before it: banim_pal_head at 0x08ef8000 vs character_battle_animation_palette_table
+ * at 0x08ef8008 in the decomp, exactly 8 bytes apart. .number is that header's first
+ * word, so it is read 8 bytes back from the table's own (repoint-safe) address.
+ */
+static u32 GetDebuggerPaletteTableCount(void)
+{
+    return *(u32 *)((u8 *)character_battle_animation_palette_table_pointer - 8);
+}
+
+static bool IsDebuggerClassPaletteMatch(int classId, int charId, int slot)
+{
+    return gAnimCharaPalConfig[charId][slot] == classId;
+}
+
+// Whether the (charId, slot) match's resolved palette index already showed up at an
+// earlier (charId, slot) position for this same class. Several characters (or several
+// slots for the same character) commonly register the SAME resolved index for a given
+// class - a shared recolor - and without this, that one index would repeat several
+// times in a row in the cycle instead of moving on to a genuinely different palette.
+static bool IsDebuggerClassPaletteDuplicate(int classId, int charId, int slot)
+{
+    int resolvedIndex = gAnimCharaPalIt[charId][slot] - 1;
+    int scanChar, scanSlot, slotLimit;
+
+    for (scanChar = 0; scanChar <= charId; ++scanChar)
+    {
+        slotLimit = (scanChar == charId) ? slot : 7;
+
+        for (scanSlot = 0; scanSlot < slotLimit; ++scanSlot)
+            if (IsDebuggerClassPaletteMatch(classId, scanChar, scanSlot) &&
+                gAnimCharaPalIt[scanChar][scanSlot] - 1 == resolvedIndex)
+                return true;
+    }
+
+    return false;
+}
+
+// Count of DISTINCT resolved palette indices registered for classId (see
+// IsDebuggerClassPaletteDuplicate - two registrations resolving to the same index only
+// count once).
+static int CountDebuggerClassPaletteEntries(int classId)
+{
+    int charId, slot, count = 0;
+
+    for (charId = 0; charId < 0x100; ++charId)
+        for (slot = 0; slot < 7; ++slot)
+            if (IsDebuggerClassPaletteMatch(classId, charId, slot) &&
+                !IsDebuggerClassPaletteDuplicate(classId, charId, slot))
+                ++count;
+
+    return count;
+}
+
+// n is 0-based, in registration order, over the DISTINCT resolved indices for classId
+// (duplicates skipped - see IsDebuggerClassPaletteDuplicate). Returns -1 if n is out of
+// range for however many distinct ones classId has (including none at all).
+static int GetNthDebuggerClassPaletteIndex(int classId, int n)
+{
+    int charId, slot;
+
+    if (n < 0)
+        return -1;
+
+    for (charId = 0; charId < 0x100; ++charId)
+    {
+        for (slot = 0; slot < 7; ++slot)
+        {
+            if (!IsDebuggerClassPaletteMatch(classId, charId, slot))
+                continue;
+
+            if (IsDebuggerClassPaletteDuplicate(classId, charId, slot))
+                continue;
+
+            if (n == 0)
+                return gAnimCharaPalIt[charId][slot] - 1;
+
+            --n;
+        }
+    }
+
+    return -1;
+}
+
+/**
+ * The Pal cycle has three regions, walked in this order:
+ *
+ *   -1                                    no override (the class's normal palette)
+ *   0 .. classCount-1                     that class's own distinct registered
+ *                                         palettes (GetNthDebuggerClassPaletteIndex)
+ *   classCount .. classCount+107          every other palette in
+ *                                         character_battle_animation_palette_table,
+ *                                         walked directly by table index 0..107
+ *
+ * current/next are positions in that combined space (still -1-based, matching what
+ * proc->tmp[GfxViewerOption_Pal] stores), not palette table indices - resolving a
+ * position to an actual table index is ResolveDebuggerClassPaletteOverride()'s job.
+ * -1 is always a valid stop on either end, same as before this had a third region, so
+ * scrolling off either end of the list always passes back through "default" rather
+ * than skipping it - and unlike before, there is now always something to scroll
+ * INTO past the class-specific list (the full table), even for a class with zero
+ * registered palettes of its own.
+ */
+static int GetNextDebuggerClassPaletteCycle(int classId, int current, int direction)
+{
+    int totalStates = CountDebuggerClassPaletteEntries(classId) + GetDebuggerPaletteTableCount();
+    int next = current + direction;
+
+    if (next < -1)
+        next = totalStates - 1;
+    else if (next >= totalStates)
+        next = -1;
+
+    return next;
+}
+
+// What StartDebuggerBanimPreview() should be told to override the palette with, given
+// the class currently on display and wherever "Pal" is parked in its own cycle - see
+// GetNextDebuggerClassPaletteCycle for the three regions this reads back out of.
+static int ResolveDebuggerClassPaletteOverride(DebuggerProc * proc)
+{
+    int classId = proc->tmp[GfxViewerOption_ClassAnim];
+    int state = proc->tmp[GfxViewerOption_Pal];
+    int classCount;
+
+    if (state < 0)
+        return -1;
+
+    classCount = CountDebuggerClassPaletteEntries(classId);
+
+    if (state < classCount)
+        return GetNthDebuggerClassPaletteIndex(classId, state);
+
+    state -= classCount;
+
+    return ((u32)state < GetDebuggerPaletteTableCount()) ? state : -1;
+}
+
 static int GetDebuggerDefaultPreviewWeapon(int classId)
 {
     const struct ClassData * class = GetClassData(classId);
@@ -8244,7 +8445,7 @@ static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct
         if (paletteId < 0)
             return false;
 
-        if (!IsValidLz77DecompressionData(character_battle_animation_palette_table[paletteId].pal))
+        if (!IsValidLz77DecompressionData(character_battle_animation_palette_table_pointer[paletteId].pal))
             return false;
     }
 
@@ -8429,11 +8630,14 @@ static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * pro
 // fallback/custom-class entry (whose backing storage is the caller's stack).
 static void SetupDebuggerBanimAnim(
     struct OpInfoClassDisplayProc * proc, struct ClassReelEnt * entry, struct ClassReelEnt * persistentEntry,
-    int weapon)
+    int weapon, int palOverride)
 {
     NewEfxAnimeDrvProc();
 
-    gOpInfoData.charPalId = entry->paletteId;
+    // palOverride < 0 ("no override", the default and the only state a class with
+    // nothing registered in gAnimCharaPalConfig can ever be in) falls back to
+    // entry->paletteId exactly as before this option existed.
+    gOpInfoData.charPalId = (palOverride >= 0) ? palOverride : entry->paletteId;
     gOpInfoData.xPos = DEBUGGER_BANIM_X;
     gOpInfoData.yPos = DEBUGGER_BANIM_Y;
     gOpInfoData.animId = GetDebuggerBanimId(entry->classId, gActiveUnit, weapon);
@@ -8507,7 +8711,7 @@ static void EndDebuggerBanimPreview(void)
     Proc_EndEach(sProc_DebuggerBanimPreview);
 }
 
-static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon)
+static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapon, int palOverride)
 {
     struct OpInfoClassDisplayProc * proc;
     struct ClassReelEnt * vanillaEntry;
@@ -8537,7 +8741,7 @@ static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapo
 
     BMapDispSuspend();
     proc = Proc_Start(sProc_DebuggerBanimPreview, PROC_TREE_3);
-    SetupDebuggerBanimAnim(proc, entry, vanillaEntry, weapon);
+    SetupDebuggerBanimAnim(proc, entry, vanillaEntry, weapon, palOverride);
 }
 
 static void DebuggerBanimPreview_ExecScript(struct OpInfoClassDisplayProc * proc)
@@ -10071,10 +10275,11 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
         case 4:
         {
             proc->tmp[GfxViewerOption_Weapon] = GetDebuggerDefaultPreviewWeapon(id);
+            proc->tmp[GfxViewerOption_Pal] = -1;
             ClearMainMenuGfx(proc);
             GfxViewerInitMenuGfx(proc);
             MU_EndAll();
-            StartDebuggerBanimPreview(id, unit, proc->tmp[GfxViewerOption_Weapon]);
+            StartDebuggerBanimPreview(id, unit, proc->tmp[GfxViewerOption_Weapon], -1);
             break;
         }
     }
@@ -10082,10 +10287,13 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
 
 static void RefreshDebuggerBanimPreviewForGfxViewer(DebuggerProc * proc, struct Unit * unit)
 {
-    if ((proc->id == GfxViewerOption_ClassAnim || proc->id == GfxViewerOption_Weapon) &&
+    if ((proc->id == GfxViewerOption_ClassAnim || proc->id == GfxViewerOption_Weapon ||
+         proc->id == GfxViewerOption_Pal) &&
         HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
     {
-        StartDebuggerBanimPreview(proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
+        StartDebuggerBanimPreview(
+            proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon],
+            ResolveDebuggerClassPaletteOverride(proc));
     }
 }
 
@@ -10129,7 +10337,19 @@ void GfxViewerLoop(DebuggerProc * proc)
             {
                 proc->tmp[GfxViewerOption_Weapon] = GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], +1);
                 StartDebuggerBanimPreview(
-                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
+                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon],
+                    ResolveDebuggerClassPaletteOverride(proc));
+            }
+        }
+        else if (proc->id == GfxViewerOption_Pal)
+        {
+            if (HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
+            {
+                proc->tmp[GfxViewerOption_Pal] = GetNextDebuggerClassPaletteCycle(
+                    proc->tmp[GfxViewerOption_ClassAnim], proc->tmp[GfxViewerOption_Pal], +1);
+                StartDebuggerBanimPreview(
+                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon],
+                    ResolveDebuggerClassPaletteOverride(proc));
             }
         }
         else
@@ -10149,7 +10369,19 @@ void GfxViewerLoop(DebuggerProc * proc)
             {
                 proc->tmp[GfxViewerOption_Weapon] = GetNextDebuggerPreviewWeapon(proc->tmp[GfxViewerOption_Weapon], -1);
                 StartDebuggerBanimPreview(
-                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon]);
+                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon],
+                    ResolveDebuggerClassPaletteOverride(proc));
+            }
+        }
+        else if (proc->id == GfxViewerOption_Pal)
+        {
+            if (HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]))
+            {
+                proc->tmp[GfxViewerOption_Pal] = GetNextDebuggerClassPaletteCycle(
+                    proc->tmp[GfxViewerOption_ClassAnim], proc->tmp[GfxViewerOption_Pal], -1);
+                StartDebuggerBanimPreview(
+                    proc->tmp[GfxViewerOption_ClassAnim], unit, proc->tmp[GfxViewerOption_Weapon],
+                    ResolveDebuggerClassPaletteOverride(proc));
             }
         }
         else
@@ -10174,9 +10406,10 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             proc->id = GfxViewerOptions - 1;
         }
-        if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon)
+        if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon &&
+            proc->id != GfxViewerOption_Pal)
         {
-            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon
+            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon/Pal
             BMapDispResume();
         }
         RefreshDebuggerBanimPreviewForGfxViewer(proc, unit);
@@ -10189,9 +10422,10 @@ void GfxViewerLoop(DebuggerProc * proc)
         {
             proc->id = 0;
         }
-        if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon)
+        if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon &&
+            proc->id != GfxViewerOption_Pal)
         {
-            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon
+            EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon/Pal
             BMapDispResume();
         }
 
