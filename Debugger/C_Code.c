@@ -5997,6 +5997,7 @@ u8 AnimViewerNow(struct MenuProc * menu, struct MenuItemProc * menuItem)
     proc = Proc_Find(DebuggerProcCmd);
     ClearMainMenuGfx(proc);
     EndDebuggerBanimPreview();
+    BMapDispResume();
     Proc_Goto(proc, AnimViewerLabel);
     return MENU_ACT_SKIPCURSOR | MENU_ACT_END | MENU_ACT_SND6A | MENU_ACT_CLEAR;
 }
@@ -7136,11 +7137,12 @@ void efxDarkGradoOBJ02piece_Loop(struct ProcEfxOBJ * proc) // fix Gleipnir crash
 }
 
 #define GfxViewerOptions 6 // 6
-static const char gfxViewerOpts[6][16] = { "Portrait", "Class Sprites", "BG", "CG", "Class Anim", "Wpn" };
+static const char gfxViewerOpts[6][16] = { "Portrait", "Class Sprites", "BG", "CG", "Anim", "Wpn" };
 #define GfxViewerOption_ClassAnim 4
 #define GfxViewerOption_Weapon 5
 #define GfxViewerTmp_MenuHidden 14
 #define GfxViewerText_WeaponName GfxViewerOptions
+#define GfxViewerText_ClassName (GfxViewerOptions + 1)
 #define GfxViewerMaxWeaponItem ITEM_GOLDGEM
 
 static bool HasDebuggerBanimForClass(int classId);
@@ -7204,7 +7206,7 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
     labelX = NUMBER_X - SupportWidth + 3 + GfxViewerMenuXShift;
     valueX = START_X + 7 + GfxViewerMenuXShift - GfxViewerMenuWidthShrink;
     weaponEnabled = HasDebuggerBanimForClass(proc->tmp[GfxViewerOption_ClassAnim]);
-
+    SetTextFont(&gHelpBoxSt.font);
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
         int color = (i == GfxViewerOption_Weapon && !weaponEnabled) ? TEXT_COLOR_SYSTEM_GRAY : TEXT_COLOR_SYSTEM_WHITE;
@@ -7214,27 +7216,40 @@ void RedrawGfxViewerMenu(DebuggerProc * proc)
         Text_DrawString(&th[i], gfxViewerOpts[i]);
         PutText(&th[i], gBG0TilemapBuffer + TILEMAP_INDEX(labelX, Y_HAND + (i * 2)));
     }
-
+    SetTextFont(NULL);
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
         int color = (i == GfxViewerOption_Weapon && !weaponEnabled) ? TEXT_COLOR_SYSTEM_GRAY : TEXT_COLOR_SYSTEM_GOLD;
 
-        if (i == GfxViewerOption_Weapon)
+        if ((i == GfxViewerOption_Weapon) || (i == GfxViewerOption_ClassAnim))
             continue;
 
         // PutNumber(gBG0TilemapBuffer + TILEMAP_INDEX(START_X, Y_HAND + (i*2)),
         // TEXT_COLOR_SYSTEM_GOLD, proc->tmp[i]);
         PutNumberHex(gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (i * 2)), color, proc->tmp[i]);
     }
+    SetTextFont(&gHelpBoxSt.font);
+    ClearText(&th[GfxViewerText_ClassName]);
+    // TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (GfxViewerText_ClassName * 2)), 14, 1, 0);
+    Text_SetColor(&th[GfxViewerText_ClassName], weaponEnabled ? TEXT_COLOR_SYSTEM_GOLD : TEXT_COLOR_SYSTEM_GRAY);
+    if (proc->tmp[GfxViewerOption_ClassAnim])
+    {
+        Text_DrawString(
+            &th[GfxViewerText_ClassName],
+            GetStringFromIndexSafe(GetClassData(proc->tmp[GfxViewerOption_ClassAnim])->nameTextId));
+        PutText(
+            &th[GfxViewerText_ClassName],
+            gBG0TilemapBuffer + TILEMAP_INDEX(valueX - 6, Y_HAND + (GfxViewerOption_ClassAnim * 2)));
+    }
 
     ClearText(&th[GfxViewerText_WeaponName]);
-    TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (GfxViewerOption_Weapon * 2)), 14, 1, 0);
+    // TileMap_FillRect(gBG0TilemapBuffer + TILEMAP_INDEX(valueX, Y_HAND + (GfxViewerOption_Weapon * 2)), 14, 1, 0);
     Text_SetColor(&th[GfxViewerText_WeaponName], weaponEnabled ? TEXT_COLOR_SYSTEM_GOLD : TEXT_COLOR_SYSTEM_GRAY);
     Text_DrawString(&th[GfxViewerText_WeaponName], GetDebuggerPreviewWeaponName(proc->tmp[GfxViewerOption_Weapon]));
     PutText(
         &th[GfxViewerText_WeaponName],
         gBG0TilemapBuffer + TILEMAP_INDEX(valueX - 6, Y_HAND + (GfxViewerOption_Weapon * 2)));
-
+    SetTextFont(NULL);
     BG_EnableSyncByMask(BG0_SYNC_BIT);
 }
 
@@ -7262,8 +7277,10 @@ void GfxViewerInit(DebuggerProc * proc)
     SomeMenuInit(proc);
     MU_EndAll();
     EndDebuggerBanimPreview();
-    // InitTextFont(NULL, (void *)(VRAM + 0x4800), 0x240, 0);
-    // sSpecialCharStList[0].color = 32;
+    BMapDispResume();
+    gLCDControlBuffer.bg2cnt.priority = 0;
+    InitTextFont(&gHelpBoxSt.font, (void *)(VRAM + 0x4000), 0x200, 0);
+    SetTextFont(&gHelpBoxSt.font);
     // struct Unit * unit = proc->unit;
     for (int i = 0; i < GfxViewerOptions; ++i)
     {
@@ -7271,6 +7288,9 @@ void GfxViewerInit(DebuggerProc * proc)
     }
     proc->tmp[4] = 0;
     proc->tmp[GfxViewerTmp_MenuHidden] = FALSE;
+
+    proc->tmp[GfxViewerOption_Weapon] = GetUnitEquippedWeapon(proc->unit);
+    proc->tmp[GfxViewerOption_ClassAnim] = proc->unit->pClassData->number;
 
     GfxViewerInitMenuGfx(proc);
 
@@ -7626,7 +7646,7 @@ void RedrawGfxFromIDs(int id, DebuggerProc * proc)
     if (id && (GetClassData(id) != 0) && CanDisplaySMS(GetClassData(id)->SMSId))
     {
         // SMS_SomethingGmapUnit(id, 1, 16);
-        PutUnitSpriteForClassId(0, 48, 128, 0xC800, id); // was x=8; +120px to match the portrait's side 0->1 move
+        PutUnitSpriteForClassId(0, 40, 128, 0xC800, id); // was x=8; +120px to match the portrait's side 0->1 move
     }
     // UseUnitSprite(12);
 }
@@ -7739,6 +7759,20 @@ struct OpInfoClassDisplayProc
     ProcPtr unk_3c;
     u8 unk_40[6];
     u8 unk_46;
+
+    // Debugger-only fields for DebuggerBanimPreview_ResetScript()'s melee/ranged
+    // alternation - not real ROM ABI. The vanilla struct (also used by classchg-sel.c's
+    // promotion reel) ends at unk_46; every proc is allocated from the same
+    // fixed-size pool slot regardless of which proc type occupies it (see
+    // DebuggerProc.tmp's own "0x64 out of 0x6c max" note), and OpInfoClassDisplayProc
+    // is well short of that, so this tail is genuinely unused rather than borrowed
+    // from something else. Not file-scope statics: this preview's .c/.o gets hooked
+    // into the ROM by lyn, which has nowhere to allocate fresh static RAM for new
+    // globals - only existing, already-mapped storage (an extern'd address, or here,
+    // slack inside a struct that is already allocated for other reasons) works.
+    bool useRanged;
+    s16 weapon;
+    s16 naturalSpellId;
 };
 
 extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe8.s
@@ -7752,29 +7786,48 @@ extern struct ClassReelEnt gClassReelData[65]; // dat 0x08A2F6C0 - already in fe
 #define CR_ANIM_ROUND_TAKING_MISS_CLOSE() { CLASS_REEL_OP_6, 0 }
 #define CR_RETURN_TO_STANDING_ALT() { CLASS_REEL_OP_7, 0 }
 #define CR_WAIT_ROUND_END() { CLASS_REEL_OP_8, 0 }
+#define CLASS_REEL_WAIT_SPELL 9
+#define CLASS_REEL_CRIT_FAR 10
+#define CR_ANIM_ROUND_CRIT_FAR() { CLASS_REEL_CRIT_FAR, 0 }
+#define CR_WAIT_SPELL() { CLASS_REEL_WAIT_SPELL, 0 }
 
-struct ClassReelAnimScr const sCRScr_DefaultHit[] = {
-    CR_WAIT(30),
-    CR_ANIM_ROUND_HIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
+/*
+struct ClassReelAnimScr const sCRScr_MeleeHit[] = {
+    CR_WAIT(30),     CR_ANIM_ROUND_NONCRIT_FAR(), CR_WAIT_ROUND_END(), CR_WAIT(40),
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+
+    CR_WAIT(40),     CR_ANIM_ROUND_HIT_CLOSE(),   CR_WAIT_ROUND_END(),
     CR_WAIT(30), // normally this would be wait for hp to deplete here
-    CR_RETURN_TO_STANDING(),
-    CR_WAIT(40),
-    CR_ANIM_ROUND_NONCRIT_FAR(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(40),
-    CR_RETURN_TO_STANDING(),
-    CR_WAIT(40),
-    CR_ANIM_ROUND_CRIT_CLOSE(),
-    CR_WAIT_ROUND_END(),
-    CR_WAIT(45),
-    CR_RETURN_TO_STANDING(),
-    CR_WAIT(255),
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+
+    CR_WAIT(40),     CR_ANIM_ROUND_CRIT_FAR(),    CR_WAIT_ROUND_END(), CR_WAIT(45),
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+
+    CR_WAIT(40),     CR_ANIM_ROUND_CRIT_CLOSE(),  CR_WAIT_ROUND_END(), CR_WAIT(45),
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),     CR_WAIT(45),         CR_END(),
+};
+*/
+
+struct ClassReelAnimScr const sCRScr_MeleeHit[] = {
+    CR_WAIT(40),     CR_ANIM_ROUND_HIT_CLOSE(),  CR_WAIT_ROUND_END(),
+    CR_WAIT(30), // normally this would be wait for hp to deplete here
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+
+    CR_WAIT(40),     CR_ANIM_ROUND_CRIT_CLOSE(), CR_WAIT_ROUND_END(), CR_WAIT(45),
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),    CR_WAIT(45),         CR_END(),
+};
+
+struct ClassReelAnimScr const sCRScr_RangedHit[] = {
+    CR_WAIT(30),     CR_ANIM_ROUND_NONCRIT_FAR(), CR_WAIT_ROUND_END(), CR_WAIT(40),
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+
+    CR_WAIT(40),     CR_ANIM_ROUND_CRIT_FAR(),    CR_WAIT_ROUND_END(), CR_WAIT(45),
+    CR_WAIT_SPELL(), CR_RETURN_TO_STANDING(),
+
     CR_END(),
 };
 
-#define CLASS_REEL_WAIT_SPELL 9
-#define CLASS_REEL_CRIT_FAR 10
+extern struct AnimBuffer gOpInfoData; // dat 0x02000000 - moved up from below so ExecScript/LoopScript can see it
 
 void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc)
 {
@@ -7815,12 +7868,20 @@ void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc)
 
             break;
 
-        case CLASS_REEL_OP_5:
-        case CLASS_REEL_OP_8:
+        case CLASS_REEL_CRIT_FAR:
+            gOpInfoData.roundType = ANIM_ROUND_CRIT_FAR;
+            sub_805A7B4(&gOpInfoData);
+
             break;
 
+        case CLASS_REEL_OP_5:
+        case CLASS_REEL_OP_8:
         case CLASS_REEL_WAIT_SPELL:
-            ? ? break;
+            // Nothing to kick off here - CLASS_REEL_WAIT_SPELL is a pure wait, same
+            // shape as OP_5 (wait N frames) and OP_8 (wait for round end). The actual
+            // "is it still going" check lives in ClassInfoDisplay_LoopScript, which is
+            // what decides when to advance past this script entry.
+            break;
     }
 
     proc->unk_2a = 0;
@@ -7828,11 +7889,82 @@ void ClassInfoDisplay_ExecScript(struct OpInfoClassDisplayProc * proc)
     return;
 }
 
+/**
+ * Same shape as vanilla's ClassInfoDisplay_LoopScript, plus CLASS_REEL_CRIT_FAR
+ * (grouped with the other one-shot "start this round type" ops - 1/2/3/4/6/7 - since
+ * like them it has nothing left to do after ClassInfoDisplay_ExecScript() already
+ * kicked off the round) and CLASS_REEL_WAIT_SPELL (a genuine wait, alongside OP_5's
+ * fixed-frame wait and OP_8's wait-for-round-end: holds this script entry until
+ * gEfxSpellAnimExists goes false, i.e. until whatever spell effect the mini anim's own
+ * AIS script triggered (command 5/0x0E) has actually finished playing.
+ *
+ * gEfxSpellAnimExists, not gpActiveClassReelSpellProc/"gpProcefxopCur" (the tracking
+ * pointer behind EndActiveClassReelSpell() in banim-efxop.c) - that one belongs to a
+ * different code path. Vanilla's own EkrMainMini_AnimUpdateFrameGfx command interpreter
+ * calls StartClassReelSpellAnim() (which sets gpActiveClassReelSpellProc), but the
+ * debugger's own command interpreter here (DebuggerEkrUnitMainMini_UpdateAnim) does not
+ * reuse that function - it calls StartDebuggerBanimSpellAnimation() on command 5/0x0E,
+ * which goes straight to StartSpellAnimation(), the same gEkrSpellAnimLut dispatch the
+ * real battle system uses. Every one of those individual spell effects (efxFire,
+ * efxThunder, ...) brackets itself with SpellFx_Begin()/SpellFx_Finish(), i.e.
+ * gEfxSpellAnimExists - so that is the flag that actually reflects what is on screen
+ * here, and gpActiveClassReelSpellProc is never touched by anything this preview does.
+ */
+void ClassInfoDisplay_LoopScript(struct OpInfoClassDisplayProc * proc)
+{
+    switch (proc->script->opCode)
+    {
+        case CLASS_REEL_OP_1:
+        case CLASS_REEL_OP_2:
+        case CLASS_REEL_OP_3:
+        case CLASS_REEL_OP_4:
+        case CLASS_REEL_OP_6:
+        case CLASS_REEL_OP_7:
+        case CLASS_REEL_CRIT_FAR:
+            proc->script++;
+            Proc_Break(proc);
+
+            break;
+
+        case CLASS_REEL_OP_5:
+            proc->unk_2a++;
+
+            if (proc->unk_2a < proc->script->extra)
+            {
+                return;
+            }
+
+            proc->script++;
+            Proc_Break(proc);
+
+            break;
+
+        case CLASS_REEL_OP_8:
+            if (sub_805A96C(&gOpInfoData) != 0)
+            {
+                proc->script++;
+                Proc_Break(proc);
+            }
+
+            break;
+
+        case CLASS_REEL_WAIT_SPELL:
+            if (!gEfxSpellAnimExists)
+            {
+                proc->script++;
+                Proc_Break(proc);
+            }
+
+            break;
+    }
+
+    return;
+}
+
 struct ClassReelEnt const DefaultClassReelData[1] = {
-    [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, (void *)sCRScr_DefaultHit },
+    [0x00] = { 0x0, 0xFF, 0xA7, 0, 0x02, 0, 0, 0, 0, 0, 0x14, 0x14, 0, (void *)sCRScr_MeleeHit },
 };
 
-extern struct AnimBuffer gOpInfoData;           // dat 0x02000000
 extern struct BanimUnkStructComm gUnk_Opinfo_0; // dat 0x0201DB00 (aka gUnknown_0201DB00)
 extern struct AnimMagicFxBuffer gUnk_4;         // dat 0x0200A2D8
 extern s16 gEkrSpellAnimIndex[2];               // dat 0x0203E118
@@ -8088,7 +8220,7 @@ static void FillDebuggerBanimFallbackEntry(struct ClassReelEnt * out, int classI
     out->unk_0D = DEBUGGER_BANIM_TERRAIN;
     out->unk_0E = DEBUGGER_BANIM_TERRAIN;
     out->unk_0F = 0;
-    out->script = (void *)sCRScr_DefaultHit;
+    out->script = (void *)sCRScr_MeleeHit;
 }
 
 static bool IsDebuggerBanimSafe(struct ClassReelEnt * entry, int classId, struct Unit * unit, int weapon)
@@ -8243,14 +8375,53 @@ static void NewDebuggerEkrUnitMainMini(struct AnimBuffer * animBuf)
     animBuf->unk_00 = 1;
 }
 
+// A pure melee weapon (sword/lance/axe) has nothing sensible to show for
+// ANIM_ROUND_NONCRIT_FAR/CLASS_REEL_CRIT_FAR - no spell, no bow - so sCRScr_RangedHit
+// would otherwise just be the character swinging at empty air. See
+// DebuggerBanimPreview_ResetScript for what stands in for it instead.
+static bool IsDebuggerPreviewWeaponMelee(int weapon)
+{
+    if (!weapon)
+        return false;
+
+    // int range = GetItemMinRange(weapon);
+    int type = GetItemType(weapon);
+    u32 attr = GetItemAttributes(weapon);
+    if (type == ITYPE_SWORD && !(attr & IA_MAGICDAMAGE))
+    {
+        return true;
+    }
+    // non-magic swords default to showing Nosferatu animation for ranged
+
+    return false;
+}
+
+/**
+ * Picks which half of the reel plays next and, since which half is playing can change
+ * on every call (not just the first), re-derives the spell id to go with it.
+ *
+ * Called twice over: once from SetupDebuggerBanimAnim() for the initial script (which
+ * resets proc->useRanged to melee-first - see there), and repeatedly from this proc's
+ * own PROC_LABEL(10) step every time a reel reaches CR_END() and loops back around -
+ * that second case is what makes the melee/ranged choice actually alternate over time.
+ *
+ * ITEM_DARK_NOSFERATU's spell effect id is 0x1E (SPELL_ASSOC_DATA_WPN_MAGIC entry in
+ * spellassoc-data.c) - borrowed here to give melee-only classes some ranged-looking
+ * effect to show during their sCRScr_RangedHit pass, since they have no spell or bow
+ * animation of their own to fall back on for a "far" round type.
+ */
 static void DebuggerBanimPreview_ResetScript(struct OpInfoClassDisplayProc * proc)
 {
-    // classReelEnt is only ever a gClassReelData (rom) pointer or NULL - a
-    // fallback/custom-class entry is never persisted, see StartDebuggerBanimPreview
-    proc->script = proc->classReelEnt != NULL ? proc->classReelEnt->script : NULL;
+    proc->script = (void *)(proc->useRanged ? sCRScr_RangedHit : sCRScr_MeleeHit);
 
-    if (proc->script == NULL)
-        proc->script = (void *)sCRScr_DefaultHit;
+    if (proc->useRanged && IsDebuggerPreviewWeaponMelee(proc->weapon))
+        gEkrSpellAnimIndex[EKR_POS_L] = 0x1E; // ITEM_DARK_NOSFERATU
+    else
+        gEkrSpellAnimIndex[EKR_POS_L] = proc->naturalSpellId;
+
+    gEkrSpellAnimIndex[EKR_POS_R] = gEkrSpellAnimIndex[EKR_POS_L];
+
+    proc->useRanged = !proc->useRanged;
 }
 
 // entry is only read here, for this one call - persistentEntry is what
@@ -8293,8 +8464,12 @@ static void SetupDebuggerBanimAnim(
     gUnk_4.objImgBuf = gBuf_Banim;
     gUnk_4.resetCallback = DebuggerBanimBlendWindowConfig;
 
-    gEkrSpellAnimIndex[EKR_POS_L] = GetDebuggerSpellAnimId(entry->classId, weapon);
-    gEkrSpellAnimIndex[EKR_POS_R] = gEkrSpellAnimIndex[EKR_POS_L];
+    // gEkrSpellAnimIndex is (re)assigned per reel half in DebuggerBanimPreview_ResetScript
+    // below, off these two - not set directly here, since which half is playing (and
+    // therefore which spell id is correct) keeps changing for as long as this preview
+    // stays open, not just once at setup.
+    proc->weapon = weapon;
+    proc->naturalSpellId = GetDebuggerSpellAnimId(entry->classId, weapon);
 
     ResetClassReelSpell();
     NewDebuggerEkrUnitMainMini(&gOpInfoData);
@@ -8318,6 +8493,12 @@ static void SetupDebuggerBanimAnim(
 
     // proc->classReelEnt = entry;
     proc->classReelEnt = (void *)&DefaultClassReelData[0];
+
+    // Always start a freshly-selected class/weapon on the melee half - otherwise which
+    // half you see first would depend on how many times the reel happened to have
+    // looped while browsing previous selections, which would look like a bug rather
+    // than the intentional alternation DebuggerBanimPreview_ResetScript does on loop.
+    proc->useRanged = FALSE;
     DebuggerBanimPreview_ResetScript(proc);
 }
 
@@ -8333,6 +8514,7 @@ static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapo
     struct ClassReelEnt fallbackEntry;
     struct ClassReelEnt * entry;
 
+    BMapDispResume();
     EndDebuggerBanimPreview();
 
     if (classId == 0 || GetClassData(classId) == NULL)
@@ -8353,6 +8535,7 @@ static void StartDebuggerBanimPreview(int classId, struct Unit * unit, int weapo
     if (!IsDebuggerBanimSafe(entry, classId, unit, weapon))
         return;
 
+    BMapDispSuspend();
     proc = Proc_Start(sProc_DebuggerBanimPreview, PROC_TREE_3);
     SetupDebuggerBanimAnim(proc, entry, vanillaEntry, weapon);
 }
@@ -8371,6 +8554,7 @@ static void DebuggerBanimPreview_LoopScript(struct OpInfoClassDisplayProc * proc
 
 static void DebuggerBanimPreview_OnEnd(struct OpInfoClassDisplayProc * proc)
 {
+    // Does NOT call BMapDispResume() - see the comment on StartDebuggerBanimPreview().
     (void)proc;
 
     EndActiveClassReelSpell();
@@ -9890,7 +10074,6 @@ void DrawGfxFromIDs(int type, int id, struct Unit * unit, DebuggerProc * proc)
             ClearMainMenuGfx(proc);
             GfxViewerInitMenuGfx(proc);
             MU_EndAll();
-            BMapDispSuspend(); // matches the BMapDispResume() on the way out in GfxViewerLoop
             StartDebuggerBanimPreview(id, unit, proc->tmp[GfxViewerOption_Weapon]);
             break;
         }
@@ -9994,6 +10177,7 @@ void GfxViewerLoop(DebuggerProc * proc)
         if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon)
         {
             EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon
+            BMapDispResume();
         }
         RefreshDebuggerBanimPreviewForGfxViewer(proc, unit);
         RedrawGfxViewerMenu(proc);
@@ -10008,6 +10192,7 @@ void GfxViewerLoop(DebuggerProc * proc)
         if (proc->id != GfxViewerOption_ClassAnim && proc->id != GfxViewerOption_Weapon)
         {
             EndDebuggerBanimPreview(); // battle anim only runs while browsing Class Anim/Weapon
+            BMapDispResume();
         }
 
         RefreshDebuggerBanimPreviewForGfxViewer(proc, unit);
