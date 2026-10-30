@@ -121,17 +121,23 @@ blh	GetCharPtr
 mov	r5, r0
 ldr	r6, =ActionStruct
 
+cmp r4, #0 
+beq SkipPostBattleSupports 
+cmp r5, #0 
+beq SkipPostBattleSupports 
 bl PostBattleSupports 
+SkipPostBattleSupports: 
 
 cmp r7, #0 
 beq AltExit 
 
-ldr r1, [r4, #4] 
-ldr r0, [r4, #0] 
+ldr r2, =CurrentUnit 
+ldr r2, [r2] 
+ldr r1, [r2, #4] 
+ldr r0, [r2, #0] 
 ldr r0, [r0, #0x28] 
 ldr r1, [r1, #0x28] 
 orr r0, r1
-mov r2, r4 
 
 pop {r4-r7} 
 pop {r3} 
@@ -239,7 +245,9 @@ PostBattleSupports.ActorIsBlue:
     @check if dead
     ldrb    r0, [r4, #0x13]
     cmp     r0, #0x00
-    beq     PostBattleSupports.end
+    bne     PostBattleSupports.ActorIsAlive
+    b       PostBattleSupports.end
+PostBattleSupports.ActorIsAlive:
 	mov r0, #0x30 
 	ldrb r0, [r4, r0] @ status 
 	mov r1, #0xF 
@@ -278,7 +286,7 @@ PostBattleSupports.ActorIsBlue:
     @now we know we are a blue unit who used a staff on a blue unit
         @ldrb    r0, [r6, #0x6] @itemID
         ldr     r3, =gBattleActor
-        add     r3, #0x48
+        add     r3, #0x4A
         ldrh    r3, [r3]
         mov     r0, #0xFF
         and     r0, r3
@@ -292,6 +300,7 @@ PostBattleSupports.ActorIsBlue:
         bl      ApplyBonusFromHeal
         cmp     r0, #0
         beq     PostBattleSupports.end
+        mov     r8, r0
         mov     r3, r4
         b       PostBattleSupports.addPlayer
 
@@ -306,6 +315,9 @@ PostBattleSupports.defender:
     and     r0, r1
     cmp     r0, #0x0
     bne     PostBattleSupports.end
+    ldrb    r0, [r5, #0x13]
+    cmp     r0, #0x0
+    beq     PostBattleSupports.end
 	
 	mov r0, #0x30 
 	ldrb r0, [r5, r0] @ status 
@@ -576,6 +588,8 @@ MarkForSupportIncrease:
         
         GetReciprocatedSupportIndex:
         add     r1, #0x1
+        cmp     r1, #0x7
+        bge     InvalidSupportIndex
         ldr     r0, [r7, #0x0]      @partner's support data
         ldr     r0, [r0, #0x2C]
         cmp     r0, #0x0            @out of support partners?
@@ -617,17 +631,6 @@ MarkForSupportIncrease:
 	blh CanUnitSupportNow
 	mov r2, r6 @ buffer position 
 	mov r6, r0 
-	@ if r6 is 0: could the actor now support with anyone else ? 
-	cmp r6, #0 
-	bne GoldHeart 
-	mov r0, r4 
-	mov r1, r5 @ support index 
-	bl CouldActorSupportSomeoneElseNow
-	cmp r0, #0 
-	beq NormalHearts 
-	mov r0, #1 
-	b MarkForSupportIncrease.end
-	
 	NormalHearts: 
 	ldr r2, =HeartEmoticonLink
 	cmp r6, #0 
@@ -642,7 +645,7 @@ MarkForSupportIncrease:
 	mov r0, #1 
     cmp r6, #0 
 	beq MarkForSupportIncrease.end
-	mov r0, #0xFF @ do not display any more hearts 
+	mov r0, #0xFF 
 
     MarkForSupportIncrease.end:
 	pop {r7} 
@@ -783,7 +786,7 @@ ApplyBonusFromHeal:
                         b StaffBonus.end
                         
         StaffBonus.next:
-        cmp r6, #0x7
+        cmp r6, #0x6
         blt StaffBonus.loop
         mov r0, #0x0
     
@@ -802,6 +805,9 @@ ForEachSupportPartner:
     mov     r6, r1
     mov     r7, #0x0
     ldr     r4, =gSupportIndexArray
+    mov     r0, r8
+    push    {r0}
+    mov     r8, r7
 ForEachSupportPartner.lop:
     ldrb    r1, [r4]
     cmp     r1, #0
@@ -815,7 +821,9 @@ ForEachSupportPartner.lop:
     bl      BXR3
     add     r4, #1
 	cmp r0, #0xFF 
-	beq ForEachSupportPartner.specialCase
+	bne ForEachSupportPartner.notGold
+	mov r8, r0
+ForEachSupportPartner.notGold:
     cmp     r0, #0
     beq     ForEachSupportPartner.lop
     add     r7, #1
@@ -823,7 +831,13 @@ ForEachSupportPartner.lop:
     
 ForEachSupportPartner.end:
     mov     r0, r7
+    mov     r1, r8
+    cmp     r1, #0
+    beq     ForEachSupportPartner.specialCase
+    mov     r0, r1
 ForEachSupportPartner.specialCase:
+    pop     {r1}
+    mov     r8, r1
     pop     {r4-r7}
     pop     {r1}
     bx      r1

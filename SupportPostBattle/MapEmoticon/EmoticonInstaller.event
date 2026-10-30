@@ -111,7 +111,7 @@ emotion20_monsterface:
 //#incbin "png/monsterface.dmp"	//HINT=BIN
 
 emotion02_heart:
-#incbin "png/02_heart_kenpuku.png.dmp"	//HINT=BIN
+#incbin "png/hearts.dmp"	//HINT=BIN
 
 emotion21_goldheart:
 #incbin "png/21_goldheart_kenpuku.dmp"	//HINT=BIN
@@ -122,6 +122,16 @@ emotion22_goldheart:
 ALIGN 4 
 goldHeartPalette:
 #incbin "png/22_goldheart_kenpuku_pal.dmp"
+
+ALIGN 4
+GoldHeartAP:
+SHORT $4 $E $C $14 $1C $24 $2C $2A
+SHORT $1 $F8 $41F8 $2
+SHORT $1 $FB $41F8 $2
+SHORT $1 $FA $41F8 $2
+SHORT $1 $F9 $41F8 $2
+SHORT $1 $F8 $41F8 $2
+SHORT $4 $0 $2 $1 $2 $0 $2 $2 $2 $0 $2 $3 $1E $0 $0 $1
 
 #define AP_Address_We_are_using 0x089A8EF8
 
@@ -149,7 +159,7 @@ POIN emotion17_beer; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHO
 POIN emotion18_pokeball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
 POIN emotion19_openball; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x00 0x01; POIN 0
 POIN emotion20_monsterface; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0 
-POIN emotion21_goldheart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0
+POIN emotion02_heart; POIN GoldHeartAP; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x01; POIN 0
 POIN emotion22_goldheart; WORD 0x089A8EF8; POIN Show_map_emotion_Proc_without_SE; SHORT 0x77 0x0A; POIN goldHeartPalette
 
 

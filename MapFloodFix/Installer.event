@@ -1,0 +1,16 @@
+
+
+#ifndef FreeSpace 
+#define FreeSpace 0x1000000 
+ORG FreeSpace 
+#endif 
+
+// hooks CallARM_FillMovementMap
+#include "C_Code.lyn.event" 
+
+// replaces vanilla MapFloodCore inside the ARM block that gets copied to IWRAM
+PUSH
+ORG $874
+#incbin "FloodCore.bin"
+ASSERT $A20 - CURRENTOFFSET
+POP
