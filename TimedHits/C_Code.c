@@ -30,14 +30,20 @@ typedef struct
     u8 broke;
     u8 loadedImg;
     u8 side;
-    u8 frame;
-    u8 code4frame;
-    u8 codefframe;
+    u16 frame;
+    u16 code4frame;
+    u16 codefframe;
     u8 roundEnd;
     u8 EkrEfxIsUnitHittedNowFrames;
     u16 buttonsToPress;
+    u8 readAhead;
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc * proc);
+#define NO_FRAME 0xFFFF
+#define READAHEAD_FOUND 0x01
+#define READAHEAD_WINDOW_OPEN 0x02
+#define READAHEAD_PRESSED_EARLY 0x04
+#define PROMPT_PALETTE 13 // battles don't use 13 (14 is the star)
 const struct ProcCmd TimedHitsProcCmd[] = {
     PROC_NAME("TimedHitsProcName"),
     PROC_YIELD,
@@ -70,6 +76,10 @@ extern const int BlockingEnabled;
 extern const int BlockingCanPreventLethal;
 extern const int DisplayPress;
 extern const int ChangePaletteWhenButtonIsPressed;
+extern const u16 gPal_TimedHitsDefault[];
+extern const u16 gPal_TimedHitsWindow[];
+extern const u16 gPal_TimedHitsSuccess[];
+extern const u16 gPal_TimedHitsFail[];
 extern const u8 SkillExceptionsTable[];
 extern void * Press_Image;
 extern void * BattleStar;
@@ -131,9 +141,10 @@ void InitVariables(TimedHitsProc * proc)
     proc->frame = 0;
     proc->roundEnd = true;
     proc->buttonsToPress = 0;
-    proc->code4frame = 0xff;
-    proc->codefframe = 0xff;
+    proc->code4frame = NO_FRAME;
+    proc->codefframe = NO_FRAME;
     proc->EkrEfxIsUnitHittedNowFrames = 0xff;
+    proc->readAhead = 0;
 }
 
 void StartTimedHitsProc(void)
@@ -471,21 +482,41 @@ int PressedSpecificKeys(TimedHitsProc * proc, u32 keys)
     reqKeys &= ~keys; // only 0 if we hit all the correct keys (and possibly 1 extra)
     return (!reqKeys);
 }
+// Check against the hp bar starting instead of the C04 / C0F commands. 
+int IsDamagingRound(TimedHitsProc * proc)
+{
+    struct SkillSysBattleHit * round = proc->currentRound;
+    if (!round)
+    {
+        return false;
+    }
+    if (round->attributes & BATTLE_HIT_ATTR_MISS)
+    {
+        return false;
+    }
+    return round->hpChange > 0;
+}
 void SaveInputFrame(TimedHitsProc * proc, u32 keys)
 {
     struct Anim * anim = proc->anim;
     u32 instruction = *anim->pScrCurrent++;
     if (ANINS_GET_TYPE(instruction) == ANIM_INS_TYPE_COMMAND)
     {
-        if (ANINS_COMMAND_GET_ID(instruction) == 4)
+        if ((ANINS_COMMAND_GET_ID(instruction) == 4) && (proc->code4frame == NO_FRAME))
         {
             proc->code4frame = proc->timer;
-            proc->timer2 = 0;
+            if (!IsDamagingRound(proc))
+            {
+                proc->timer2 = 0;
+            }
         }
-        if (ANINS_COMMAND_GET_ID(instruction) == 0xF)
+        if ((ANINS_COMMAND_GET_ID(instruction) == 0xF) && (proc->codefframe == NO_FRAME))
         {
             proc->codefframe = proc->timer;
-            proc->timer2 = 0;
+            if (!IsDamagingRound(proc))
+            {
+                proc->timer2 = 0;
+            }
         }
     }
     instruction = *anim->pScrCurrent--;
@@ -498,24 +529,143 @@ void SaveInputFrame(TimedHitsProc * proc, u32 keys)
         }
     }
 }
+// Frames until the attacker's script hits, or -1 if it's a spell/projectile or there's no hit coming.
+#define READAHEAD_MAX_WORDS 0x400
+int GetFramesUntilPhysicalHit(TimedHitsProc * proc)
+{
+    struct Anim * anim = proc->anim;
+    if (!anim || !anim->pScrCurrent)
+    {
+        return -1;
+    }
+    int isMiss = proc->currentRound && (proc->currentRound->attributes & BATTLE_HIT_ATTR_MISS);
+    const u32 * scr = anim->pScrCurrent;
+    int frames = anim->timer;
+    for (int i = 0; i < READAHEAD_MAX_WORDS; ++i)
+    {
+        u32 instruction = *scr++;
+        if (!ANINS_IS_NOT_FORCESPRITE(instruction))
+        {
+            frames += ANINS_FORCESPRITE_GET_DELAY(instruction);
+            continue;
+        }
+        if (ANINS_IS_PTRINS(instruction))
+        {
+            if (ANINS_PTRINS_GET_TYPE(instruction) == 0)
+            {
+                continue;
+            }
+            return -1;
+        }
+        switch (ANINS_GET_TYPE(instruction))
+        {
+            case ANIM_INS_TYPE_WAIT:
+                frames += ANINS_WAIT_GET_DELAY(instruction);
+                break;
+            case ANIM_INS_TYPE_MOVE:
+                frames += ANINS_MOVE_GET_DELAY(instruction);
+                break;
+            case ANIM_INS_TYPE_FRAME:
+                frames += ANINS_FRAME_GET_DELAY(instruction);
+                scr += 2;
+                break;
+            case ANIM_INS_TYPE_COMMAND:
+                switch (ANINS_COMMAND_GET_ID(instruction))
+                {
+                    case 0x1A:
+                    case 0x08:
+                    case 0x09:
+                    case 0x0A:
+                    case 0x0B:
+                    case 0x0C:
+                        return frames;
+                    case 0x04: // misses dodge here
+                        if (isMiss)
+                        {
+                            return frames;
+                        }
+                        break;
+                    case 0x01:
+                    case 0x05:
+                        return -1;
+                }
+                frames += 1;
+                break;
+            default:
+                return -1;
+        }
+    }
+    return -1;
+}
+
+void SaveInputFrameReadAhead(TimedHitsProc * proc, u32 keys)
+{
+    int untilHit = GetFramesUntilPhysicalHit(proc);
+    if (untilHit >= 0)
+    {
+        if (!(proc->readAhead & READAHEAD_FOUND))
+        {
+            proc->readAhead |= READAHEAD_FOUND;
+            if (proc->frame && ((proc->timer - proc->frame) + untilHit >= LenienceFrames))
+            {
+                proc->readAhead |= READAHEAD_PRESSED_EARLY;
+            }
+        }
+    }
+    else if (proc->readAhead & READAHEAD_FOUND)
+    {
+        untilHit = 0; // already past the hit command
+    }
+
+    if (proc->readAhead & READAHEAD_FOUND)
+    {
+        if (untilHit < LenienceFrames)
+        {
+            proc->readAhead |= READAHEAD_WINDOW_OPEN;
+        }
+        else
+        {
+            proc->readAhead &= ~READAHEAD_WINDOW_OPEN;
+        }
+    }
+
+    int hadPress = proc->frame != 0;
+    SaveInputFrame(proc, keys);
+    if ((proc->readAhead & READAHEAD_FOUND) && !hadPress && proc->frame)
+    {
+        if (!(proc->readAhead & READAHEAD_WINDOW_OPEN))
+        {
+            proc->readAhead |= READAHEAD_PRESSED_EARLY;
+        }
+    }
+}
+
 void SaveIfWeHitOnTime(TimedHitsProc * proc)
 {
+    if (proc->readAhead & READAHEAD_FOUND)
+    {
+        if (proc->frame && !(proc->readAhead & READAHEAD_PRESSED_EARLY))
+        {
+            proc->hitOnTime = true;
+        }
+        return;
+    }
     if (proc->frame)
     {
-        if (proc->codefframe != 0xFF)
-        {
-            if (ABS(proc->codefframe - proc->frame) < (LenienceFrames))
-            {
-                proc->hitOnTime = true;
-            }
-        }
-        else if (proc->code4frame != 0xFF)
-        {
-            if (ABS(proc->code4frame - proc->frame) < (LenienceFrames))
-            {
-                proc->hitOnTime = true;
-            }
-        }
+    // if (proc->codefframe != NO_FRAME)
+    // {
+    //     if (ABS(proc->codefframe - proc->frame) < (LenienceFrames))
+    //     {
+    //         proc->hitOnTime = true;
+    //     }
+    // }
+    // else if (proc->code4frame != NO_FRAME)
+    // {
+    //     if (ABS(proc->code4frame - proc->frame) < (LenienceFrames))
+    //     {
+    //         proc->hitOnTime = true;
+    //     }
+    // }
         if ((proc->timer - proc->frame) < LenienceFrames)
         {
             proc->hitOnTime = true;
@@ -541,15 +691,55 @@ int DidWeHitOnTime(TimedHitsProc * proc)
     return proc->hitOnTime;
 }
 
+int PressedTooEarly(TimedHitsProc * proc)
+{
+    if (proc->readAhead & READAHEAD_FOUND)
+    {
+        return false;
+    }
+    if (!proc->frame)
+    {
+        return false;
+    }
+    if (DidWeHitOnTime(proc))
+    {
+        return false;
+    }
+    return (proc->timer - proc->frame) >= LenienceFrames;
+}
+
 void DrawButtonsToPress(TimedHitsProc * proc, int x, int y, int palID)
 {
     if (!DisplayPress)
     {
         return;
     }
+    if (PressedTooEarly(proc))
+    {
+        return;
+    }
     int keys = GetButtonsToPress(proc);
 
-    if (ChangePaletteWhenButtonIsPressed && proc->frame)
+    if (proc->readAhead & READAHEAD_FOUND)
+    {
+        const u16 * pal = gPal_TimedHitsDefault;
+        int hitHappened = proc->EkrEfxIsUnitHittedNowFrames != 0xFF; // after the hit we only draw this on a fail
+        if ((proc->readAhead & READAHEAD_PRESSED_EARLY) || hitHappened)
+        {
+            pal = gPal_TimedHitsFail;
+        }
+        else if (proc->frame && ChangePaletteWhenButtonIsPressed)
+        {
+            pal = gPal_TimedHitsSuccess;
+        }
+        else if (proc->readAhead & READAHEAD_WINDOW_OPEN)
+        {
+            pal = gPal_TimedHitsWindow;
+        }
+        ApplyPalette(pal, 0x10 + PROMPT_PALETTE);
+        palID = PROMPT_PALETTE; 
+    }
+    else if (ChangePaletteWhenButtonIsPressed && proc->frame)
     {
         palID = 14;
     }
@@ -645,6 +835,7 @@ void DoStuffIfHit(
         }
         SaveInputFrame(proc, keys);
         SaveIfWeHitOnTime(proc);
+        proc->readAhead &= ~READAHEAD_WINDOW_OPEN;
         if (!proc->adjustedDmg)
         {
             if (DidWeHitOnTime(proc))
@@ -665,7 +856,8 @@ void DoStuffIfHit(
     }
     // if ((proc->timer2 < MinFramesToDisplayGfx) || EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) ||
     // (proc->codefframe != 0xFF)) {
-    if (EkrEfxIsUnitHittedNow(proc->side) || (proc->code4frame != 0xFF) || (proc->codefframe != 0xFF) ||
+    if (EkrEfxIsUnitHittedNow(proc->side) ||
+        (((proc->code4frame != NO_FRAME) || (proc->codefframe != NO_FRAME)) && !IsDamagingRound(proc)) ||
         (proc->timer2 != 0xFF))
     {
         if (DidWeHitOnTime(proc))
@@ -709,7 +901,7 @@ void DoStuffIfHit(
         // if (1 == 0) { proc->frame = 0; } // 10 frames after hitting where it's okay to have A held down
         else
         {
-            SaveInputFrame(proc, keys);
+            SaveInputFrameReadAhead(proc, keys);
         }
         if (!proc->roundEnd)
         {
@@ -863,7 +1055,7 @@ void CheckForDeath(
         hp = 0;
         UpdateHP(proc, HpProc, opp_bunit, hp, side, newDamage);
 
-        proc->code4frame = 0xff;
+        proc->code4frame = NO_FRAME;
 
         // gEkrGaugeHp[side ^ 1] = round->hpChange;
 
@@ -904,7 +1096,18 @@ void CheckForDeath(
         hp = gEkrGaugeHp[side];
         if (round->attributes & BATTLE_HIT_ATTR_HPSTEAL)
         {
-            hp += newDamage;
+            // don't heal above max 
+            int drained = newDamage;
+            int victimHp = gEkrGaugeHp[proc->side];
+            if (drained > victimHp)
+            {
+                drained = victimHp;
+            }
+            hp += drained;
+            if (hp > active_bunit->unit.maxHP)
+            {
+                hp = active_bunit->unit.maxHP;
+            }
         }
         // if (UsingSkillSys == 2) { if (HpProc->postHpAtkrSS > hp) { hp = HpProc->post; } }
         UpdateHP(proc, HpProc, active_bunit, hp, side, 0);
