@@ -37,12 +37,16 @@ typedef struct
     u8 EkrEfxIsUnitHittedNowFrames;
     u16 buttonsToPress;
     u8 readAhead;
+    u8 pressImg;
 } TimedHitsProc;
 void LoopTimedHitsProc(TimedHitsProc * proc);
 #define NO_FRAME 0xFFFF
 #define READAHEAD_FOUND 0x01
 #define READAHEAD_WINDOW_OPEN 0x02
-#define READAHEAD_PRESSED_EARLY 0x04
+#define READAHEAD_BAD_PRESS 0x04
+#define READAHEAD_CAST 0x08
+#define READAHEAD_PASSED 0x10
+enum { PRESS_DEFAULT, PRESS_WINDOW, PRESS_SUCCESS, PRESS_FAIL };
 #define PROMPT_PALETTE 13 // battles don't use 13 (14 is the star)
 const struct ProcCmd TimedHitsProcCmd[] = {
     PROC_NAME("TimedHitsProcName"),
@@ -76,12 +80,12 @@ extern const int BlockingEnabled;
 extern const int BlockingCanPreventLethal;
 extern const int DisplayPress;
 extern const int ChangePaletteWhenButtonIsPressed;
-extern const u16 gPal_TimedHitsDefault[];
-extern const u16 gPal_TimedHitsWindow[];
-extern const u16 gPal_TimedHitsSuccess[];
-extern const u16 gPal_TimedHitsFail[];
 extern const u8 SkillExceptionsTable[];
+extern const u16 gPal_Press_A_Image[];
 extern void * Press_Image;
+extern void * Press_Window_Image;
+extern void * Press_Success_Image;
+extern void * Press_Fail_Image;
 extern void * BattleStar;
 extern void * A_Button;
 extern void * B_Button;
@@ -198,6 +202,7 @@ void SetCurrentAnimInProc(struct Anim * anim)
         Copy2dChr(&Right_Button, (void *)0x060128C0, 2, 2); // 0x146
         Copy2dChr(&Up_Button, (void *)0x06012900, 2, 2);    // 0x148
         Copy2dChr(&Down_Button, (void *)0x06012940, 2, 2);  // 0x14a
+        proc->pressImg = PRESS_DEFAULT;
         proc->loadedImg = true;
     }
 }
@@ -406,10 +411,6 @@ int GetButtonsToPress(TimedHitsProc * proc)
         {
             numberOfRandomButtons = TimedHitsDifficultyRam->difficulty;
         }
-        if (IsNotMagicAnimation(proc))
-        {
-            numberOfRandomButtons = numberOfRandomButtons / 2;
-        }
         if (!numberOfRandomButtons)
         {
             numberOfRandomButtons = 1;
@@ -529,9 +530,9 @@ void SaveInputFrame(TimedHitsProc * proc, u32 keys)
         }
     }
 }
-// Frames until the attacker's script hits, or -1 if it's a spell/projectile or there's no hit coming.
+// Frames until the attacker's script hits or starts casting, or -1 if neither is coming.
 #define READAHEAD_MAX_WORDS 0x400
-int GetFramesUntilPhysicalHit(TimedHitsProc * proc)
+int GetFramesUntilHit(TimedHitsProc * proc, int * isCast)
 {
     struct Anim * anim = proc->anim;
     if (!anim || !anim->pScrCurrent)
@@ -585,8 +586,10 @@ int GetFramesUntilPhysicalHit(TimedHitsProc * proc)
                             return frames;
                         }
                         break;
-                    case 0x01:
                     case 0x05:
+                        *isCast = true;
+                        return frames;
+                    case 0x01:
                         return -1;
                 }
                 frames += 1;
@@ -600,26 +603,38 @@ int GetFramesUntilPhysicalHit(TimedHitsProc * proc)
 
 void SaveInputFrameReadAhead(TimedHitsProc * proc, u32 keys)
 {
-    int untilHit = GetFramesUntilPhysicalHit(proc);
+    int isCast = false;
+    int untilHit = GetFramesUntilHit(proc, &isCast);
     if (untilHit >= 0)
     {
+        if (isCast)
+        {
+            proc->readAhead |= READAHEAD_CAST;
+        }
         if (!(proc->readAhead & READAHEAD_FOUND))
         {
             proc->readAhead |= READAHEAD_FOUND;
             if (proc->frame && ((proc->timer - proc->frame) + untilHit >= LenienceFrames))
             {
-                proc->readAhead |= READAHEAD_PRESSED_EARLY;
+                proc->readAhead |= READAHEAD_BAD_PRESS;
             }
         }
     }
     else if (proc->readAhead & READAHEAD_FOUND)
     {
-        untilHit = 0; // already past the hit command
+        if (proc->readAhead & READAHEAD_CAST)
+        {
+            proc->readAhead |= READAHEAD_PASSED; // the spell has started
+        }
+        else
+        {
+            untilHit = 0; // already past the hit command
+        }
     }
 
     if (proc->readAhead & READAHEAD_FOUND)
     {
-        if (untilHit < LenienceFrames)
+        if (!(proc->readAhead & READAHEAD_PASSED) && untilHit < LenienceFrames)
         {
             proc->readAhead |= READAHEAD_WINDOW_OPEN;
         }
@@ -635,7 +650,7 @@ void SaveInputFrameReadAhead(TimedHitsProc * proc, u32 keys)
     {
         if (!(proc->readAhead & READAHEAD_WINDOW_OPEN))
         {
-            proc->readAhead |= READAHEAD_PRESSED_EARLY;
+            proc->readAhead |= READAHEAD_BAD_PRESS;
         }
     }
 }
@@ -644,7 +659,7 @@ void SaveIfWeHitOnTime(TimedHitsProc * proc)
 {
     if (proc->readAhead & READAHEAD_FOUND)
     {
-        if (proc->frame && !(proc->readAhead & READAHEAD_PRESSED_EARLY))
+        if (proc->frame && !(proc->readAhead & READAHEAD_BAD_PRESS))
         {
             proc->hitOnTime = true;
         }
@@ -708,6 +723,16 @@ int PressedTooEarly(TimedHitsProc * proc)
     return (proc->timer - proc->frame) >= LenienceFrames;
 }
 
+void SetPressImage(TimedHitsProc * proc, int img)
+{
+    static void * const images[] = { &Press_Image, &Press_Window_Image, &Press_Success_Image, &Press_Fail_Image };
+    if (proc->pressImg != img)
+    {
+        Copy2dChr(images[img], (void *)0x06012980, 6, 2);
+        proc->pressImg = img;
+    }
+}
+
 void DrawButtonsToPress(TimedHitsProc * proc, int x, int y, int palID)
 {
     if (!DisplayPress)
@@ -722,26 +747,32 @@ void DrawButtonsToPress(TimedHitsProc * proc, int x, int y, int palID)
 
     if (proc->readAhead & READAHEAD_FOUND)
     {
-        const u16 * pal = gPal_TimedHitsDefault;
+        int img = PRESS_DEFAULT;
         int hitHappened = proc->EkrEfxIsUnitHittedNowFrames != 0xFF; // after the hit we only draw this on a fail
-        if ((proc->readAhead & READAHEAD_PRESSED_EARLY) || hitHappened)
+        if ((proc->readAhead & READAHEAD_BAD_PRESS) || hitHappened ||
+            ((proc->readAhead & READAHEAD_PASSED) && !proc->frame))
         {
-            pal = gPal_TimedHitsFail;
+            img = PRESS_FAIL;
         }
         else if (proc->frame && ChangePaletteWhenButtonIsPressed)
         {
-            pal = gPal_TimedHitsSuccess;
+            img = PRESS_SUCCESS;
         }
         else if (proc->readAhead & READAHEAD_WINDOW_OPEN)
         {
-            pal = gPal_TimedHitsWindow;
+            img = PRESS_WINDOW;
         }
-        ApplyPalette(pal, 0x10 + PROMPT_PALETTE);
-        palID = PROMPT_PALETTE; 
+        SetPressImage(proc, img);
+        ApplyPalette(gPal_Press_A_Image, 0x10 + PROMPT_PALETTE);
+        palID = PROMPT_PALETTE;
     }
-    else if (ChangePaletteWhenButtonIsPressed && proc->frame)
+    else
     {
-        palID = 14;
+        SetPressImage(proc, PRESS_DEFAULT);
+        if (ChangePaletteWhenButtonIsPressed && proc->frame)
+        {
+            palID = 14;
+        }
     }
     // ApplyPalettes(gPal_Press_Image, 15+16, 0x10); // always pal 15
     int oam2 = OAM2_PAL(palID) | OAM2_LAYER(0); // OAM2_CHR(0);
@@ -833,7 +864,12 @@ void DoStuffIfHit(
         {
             proc->timer2 = 0;
         }
+        int hadPress = proc->frame != 0;
         SaveInputFrame(proc, keys);
+        if (!hadPress && proc->frame && (proc->readAhead & READAHEAD_PASSED))
+        {
+            proc->readAhead |= READAHEAD_BAD_PRESS;
+        }
         SaveIfWeHitOnTime(proc);
         proc->readAhead &= ~READAHEAD_WINDOW_OPEN;
         if (!proc->adjustedDmg)

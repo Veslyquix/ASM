@@ -38,8 +38,8 @@ FailedHitDamagePercent: // always hits at least 1 dmg
 WORD 80 
 MinFramesToDisplayGfx: // Minimum - will last as long as hp is depleting / end of animation 
 WORD 25
-LenienceFrames: // on either side, so within x frames before or after 
-WORD 15
+LenienceFrames: // before hit / cast 
+WORD 25
 AlwaysWork: 
 WORD 0
 NumberOfRandomButtons: // (half as many for non-magic) 
@@ -64,7 +64,7 @@ WORD 1
 TimedHitsDifficultyRam:
 WORD TimedHitsRam
 DifficultyThreshold:
-WORD 3 // At least 3 buttons generally required (half as many for non-magic) 
+WORD 2 // At least 2 buttons generally required on hard difficulty 
 DifficultyBonusPercent:
 WORD 10 // +10% more damage if on hard mode 
 
@@ -95,6 +95,15 @@ NoSkill(MiracleID)
 ALIGN 4 
 Press_Image:
 #incbin "images/Press.dmp" 
+ALIGN 4
+Press_Window_Image:
+#incbin "images/Press_window_timing.dmp"
+ALIGN 4
+Press_Success_Image:
+#incbin "images/Press_success.dmp"
+ALIGN 4
+Press_Fail_Image:
+#incbin "images/Press_fail.dmp"
 ALIGN 4 
 gPal_Press_A_Image:
 #incbin "images/Press_A_pal.dmp" 
@@ -113,18 +122,6 @@ B_Button:
 ALIGN 4
 Left_Button:
 #incbin "images/Left_Button.dmp"
-ALIGN 4
-gPal_TimedHitsDefault:
-#incbin "images/Left_Button_pal.dmp"
-ALIGN 4
-gPal_TimedHitsWindow:
-#incbin "images/Left_Button_window_timing_pal.dmp"
-ALIGN 4
-gPal_TimedHitsSuccess:
-#incbin "images/Left_Button_success_pal.dmp"
-ALIGN 4
-gPal_TimedHitsFail:
-#incbin "images/Left_Button_fail_pal.dmp"
 ALIGN 4 
 Right_Button:
 #incbin "images/Right_Button.dmp"

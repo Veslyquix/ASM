@@ -46,7 +46,7 @@ int ShouldSpeedupAnims(void)
     u16 keys = sKeyStatusBuffer.newKeys | sKeyStatusBuffer.heldKeys;
     if (TimedHitsDifficultyRam_Link)
     {
-        if (TimedHitsDifficultyRam_Link->difficulty)
+        if (!TimedHitsDifficultyRam_Link->off)
         {
             keys &= L_BUTTON | START_BUTTON | R_BUTTON |
                 SELECT_BUTTON; // if timed hits are on, only these buttons are valid
