@@ -5,12 +5,34 @@
 ORG FreeSpace 
 #endif 
 
-// hooks CallARM_FillMovementMap
-#include "C_Code.lyn.event" 
+#ifdef _FE6_
+// hooks MapFloodCoreRam
+#include "C_Code_FE6.lyn.event"
 
 // replaces vanilla MapFloodCore inside the ARM block that gets copied to IWRAM
+PUSH
+ORG $874
+#incbin "FloodCore_FE6.bin"
+ASSERT $A20 - CURRENTOFFSET
+POP
+#else
+#ifdef _FE7_
+// hooks the wrapper that calls the IWRAM MapFloodCore
+#include "C_Code_FE7.lyn.event"
+
+PUSH
+ORG $850
+#incbin "FloodCore_FE7.bin"
+ASSERT $9FC - CURRENTOFFSET
+POP
+#else
+// hooks CallARM_FillMovementMap
+#include "C_Code.lyn.event"
+
 PUSH
 ORG $874
 #incbin "FloodCore.bin"
 ASSERT $A20 - CURRENTOFFSET
 POP
+#endif
+#endif
