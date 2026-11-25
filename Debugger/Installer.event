@@ -109,7 +109,7 @@ WORD DebuggerFlag // if this flag is on, the debugger is off
 WORD 0xA1
 #endif 
 #ifdef _FE6_ 
-WORD 0xA1 
+WORD 0x8B // max 0x8C in fe6, which is used by Casual Mode
 #endif 
 
 #ifndef A_BUTTON 
@@ -255,6 +255,8 @@ SHORT $4770 // bx lr
 // matter here: ResolveCharPalOverride is stubbed right alongside it and never looks at its
 // tableID argument in this build either.
 #ifndef VeslyBuildfile
+// SRR's FE8 C patch defines the real ones first (see .FE8_Installer.event)
+#ifndef SRR_CharPalFuncsLinked
 GetCharPalOverride:
 SHORT $2000 $4770 // movs r0, #0; bx lr
 ResolveCharPalOverride:
@@ -263,6 +265,7 @@ GetAdjustedCharID:
 SHORT $2000 $4770 // movs r0, #0; bx lr
 GetAdjustedCharTableID:
 SHORT $2000 $4770 // movs r0, #0; bx lr
+#endif
 ALIGN 4 
 VeslyBuildfile_Link:
 WORD 0 

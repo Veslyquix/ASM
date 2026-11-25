@@ -13,7 +13,7 @@ ORG FreeSpace
 PUSH
 ORG $874
 #incbin "FloodCore_FE6.bin"
-ASSERT $A20 - CURRENTOFFSET
+ASSERT $A20 - (CURRENTOFFSET & 0x1FFFFFF)
 POP
 #else
 #ifdef _FE7_
@@ -23,7 +23,7 @@ POP
 PUSH
 ORG $850
 #incbin "FloodCore_FE7.bin"
-ASSERT $9FC - CURRENTOFFSET
+ASSERT $9FC - (CURRENTOFFSET & 0x1FFFFFF)
 POP
 #else
 // hooks CallARM_FillMovementMap
@@ -32,7 +32,7 @@ POP
 PUSH
 ORG $874
 #incbin "FloodCore.bin"
-ASSERT $A20 - CURRENTOFFSET
+ASSERT $A20 - (CURRENTOFFSET & 0x1FFFFFF)
 POP
 #endif
 #endif
